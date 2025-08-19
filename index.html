@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Landing Page -->
+    <!-- Landing Page with Login -->
     <div id="landing-page" class="landing-page">
         <div class="landing-container">
             <div class="landing-content">
@@ -19,7 +19,7 @@
                     <div class="logo-subtitle">Premium Family Investment Tracking</div>
                 </div>
                 <div class="landing-description">
-                    <h2>Manage our Family's Financial Future</h2>
+                    <h2>Manage Your Family's Financial Future</h2>
                     <p>Track investments across equity, mutual funds, fixed deposits, and more. Get comprehensive insights into your family's financial portfolio with our premium dashboard.</p>
                     <div class="feature-list">
                         <div class="feature-item">✓ Multi-member portfolio tracking</div>
@@ -28,9 +28,25 @@
                         <div class="feature-item">✓ Automated renewals & maturity alerts</div>
                     </div>
                 </div>
+                <!-- Login Form -->
                 <div class="landing-actions">
-                    <button class="btn btn--primary btn--lg" onclick="showDashboard()">Get Started</button>
-                    <button class="btn btn--outline btn--lg" onclick="showDashboard()">View Demo</button>
+                    <div class="login-form">
+                        <div class="form-group">
+                            <input type="email" id="login-email" class="form-control" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
+                        </div>
+                        <button class="btn btn--primary btn--lg" onclick="handleLogin()" id="login-btn">
+                            <span id="login-text">Login to Dashboard</span>
+                            <span id="login-spinner" class="hidden">Logging in...</span>
+                        </button>
+                        <div id="login-error" class="login-error hidden"></div>
+                        <div class="login-links">
+                            <a href="#" onclick="showSignupForm()">Don't have an account? Sign up</a> | 
+                            <a href="#" onclick="resetPassword()">Forgot Password?</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -49,6 +65,7 @@
                 <button class="nav-btn" data-section="investments">Investments</button>
                 <button class="nav-btn" data-section="reports">Reports</button>
                 <button class="nav-btn" data-section="settings">Settings</button>
+                <button class="nav-btn logout-btn" onclick="handleLogout()">Logout</button>
             </div>
         </nav>
         
@@ -338,6 +355,24 @@
                             </label>
                         </div>
                     </div>
+                    <div class="setting-card">
+                        <h4>User Profile</h4>
+                        <div class="profile-info" id="user-profile">
+                            <div class="profile-item">
+                                <span>Email:</span>
+                                <span id="user-email">Loading...</span>
+                            </div>
+                            <div class="profile-item">
+                                <span>Last Login:</span>
+                                <span id="last-login">Loading...</span>
+                            </div>
+                            <div class="profile-item">
+                                <span>Account Created:</span>
+                                <span id="account-created">Loading...</span>
+                            </div>
+                        </div>
+                        <button class="btn btn--outline btn--sm" onclick="changePassword()">Change Password</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -354,7 +389,7 @@
                 <button class="modal-close" onclick="hideAddMemberModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="add-member-form">
+                <form id="add-member-form" onsubmit="handleAddMember(event)">
                     <div class="form-group">
                         <label class="form-label">Name</label>
                         <input type="text" class="form-control" id="member-name" required>
@@ -388,13 +423,47 @@
                 <button class="modal-close" onclick="hideAddInvestmentModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="add-investment-form">
+                <form id="add-investment-form" onsubmit="handleAddInvestment(event)">
                     <div id="investment-form-fields">
                         <!-- Form fields will be dynamically populated -->
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn--outline" onclick="hideAddInvestmentModal()">Cancel</button>
                         <button type="submit" class="btn btn--primary">Add Investment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign Up Modal -->
+    <div id="signup-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="modal-close" onclick="hideSignupModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="signup-form" onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="signup-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="signup-password" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="signup-confirm-password" required minlength="6">
+                    </div>
+                    <div id="signup-error" class="login-error hidden"></div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" onclick="hideSignupModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary" id="signup-btn">
+                            <span id="signup-text">Create Account</span>
+                            <span id="signup-spinner" class="hidden">Creating...</span>
+                        </button>
                     </div>
                 </form>
             </div>
