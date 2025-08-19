@@ -19,6 +19,42 @@ async function fetchFamilyMembers() {
         if (error) throw error;
         console.log('Family members fetched:', data);
         return data || [];
+        // Add this function to test your connection
+async function testConnection() {
+    console.log('Testing Supabase connection...');
+    console.log('URL:', SUPABASE_URL);
+    console.log('Key starts with:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
+    
+    try {
+        // Test basic connection
+        const { data, error } = await supabase
+            .from('family_members')
+            .select('count')
+            .limit(1);
+        
+        if (error) {
+            console.error('Connection failed:', error);
+            document.getElementById('supabase-status').innerHTML = '<span class="status status--error">Failed</span>';
+            return false;
+        }
+        
+        console.log('✅ Connection successful!');
+        document.getElementById('supabase-status').innerHTML = '<span class="status status--success">Connected</span>';
+        return true;
+        
+    } catch (err) {
+        console.error('Connection test error:', err);
+        document.getElementById('supabase-status').innerHTML = '<span class="status status--error">Error</span>';
+        return false;
+    }
+}
+
+// Call test function when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, testing connection...');
+    testConnection();
+});
+
     } catch (error) {
         console.error('Error fetching family members:', error);
         return [];
