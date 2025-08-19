@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FamWealth - Premium Family Investment Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div id="landing-page" class="landing-page">
+        <div class="landing-container">
+            <div class="landing-content">
+                <div class="logo">
+                    <h1>FamWealth</h1>
+                    <div class="logo-subtitle">Premium Family Investment Tracking</div>
+                </div>
+                <div class="landing-description">
+                    <h2>Manage Your Family's Financial Future</h2>
+                    <p>Track investments across equity, mutual funds, fixed deposits, and more. Get comprehensive insights into your family's financial portfolio with our premium dashboard.</p>
+                    <div class="feature-list">
+                        <div class="feature-item">✓ Multi-member portfolio tracking</div>
+                        <div class="feature-item">✓ Real-time P&L calculations</div>
+                        <div class="feature-item">✓ Comprehensive investment reports</div>
+                        <div class="feature-item">✓ Automated renewals & maturity alerts</div>
+                    </div>
+                </div>
+                <div class="landing-actions">
+                    <button class="btn btn--primary btn--lg" onclick="showDashboard()">Get Started</button>
+                    <button class="btn btn--outline btn--lg" onclick="showDashboard()">View Demo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-dashboard" class="main-dashboard hidden">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <h2>FamWealth</h2>
+            </div>
+            <div class="navbar-nav">
+                <button class="nav-btn active" data-section="overview">Overview</button>
+                <button class="nav-btn" data-section="family">Family</button>
+                <button class="nav-btn" data-section="investments">Investments</button>
+                <button class="nav-btn" data-section="reports">Reports</button>
+                <button class="nav-btn" data-section="settings">Settings</button>
+            </div>
+        </nav>
+
+        <div class="dashboard-container">
+            <!-- Overview Section -->
+            <div id="overview-section" class="dashboard-section active">
+                <div class="section-header">
+                    <h2>Family Investment Overview</h2>
+                    <div class="date-info">As of August 19, 2025</div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Family Net Worth</div>
+                        <div class="stat-value primary">₹12,60,000</div>
+                        <div class="stat-change positive">+₹53,000 (4.40%)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Invested</div>
+                        <div class="stat-value">₹12,07,000</div>
+                        <div class="stat-change neutral">Principal Amount</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total P&L</div>
+                        <div class="stat-value positive">+₹53,000</div>
+                        <div class="stat-change positive">4.39% Returns</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Monthly Growth</div>
+                        <div class="stat-value">₹12,000</div>
+                        <div class="stat-change positive">+0.96% This Month</div>
+                    </div>
+                </div>
+
+                <!-- Family Members Cards -->
+                <div class="section-title">
+                    <h3>Family Members</h3>
+                    <button class="btn btn--sm btn--primary" onclick="showAddMemberModal()">Add Member</button>
+                </div>
+                <div class="members-grid" id="members-grid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-container-wrapper">
+                        <div class="chart-card">
+                            <h4>Asset Allocation</h4>
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="assetChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Monthly Growth Trend</h4>
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="growthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family Management Section -->
+            <div id="family-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Family Management</h2>
+                    <button class="btn btn--primary" onclick="showAddMemberModal()">Add New Member</button>
+                </div>
+                <div class="family-management-grid" id="family-management-grid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Investments Section -->
+            <div id="investments-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Investment Portfolio</h2>
+                    <div class="investment-tabs">
+                        <button class="tab-btn active" data-tab="equity">Equity</button>
+                        <button class="tab-btn" data-tab="mutual-funds">Mutual Funds</button>
+                        <button class="tab-btn" data-tab="fixed-deposits">Fixed Deposits</button>
+                        <button class="tab-btn" data-tab="insurance">Insurance</button>
+                        <button class="tab-btn" data-tab="bank-balance">Bank Balance</button>
+                    </div>
+                </div>
+
+                <!-- Equity Tab -->
+                <div id="equity-tab" class="investment-tab active">
+                    <div class="tab-header">
+                        <h3>Equity Holdings</h3>
+                        <button class="btn btn--primary btn--sm" onclick="showAddInvestmentModal('equity')">Add Stock</button>
+                    </div>
+                    <div class="investment-table">
+                        <table id="equity-table">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Quantity</th>
+                                    <th>Invested Amount</th>
+                                    <th>Current Value</th>
+                                    <th>P&L</th>
+                                    <th>Member</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mutual Funds Tab -->
+                <div id="mutual-funds-tab" class="investment-tab">
+                    <div class="tab-header">
+                        <h3>Mutual Fund Holdings</h3>
+                        <button class="btn btn--primary btn--sm" onclick="showAddInvestmentModal('mutual-fund')">Add Fund</button>
+                    </div>
+                    <div class="investment-table">
+                        <table id="mutual-funds-table">
+                            <thead>
+                                <tr>
+                                    <th>Fund Name</th>
+                                    <th>Invested Amount</th>
+                                    <th>Current Value</th>
+                                    <th>P&L</th>
+                                    <th>Member</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Fixed Deposits Tab -->
+                <div id="fixed-deposits-tab" class="investment-tab">
+                    <div class="tab-header">
+                        <h3>Fixed Deposits</h3>
+                        <button class="btn btn--primary btn--sm" onclick="showAddInvestmentModal('fd')">Add FD</button>
+                    </div>
+                    <div class="investment-table">
+                        <table id="fd-table">
+                            <thead>
+                                <tr>
+                                    <th>Bank Name</th>
+                                    <th>Amount</th>
+                                    <th>Interest Rate</th>
+                                    <th>Maturity Date</th>
+                                    <th>Member</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Insurance Tab -->
+                <div id="insurance-tab" class="investment-tab">
+                    <div class="tab-header">
+                        <h3>Insurance Policies</h3>
+                        <button class="btn btn--primary btn--sm" onclick="showAddInvestmentModal('insurance')">Add Policy</button>
+                    </div>
+                    <div class="investment-table">
+                        <table id="insurance-table">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Policy Number</th>
+                                    <th>Type</th>
+                                    <th>Premium Amount</th>
+                                    <th>Renewal Date</th>
+                                    <th>Member</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Bank Balance Tab -->
+                <div id="bank-balance-tab" class="investment-tab">
+                    <div class="tab-header">
+                        <h3>Bank Balances</h3>
+                        <button class="btn btn--primary btn--sm" onclick="showAddInvestmentModal('bank')">Add Account</button>
+                    </div>
+                    <div class="investment-table">
+                        <table id="bank-table">
+                            <thead>
+                                <tr>
+                                    <th>Bank Name</th>
+                                    <th>Account Type</th>
+                                    <th>Balance</th>
+                                    <th>Member</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Investment Reports</h2>
+                </div>
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <h4>Monthly Performance Summary</h4>
+                        <div class="report-content">
+                            <div class="report-stat">
+                                <span>This Month's Growth:</span>
+                                <span class="positive">+₹12,000 (0.96%)</span>
+                            </div>
+                            <div class="report-stat">
+                                <span>Best Performer:</span>
+                                <span>SBI Bluechip Fund (+12%)</span>
+                            </div>
+                            <div class="report-stat">
+                                <span>Asset Mix:</span>
+                                <span>40% Equity, 30% MF, 20% FD, 10% Cash</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="report-card">
+                        <h4>Upcoming Maturities</h4>
+                        <div class="report-content">
+                            <div class="maturity-item">
+                                <span>SBI FD</span>
+                                <span>Dec 20, 2025 - ₹1,50,000</span>
+                            </div>
+                            <div class="maturity-item">
+                                <span>HDFC Life Policy</span>
+                                <span>Jun 15, 2025 - ₹75,000 Premium</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Settings</h2>
+                </div>
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h4>Account Connections</h4>
+                        <div class="connection-status">
+                            <div class="status-item">
+                                <span>GitHub</span>
+                                <span class="status status--success">Connected</span>
+                            </div>
+                            <div class="status-item">
+                                <span>Supabase</span>
+                                <span class="status status--success">Connected</span>
+                            </div>
+                            <div class="status-item">
+                                <span>Make.com</span>
+                                <span class="status status--success">Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting-card">
+                        <h4>Automation Settings</h4>
+                        <div class="setting-option">
+                            <label>
+                                <input type="checkbox" checked> Email alerts for maturities
+                            </label>
+                        </div>
+                        <div class="setting-option">
+                            <label>
+                                <input type="checkbox" checked> Monthly portfolio reports
+                            </label>
+                        </div>
+                        <div class="setting-option">
+                            <label>
+                                <input type="checkbox"> Auto-sync bank data
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="add-member-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Family Member</h3>
+                <button class="modal-close" onclick="hideAddMemberModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-member-form">
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="member-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Relationship</label>
+                        <select class="form-control" id="member-relationship" required>
+                            <option value="">Select Relationship</option>
+                            <option value="Self">Self</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Child">Child</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" onclick="hideAddMemberModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Add Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Investment Modal -->
+    <div id="add-investment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="investment-modal-title">Add Investment</h3>
+                <button class="modal-close" onclick="hideAddInvestmentModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-investment-form">
+                    <div id="investment-form-fields">
+                        <!-- Form fields will be dynamically populated -->
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" onclick="hideAddInvestmentModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Add Investment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
