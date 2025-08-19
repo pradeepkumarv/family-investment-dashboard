@@ -271,3 +271,41 @@ function showDashboard() {
     document.getElementById('main-dashboard').classList.remove('hidden');
     loadDashboard();
 }
+// ===== BASIC NAVIGATION FUNCTIONS =====
+
+// Function to show the main dashboard (called by Get Started button)
+function showDashboard() {
+    console.log('showDashboard() called');
+    
+    try {
+        // Hide landing page
+        const landingPage = document.getElementById('landing-page');
+        const mainDashboard = document.getElementById('main-dashboard');
+        
+        if (landingPage && mainDashboard) {
+            landingPage.classList.add('hidden');
+            mainDashboard.classList.remove('hidden');
+            console.log('✅ Dashboard shown successfully');
+            
+            // Load dashboard data
+            loadDashboard();
+        } else {
+            console.error('❌ Dashboard elements not found');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error showing dashboard:', error);
+        alert('Error loading dashboard: ' + error.message);
+    }
+}
+
+// ===== DASHBOARD DATA LOADING =====
+
+function loadDashboard() {
+    console.log('Loading dashboard...');
+    
+    try {
+        // Update main stats
+        updateMainStats();
+        
+        // Show family members
