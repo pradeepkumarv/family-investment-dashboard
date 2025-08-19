@@ -1,27 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FamWealth - Premium Family Investment Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- ADD THIS LINE FOR SUPABASE -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-    <!-- Your existing HTML content -->
-</body>
-</html>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pradeep's Family Investment Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- ADD SUPABASE CDN FOR DATABASE CONNECTION -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Landing Page -->
@@ -65,7 +51,7 @@
                 <button class="nav-btn" data-section="settings">Settings</button>
             </div>
         </nav>
-
+        
         <div class="dashboard-container">
             <!-- Overview Section -->
             <div id="overview-section" class="dashboard-section active">
@@ -73,40 +59,40 @@
                     <h2>Family Investment Overview</h2>
                     <div class="date-info">As of August 19, 2025</div>
                 </div>
-
+                
                 <!-- Quick Stats -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Family Net Worth</div>
-                        <div class="stat-value primary">₹12,60,000</div>
+                        <div class="stat-value primary" id="total-networth">₹12,60,000</div>
                         <div class="stat-change positive">+₹53,000 (4.40%)</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total Invested</div>
-                        <div class="stat-value">₹12,07,000</div>
+                        <div class="stat-value" id="total-invested">₹12,07,000</div>
                         <div class="stat-change neutral">Principal Amount</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total P&L</div>
-                        <div class="stat-value positive">+₹53,000</div>
+                        <div class="stat-value positive" id="total-pnl">+₹53,000</div>
                         <div class="stat-change positive">4.39% Returns</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Monthly Growth</div>
-                        <div class="stat-value">₹12,000</div>
+                        <div class="stat-value" id="monthly-growth">₹12,000</div>
                         <div class="stat-change positive">+0.96% This Month</div>
                     </div>
                 </div>
-
+                
                 <!-- Family Members Cards -->
                 <div class="section-title">
                     <h3>Family Members</h3>
                     <button class="btn btn--sm btn--primary" onclick="showAddMemberModal()">Add Member</button>
                 </div>
-                <div class="members-grid" id="members-grid">
-                    <!-- Will be populated by JavaScript -->
+                <div class="members-grid" id="family-overview">
+                    <!-- Will be populated by JavaScript from Supabase -->
                 </div>
-
+                
                 <!-- Charts Section -->
                 <div class="charts-section">
                     <div class="chart-container-wrapper">
@@ -133,7 +119,7 @@
                     <button class="btn btn--primary" onclick="showAddMemberModal()">Add New Member</button>
                 </div>
                 <div class="family-management-grid" id="family-management-grid">
-                    <!-- Will be populated by JavaScript -->
+                    <!-- Will be populated by JavaScript from Supabase -->
                 </div>
             </div>
 
@@ -168,7 +154,9 @@
                                     <th>Member</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <!-- Will be populated by JavaScript from Supabase -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -190,7 +178,9 @@
                                     <th>Member</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <!-- Will be populated by JavaScript from Supabase -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -212,7 +202,9 @@
                                     <th>Member</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <!-- Will be populated by JavaScript from Supabase -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -235,7 +227,9 @@
                                     <th>Member</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <!-- Will be populated by JavaScript from Supabase -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -256,7 +250,9 @@
                                     <th>Member</th>
                                 </tr>
                             </thead>
-                            <tbody></tbody>
+                            <tbody>
+                                <!-- Will be populated by JavaScript from Supabase -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -316,11 +312,11 @@
                             </div>
                             <div class="status-item">
                                 <span>Supabase</span>
-                                <span class="status status--success">Connected</span>
+                                <span class="status" id="supabase-status">Testing...</span>
                             </div>
                             <div class="status-item">
                                 <span>Make.com</span>
-                                <span class="status status--success">Connected</span>
+                                <span class="status status--pending">Pending</span>
                             </div>
                         </div>
                     </div>
@@ -346,6 +342,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Error Message Container -->
+    <div id="error-message" class="hidden"></div>
 
     <!-- Add Member Modal -->
     <div id="add-member-modal" class="modal hidden">
