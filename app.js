@@ -13,13 +13,13 @@ async function testSupabaseConnection() {
     console.log('Key preview:', SUPABASE_ANON_KEY.substring(0, 20) + '...');
     
     // Check if credentials are configured
-    if (SUPABASE_URL === 'YOUR_ACTUAL_SUPABASE_URL_HERE') {
+    if (SUPABASE_URL === 'https://tqjwhbwcteuvmreldgae.supabase.co') {
         console.log('❌ URL not configured');
         updateAuthStatus('❌ Configure Supabase URL');
         return false;
     }
     
-    if (SUPABASE_ANON_KEY === 'YOUR_ACTUAL_SUPABASE_KEY_HERE') {
+    if (SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw') {
         console.log('❌ Key not configured');
         updateAuthStatus('❌ Configure Supabase Key');
         return false;
