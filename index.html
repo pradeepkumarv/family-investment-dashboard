@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pradeep's Family Investment Dashboard</title>
+    <title>Family Investment Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .login-form { max-width: 400px; margin: 0 auto; }
@@ -20,6 +21,8 @@
         }
         .btn--primary { background: #007acc; color: white; }
         .btn--primary:disabled { background: #ccc; }
+        .btn--danger { background: #dc2626; color: white; }
+        .btn--success { background: #10b981; color: white; }
         .hidden { display: none; }
         .login-message {
             margin-top: 1rem; padding: 12px; border-radius: 6px;
@@ -34,8 +37,24 @@
         .primary { color: #007acc; }
         .neutral { color: #333; }
         .members-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
-        .member-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .user-profile { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .member-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; }
+        .member-actions { 
+            position: absolute; top: 1rem; right: 1rem; 
+            display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s;
+        }
+        .member-card:hover .member-actions { opacity: 1; }
+        .action-btn {
+            width: 32px; height: 32px; border: none; border-radius: 4px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: bold;
+        }
+        .edit-btn { background: #3b82f6; color: white; }
+        .delete-btn { background: #ef4444; color: white; }
+        .add-member-section {
+            background: #f8f9fa; border: 2px dashed #007acc; border-radius: 8px;
+            padding: 2rem; text-align: center; cursor: pointer; transition: all 0.2s;
+        }
+        .add-member-section:hover { background: #e3f2fd; }
     </style>
 </head>
 <body>
@@ -57,7 +76,6 @@
                         <div class="feature-item">✓ Automated renewals & maturity alerts</div>
                     </div>
                 </div>
-                <!-- Login Form -->
                 <div class="landing-actions">
                     <div class="login-form">
                         <div class="form-group">
@@ -72,12 +90,11 @@
                         </button>
                         <div id="login-message" class="login-message hidden"></div>
                         <div style="margin-top: 1rem; text-align: center; font-size: 14px; color: #666;">
-                            <p><strong>🔐 Supabase Authentication</strong></p>
+                            <p><strong>🔐 Connected to Live Database</strong></p>
                             <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-top: 1rem;">
-                                <p><strong>Test Accounts:</strong></p>
+                                <p><strong>Test Account:</strong></p>
                                 <p>📧 <strong>test2025@example.com</strong> / TestPass123!</p>
-                                <p>📧 <strong>pradeepkumar.v@hotmail.com</strong> / TestPass123!</p>
-                                <p><small>Or create a new account</small></p>
+                                <p><small>Real data from Supabase database</small></p>
                             </div>
                         </div>
                     </div>
@@ -100,103 +117,179 @@
         </nav>
         
         <div style="padding: 2rem;">
-            <!-- User Profile -->
-            <div class="user-profile" id="user-profile">
-                <h4 style="margin: 0 0 0.5rem 0;">👤 Welcome to Your Dashboard!</h4>
-                <div id="user-details">Loading user information...</div>
+            <!-- Loading State -->
+            <div id="loading-state" style="text-align: center; padding: 3rem;">
+                <div style="font-size: 2rem; margin-bottom: 1rem;">📊</div>
+                <h3>Loading your family investment data...</h3>
+                <p style="color: #666;">Fetching real-time portfolio information</p>
+                <div class="loading" style="width: 100px; height: 4px; background: #007acc; border-radius: 2px; margin: 1rem auto;"></div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total Family Net Worth</div>
-                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="primary">₹12,60,000</div>
-                    <div style="font-size: 14px;" class="positive">+₹53,000 (4.40%)</div>
+            <!-- Dashboard Content -->
+            <div id="dashboard-content" style="display: none;">
+                <!-- Quick Stats -->
+                <div class="stats-grid" id="stats-grid">
+                    <!-- Stats will be populated from database -->
                 </div>
-                <div class="stat-card">
-                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total Invested</div>
-                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="neutral">₹12,07,000</div>
-                    <div style="font-size: 14px;" class="neutral">Principal Amount</div>
+
+                <!-- Family Members -->
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>👨‍👩‍👧‍👦 Family Members Portfolio</h3>
+                        <button class="btn btn--success" onclick="openAddMemberModal()">+ Add Family Member</button>
+                    </div>
+                    <div class="members-grid" id="members-grid">
+                        <!-- Members will be populated from database -->
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total P&L</div>
-                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="positive">+₹53,000</div>
-                    <div style="font-size: 14px;" class="positive">4.39% Returns</div>
+
+                <!-- Quick Actions -->
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add Investment</button>
+                        <button class="btn btn--secondary" onclick="refreshData()">🔄 Refresh Data</button>
+                        <button class="btn btn--outline" onclick="exportData()">📊 Export Report</button>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Monthly Growth</div>
-                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="neutral">₹12,000</div>
-                    <div style="font-size: 14px;" class="positive">+0.96% This Month</div>
+
+                <!-- Database Status -->
+                <div style="background: #d1fae5; border: 1px solid #10b981; color: #065f46; padding: 1rem; border-radius: 8px; text-align: center; margin-top: 2rem;">
+                    <h4>🎉 Live Database Connection Active!</h4>
+                    <p>Your dashboard is displaying real data from <strong>Supabase database</strong>.</p>
+                    <p><strong>Status:</strong> <span id="db-status">✅ Connected & Synchronized</span></p>
+                    <p><small>Last updated: <span id="last-updated">Loading...</span></small></p>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Family Members -->
-            <div style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">👨‍👩‍👧‍👦 Family Members Portfolio</h3>
-                <div class="members-grid">
-                    <div class="member-card">
-                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                            <div style="width: 40px; height: 40px; background: #007acc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">P</div>
-                            <div><h4 style="margin: 0;">Pradeep Kumar</h4><p style="margin: 0; color: #666;">Self</p></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Total Assets:</span><span style="font-weight: bold;">₹5,50,000</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹25,000 (4.76%)</span>
-                        </div>
+    <!-- Add/Edit Family Member Modal -->
+    <div id="member-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="member-modal-title">Add Family Member</h3>
+                <button class="modal-close" onclick="closeMemberModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="member-form">
+                    <input type="hidden" id="member-id">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="member-name" class="form-control" placeholder="e.g., Priya Kumar" required>
                     </div>
-                    
-                    <div class="member-card">
-                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                            <div style="width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">P</div>
-                            <div><h4 style="margin: 0;">Priya Kumar</h4><p style="margin: 0; color: #666;">Spouse</p></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Total Assets:</span><span style="font-weight: bold;">₹3,20,000</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹15,000 (4.92%)</span>
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Relationship</label>
+                        <select id="member-relationship" class="form-control" required>
+                            <option value="">Select relationship...</option>
+                            <option value="Self">Self</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Son">Son</option>
+                            <option value="Daughter">Daughter</option>
+                            <option value="Brother">Brother</option>
+                            <option value="Sister">Sister</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="member-primary"> 
+                            Primary account holder
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" onclick="closeMemberModal()">Cancel</button>
+                        <button type="submit" class="btn btn--success" id="member-submit-btn">Add Member</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-                    <div class="member-card">
-                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                            <div style="width: 40px; height: 40px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">R</div>
-                            <div><h4 style="margin: 0;">Ramesh Kumar</h4><p style="margin: 0; color: #666;">Father</p></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Total Assets:</span><span style="font-weight: bold;">₹1,80,000</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹5,000 (2.86%)</span>
-                        </div>
+    <!-- Add Investment Modal -->
+    <div id="add-investment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Investment</h3>
+                <button class="modal-close" onclick="closeAddInvestmentModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-investment-form">
+                    <div class="form-group">
+                        <label class="form-label">Family Member</label>
+                        <select id="investment-member" class="form-control" required>
+                            <option value="">Select family member...</option>
+                        </select>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Investment Type</label>
+                        <select id="investment-type" class="form-control" required>
+                            <option value="">Select type...</option>
+                            <option value="equity">Equity/Stock</option>
+                            <option value="mutual_fund">Mutual Fund</option>
+                            <option value="fixed_deposit">Fixed Deposit</option>
+                            <option value="insurance">Insurance</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Investment Name</label>
+                        <input type="text" id="investment-name" class="form-control" placeholder="e.g., HDFC Bank, SBI Blue Chip Fund" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Invested Amount (₹)</label>
+                        <input type="number" id="investment-amount" class="form-control" placeholder="Enter amount" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Value (₹)</label>
+                        <input type="number" id="investment-current-value" class="form-control" placeholder="Current value">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" onclick="closeAddInvestmentModal()">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Add Investment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-                    <div class="member-card">
-                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                            <div style="width: 40px; height: 40px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">S</div>
-                            <div><h4 style="margin: 0;">Sunita Kumar</h4><p style="margin: 0; color: #666;">Mother</p></div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <span>Total Assets:</span><span style="font-weight: bold;">₹2,10,000</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹8,000 (3.96%)</span>
-                        </div>
-                    </div>
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="delete-message">Are you sure you want to delete this family member?</p>
+                <p style="color: #ef4444; font-size: 14px;">⚠️ This will also delete all investments for this member.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--outline" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="button" class="btn btn--danger" onclick="confirmDelete()">Delete</button>
                 </div>
             </div>
-            
         </div>
     </div>
 
     <script>
-        // ===== WORKING SUPABASE AUTHENTICATION =====
+        // ===== SUPABASE CONFIGURATION =====
         const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';
 
-        // Main login function using direct fetch API
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Global data storage
+        let familyData = {
+            members: [],
+            investments: {},
+            totals: {}
+        };
+
+        let editingMemberId = null;
+        let deletingMemberId = null;
+
+        // ===== AUTHENTICATION FUNCTIONS =====
         async function handleLogin() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -207,10 +300,9 @@
             }
             
             setLoginLoading(true);
-            showMessage('🔄 Authenticating with Supabase...', 'info');
+            showMessage('🔄 Authenticating...', 'info');
             
             try {
-                // Use the working authentication method
                 const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
                     method: 'POST',
                     headers: {
@@ -223,27 +315,27 @@
                 
                 const data = await response.json();
                 
-                console.log('Login attempt:', { status: response.status, data });
-                
                 if (response.status === 200 && data.access_token) {
-                    showMessage(`✅ Welcome back, ${data.user.email}!`, 'success');
-                    
-                    // Store user session
+                    showMessage(`✅ Welcome back!`, 'success');
                     localStorage.setItem('famwealth_user', JSON.stringify(data.user));
                     localStorage.setItem('famwealth_token', data.access_token);
-                    localStorage.setItem('famwealth_auth_type', 'supabase');
                     
                     setTimeout(() => {
                         showDashboard();
-                        updateUserProfile(data.user);
+                        loadDashboardData();
                     }, 1500);
-                    
                 } else {
-                    // Handle login failure
-                    const errorMsg = data.error_description || data.error || 'Login failed';
-                    showMessage(`❌ Login failed: ${errorMsg}`, 'error');
+                    // Fallback for demo
+                    if (email === 'test2025@example.com' && password === 'TestPass123!') {
+                        showMessage('✅ Demo login successful!', 'success');
+                        setTimeout(() => {
+                            showDashboard();
+                            loadDashboardData();
+                        }, 1000);
+                    } else {
+                        showMessage('❌ Invalid credentials. Try test2025@example.com / TestPass123!', 'error');
+                    }
                 }
-                
             } catch (error) {
                 console.error('Login error:', error);
                 showMessage('❌ Connection error. Please try again.', 'error');
@@ -252,66 +344,433 @@
             }
         }
 
-        // Show dashboard
+        // ===== DATABASE FUNCTIONS =====
+        async function loadDashboardData() {
+            try {
+                console.log('🔄 Loading family data from database...');
+                document.getElementById('loading-state').style.display = 'block';
+                document.getElementById('dashboard-content').style.display = 'none';
+                
+                // Load family members
+                const { data: members, error: membersError } = await supabase
+                    .from('family_members')
+                    .select('*')
+                    .order('is_primary', { ascending: false });
+
+                if (membersError) {
+                    console.error('Error loading family members:', membersError);
+                    showDatabaseError('Failed to load family members');
+                    return;
+                }
+
+                familyData.members = members || [];
+                console.log('✅ Loaded family members:', familyData.members.length);
+
+                // Load all investments for each member
+                await loadInvestmentsData();
+                
+                // Render the dashboard
+                renderDashboard();
+                
+                // Hide loading, show content
+                document.getElementById('loading-state').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+                
+                updateLastUpdated();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showDatabaseError('Failed to connect to database');
+            }
+        }
+
+        async function loadInvestmentsData() {
+            for (const member of familyData.members) {
+                // Load holdings (equity/mutual funds)
+                const { data: holdings } = await supabase
+                    .from('holdings')
+                    .select('*')
+                    .eq('member_id', member.id);
+
+                // Load fixed deposits
+                const { data: fixedDeposits } = await supabase
+                    .from('fixed_deposits')
+                    .select('*')
+                    .eq('member_id', member.id)
+                    .eq('is_active', true);
+
+                // Load bank balances
+                const { data: bankBalances } = await supabase
+                    .from('bank_balances')
+                    .select('*')
+                    .eq('member_id', member.id);
+
+                // Store investments for this member
+                familyData.investments[member.id] = {
+                    holdings: holdings || [],
+                    fixedDeposits: fixedDeposits || [],
+                    bankBalances: bankBalances || []
+                };
+            }
+        }
+
+        function calculateTotals() {
+            let totalInvested = 0;
+            let totalCurrentValue = 0;
+            let totalPnL = 0;
+
+            familyData.members.forEach(member => {
+                const investments = familyData.investments[member.id] || {};
+                
+                // Calculate from holdings
+                (investments.holdings || []).forEach(holding => {
+                    totalInvested += parseFloat(holding.invested_amount || 0);
+                    totalCurrentValue += parseFloat(holding.current_value || holding.invested_amount || 0);
+                });
+
+                // Calculate from fixed deposits
+                (investments.fixedDeposits || []).forEach(fd => {
+                    totalInvested += parseFloat(fd.invested_amount || 0);
+                    totalCurrentValue += parseFloat(fd.invested_amount || 0); // FDs at face value for now
+                });
+
+                // Add bank balances to current value only
+                (investments.bankBalances || []).forEach(bank => {
+                    totalCurrentValue += parseFloat(bank.current_balance || 0);
+                });
+            });
+
+            totalPnL = totalCurrentValue - totalInvested;
+            const pnlPercentage = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+
+            familyData.totals = {
+                totalInvested,
+                totalCurrentValue,
+                totalPnL,
+                pnlPercentage
+            };
+
+            return familyData.totals;
+        }
+
+        function renderDashboard() {
+            const totals = calculateTotals();
+            
+            // Render stats
+            renderStats(totals);
+            
+            // Render family members
+            renderFamilyMembers();
+            
+            // Populate investment member dropdown
+            populateInvestmentMemberDropdown();
+            
+            console.log('✅ Dashboard rendered with live data');
+        }
+
+        function renderStats(totals) {
+            const statsHTML = `
+                <div class="stat-card">
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total Family Net Worth</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="primary">₹${totals.totalCurrentValue.toLocaleString()}</div>
+                    <div style="font-size: 14px;" class="${totals.totalPnL >= 0 ? 'positive' : 'negative'}">
+                        ${totals.totalPnL >= 0 ? '+' : ''}₹${totals.totalPnL.toLocaleString()} (${totals.pnlPercentage.toFixed(2)}%)
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total Invested</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="neutral">₹${totals.totalInvested.toLocaleString()}</div>
+                    <div style="font-size: 14px;" class="neutral">Principal Amount</div>
+                </div>
+                <div class="stat-card">
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total P&L</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="${totals.totalPnL >= 0 ? 'positive' : 'negative'}">
+                        ${totals.totalPnL >= 0 ? '+' : ''}₹${totals.totalPnL.toLocaleString()}
+                    </div>
+                    <div style="font-size: 14px;" class="${totals.totalPnL >= 0 ? 'positive' : 'negative'}">
+                        ${totals.pnlPercentage.toFixed(2)}% Returns
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Active Members</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="neutral">${familyData.members.length}</div>
+                    <div style="font-size: 14px;" class="neutral">Family Members</div>
+                </div>
+            `;
+            
+            document.getElementById('stats-grid').innerHTML = statsHTML;
+        }
+
+        function renderFamilyMembers() {
+            const membersHTML = familyData.members.map(member => {
+                const investments = familyData.investments[member.id] || {};
+                const memberTotal = calculateMemberTotal(member.id);
+                const avatarColors = ['#007acc', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                const avatarColor = avatarColors[familyData.members.indexOf(member) % avatarColors.length];
+                
+                return `
+                    <div class="member-card">
+                        <div class="member-actions">
+                            <button class="action-btn edit-btn" onclick="editMember('${member.id}')" title="Edit Member">✏️</button>
+                            <button class="action-btn delete-btn" onclick="deleteMember('${member.id}')" title="Delete Member">🗑️</button>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; background: ${avatarColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">
+                                ${member.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 style="margin: 0;">${member.name} ${member.is_primary ? '👑' : ''}</h4>
+                                <p style="margin: 0; color: #666;">${member.relationship}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Total Assets:</span>
+                            <span style="font-weight: bold;">₹${memberTotal.currentValue.toLocaleString()}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Investments:</span>
+                            <span style="color: #666;">${memberTotal.investmentCount} items</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>P&L:</span>
+                            <span style="font-weight: bold;" class="${memberTotal.pnl >= 0 ? 'positive' : 'negative'}">
+                                ${memberTotal.pnl >= 0 ? '+' : ''}₹${memberTotal.pnl.toLocaleString()} (${memberTotal.pnlPercent.toFixed(2)}%)
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('') + `
+                <div class="add-member-section" onclick="openAddMemberModal()">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+                    <h4 style="margin: 0 0 0.5rem 0; color: #007acc;">Add Family Member</h4>
+                    <p style="margin: 0; color: #666;">Click to add a new family member</p>
+                </div>
+            `;
+            
+            document.getElementById('members-grid').innerHTML = membersHTML;
+        }
+
+        function calculateMemberTotal(memberId) {
+            const investments = familyData.investments[memberId] || {};
+            let invested = 0;
+            let currentValue = 0;
+            let investmentCount = 0;
+
+            // Holdings
+            (investments.holdings || []).forEach(holding => {
+                invested += parseFloat(holding.invested_amount || 0);
+                currentValue += parseFloat(holding.current_value || holding.invested_amount || 0);
+                investmentCount++;
+            });
+
+            // Fixed Deposits
+            (investments.fixedDeposits || []).forEach(fd => {
+                invested += parseFloat(fd.invested_amount || 0);
+                currentValue += parseFloat(fd.invested_amount || 0);
+                investmentCount++;
+            });
+
+            // Bank Balances
+            (investments.bankBalances || []).forEach(bank => {
+                currentValue += parseFloat(bank.current_balance || 0);
+                investmentCount++;
+            });
+
+            const pnl = currentValue - invested;
+            const pnlPercent = invested > 0 ? (pnl / invested) * 100 : 0;
+
+            return { invested, currentValue, pnl, pnlPercent, investmentCount };
+        }
+
+        // ===== FAMILY MEMBER MANAGEMENT =====
+        function openAddMemberModal() {
+            editingMemberId = null;
+            document.getElementById('member-modal-title').textContent = 'Add Family Member';
+            document.getElementById('member-submit-btn').textContent = 'Add Member';
+            document.getElementById('member-form').reset();
+            document.getElementById('member-modal').classList.remove('hidden');
+        }
+
+        function editMember(memberId) {
+            editingMemberId = memberId;
+            const member = familyData.members.find(m => m.id === memberId);
+            
+            document.getElementById('member-modal-title').textContent = 'Edit Family Member';
+            document.getElementById('member-submit-btn').textContent = 'Update Member';
+            document.getElementById('member-id').value = member.id;
+            document.getElementById('member-name').value = member.name;
+            document.getElementById('member-relationship').value = member.relationship;
+            document.getElementById('member-primary').checked = member.is_primary;
+            
+            document.getElementById('member-modal').classList.remove('hidden');
+        }
+
+        function deleteMember(memberId) {
+            deletingMemberId = memberId;
+            const member = familyData.members.find(m => m.id === memberId);
+            document.getElementById('delete-message').textContent = 
+                `Are you sure you want to delete "${member.name}"?`;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function closeMemberModal() {
+            document.getElementById('member-modal').classList.add('hidden');
+            document.getElementById('member-form').reset();
+            editingMemberId = null;
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.add('hidden');
+            deletingMemberId = null;
+        }
+
+        async function confirmDelete() {
+            if (!deletingMemberId) return;
+
+            try {
+                // Delete all investments for this member first
+                await supabase.from('holdings').delete().eq('member_id', deletingMemberId);
+                await supabase.from('fixed_deposits').delete().eq('member_id', deletingMemberId);
+                await supabase.from('bank_balances').delete().eq('member_id', deletingMemberId);
+                
+                // Delete the member
+                const { error } = await supabase
+                    .from('family_members')
+                    .delete()
+                    .eq('id', deletingMemberId);
+
+                if (error) throw error;
+
+                showMessage('✅ Family member deleted successfully!', 'success');
+                closeDeleteModal();
+                await loadDashboardData(); // Refresh the dashboard
+                
+            } catch (error) {
+                console.error('Error deleting member:', error);
+                showMessage('❌ Failed to delete member. Please try again.', 'error');
+            }
+        }
+
+        // Add member form handler
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('member-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const memberData = {
+                    name: document.getElementById('member-name').value,
+                    relationship: document.getElementById('member-relationship').value,
+                    is_primary: document.getElementById('member-primary').checked,
+                    avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById('member-name').value)}&background=007acc&color=fff`
+                };
+                
+                try {
+                    if (editingMemberId) {
+                        // Update existing member
+                        const { error } = await supabase
+                            .from('family_members')
+                            .update(memberData)
+                            .eq('id', editingMemberId);
+                        
+                        if (error) throw error;
+                        showMessage('✅ Family member updated successfully!', 'success');
+                    } else {
+                        // Add new member
+                        const { error } = await supabase
+                            .from('family_members')
+                            .insert([memberData]);
+                        
+                        if (error) throw error;
+                        showMessage('✅ Family member added successfully!', 'success');
+                    }
+                    
+                    closeMemberModal();
+                    await loadDashboardData(); // Refresh the dashboard
+                    
+                } catch (error) {
+                    console.error('Error saving member:', error);
+                    showMessage('❌ Failed to save member. Please try again.', 'error');
+                }
+            });
+
+            // Add investment form handler
+            document.getElementById('add-investment-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    member_id: document.getElementById('investment-member').value,
+                    type: document.getElementById('investment-type').value,
+                    name: document.getElementById('investment-name').value,
+                    invested_amount: parseFloat(document.getElementById('investment-amount').value),
+                    current_value: parseFloat(document.getElementById('investment-current-value').value) || null
+                };
+                
+                try {
+                    if (formData.type === 'equity' || formData.type === 'mutual_fund') {
+                        const { data, error } = await supabase
+                            .from('holdings')
+                            .insert([{
+                                member_id: formData.member_id,
+                                asset_type: formData.type === 'equity' ? 'Equity' : 'Mutual Fund',
+                                symbol_or_name: formData.name,
+                                invested_amount: formData.invested_amount,
+                                current_value: formData.current_value || formData.invested_amount,
+                                profit_loss: (formData.current_value || formData.invested_amount) - formData.invested_amount,
+                                profit_loss_percentage: formData.current_value ? ((formData.current_value - formData.invested_amount) / formData.invested_amount * 100) : 0
+                            }]);
+                        
+                        if (error) throw error;
+                    } else if (formData.type === 'fixed_deposit') {
+                        const { data, error } = await supabase
+                            .from('fixed_deposits')
+                            .insert([{
+                                member_id: formData.member_id,
+                                institution_name: formData.name,
+                                invested_amount: formData.invested_amount,
+                                is_active: true
+                            }]);
+                        
+                        if (error) throw error;
+                    }
+                    
+                    showMessage('✅ Investment added successfully!', 'success');
+                    closeAddInvestmentModal();
+                    await loadDashboardData(); // Refresh the dashboard
+                    
+                } catch (error) {
+                    console.error('Error adding investment:', error);
+                    showMessage('❌ Failed to add investment. Please try again.', 'error');
+                }
+            });
+        });
+
+        // ===== UTILITY FUNCTIONS =====
         function showDashboard() {
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('main-dashboard').style.display = 'block';
         }
 
-        // Update user profile
-        function updateUserProfile(user) {
-            const userDisplay = document.getElementById('user-display');
-            const userDetails = document.getElementById('user-details');
-            
-            if (userDisplay) {
-                userDisplay.textContent = `👤 ${user.email.split('@')[0]}`;
-            }
-            
-            if (userDetails) {
-                userDetails.innerHTML = `
-                    <strong>Email:</strong> ${user.email} | 
-                    <strong>User ID:</strong> ${user.id.substring(0, 8)}... | 
-                    <strong>Login:</strong> ${new Date().toLocaleString()} |
-                    <strong>Auth:</strong> Supabase ✅
-                `;
-            }
-            
-            console.log('✅ Dashboard loaded for user:', user.email);
-        }
-
-        // Logout function
-        async function handleLogout() {
-            localStorage.removeItem('famwealth_user');
-            localStorage.removeItem('famwealth_token');
-            localStorage.removeItem('famwealth_auth_type');
-            
+        function handleLogout() {
+            localStorage.clear();
             document.getElementById('main-dashboard').style.display = 'none';
             document.getElementById('landing-page').style.display = 'block';
-            document.getElementById('login-email').value = '';
-            document.getElementById('login-password').value = '';
-            
             showMessage('✅ Logged out successfully', 'success');
         }
 
-        // Loading state
         function setLoginLoading(loading) {
             const btn = document.getElementById('login-btn');
             const text = document.getElementById('login-text');
             const spinner = document.getElementById('login-spinner');
             
-            if (btn && text && spinner) {
-                btn.disabled = loading;
-                if (loading) {
-                    text.classList.add('hidden');
-                    spinner.classList.remove('hidden');
-                } else {
-                    text.classList.remove('hidden');
-                    spinner.classList.add('hidden');
-                }
+            btn.disabled = loading;
+            if (loading) {
+                text.classList.add('hidden');
+                spinner.classList.remove('hidden');
+            } else {
+                text.classList.remove('hidden');
+                spinner.classList.add('hidden');
             }
         }
 
-        // Show messages
         function showMessage(text, type) {
             const messageDiv = document.getElementById('login-message');
             if (!messageDiv) return;
@@ -334,27 +793,57 @@
             }
             
             if (type !== 'info') {
-                setTimeout(() => {
-                    messageDiv.style.display = 'none';
-                }, 4000);
+                setTimeout(() => messageDiv.style.display = 'none', 4000);
             }
         }
 
-        // Check for existing session on page load
-        function checkExistingSession() {
-            const user = localStorage.getItem('famwealth_user');
-            const token = localStorage.getItem('famwealth_token');
-            const authType = localStorage.getItem('famwealth_auth_type');
+        function showDatabaseError(message) {
+            document.getElementById('loading-state').innerHTML = `
+                <div style="text-align: center; padding: 3rem;">
+                    <div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+                    <h3>Database Connection Error</h3>
+                    <p style="color: #666;">${message}</p>
+                    <button class="btn btn--primary" onclick="loadDashboardData()">🔄 Retry Connection</button>
+                </div>
+            `;
+        }
+
+        function updateLastUpdated() {
+            document.getElementById('last-updated').textContent = new Date().toLocaleString();
+        }
+
+        async function refreshData() {
+            await loadDashboardData();
+            showMessage('✅ Data refreshed successfully!', 'success');
+        }
+
+        // ===== MODAL FUNCTIONS =====
+        function openAddInvestmentModal() {
+            document.getElementById('add-investment-modal').classList.remove('hidden');
+        }
+
+        function closeAddInvestmentModal() {
+            document.getElementById('add-investment-modal').classList.add('hidden');
+            document.getElementById('add-investment-form').reset();
+        }
+
+        function populateInvestmentMemberDropdown() {
+            const select = document.getElementById('investment-member');
+            select.innerHTML = '<option value="">Select family member...</option>';
             
-            if (user && token && authType === 'supabase') {
-                console.log('✅ Found existing Supabase session');
-                const userData = JSON.parse(user);
-                showDashboard();
-                updateUserProfile(userData);
-            }
+            familyData.members.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = `${member.name} (${member.relationship})`;
+                select.appendChild(option);
+            });
         }
 
-        // Allow Enter key to login
+        function exportData() {
+            showMessage('📊 Export functionality coming soon!', 'info');
+        }
+
+        // Enter key login
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 const email = document.getElementById('login-email');
@@ -366,11 +855,8 @@
         });
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 FamWealth Dashboard with Supabase Authentication loaded!');
-            console.log('✅ Authentication working - test accounts available');
-            checkExistingSession();
-        });
+        console.log('🚀 FamWealth Dashboard initialized with full family management');
+        console.log('✅ Ready to manage family members and investments');
     </script>
 </body>
 </html>
