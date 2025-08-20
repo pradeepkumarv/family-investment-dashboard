@@ -37,10 +37,56 @@
                         <div class="form-group">
                             <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
                         </div>
-                        <button class="btn btn--primary btn--lg" onclick="handleLogin()" id="login-btn">
+                       <button class="btn btn--primary btn--lg" onclick="loginDemo()" id="login-btn">
                             <span id="login-text">Login to Dashboard</span>
                             <span id="login-spinner" class="hidden">Logging in...</span>
                         </button>
+                        <script>
+function loginDemo() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    if (!email || !password) {
+        alert('Please enter both email and password.');
+        return;
+    }
+    
+    if (email === 'demo@famwealth.com' && password === 'demo123') {
+        alert('Login successful! Redirecting...');
+        setTimeout(() => {
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('main-dashboard').style.display = 'block';
+        }, 1000);
+    } else {
+        alert('Demo mode: Use email "demo@famwealth.com" and password "demo123"');
+    }
+}
+
+function handleLogout() {
+    document.getElementById('main-dashboard').style.display = 'none';
+    document.getElementById('landing-page').style.display = 'block';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+}
+
+function showSignupForm() {
+    alert('Demo mode: Use demo@famwealth.com / demo123');
+}
+
+function resetPassword() {
+    alert('Demo mode: Use demo@famwealth.com / demo123');
+}
+
+function showAddMemberModal() { alert('Coming soon!'); }
+function hideAddMemberModal() { }
+function showAddInvestmentModal() { alert('Coming soon!'); }
+function hideAddInvestmentModal() { }
+function handleAddMember(e) { e.preventDefault(); }
+function handleAddInvestment(e) { e.preventDefault(); }
+function handleSignup(e) { e.preventDefault(); }
+function hideSignupModal() { }
+function changePassword() { alert('Demo mode'); }
+</script>
                         <div id="login-error" class="login-error hidden"></div>
                         <div class="login-links">
                             <a href="#" onclick="showSignupForm()">Don't have an account? Sign up</a> | 
