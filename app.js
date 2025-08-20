@@ -1,6 +1,6 @@
 // ----- CONFIGURE YOUR SUPABASE -----//
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANONYMOUS_API_KEY';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';
 
 let supabase = null;
 let familyMembers = [];
