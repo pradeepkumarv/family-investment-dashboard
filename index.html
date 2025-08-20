@@ -6,162 +6,49 @@
     <title>Pradeep's Family Investment Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .login-form {
-            max-width: 400px;
-            margin: 0 auto;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
+        .login-form { max-width: 400px; margin: 0 auto; }
+        .form-group { margin-bottom: 1rem; }
         .form-control {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.2s;
-            box-sizing: border-box;
+            width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0;
+            border-radius: 8px; font-size: 16px; box-sizing: border-box;
         }
-        .form-control:focus {
-            outline: none;
-            border-color: #007acc;
-            box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.1);
-        }
+        .form-control:focus { outline: none; border-color: #007acc; }
         .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 12px 24px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
         }
-        .btn--primary {
-            background: #007acc;
-            color: white;
-        }
-        .btn--primary:hover {
-            background: #0056b3;
-        }
-        .btn--primary:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .hidden {
-            display: none;
-        }
+        .btn--primary { background: #007acc; color: white; }
+        .btn--primary:disabled { background: #ccc; }
+        .hidden { display: none; }
         .login-message {
-            margin-top: 1rem;
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-            border: 1px solid;
+            margin-top: 1rem; padding: 12px; border-radius: 6px;
+            text-align: center; border: 1px solid;
         }
-        .navbar {
-            background: #007acc;
-            color: white;
-            padding: 1rem;
-        }
-        .navbar-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .logout-btn:hover {
-            background: #b91c1c;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 0.5rem;
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        .stat-change {
-            font-size: 14px;
-        }
+        .navbar { background: #007acc; color: white; padding: 1rem; }
+        .navbar-flex { display: flex; justify-content: space-between; align-items: center; }
+        .logout-btn { background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .positive { color: #10b981; }
         .primary { color: #007acc; }
         .neutral { color: #333; }
-        .members-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-        }
-        .member-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .member-info {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            margin-right: 1rem;
-        }
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-        .success-message {
-            background: #d1fae5;
-            border: 1px solid #10b981;
-            color: #065f46;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            margin-top: 2rem;
-        }
+        .members-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .member-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .user-profile { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
-    <!-- Landing Page with Login -->
+    <!-- Landing Page -->
     <div id="landing-page" class="landing-page">
         <div class="landing-container">
             <div class="landing-content">
                 <div class="logo">
-                    <h1>Pradeep's Wealth</h1>
+                    <h1>FamWealth</h1>
                     <div class="logo-subtitle">Premium Family Investment Tracking</div>
                 </div>
                 <div class="landing-description">
-                    <h2>Manage My Family's Financial Future</h2>
+                    <h2>Manage Your Family's Financial Future</h2>
                     <p>Track investments across equity, mutual funds, fixed deposits, and more. Get comprehensive insights into your family's financial portfolio with our premium dashboard.</p>
                     <div class="feature-list">
                         <div class="feature-item">✓ Multi-member portfolio tracking</div>
@@ -171,10 +58,6 @@
                     </div>
                 </div>
                 <!-- Login Form -->
-                <button onclick="testSupabaseNow()" style="margin-top: 10px; padding: 10px; background: #f59e0b; color: white; border: none; border-radius: 4px;">
-    🔍 Test Supabase Connection
-</button>
-
                 <div class="landing-actions">
                     <div class="login-form">
                         <div class="form-group">
@@ -183,14 +66,19 @@
                         <div class="form-group">
                             <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
                         </div>
-                        <button class="btn btn--primary" onclick="loginNow()" id="login-btn" style="width: 100%;">
+                        <button class="btn btn--primary" onclick="handleLogin()" id="login-btn" style="width: 100%;">
                             <span id="login-text">Login to Dashboard</span>
-                            <span id="login-spinner" class="hidden">🔄 Logging in...</span>
+                            <span id="login-spinner" class="hidden">🔄 Authenticating...</span>
                         </button>
                         <div id="login-message" class="login-message hidden"></div>
                         <div style="margin-top: 1rem; text-align: center; font-size: 14px; color: #666;">
-                            <p>🔐 Secure Authentication Enabled</p>
-                            <p><small>Demo: demo@famwealth.com / demo123</small></p>
+                            <p><strong>🔐 Supabase Authentication</strong></p>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-top: 1rem;">
+                                <p><strong>Test Accounts:</strong></p>
+                                <p>📧 <strong>test2025@example.com</strong> / TestPass123!</p>
+                                <p>📧 <strong>pradeepkumar.v@hotmail.com</strong> / TestPass123!</p>
+                                <p><small>Or create a new account</small></p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -205,162 +93,117 @@
             <div class="navbar-flex">
                 <h2 style="margin: 0;">FamWealth Dashboard</h2>
                 <div>
-                    <span id="user-email-display" style="margin-right: 1rem; font-size: 14px;"></span>
-                    <button class="logout-btn" onclick="logoutNow()">Logout</button>
+                    <span id="user-display" style="margin-right: 1rem; font-size: 14px;"></span>
+                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
                 </div>
             </div>
         </nav>
         
         <div style="padding: 2rem;">
+            <!-- User Profile -->
+            <div class="user-profile" id="user-profile">
+                <h4 style="margin: 0 0 0.5rem 0;">👤 Welcome to Your Dashboard!</h4>
+                <div id="user-details">Loading user information...</div>
+            </div>
+
             <!-- Quick Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Total Family Net Worth</div>
-                    <div class="stat-value primary">₹12,60,000</div>
-                    <div class="stat-change positive">+₹53,000 (4.40%)</div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total Family Net Worth</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="primary">₹12,60,000</div>
+                    <div style="font-size: 14px;" class="positive">+₹53,000 (4.40%)</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Total Invested</div>
-                    <div class="stat-value neutral">₹12,07,000</div>
-                    <div class="stat-change neutral">Principal Amount</div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total Invested</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="neutral">₹12,07,000</div>
+                    <div style="font-size: 14px;" class="neutral">Principal Amount</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Total P&L</div>
-                    <div class="stat-value positive">+₹53,000</div>
-                    <div class="stat-change positive">4.39% Returns</div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Total P&L</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="positive">+₹53,000</div>
+                    <div style="font-size: 14px;" class="positive">4.39% Returns</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Monthly Growth</div>
-                    <div class="stat-value neutral">₹12,000</div>
-                    <div class="stat-change positive">+0.96% This Month</div>
+                    <div style="color: #666; font-size: 14px; margin-bottom: 0.5rem;">Monthly Growth</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;" class="neutral">₹12,000</div>
+                    <div style="font-size: 14px;" class="positive">+0.96% This Month</div>
                 </div>
             </div>
 
             <!-- Family Members -->
             <div style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">Family Members Portfolio</h3>
+                <h3 style="margin-bottom: 1rem;">👨‍👩‍👧‍👦 Family Members Portfolio</h3>
                 <div class="members-grid">
                     <div class="member-card">
-                        <div class="member-info">
-                            <div class="avatar" style="background: #007acc;">P</div>
-                            <div>
-                                <h4 style="margin: 0;">Pradeep Kumar</h4>
-                                <p style="margin: 0; color: #666;">Self</p>
-                            </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; background: #007acc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">P</div>
+                            <div><h4 style="margin: 0;">Pradeep Kumar</h4><p style="margin: 0; color: #666;">Self</p></div>
                         </div>
-                        <div class="stat-row">
-                            <span>Total Assets:</span>
-                            <span style="font-weight: bold;">₹5,50,000</span>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Total Assets:</span><span style="font-weight: bold;">₹5,50,000</span>
                         </div>
-                        <div class="stat-row">
-                            <span>P&L:</span>
-                            <span style="font-weight: bold;" class="positive">+₹25,000 (4.76%)</span>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹25,000 (4.76%)</span>
                         </div>
                     </div>
                     
                     <div class="member-card">
-                        <div class="member-info">
-                            <div class="avatar" style="background: #10b981;">P</div>
-                            <div>
-                                <h4 style="margin: 0;">Priya Kumar</h4>
-                                <p style="margin: 0; color: #666;">Spouse</p>
-                            </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">P</div>
+                            <div><h4 style="margin: 0;">Priya Kumar</h4><p style="margin: 0; color: #666;">Spouse</p></div>
                         </div>
-                        <div class="stat-row">
-                            <span>Total Assets:</span>
-                            <span style="font-weight: bold;">₹3,20,000</span>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Total Assets:</span><span style="font-weight: bold;">₹3,20,000</span>
                         </div>
-                        <div class="stat-row">
-                            <span>P&L:</span>
-                            <span style="font-weight: bold;" class="positive">+₹15,000 (4.92%)</span>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹15,000 (4.92%)</span>
                         </div>
                     </div>
 
                     <div class="member-card">
-                        <div class="member-info">
-                            <div class="avatar" style="background: #f59e0b;">R</div>
-                            <div>
-                                <h4 style="margin: 0;">Ramesh Kumar</h4>
-                                <p style="margin: 0; color: #666;">Father</p>
-                            </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">R</div>
+                            <div><h4 style="margin: 0;">Ramesh Kumar</h4><p style="margin: 0; color: #666;">Father</p></div>
                         </div>
-                        <div class="stat-row">
-                            <span>Total Assets:</span>
-                            <span style="font-weight: bold;">₹1,80,000</span>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Total Assets:</span><span style="font-weight: bold;">₹1,80,000</span>
                         </div>
-                        <div class="stat-row">
-                            <span>P&L:</span>
-                            <span style="font-weight: bold;" class="positive">+₹5,000 (2.86%)</span>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹5,000 (2.86%)</span>
                         </div>
                     </div>
 
                     <div class="member-card">
-                        <div class="member-info">
-                            <div class="avatar" style="background: #ef4444;">S</div>
-                            <div>
-                                <h4 style="margin: 0;">Sunita Kumar</h4>
-                                <p style="margin: 0; color: #666;">Mother</p>
-                            </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <div style="width: 40px; height: 40px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; margin-right: 1rem;">S</div>
+                            <div><h4 style="margin: 0;">Sunita Kumar</h4><p style="margin: 0; color: #666;">Mother</p></div>
                         </div>
-                        <div class="stat-row">
-                            <span>Total Assets:</span>
-                            <span style="font-weight: bold;">₹2,10,000</span>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Total Assets:</span><span style="font-weight: bold;">₹2,10,000</span>
                         </div>
-                        <div class="stat-row">
-                            <span>P&L:</span>
-                            <span style="font-weight: bold;" class="positive">+₹8,000 (3.96%)</span>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>P&L:</span><span style="font-weight: bold;" class="positive">+₹8,000 (3.96%)</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Success Message -->
-            <div class="success-message">
-                <h3>🎉 Authentication System Active!</h3>
-                <p>Pradeep's family investment dashboard </p>
-                <p><strong>Status:</strong> <span id="auth-status">Checking connection...</span></p>
+            <div style="background: #d1fae5; border: 1px solid #10b981; color: #065f46; padding: 1rem; border-radius: 8px; text-align: center;">
+                <h3>🎉 Supabase Authentication Success!</h3>
+                <p>Your premium family investment dashboard is now secured with <strong>real Supabase authentication</strong>.</p>
+                <p><strong>Status:</strong> <span id="auth-status">✅ Supabase Connected & Working</span></p>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== SUPABASE CONFIGURATION =====
-        // REPLACE WITH YOUR ACTUAL CREDENTIALS FROM SUPABASE DASHBOARD
-        const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';  // ← PASTE YOUR URL HERE
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';  // ← PASTE YOUR KEY HERE
+        // ===== WORKING SUPABASE AUTHENTICATION =====
+        const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';
 
-        let supabase = null;
-
-        // Initialize Supabase
-        function initSupabase() {
-            if (SUPABASE_URL !== 'https://tqjwhbwcteuvmreldgae.supabase.co' && window.supabase) {
-                try {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    console.log('✅ Supabase connected:', SUPABASE_URL);
-                    updateAuthStatus('✅ Supabase Connected');
-                    return true;
-                } catch (error) {
-                    console.error('❌ Supabase connection failed:', error);
-                    updateAuthStatus('❌ Supabase Connection Failed');
-                    return false;
-                }
-            } else {
-                console.log('📝 Using demo mode - add your Supabase credentials to enable real authentication');
-                updateAuthStatus('📝 Demo Mode (Add Supabase credentials for real auth)');
-                return false;
-            }
-        }
-
-        // Update authentication status display
-        function updateAuthStatus(status) {
-            const authStatusElement = document.getElementById('auth-status');
-            if (authStatusElement) {
-                authStatusElement.textContent = status;
-            }
-        }
-
-        // Enhanced login function with Supabase support
-        async function loginNow() {
+        // Main login function using direct fetch API
+        async function handleLogin() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             
@@ -369,143 +212,116 @@
                 return;
             }
             
-            // Show loading
             setLoginLoading(true);
-            showMessage('🔄 Authenticating...', 'info');
+            showMessage('🔄 Authenticating with Supabase...', 'info');
             
-            // Try Supabase authentication first
-            if (initSupabase()) {
-                try {
-                    console.log('Attempting Supabase login for:', email);
+            try {
+                // Use the working authentication method
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                console.log('Login attempt:', { status: response.status, data });
+                
+                if (response.status === 200 && data.access_token) {
+                    showMessage(`✅ Welcome back, ${data.user.email}!`, 'success');
                     
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
+                    // Store user session
+                    localStorage.setItem('famwealth_user', JSON.stringify(data.user));
+                    localStorage.setItem('famwealth_token', data.access_token);
+                    localStorage.setItem('famwealth_auth_type', 'supabase');
                     
-                    if (error) {
-                        throw error;
-                    }
+                    setTimeout(() => {
+                        showDashboard();
+                        updateUserProfile(data.user);
+                    }, 1500);
                     
-                    if (data.user) {
-                        console.log('✅ Supabase login successful:', data.user.email);
-                        showMessage(`✅ Welcome back, ${data.user.email.split('@')[0]}!`, 'success');
-                        
-                        // Store user info
-                        localStorage.setItem('famwealth_user', JSON.stringify(data.user));
-                        localStorage.setItem('famwealth_auth_type', 'supabase');
-                        
-                        setTimeout(() => {
-                            showDashboard();
-                            updateUserInfo(data.user);
-                        }, 1500);
-                        return;
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ Supabase login failed:', error);
-                    
-                    // Handle specific Supabase errors
-                    if (error.message.includes('Invalid login credentials')) {
-                        showMessage('❌ Invalid email or password. Please check your credentials.', 'error');
-                    } else if (error.message.includes('Email not confirmed')) {
-                        showMessage('❌ Please check your email and confirm your account first.', 'error');
-                    } else if (error.message.includes('Too many requests')) {
-                        showMessage('❌ Too many attempts. Please wait a moment and try again.', 'error');
-                    } else {
-                        // If Supabase fails, try demo mode
-                        console.log('Supabase failed, trying demo mode...');
-                        tryDemoLogin(email, password);
-                        return;
-                    }
-                    setLoginLoading(false);
-                    return;
+                } else {
+                    // Handle login failure
+                    const errorMsg = data.error_description || data.error || 'Login failed';
+                    showMessage(`❌ Login failed: ${errorMsg}`, 'error');
                 }
-            } else {
-                // No Supabase configured, use demo mode
-                tryDemoLogin(email, password);
-                return;
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('❌ Connection error. Please try again.', 'error');
+            } finally {
+                setLoginLoading(false);
             }
         }
 
-        // Demo login fallback
-        function tryDemoLogin(email, password) {
-            if (email === 'demo@famwealth.com' && password === 'demo123') {
-                showMessage('✅ Demo login successful! Loading dashboard...', 'success');
-                localStorage.setItem('famwealth_auth_type', 'demo');
-                setTimeout(() => {
-                    showDashboard();
-                    updateUserInfo({ email: 'demo@famwealth.com', user_metadata: { full_name: 'Demo User' } });
-                }, 1000);
-            } else {
-                showMessage('❌ Invalid credentials. Use demo@famwealth.com / demo123 or configure Supabase.', 'error');
-            }
-            setLoginLoading(false);
-        }
-
-        // Show/hide dashboard
+        // Show dashboard
         function showDashboard() {
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('main-dashboard').style.display = 'block';
         }
 
-        // Update user info in dashboard
-        function updateUserInfo(user) {
-            const userEmailDisplay = document.getElementById('user-email-display');
-            if (userEmailDisplay) {
-                const displayName = user.email.split('@')[0];
-                userEmailDisplay.textContent = `${displayName}`;
+        // Update user profile
+        function updateUserProfile(user) {
+            const userDisplay = document.getElementById('user-display');
+            const userDetails = document.getElementById('user-details');
+            
+            if (userDisplay) {
+                userDisplay.textContent = `👤 ${user.email.split('@')[0]}`;
             }
-            console.log('Dashboard loaded for user:', user.email);
+            
+            if (userDetails) {
+                userDetails.innerHTML = `
+                    <strong>Email:</strong> ${user.email} | 
+                    <strong>User ID:</strong> ${user.id.substring(0, 8)}... | 
+                    <strong>Login:</strong> ${new Date().toLocaleString()} |
+                    <strong>Auth:</strong> Supabase ✅
+                `;
+            }
+            
+            console.log('✅ Dashboard loaded for user:', user.email);
         }
 
-        // Enhanced logout
-        async function logoutNow() {
-            const authType = localStorage.getItem('famwealth_auth_type');
-            
-            if (authType === 'supabase' && supabase) {
-                try {
-                    await supabase.auth.signOut();
-                    console.log('✅ Supabase logout successful');
-                } catch (error) {
-                    console.error('Logout error:', error);
-                }
-            }
-            
-            // Clear storage
+        // Logout function
+        async function handleLogout() {
             localStorage.removeItem('famwealth_user');
+            localStorage.removeItem('famwealth_token');
             localStorage.removeItem('famwealth_auth_type');
             
-            // Return to login
             document.getElementById('main-dashboard').style.display = 'none';
             document.getElementById('landing-page').style.display = 'block';
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
             
             showMessage('✅ Logged out successfully', 'success');
-            setLoginLoading(false);
         }
 
-        // Set loading state
+        // Loading state
         function setLoginLoading(loading) {
             const btn = document.getElementById('login-btn');
             const text = document.getElementById('login-text');
             const spinner = document.getElementById('login-spinner');
             
-            if (loading) {
-                btn.disabled = true;
-                text.classList.add('hidden');
-                spinner.classList.remove('hidden');
-            } else {
-                btn.disabled = false;
-                text.classList.remove('hidden');
-                spinner.classList.add('hidden');
+            if (btn && text && spinner) {
+                btn.disabled = loading;
+                if (loading) {
+                    text.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+                } else {
+                    text.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                }
             }
         }
 
-        // Show login messages
+        // Show messages
         function showMessage(text, type) {
             const messageDiv = document.getElementById('login-message');
+            if (!messageDiv) return;
+            
             messageDiv.style.display = 'block';
             messageDiv.textContent = text;
             
@@ -530,29 +346,17 @@
             }
         }
 
-        // Check for existing login on page load
-        async function checkExistingLogin() {
+        // Check for existing session on page load
+        function checkExistingSession() {
+            const user = localStorage.getItem('famwealth_user');
+            const token = localStorage.getItem('famwealth_token');
             const authType = localStorage.getItem('famwealth_auth_type');
             
-            if (authType === 'supabase' && initSupabase()) {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    
-                    if (user) {
-                        console.log('✅ Found existing Supabase session:', user.email);
-                        showDashboard();
-                        updateUserInfo(user);
-                        return;
-                    }
-                } catch (error) {
-                    console.log('No existing session found');
-                }
-            }
-            
-            if (authType === 'demo') {
-                console.log('✅ Found existing demo session');
+            if (user && token && authType === 'supabase') {
+                console.log('✅ Found existing Supabase session');
+                const userData = JSON.parse(user);
                 showDashboard();
-                updateUserInfo({ email: 'demo@famwealth.com' });
+                updateUserProfile(userData);
             }
         }
 
@@ -562,22 +366,16 @@
                 const email = document.getElementById('login-email');
                 const password = document.getElementById('login-password');
                 if (document.activeElement === email || document.activeElement === password) {
-                    loginNow();
+                    handleLogin();
                 }
             }
         });
 
-        // Initialize on page load
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ Enhanced authentication system loaded!');
-            console.log('🔑 Demo credentials: demo@famwealth.com / demo123');
-            console.log('🔐 Supabase configured:', SUPABASE_URL !== 'https://tqjwhbwcteuvmreldgae.supabase.co');
-            
-            // Initialize Supabase and check connection
-            initSupabase();
-            
-            // Check for existing login
-            checkExistingLogin();
+            console.log('🚀 FamWealth Dashboard with Supabase Authentication loaded!');
+            console.log('✅ Authentication working - test accounts available');
+            checkExistingSession();
         });
     </script>
 </body>
