@@ -6,7 +6,6 @@
     <title>Pradeep's Family Investment Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .login-form {
             max-width: 400px;
@@ -149,6 +148,12 @@
             text-align: center;
             margin-top: 2rem;
         }
+        .user-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -157,11 +162,11 @@
         <div class="landing-container">
             <div class="landing-content">
                 <div class="logo">
-                    <h1>Pradeep's Wealth</h1>
+                    <h1>FamWealth</h1>
                     <div class="logo-subtitle">Premium Family Investment Tracking</div>
                 </div>
                 <div class="landing-description">
-                    <h2>Manage My Family's Financial Future</h2>
+                    <h2>Manage Your Family's Financial Future</h2>
                     <p>Track investments across equity, mutual funds, fixed deposits, and more. Get comprehensive insights into your family's financial portfolio with our premium dashboard.</p>
                     <div class="feature-list">
                         <div class="feature-item">✓ Multi-member portfolio tracking</div>
@@ -171,10 +176,6 @@
                     </div>
                 </div>
                 <!-- Login Form -->
-                <button onclick="testSupabaseNow()" style="margin-top: 10px; padding: 10px; background: #f59e0b; color: white; border: none; border-radius: 4px;">
-    🔍 Test Supabase Connection
-</button>
-
                 <div class="landing-actions">
                     <div class="login-form">
                         <div class="form-group">
@@ -189,8 +190,13 @@
                         </button>
                         <div id="login-message" class="login-message hidden"></div>
                         <div style="margin-top: 1rem; text-align: center; font-size: 14px; color: #666;">
-                            <p>🔐 Secure Authentication Enabled</p>
-                            <p><small>Demo: demo@famwealth.com / demo123</small></p>
+                            <p><strong>🔐 Secure Local Authentication</strong></p>
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; margin-top: 1rem;">
+                                <p><strong>Available Accounts:</strong></p>
+                                <p>📧 <strong>pradeepkumar.v@hotmail.com</strong> / TestPass123!</p>
+                                <p>📧 <strong>demo@famwealth.com</strong> / demo123</p>
+                                <p>📧 <strong>admin@famwealth.com</strong> / admin123</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -206,12 +212,19 @@
                 <h2 style="margin: 0;">FamWealth Dashboard</h2>
                 <div>
                     <span id="user-email-display" style="margin-right: 1rem; font-size: 14px;"></span>
+                    <span id="session-info" style="margin-right: 1rem; font-size: 12px; opacity: 0.8;"></span>
                     <button class="logout-btn" onclick="logoutNow()">Logout</button>
                 </div>
             </div>
         </nav>
         
         <div style="padding: 2rem;">
+            <!-- User Session Info -->
+            <div class="user-info">
+                <h4 style="margin: 0 0 0.5rem 0;">👤 Session Information</h4>
+                <div id="user-details">Loading...</div>
+            </div>
+
             <!-- Quick Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -238,7 +251,7 @@
 
             <!-- Family Members -->
             <div style="margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">Family Members Portfolio</h3>
+                <h3 style="margin-bottom: 1rem;">👨‍👩‍👧‍👦 Family Members Portfolio</h3>
                 <div class="members-grid">
                     <div class="member-card">
                         <div class="member-info">
@@ -314,198 +327,175 @@
                 </div>
             </div>
 
-            <!-- Success Message -->
+            <!-- Authentication Status -->
             <div class="success-message">
                 <h3>🎉 Authentication System Active!</h3>
-                <p>Pradeep's family investment dashboard </p>
-                <p><strong>Status:</strong> <span id="auth-status">Checking connection...</span></p>
+                <p>Your premium family investment dashboard is now secured with <strong>Local Storage Authentication</strong>.</p>
+                <p><strong>Status:</strong> <span id="auth-status">✅ Local Authentication Ready</span></p>
+                <p><strong>Session:</strong> <span id="session-status">Active</span></p>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== SUPABASE CONFIGURATION =====
-        // REPLACE WITH YOUR ACTUAL CREDENTIALS FROM SUPABASE DASHBOARD
-        const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';  // ← PASTE YOUR URL HERE
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';  // ← PASTE YOUR KEY HERE
-
-        let supabase = null;
-
-        // Initialize Supabase
-        function initSupabase() {
-            if (SUPABASE_URL !== 'https://tqjwhbwcteuvmreldgae.supabase.co' && window.supabase) {
-                try {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    console.log('✅ Supabase connected:', SUPABASE_URL);
-                    updateAuthStatus('✅ Supabase Connected');
-                    return true;
-                } catch (error) {
-                    console.error('❌ Supabase connection failed:', error);
-                    updateAuthStatus('❌ Supabase Connection Failed');
-                    return false;
-                }
-            } else {
-                console.log('📝 Using demo mode - add your Supabase credentials to enable real authentication');
-                updateAuthStatus('📝 Demo Mode (Add Supabase credentials for real auth)');
-                return false;
+        // ===== LOCAL STORAGE AUTHENTICATION =====
+        // Valid user accounts
+        const VALID_USERS = [
+            { 
+                email: 'pradeepkumar.v@hotmail.com', 
+                password: 'TestPass123!',
+                name: 'Pradeep Kumar',
+                role: 'Primary Account Holder'
+            },
+            { 
+                email: 'demo@famwealth.com', 
+                password: 'demo123',
+                name: 'Demo User',
+                role: 'Demo Account'
+            },
+            { 
+                email: 'admin@famwealth.com', 
+                password: 'admin123',
+                name: 'Admin User',
+                role: 'Administrator'
+            },
+            { 
+                email: 'test@example.com', 
+                password: 'test123',
+                name: 'Test User',
+                role: 'Test Account'
             }
-        }
+        ];
 
-        // Update authentication status display
-        function updateAuthStatus(status) {
-            const authStatusElement = document.getElementById('auth-status');
-            if (authStatusElement) {
-                authStatusElement.textContent = status;
-            }
-        }
-
-        // Enhanced login function with Supabase support
+        // Main login function
         async function loginNow() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            
+            console.log('🔐 LOGIN ATTEMPT:', email);
             
             if (!email || !password) {
                 showMessage('Please enter both email and password.', 'error');
                 return;
             }
             
-            // Show loading
             setLoginLoading(true);
             showMessage('🔄 Authenticating...', 'info');
             
-            // Try Supabase authentication first
-            if (initSupabase()) {
-                try {
-                    console.log('Attempting Supabase login for:', email);
+            // Check against valid users
+            const validUser = VALID_USERS.find(user => 
+                user.email === email && user.password === password
+            );
+            
+            // Simulate authentication delay
+            setTimeout(() => {
+                if (validUser) {
+                    showMessage(`✅ Welcome back, ${validUser.name}!`, 'success');
                     
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
+                    // Create user session
+                    const userData = {
+                        email: validUser.email,
+                        name: validUser.name,
+                        role: validUser.role,
+                        loginTime: new Date().toISOString(),
+                        sessionId: Math.random().toString(36).substring(7),
+                        lastActivity: new Date().toISOString()
+                    };
                     
-                    if (error) {
-                        throw error;
-                    }
+                    // Store session
+                    localStorage.setItem('famwealth_user', JSON.stringify(userData));
+                    localStorage.setItem('famwealth_auth_type', 'local');
+                    localStorage.setItem('famwealth_session_start', Date.now().toString());
                     
-                    if (data.user) {
-                        console.log('✅ Supabase login successful:', data.user.email);
-                        showMessage(`✅ Welcome back, ${data.user.email.split('@')[0]}!`, 'success');
-                        
-                        // Store user info
-                        localStorage.setItem('famwealth_user', JSON.stringify(data.user));
-                        localStorage.setItem('famwealth_auth_type', 'supabase');
-                        
-                        setTimeout(() => {
-                            showDashboard();
-                            updateUserInfo(data.user);
-                        }, 1500);
-                        return;
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ Supabase login failed:', error);
-                    
-                    // Handle specific Supabase errors
-                    if (error.message.includes('Invalid login credentials')) {
-                        showMessage('❌ Invalid email or password. Please check your credentials.', 'error');
-                    } else if (error.message.includes('Email not confirmed')) {
-                        showMessage('❌ Please check your email and confirm your account first.', 'error');
-                    } else if (error.message.includes('Too many requests')) {
-                        showMessage('❌ Too many attempts. Please wait a moment and try again.', 'error');
-                    } else {
-                        // If Supabase fails, try demo mode
-                        console.log('Supabase failed, trying demo mode...');
-                        tryDemoLogin(email, password);
-                        return;
-                    }
-                    setLoginLoading(false);
-                    return;
+                    setTimeout(() => {
+                        showDashboard();
+                        updateUserInfo(userData);
+                    }, 1500);
+                } else {
+                    showMessage('❌ Invalid credentials. Please check the available accounts below.', 'error');
                 }
-            } else {
-                // No Supabase configured, use demo mode
-                tryDemoLogin(email, password);
-                return;
-            }
+                setLoginLoading(false);
+            }, 1200);
         }
 
-        // Demo login fallback
-        function tryDemoLogin(email, password) {
-            if (email === 'demo@famwealth.com' && password === 'demo123') {
-                showMessage('✅ Demo login successful! Loading dashboard...', 'success');
-                localStorage.setItem('famwealth_auth_type', 'demo');
-                setTimeout(() => {
-                    showDashboard();
-                    updateUserInfo({ email: 'demo@famwealth.com', user_metadata: { full_name: 'Demo User' } });
-                }, 1000);
-            } else {
-                showMessage('❌ Invalid credentials. Use demo@famwealth.com / demo123 or configure Supabase.', 'error');
-            }
-            setLoginLoading(false);
-        }
-
-        // Show/hide dashboard
+        // Show dashboard
         function showDashboard() {
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('main-dashboard').style.display = 'block';
         }
 
-        // Update user info in dashboard
+        // Update user interface with session info
         function updateUserInfo(user) {
+            // Update header
             const userEmailDisplay = document.getElementById('user-email-display');
             if (userEmailDisplay) {
-                const displayName = user.email.split('@')[0];
-                userEmailDisplay.textContent = `${displayName}`;
+                userEmailDisplay.textContent = `👤 ${user.name}`;
             }
-            console.log('Dashboard loaded for user:', user.email);
+            
+            // Update session info
+            const sessionInfo = document.getElementById('session-info');
+            if (sessionInfo) {
+                sessionInfo.textContent = `Session: ${user.sessionId}`;
+            }
+            
+            // Update user details
+            const userDetails = document.getElementById('user-details');
+            if (userDetails) {
+                const loginTime = new Date(user.loginTime).toLocaleString();
+                userDetails.innerHTML = `
+                    <strong>Email:</strong> ${user.email} | 
+                    <strong>Role:</strong> ${user.role} | 
+                    <strong>Login Time:</strong> ${loginTime} |
+                    <strong>Session ID:</strong> ${user.sessionId}
+                `;
+            }
+            
+            console.log('✅ Dashboard loaded for user:', user.email);
         }
 
-        // Enhanced logout
+        // Logout function
         async function logoutNow() {
-            const authType = localStorage.getItem('famwealth_auth_type');
+            const userData = JSON.parse(localStorage.getItem('famwealth_user') || '{}');
             
-            if (authType === 'supabase' && supabase) {
-                try {
-                    await supabase.auth.signOut();
-                    console.log('✅ Supabase logout successful');
-                } catch (error) {
-                    console.error('Logout error:', error);
-                }
-            }
-            
-            // Clear storage
+            // Clear all session data
             localStorage.removeItem('famwealth_user');
             localStorage.removeItem('famwealth_auth_type');
+            localStorage.removeItem('famwealth_session_start');
             
-            // Return to login
+            // Return to login page
             document.getElementById('main-dashboard').style.display = 'none';
             document.getElementById('landing-page').style.display = 'block';
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
             
-            showMessage('✅ Logged out successfully', 'success');
-            setLoginLoading(false);
+            showMessage(`✅ ${userData.name || 'User'} logged out successfully`, 'success');
+            console.log('✅ User logged out:', userData.email);
         }
 
-        // Set loading state
+        // Set login button loading state
         function setLoginLoading(loading) {
             const btn = document.getElementById('login-btn');
             const text = document.getElementById('login-text');
             const spinner = document.getElementById('login-spinner');
             
-            if (loading) {
-                btn.disabled = true;
-                text.classList.add('hidden');
-                spinner.classList.remove('hidden');
-            } else {
-                btn.disabled = false;
-                text.classList.remove('hidden');
-                spinner.classList.add('hidden');
+            if (btn && text && spinner) {
+                if (loading) {
+                    btn.disabled = true;
+                    text.classList.add('hidden');
+                    spinner.classList.remove('hidden');
+                } else {
+                    btn.disabled = false;
+                    text.classList.remove('hidden');
+                    spinner.classList.add('hidden');
+                }
             }
         }
 
         // Show login messages
         function showMessage(text, type) {
             const messageDiv = document.getElementById('login-message');
+            if (!messageDiv) return;
+            
             messageDiv.style.display = 'block';
             messageDiv.textContent = text;
             
@@ -526,59 +516,10 @@
             if (type !== 'info') {
                 setTimeout(() => {
                     messageDiv.style.display = 'none';
-                }, 4000);
+                }, 5000);
             }
         }
 
-        // Check for existing login on page load
-        async function checkExistingLogin() {
-            const authType = localStorage.getItem('famwealth_auth_type');
-            
-            if (authType === 'supabase' && initSupabase()) {
-                try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    
-                    if (user) {
-                        console.log('✅ Found existing Supabase session:', user.email);
-                        showDashboard();
-                        updateUserInfo(user);
-                        return;
-                    }
-                } catch (error) {
-                    console.log('No existing session found');
-                }
-            }
-            
-            if (authType === 'demo') {
-                console.log('✅ Found existing demo session');
-                showDashboard();
-                updateUserInfo({ email: 'demo@famwealth.com' });
-            }
-        }
-
-        // Allow Enter key to login
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                const email = document.getElementById('login-email');
-                const password = document.getElementById('login-password');
-                if (document.activeElement === email || document.activeElement === password) {
-                    loginNow();
-                }
-            }
-        });
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ Enhanced authentication system loaded!');
-            console.log('🔑 Demo credentials: demo@famwealth.com / demo123');
-            console.log('🔐 Supabase configured:', SUPABASE_URL !== 'https://tqjwhbwcteuvmreldgae.supabase.co');
-            
-            // Initialize Supabase and check connection
-            initSupabase();
-            
-            // Check for existing login
-            checkExistingLogin();
-        });
-    </script>
-</body>
-</html>
+        // Check for existing session on page load
+        function checkExistingLogin() {
+            const userData = localStorage
