@@ -15,7 +15,7 @@ let supabase = null;
 
 // Initialize Supabase
 function initSupabase() {
-    if (SUPABASE_URL !== 'https://your-project-id.supabase.co' && window.supabase) {
+    if (SUPABASE_URL !== 'https://tqjwhbwcteuvmreldgae.supabase.co' && window.supabase) {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log('✅ Supabase connected:', SUPABASE_URL);
         return true;
@@ -214,7 +214,7 @@ document.addEventListener('keypress', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Enhanced authentication system loaded!');
     console.log('🔑 Demo credentials: demo@famwealth.com / demo123');
-    console.log('🔐 Supabase credentials configured:', SUPABASE_URL !== 'https://your-project-id.supabase.co');
+    console.log('🔐 Supabase credentials configured:', SUPABASE_URL !== 'https://tqjwhbwcteuvmreldgae.supabase.co');
     
     // Check for existing login
     checkExistingLogin();
