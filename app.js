@@ -43,9 +43,9 @@ const MEMBER_PHOTOS = [
 function saveDataToStorage() {
   try {
     localStorage.setItem('famwealth_data', JSON.stringify(familyData));
-    console.log('✅ Data saved to localStorage');
+    console.log('âœ… Data saved to localStorage');
   } catch (error) {
-    console.error('❌ Error saving data to localStorage:', error);
+    console.error('âŒ Error saving data to localStorage:', error);
   }
 }
 
@@ -54,11 +54,11 @@ function loadDataFromStorage() {
     const stored = localStorage.getItem('famwealth_data');
     if (stored) {
       familyData = JSON.parse(stored);
-      console.log('✅ Data loaded from localStorage');
+      console.log('âœ… Data loaded from localStorage');
       return true;
     }
   } catch (error) {
-    console.error('❌ Error loading data from localStorage:', error);
+    console.error('âŒ Error loading data from localStorage:', error);
   }
   return false;
 }
@@ -68,14 +68,14 @@ async function initializeSupabase() {
   try {
     if (window.supabase) {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log('✅ Supabase initialized successfully');
+      console.log('âœ… Supabase initialized successfully');
       return true;
     } else {
-      console.log('❌ Supabase library not loaded');
+      console.log('âŒ Supabase library not loaded');
       return false;
     }
   } catch (error) {
-    console.error('❌ Supabase initialization error:', error);
+    console.error('âŒ Supabase initialization error:', error);
     return false;
   }
 }
@@ -91,11 +91,11 @@ async function handleLogin() {
   }
 
   setLoginLoading(true);
-  showMessage('🔄 Authenticating...', 'info');
+  showMessage('ðŸ”„ Authenticating...', 'info');
 
   // Demo login check first
   if (email === 'demo@famwealth.com' && password === 'demo123') {
-    showMessage('✅ Demo login successful!', 'success');
+    showMessage('âœ… Demo login successful!', 'success');
     localStorage.setItem('famwealth_auth_type', 'demo');
     setTimeout(() => {
       showDashboard();
@@ -115,14 +115,14 @@ async function handleLogin() {
       });
 
       if (error) {
-        console.error('❌ Supabase login error:', error);
-        showMessage(`❌ Login failed: ${error.message}`, 'error');
+        console.error('âŒ Supabase login error:', error);
+        showMessage(`âŒ Login failed: ${error.message}`, 'error');
         setLoginLoading(false);
         return;
       }
 
       if (data.user) {
-        showMessage(`✅ Welcome, ${data.user.email}!`, 'success');
+        showMessage(`âœ… Welcome, ${data.user.email}!`, 'success');
         localStorage.setItem('famwealth_user', JSON.stringify(data.user));
         localStorage.setItem('famwealth_auth_type', 'supabase');
         setTimeout(() => {
@@ -134,13 +134,13 @@ async function handleLogin() {
         return;
       }
     } catch (error) {
-      console.error('❌ Login exception:', error);
-      showMessage(`❌ Login error: ${error.message}`, 'error');
+      console.error('âŒ Login exception:', error);
+      showMessage(`âŒ Login error: ${error.message}`, 'error');
     }
   }
 
   // Fallback error message
-  showMessage('❌ Invalid credentials. Try demo@famwealth.com / demo123', 'error');
+  showMessage('âŒ Invalid credentials. Try demo@famwealth.com / demo123', 'error');
   setLoginLoading(false);
 }
 
@@ -161,22 +161,22 @@ async function handleLogout() {
   document.getElementById('landing-page').style.display = 'block';
   document.getElementById('login-email').value = '';
   document.getElementById('login-password').value = '';
-  showMessage('✅ Logged out successfully', 'success');
+  showMessage('âœ… Logged out successfully', 'success');
   setLoginLoading(false);
 }
 
 // ===== DATABASE FUNCTIONS =====
 async function loadDashboardData() {
   try {
-    console.log('🔄 Loading family data...');
+    console.log('ðŸ”„ Loading family data...');
     document.getElementById('loading-state').style.display = 'block';
     document.getElementById('dashboard-content').style.display = 'none';
 
     // First try to load from localStorage
     if (loadDataFromStorage()) {
-      console.log('✅ Loaded existing data from storage');
+      console.log('âœ… Loaded existing data from storage');
     } else {
-      console.log('📝 No existing data, loading sample data...');
+      console.log('ðŸ“ No existing data, loading sample data...');
       loadSampleData();
       saveDataToStorage();
     }
@@ -197,7 +197,7 @@ async function loadDashboardData() {
 }
 
 function loadSampleData() {
-  console.log('📝 Loading sample data for demo...');
+  console.log('ðŸ“ Loading sample data for demo...');
   
   familyData.members = [
     {
@@ -620,7 +620,7 @@ function renderEnhancedDashboard() {
   renderEnhancedStats(totals);
   renderMemberCards();
   populateInvestmentMemberDropdown();
-  console.log('✅ Enhanced dashboard rendered with detailed data');
+  console.log('âœ… Enhanced dashboard rendered with detailed data');
 }
 
 function calculateEnhancedTotals() {
@@ -699,27 +699,27 @@ function renderEnhancedStats(totals) {
   const statsHTML = `
     <div class="stat-card">
       <div class="stat-label">FAMILY NET WORTH</div>
-      <div class="stat-value primary">₹${totals.netWorth.toLocaleString()}</div>
+      <div class="stat-value primary">â‚¹${totals.netWorth.toLocaleString()}</div>
       <div class="stat-change neutral">Assets minus Liabilities</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">TOTAL ASSETS</div>
-      <div class="stat-value positive">₹${totals.totalCurrentValue.toLocaleString()}</div>
-      <div class="stat-change positive">+₹${totals.totalPnL.toLocaleString()} P&L</div>
+      <div class="stat-value positive">â‚¹${totals.totalCurrentValue.toLocaleString()}</div>
+      <div class="stat-change positive">+â‚¹${totals.totalPnL.toLocaleString()} P&L</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">TOTAL LIABILITIES</div>
-      <div class="stat-value" style="color: var(--color-error);">₹${totals.totalLiabilities.toLocaleString()}</div>
+      <div class="stat-value" style="color: var(--color-error);">â‚¹${totals.totalLiabilities.toLocaleString()}</div>
       <div class="stat-change neutral">Outstanding Debt</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">FIXED DEPOSITS</div>
-      <div class="stat-value positive">₹${totals.totalFD.toLocaleString()}</div>
+      <div class="stat-value positive">â‚¹${totals.totalFD.toLocaleString()}</div>
       <div class="stat-change neutral">Guaranteed Returns</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">INSURANCE PREMIUMS</div>
-      <div class="stat-value">₹${totals.totalInsurancePremium.toLocaleString()}</div>
+      <div class="stat-value">â‚¹${totals.totalInsurancePremium.toLocaleString()}</div>
       <div class="stat-change neutral">Annual Premiums</div>
     </div>
     <div class="stat-card">
@@ -791,25 +791,25 @@ function renderMemberCards() {
             <p class="member-relationship">${member.relationship} | ${member.is_primary ? 'Primary Account Holder' : 'Family Member'}</p>
           </div>
           <div class="member-actions">
-            <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
-            <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
-            <button class="btn btn--sm" style="background: var(--color-error); color: white;" data-member-id="${member.id}" class="delete-member-btn" title="Delete Member">🗑️</button>
+            <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">ðŸ“·</button>
+            <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">âœï¸</button>
+            <button class="btn btn--sm" style="background: var(--color-error); color: white;" data-member-id="${member.id}" class="delete-member-btn" title="Delete Member">ðŸ—‘ï¸</button>
           </div>
         </div>
         
         <div class="member-stats">
           <div>
-            <div class="member-stat-value">₹${memberCurrentValue.toLocaleString()}</div>
+            <div class="member-stat-value">â‚¹${memberCurrentValue.toLocaleString()}</div>
             <div class="stat-label">Total Assets</div>
           </div>
           <div>
-            <div class="member-stat-value" style="color: var(--color-error);">₹${memberLiabilities.toLocaleString()}</div>
+            <div class="member-stat-value" style="color: var(--color-error);">â‚¹${memberLiabilities.toLocaleString()}</div>
             <div class="stat-label">Liabilities</div>
           </div>
         </div>
         
         <div class="member-pnl ${pnlClass}">
-          P&L: ₹${memberPnL.toLocaleString()} (${((memberPnL/Math.max(memberInvested, 1))*100).toFixed(1)}%)
+          P&L: â‚¹${memberPnL.toLocaleString()} (${((memberPnL/Math.max(memberInvested, 1))*100).toFixed(1)}%)
         </div>
         
         <div class="member-accounts">
@@ -827,7 +827,7 @@ function renderMemberCards() {
   
   const membersSection = `
     <div class="section-title">
-      <h3>👨‍👩‍👧‍👦 Family Members Overview</h3>
+      <h3>ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦ Family Members Overview</h3>
       <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add Family Member</button>
     </div>
     <div class="members-grid">
@@ -880,7 +880,7 @@ function saveMember() {
         is_primary: isPrimary
       };
     }
-    showMessage('✅ Member updated successfully', 'success');
+    showMessage('âœ… Member updated successfully', 'success');
   } else {
     // Add new member
     const newMember = {
@@ -911,7 +911,7 @@ function saveMember() {
       other: []
     };
     
-    showMessage('✅ Member added successfully', 'success');
+    showMessage('âœ… Member added successfully', 'success');
   }
   
   saveDataToStorage();
@@ -948,7 +948,7 @@ function deleteMember() {
   document.getElementById('delete-member-modal').classList.add('hidden');
   deletingMemberId = null;
   
-  showMessage('✅ Member deleted successfully', 'success');
+  showMessage('âœ… Member deleted successfully', 'success');
 }
 
 // ===== PHOTO MANAGEMENT FUNCTIONS =====
@@ -995,7 +995,7 @@ function savePhoto() {
   renderEnhancedDashboard();
   document.getElementById('photo-modal').classList.add('hidden');
   
-  showMessage('✅ Photo updated successfully', 'success');
+  showMessage('âœ… Photo updated successfully', 'success');
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -1084,7 +1084,7 @@ function closeDeleteMemberModal() {
 
 // ===== INITIALIZATION ON DOM LOAD =====
 document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🚀 FamWealth Dashboard initializing...');
+  console.log('ðŸš€ FamWealth Dashboard initializing...');
   
   // Initialize Supabase
   await initializeSupabase();
@@ -1105,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadDashboardData();
   }
   
-  console.log('✅ Dashboard initialization complete');
+  console.log('âœ… Dashboard initialization complete');
 });
 
 // ===== NAVIGATION FUNCTIONS =====
@@ -1164,7 +1164,7 @@ function saveInvestment() {
   renderEnhancedDashboard();
   document.getElementById('investment-modal').classList.add('hidden');
   
-  showMessage('✅ Investment added successfully', 'success');
+  showMessage('âœ… Investment added successfully', 'success');
 }
 
 function showInvestmentTab(tabName) {
@@ -1242,7 +1242,7 @@ function getTableHeaders(tabName) {
 }
 
 function getTableRow(item, tabName, memberId) {
-  const deleteBtn = `<button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${memberId}">🗑️</button>`;
+  const deleteBtn = `<button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${memberId}">ðŸ—‘ï¸</button>`;
   
   switch(tabName) {
     case 'equity':
@@ -1250,9 +1250,9 @@ function getTableRow(item, tabName, memberId) {
       return `
         <tr>
           <td>${item.symbol_or_name || 'N/A'}</td>
-          <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
-          <td>₹${(item.current_value || 0).toLocaleString()}</td>
-          <td class="${equityPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">₹${equityPnL.toLocaleString()}</td>
+          <td>â‚¹${(item.invested_amount || 0).toLocaleString()}</td>
+          <td>â‚¹${(item.current_value || 0).toLocaleString()}</td>
+          <td class="${equityPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">â‚¹${equityPnL.toLocaleString()}</td>
           <td>${item.broker_platform || 'N/A'}</td>
           <td>${item.quantity || 0}</td>
           <td>${deleteBtn}</td>
@@ -1263,9 +1263,9 @@ function getTableRow(item, tabName, memberId) {
       return `
         <tr>
           <td>${item.symbol_or_name || 'N/A'}</td>
-          <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
-          <td>₹${(item.current_value || 0).toLocaleString()}</td>
-          <td class="${mfPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">₹${mfPnL.toLocaleString()}</td>
+          <td>â‚¹${(item.invested_amount || 0).toLocaleString()}</td>
+          <td>â‚¹${(item.current_value || 0).toLocaleString()}</td>
+          <td class="${mfPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">â‚¹${mfPnL.toLocaleString()}</td>
           <td>${item.broker_platform || 'N/A'}</td>
           <td>${item.quantity || 0}</td>
           <td>${deleteBtn}</td>
@@ -1277,7 +1277,7 @@ function getTableRow(item, tabName, memberId) {
       return `
         <tr>
           <td>${item.invested_in || 'N/A'}</td>
-          <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+          <td>â‚¹${(item.invested_amount || 0).toLocaleString()}</td>
           <td>${item.interest_rate || 0}%</td>
           <td>${maturityDate.toLocaleDateString()}</td>
           <td>${item.interest_payout || 'N/A'}</td>
@@ -1290,8 +1290,8 @@ function getTableRow(item, tabName, memberId) {
         <tr>
           <td>${item.insurer || 'N/A'}</td>
           <td>${item.insurance_type || 'N/A'}</td>
-          <td>₹${(item.insurance_premium || 0).toLocaleString()}</td>
-          <td>₹${(item.sum_assured || 0).toLocaleString()}</td>
+          <td>â‚¹${(item.insurance_premium || 0).toLocaleString()}</td>
+          <td>â‚¹${(item.sum_assured || 0).toLocaleString()}</td>
           <td>${item.payment_frequency || 'N/A'}</td>
           <td class="status--success">Active</td>
           <td>${deleteBtn}</td>
@@ -1302,7 +1302,7 @@ function getTableRow(item, tabName, memberId) {
         <tr>
           <td>${item.institution_name || 'N/A'}</td>
           <td>Savings Account</td>
-          <td>₹${(item.current_balance || 0).toLocaleString()}</td>
+          <td>â‚¹${(item.current_balance || 0).toLocaleString()}</td>
           <td>Today</td>
           <td>${deleteBtn}</td>
         </tr>
@@ -1347,7 +1347,7 @@ function saveLiability() {
   renderEnhancedDashboard();
   document.getElementById('liability-modal').classList.add('hidden');
   
-  showMessage('✅ Liability added successfully', 'success');
+  showMessage('âœ… Liability added successfully', 'success');
 }
 
 function showLiabilityTab(tabName) {
@@ -1403,14 +1403,14 @@ function renderLiabilityTabContent(tabName) {
                     <td>${liability.memberName}</td>
                     <td>${liability.type}</td>
                     <td>${liability.lender || liability.bank || 'N/A'}</td>
-                    <td>₹${(liability.outstanding_amount || 0).toLocaleString()}</td>
-                    <td>₹${(liability.emi_amount || 0).toLocaleString()}</td>
+                    <td>â‚¹${(liability.outstanding_amount || 0).toLocaleString()}</td>
+                    <td>â‚¹${(liability.emi_amount || 0).toLocaleString()}</td>
                     <td>${liability.interest_rate || 'N/A'}%</td>
                     <td>${liability.due_date ? new Date(liability.due_date).toLocaleDateString() : 'N/A'}</td>
                     <td>${(liability.comments && liability.comments.length > 30) ? liability.comments.substring(0, 30) + '...' : (liability.comments || 'No comments')}</td>
                     <td>
                       <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" 
-                              data-item-id="${liability.id}" data-item-type="${liability.type}" data-member-id="${liability.memberId}">🗑️</button>
+                              data-item-id="${liability.id}" data-item-type="${liability.type}" data-member-id="${liability.memberId}">ðŸ—‘ï¸</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -1487,7 +1487,7 @@ function saveAccount() {
   renderAccountsTable();
   document.getElementById('account-modal').classList.add('hidden');
   
-  showMessage('✅ Account added successfully', 'success');
+  showMessage('âœ… Account added successfully', 'success');
 }
 
 function populateAccountHolderDropdown() {
@@ -1517,7 +1517,7 @@ function renderAccountsTable() {
       <td>${(account.comments && account.comments.length > 30) ? account.comments.substring(0, 30) + '...' : (account.comments || 'No comments')}</td>
       <td>
         <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" 
-                data-item-id="${account.id}" data-item-type="account">🗑️</button>
+                data-item-id="${account.id}" data-item-type="account">ðŸ—‘ï¸</button>
       </td>
     </tr>
   `).join('');
@@ -1551,7 +1551,7 @@ function deleteItem(itemId, itemType, memberId) {
   
   saveDataToStorage();
   renderEnhancedDashboard();
-  showMessage('✅ Item deleted successfully', 'success');
+  showMessage('âœ… Item deleted successfully', 'success');
 }
 
 // ===== INITIALIZE ACCOUNT RENDERING =====
