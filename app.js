@@ -1126,3 +1126,445 @@ function showSection(sectionId) {
   // Add active class to clicked button
   event.target.classList.add('active');
 }
+
+// ===== ADDITIONAL FUNCTIONS FOR COMPLETE FUNCTIONALITY =====
+// Add these functions to the existing app-fixed.js file
+
+// ===== INVESTMENT MANAGEMENT FUNCTIONS =====
+function openAddInvestmentModal() {
+  document.getElementById('investment-form').reset();
+  document.getElementById('investment-modal-title').textContent = 'Add Investment';
+  document.getElementById('investment-modal').classList.remove('hidden');
+  populateInvestmentMemberDropdown();
+}
+
+function saveInvestment() {
+  const memberId = document.getElementById('investment-member').value;
+  const type = document.getElementById('investment-type').value;
+  
+  if (!memberId || !type) {
+    showMessage('Please fill all required fields', 'error');
+    return;
+  }
+  
+  const newInvestment = {
+    id: Date.now().toString(),
+    // Add investment-specific fields based on type
+  };
+  
+  if (!familyData.investments[memberId]) {
+    familyData.investments[memberId] = {
+      equity: [], mutualFunds: [], fixedDeposits: [], insurance: [], bankBalances: [], others: []
+    };
+  }
+  
+  familyData.investments[memberId][type].push(newInvestment);
+  
+  saveDataToStorage();
+  renderEnhancedDashboard();
+  document.getElementById('investment-modal').classList.add('hidden');
+  
+  showMessage('✅ Investment added successfully', 'success');
+}
+
+function showInvestmentTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Render content for the selected tab
+  renderInvestmentTabContent(tabName);
+}
+
+function renderInvestmentTabContent(tabName) {
+  let contentHTML = '';
+  
+  familyData.members.forEach(member => {
+    const investments = familyData.investments[member.id] || {};
+    const items = investments[tabName] || [];
+    
+    if (items.length > 0) {
+      contentHTML += `
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card__body">
+            <h4>${member.name} - ${getTabDisplayName(tabName)}</h4>
+            <div class="investment-table">
+              <table>
+                <thead>
+                  <tr>${getTableHeaders(tabName)}</tr>
+                </thead>
+                <tbody>
+                  ${items.map(item => getTableRow(item, tabName, member.id)).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  });
+  
+  if (!contentHTML) {
+    contentHTML = `
+      <div class="card">
+        <div class="card__body" style="text-align: center; padding: 40px;">
+          <h4>No ${getTabDisplayName(tabName)} Found</h4>
+          <p>Add your first ${tabName.toLowerCase()} investment to get started.</p>
+          <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add ${getTabDisplayName(tabName)}</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  document.getElementById('investment-tabs-content').innerHTML = contentHTML;
+}
+
+function getTabDisplayName(tabName) {
+  const displayNames = {
+    equity: 'Equity Investments',
+    mutualFunds: 'Mutual Funds',
+    fixedDeposits: 'Fixed Deposits',
+    insurance: 'Insurance Policies',
+    bankBalances: 'Bank Balances'
+  };
+  return displayNames[tabName] || tabName;
+}
+
+function getTableHeaders(tabName) {
+  const headers = {
+    equity: '<th>Stock/Company</th><th>Invested Amount</th><th>Current Value</th><th>P&L</th><th>Broker</th><th>Quantity</th><th>Actions</th>',
+    mutualFunds: '<th>Fund Name</th><th>Invested Amount</th><th>Current Value</th><th>P&L</th><th>Platform</th><th>Units</th><th>Actions</th>',
+    fixedDeposits: '<th>Institution</th><th>Amount</th><th>Interest Rate</th><th>Maturity Date</th><th>Interest Payout</th><th>Status</th><th>Actions</th>',
+    insurance: '<th>Insurer</th><th>Type</th><th>Premium</th><th>Sum Assured</th><th>Frequency</th><th>Status</th><th>Actions</th>',
+    bankBalances: '<th>Bank</th><th>Account Type</th><th>Current Balance</th><th>Last Updated</th><th>Actions</th>'
+  };
+  return headers[tabName] || '<th>Details</th><th>Actions</th>';
+}
+
+function getTableRow(item, tabName, memberId) {
+  const deleteBtn = `<button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${memberId}">🗑️</button>`;
+  
+  switch(tabName) {
+    case 'equity':
+      const equityPnL = (item.current_value || 0) - (item.invested_amount || 0);
+      return `
+        <tr>
+          <td>${item.symbol_or_name || 'N/A'}</td>
+          <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+          <td>₹${(item.current_value || 0).toLocaleString()}</td>
+          <td class="${equityPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">₹${equityPnL.toLocaleString()}</td>
+          <td>${item.broker_platform || 'N/A'}</td>
+          <td>${item.quantity || 0}</td>
+          <td>${deleteBtn}</td>
+        </tr>
+      `;
+    case 'mutualFunds':
+      const mfPnL = (item.current_value || 0) - (item.invested_amount || 0);
+      return `
+        <tr>
+          <td>${item.symbol_or_name || 'N/A'}</td>
+          <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+          <td>₹${(item.current_value || 0).toLocaleString()}</td>
+          <td class="${mfPnL >= 0 ? 'pnl-positive' : 'pnl-negative'}">₹${mfPnL.toLocaleString()}</td>
+          <td>${item.broker_platform || 'N/A'}</td>
+          <td>${item.quantity || 0}</td>
+          <td>${deleteBtn}</td>
+        </tr>
+      `;
+    case 'fixedDeposits':
+      const maturityDate = new Date(item.maturity_date);
+      const isMatured = maturityDate < new Date();
+      return `
+        <tr>
+          <td>${item.invested_in || 'N/A'}</td>
+          <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+          <td>${item.interest_rate || 0}%</td>
+          <td>${maturityDate.toLocaleDateString()}</td>
+          <td>${item.interest_payout || 'N/A'}</td>
+          <td class="status--${isMatured ? 'error' : 'success'}">${isMatured ? 'Matured' : 'Active'}</td>
+          <td>${deleteBtn}</td>
+        </tr>
+      `;
+    case 'insurance':
+      return `
+        <tr>
+          <td>${item.insurer || 'N/A'}</td>
+          <td>${item.insurance_type || 'N/A'}</td>
+          <td>₹${(item.insurance_premium || 0).toLocaleString()}</td>
+          <td>₹${(item.sum_assured || 0).toLocaleString()}</td>
+          <td>${item.payment_frequency || 'N/A'}</td>
+          <td class="status--success">Active</td>
+          <td>${deleteBtn}</td>
+        </tr>
+      `;
+    case 'bankBalances':
+      return `
+        <tr>
+          <td>${item.institution_name || 'N/A'}</td>
+          <td>Savings Account</td>
+          <td>₹${(item.current_balance || 0).toLocaleString()}</td>
+          <td>Today</td>
+          <td>${deleteBtn}</td>
+        </tr>
+      `;
+    default:
+      return '<tr><td colspan="2">No data</td></tr>';
+  }
+}
+
+// ===== LIABILITY MANAGEMENT FUNCTIONS =====
+function openAddLiabilityModal() {
+  document.getElementById('liability-form').reset();
+  document.getElementById('liability-modal-title').textContent = 'Add Liability';
+  document.getElementById('liability-modal').classList.remove('hidden');
+  populateInvestmentMemberDropdown();
+}
+
+function saveLiability() {
+  const memberId = document.getElementById('liability-member').value;
+  const type = document.getElementById('liability-type').value;
+  
+  if (!memberId || !type) {
+    showMessage('Please fill all required fields', 'error');
+    return;
+  }
+  
+  const newLiability = {
+    id: Date.now().toString(),
+    type: type,
+    // Add liability-specific fields
+  };
+  
+  if (!familyData.liabilities[memberId]) {
+    familyData.liabilities[memberId] = {
+      homeLoan: [], personalLoan: [], creditCard: [], other: []
+    };
+  }
+  
+  familyData.liabilities[memberId][type].push(newLiability);
+  
+  saveDataToStorage();
+  renderEnhancedDashboard();
+  document.getElementById('liability-modal').classList.add('hidden');
+  
+  showMessage('✅ Liability added successfully', 'success');
+}
+
+function showLiabilityTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Render content for the selected tab
+  renderLiabilityTabContent(tabName);
+}
+
+function renderLiabilityTabContent(tabName) {
+  let contentHTML = '';
+  let allLiabilities = [];
+  
+  familyData.members.forEach(member => {
+    const liabilities = familyData.liabilities[member.id] || {};
+    const items = liabilities[tabName] || [];
+    
+    items.forEach(item => {
+      allLiabilities.push({
+        ...item,
+        memberName: member.name,
+        memberId: member.id,
+        type: tabName
+      });
+    });
+  });
+  
+  if (allLiabilities.length > 0) {
+    contentHTML = `
+      <div class="card">
+        <div class="card__body">
+          <h4>${getLiabilityDisplayName(tabName)}</h4>
+          <div class="investment-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Type</th>
+                  <th>Lender/Bank</th>
+                  <th>Outstanding Amount</th>
+                  <th>EMI/Payment</th>
+                  <th>Interest Rate</th>
+                  <th>Due Date</th>
+                  <th>Comments</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allLiabilities.map(liability => `
+                  <tr>
+                    <td>${liability.memberName}</td>
+                    <td>${liability.type}</td>
+                    <td>${liability.lender || liability.bank || 'N/A'}</td>
+                    <td>₹${(liability.outstanding_amount || 0).toLocaleString()}</td>
+                    <td>₹${(liability.emi_amount || 0).toLocaleString()}</td>
+                    <td>${liability.interest_rate || 'N/A'}%</td>
+                    <td>${liability.due_date ? new Date(liability.due_date).toLocaleDateString() : 'N/A'}</td>
+                    <td>${(liability.comments && liability.comments.length > 30) ? liability.comments.substring(0, 30) + '...' : (liability.comments || 'No comments')}</td>
+                    <td>
+                      <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" 
+                              data-item-id="${liability.id}" data-item-type="${liability.type}" data-member-id="${liability.memberId}">🗑️</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    contentHTML = `
+      <div class="card">
+        <div class="card__body" style="text-align: center; padding: 40px;">
+          <h4>No ${getLiabilityDisplayName(tabName)} Found</h4>
+          <p>Add your first ${tabName.toLowerCase()} to get started.</p>
+          <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add ${getLiabilityDisplayName(tabName)}</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  document.getElementById('liability-tabs-content').innerHTML = contentHTML;
+}
+
+function getLiabilityDisplayName(tabName) {
+  const displayNames = {
+    homeLoan: 'Home Loans',
+    personalLoan: 'Personal Loans',
+    creditCard: 'Credit Cards',
+    other: 'Other Liabilities'
+  };
+  return displayNames[tabName] || tabName;
+}
+
+// ===== ACCOUNT MANAGEMENT FUNCTIONS =====
+function openAddAccountModal() {
+  document.getElementById('account-form').reset();
+  document.getElementById('account-modal-title').textContent = 'Add Account';
+  document.getElementById('account-modal').classList.remove('hidden');
+  populateAccountHolderDropdown();
+}
+
+function saveAccount() {
+  const accountType = document.getElementById('account-type').value;
+  const institution = document.getElementById('account-institution').value;
+  const accountNumber = document.getElementById('account-number').value;
+  const holderId = document.getElementById('account-holder').value;
+  const nomineeId = document.getElementById('account-nominee').value;
+  const status = document.getElementById('account-status').value;
+  const comments = document.getElementById('account-comments').value;
+  
+  if (!accountType || !institution || !accountNumber || !holderId) {
+    showMessage('Please fill all required fields', 'error');
+    return;
+  }
+  
+  const holder = familyData.members.find(m => m.id === holderId);
+  const nominee = nomineeId ? familyData.members.find(m => m.id === nomineeId) : null;
+  
+  const newAccount = {
+    id: Date.now().toString(),
+    account_type: accountType,
+    institution: institution,
+    account_number: accountNumber,
+    holder_name: holder ? holder.name : 'Unknown',
+    nominee: nominee ? nominee.name : '',
+    status: status,
+    comments: comments
+  };
+  
+  familyData.accounts.push(newAccount);
+  
+  saveDataToStorage();
+  renderAccountsTable();
+  document.getElementById('account-modal').classList.add('hidden');
+  
+  showMessage('✅ Account added successfully', 'success');
+}
+
+function populateAccountHolderDropdown() {
+  const holderSelect = document.getElementById('account-holder');
+  const nomineeSelect = document.getElementById('account-nominee');
+  
+  const options = familyData.members.map(member => 
+    `<option value="${member.id}">${member.name}</option>`
+  ).join('');
+  
+  holderSelect.innerHTML = '<option value="">Select Holder</option>' + options;
+  nomineeSelect.innerHTML = '<option value="">Select Nominee</option>' + options;
+}
+
+function renderAccountsTable() {
+  const tableBody = document.querySelector('#accounts-table tbody');
+  if (!tableBody) return;
+  
+  tableBody.innerHTML = familyData.accounts.map(account => `
+    <tr>
+      <td>${account.account_type}</td>
+      <td>${account.institution}</td>
+      <td>${account.account_number}</td>
+      <td>${account.holder_name}</td>
+      <td>${account.nominee}</td>
+      <td><span class="status status--${account.status.toLowerCase() === 'active' ? 'success' : 'error'}">${account.status}</span></td>
+      <td>${(account.comments && account.comments.length > 30) ? account.comments.substring(0, 30) + '...' : (account.comments || 'No comments')}</td>
+      <td>
+        <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" 
+                data-item-id="${account.id}" data-item-type="account">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ===== DELETE ITEM FUNCTIONS =====
+function showDeleteItemConfirm(itemId, itemType, memberId) {
+  deletingItemId = itemId;
+  deletingItemType = itemType;
+  
+  // You can add a confirmation modal here if needed
+  if (confirm('Are you sure you want to delete this item?')) {
+    deleteItem(itemId, itemType, memberId);
+  }
+}
+
+function deleteItem(itemId, itemType, memberId) {
+  if (itemType === 'account') {
+    // Delete from accounts array
+    familyData.accounts = familyData.accounts.filter(acc => acc.id !== itemId);
+    renderAccountsTable();
+  } else if (memberId) {
+    // Delete from member's investments or liabilities
+    if (familyData.investments[memberId] && familyData.investments[memberId][itemType]) {
+      familyData.investments[memberId][itemType] = familyData.investments[memberId][itemType].filter(item => item.id !== itemId);
+    }
+    if (familyData.liabilities[memberId] && familyData.liabilities[memberId][itemType]) {
+      familyData.liabilities[memberId][itemType] = familyData.liabilities[memberId][itemType].filter(item => item.id !== itemId);
+    }
+  }
+  
+  saveDataToStorage();
+  renderEnhancedDashboard();
+  showMessage('✅ Item deleted successfully', 'success');
+}
+
+// ===== INITIALIZE ACCOUNT RENDERING =====
+// Add this to the existing renderEnhancedDashboard function call or create a new one
+function initializeAllSections() {
+  renderEnhancedDashboard();
+  renderAccountsTable();
+  
+  // Initialize investment tabs
+  renderInvestmentTabContent('equity');
+  
+  // Initialize liability tabs  
+  renderLiabilityTabContent('homeLoan');
+}
+
+// Update the loadDashboardData function to call initializeAllSections instead of just renderEnhancedDashboard
