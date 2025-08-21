@@ -615,7 +615,7 @@ function setupEventDelegation() {
     // Photo selection in modal
     if (target.matches('.photo-option') || target.closest('.photo-option')) {
       const photoElement = target.closest('.photo-option') || target;
-      selectPhoto(photoElement.src);
+      selectPhotoInModal(photoElement.src);
     }
   });
 }
@@ -959,6 +959,11 @@ function deleteMember() {
   showMessage('✅ Member deleted successfully', 'success');
 }
 
+function closeDeleteMemberModal() {
+  document.getElementById('delete-member-modal').classList.add('hidden');
+  deletingMemberId = null;
+}
+
 // ===== PHOTO MANAGEMENT FUNCTIONS =====
 function openPhotoModal(memberId) {
   photoEditingMemberId = memberId;
@@ -969,22 +974,23 @@ function openPhotoModal(memberId) {
     <img src="${photoUrl}" 
          class="photo-option" 
          style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; cursor: pointer; margin: 5px; border: 2px solid transparent;"
-         onclick="selectPhoto('${photoUrl}')">
+         onclick="selectPhotoInModal('${photoUrl}')"">
   `).join('');
   
   document.getElementById('photo-options').innerHTML = photoOptionsHTML;
   document.getElementById('photo-modal').classList.remove('hidden');
 }
 
-function selectPhoto(photoUrl) {
+function selectPhotoInModal(photoUrl) {
   selectedPhotoUrl = photoUrl;
   
-  // Highlight selected photo
+  // Clear previous selections
   document.querySelectorAll('.photo-option').forEach(img => {
-    img.style.border = '2px solid transparent';
+    img.classList.remove('selected');
   });
   
-  event.target.style.border = '2px solid var(--color-primary)';
+  // Add selected class to clicked photo
+  event.target.classList.add('selected');
 }
 
 function savePhoto() {
@@ -1505,11 +1511,6 @@ function populateInvestmentMemberDropdown() {
 // ===== MODAL FUNCTIONS =====
 function closeModal(modalId) {
   document.getElementById(modalId).classList.add('hidden');
-}
-
-function closeDeleteMemberModal() {
-  document.getElementById('delete-member-modal').classList.add('hidden');
-  deletingMemberId = null;
 }
 
 // ===== NAVIGATION FUNCTIONS =====
