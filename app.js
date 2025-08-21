@@ -1,5 +1,5 @@
-// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - COMPLETE WORKING VERSION =====
-// Complete working JavaScript with all functions including liabilities and account management
+// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - FULLY WORKING VERSION =====
+// Complete working JavaScript with all functions including working buttons and photo upload
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -1444,8 +1444,29 @@ function setLoginLoading(loading) {
 }
 
 function showMessage(text, type) {
-    const messageDiv = document.getElementById('login-message');
-    if (!messageDiv) return;
+    // Try to find login message first, if not available create a temporary message
+    let messageDiv = document.getElementById('login-message');
+    
+    if (!messageDiv) {
+        // Create temporary message for dashboard messages
+        messageDiv = document.createElement('div');
+        messageDiv.style.position = 'fixed';
+        messageDiv.style.top = '20px';
+        messageDiv.style.right = '20px';
+        messageDiv.style.padding = '12px 20px';
+        messageDiv.style.borderRadius = '8px';
+        messageDiv.style.fontWeight = '600';
+        messageDiv.style.zIndex = '9999';
+        messageDiv.style.maxWidth = '400px';
+        document.body.appendChild(messageDiv);
+        
+        // Auto remove after 4 seconds
+        setTimeout(() => {
+            if (document.body.contains(messageDiv)) {
+                document.body.removeChild(messageDiv);
+            }
+        }, 4000);
+    }
     
     messageDiv.style.display = 'block';
     messageDiv.textContent = text;
@@ -1455,17 +1476,21 @@ function showMessage(text, type) {
         messageDiv.style.background = '#d1fae5';
         messageDiv.style.borderColor = '#10b981';
         messageDiv.style.color = '#065f46';
+        messageDiv.style.border = '1px solid #10b981';
     } else if (type === 'info') {
         messageDiv.style.background = '#dbeafe';
         messageDiv.style.borderColor = '#3b82f6';
         messageDiv.style.color = '#1d4ed8';
+        messageDiv.style.border = '1px solid #3b82f6';
     } else {
-        messageDiv.style.background = '#fee';
+        messageDiv.style.background = '#fee2e2';
         messageDiv.style.borderColor = '#f87171';
         messageDiv.style.color = '#dc2626';
+        messageDiv.style.border = '1px solid #f87171';
     }
     
-    if (type !== 'info') {
+    // Auto-hide for login message
+    if (messageDiv.id === 'login-message' && type !== 'info') {
         setTimeout(() => {
             messageDiv.style.display = 'none';
             messageDiv.classList.add('hidden');
@@ -1699,45 +1724,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     console.log('✅ Complete Family Investment Dashboard loaded successfully!');
-    console.log('✅ Features: Working action buttons, Photo upload, Bank balances, Complete functionality');
+    console.log('✅ Features: Working buttons, Photo upload, Bank balances, Member management');
 });
 
-// Make sure global functions are available
-window.handleLogin = handleLogin;
-window.handleLogout = handleLogout;
-window.showMemberDetails = showMemberDetails;
-window.hideMemberDetails = hideMemberDetails;
-window.showAccountManagement = showAccountManagement;
-window.hideAccountManagement = hideAccountManagement;
-window.openAddMemberModal = openAddMemberModal;
-window.closeMemberModal = closeMemberModal;
-window.openAddFDModal = openAddFDModal;
-window.closeAddFDModal = closeAddFDModal;
-window.openAddInsuranceModal = openAddInsuranceModal;
-window.closeAddInsuranceModal = closeAddInsuranceModal;
-window.openPhotoModal = openPhotoModal;
-window.closePhotoModal = closePhotoModal;
-window.selectPhoto = selectPhoto;
-window.selectPhotoOption = selectPhotoOption;
-window.triggerFileUpload = triggerFileUpload;
-window.handleFileUpload = handleFileUpload;
-window.editMemberPhoto = editMemberPhoto;
-window.editMember = editMember;
-window.deleteMember = deleteMember;
-window.editFD = editFD;
-window.deleteFD = deleteFD;
-window.editInsurance = editInsurance;
-window.deleteInsurance = deleteInsurance;
-window.editLiability = editLiability;
-window.deleteLiability = deleteLiability;
-window.editAccount = editAccount;
-window.deleteAccount = deleteAccount;
-window.editBankBalance = editBankBalance;
-window.deleteBankBalance = deleteBankBalance;
-window.openAddLiabilityModal = openAddLiabilityModal;
-window.openAddAccountModal = openAddAccountModal;
-window.refreshData = refreshData;
-window.exportData = exportData;
-
 console.log('🚀 Complete Family Investment Dashboard initialized!');
-console.log('✅ All features ready: Assets, Liabilities, Accounts, Nominees, Working buttons, Photo upload!');
+console.log('✅ All features ready and working: Assets, Liabilities, Accounts, Edit/Delete buttons, Photo upload!');
