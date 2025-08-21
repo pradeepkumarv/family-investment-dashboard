@@ -1,5 +1,5 @@
-// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - WITH PHOTOS & DELETE FUNCTIONALITY =====
-// Complete working JavaScript with visual enhancements and delete features
+// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - WITH FILE UPLOAD & PRIMARY MEMBER FIX =====
+// Complete working JavaScript with file upload and member restoration
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -18,6 +18,7 @@ let currentViewMember = null;
 let deletingItemId = null;
 let deletingItemType = null;
 let selectedPhotoUrl = null;
+let uploadedPhotoFile = null;
 
 // ===== PHOTO URLS FOR MEMBER SELECTION =====
 const MEMBER_PHOTOS = [
@@ -34,6 +35,43 @@ const MEMBER_PHOTOS = [
     'https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?w=150&h=150&fit=crop&crop=face',
     'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face'
 ];
+
+// ===== PRIMARY MEMBER RESTORATION =====
+function restorePrimaryMember() {
+    const primaryMemberData = {
+        id: 'primary-' + Date.now(),
+        name: 'Pradeep Kumar',
+        relationship: 'Self',
+        is_primary: true,
+        photo_url: MEMBER_PHOTOS[0],
+        avatar_url: 'https://ui-avatars.com/api/?name=Pradeep+Kumar&background=667eea&color=fff'
+    };
+    
+    // Add to demo data
+    familyData.members.unshift(primaryMemberData);
+    familyData.investments[primaryMemberData.id] = {
+        equity: [
+            { id: 'eq1', symbol_or_name: 'HDFC Bank', invested_amount: 320000, current_value: 360000, broker_platform: 'HDFC Securities', quantity: 200 },
+            { id: 'eq2', symbol_or_name: 'Reliance Industries', invested_amount: 280000, current_value: 295000, broker_platform: 'Zerodha', quantity: 150 }
+        ],
+        mutualFunds: [
+            { id: 'mf1', symbol_or_name: 'HDFC Top 100 Fund', invested_amount: 250000, current_value: 285000, broker_platform: 'FundsIndia', quantity: 5000 }
+        ],
+        fixedDeposits: [
+            { id: 'fd1', invested_in: 'HDFC Bank', invested_amount: 500000, interest_rate: 6.75, maturity_date: '2025-12-31', interest_payout: 'Yearly', interest_amount: 33750 },
+            { id: 'fd2', invested_in: 'ICICI Bank', invested_amount: 300000, interest_rate: 6.50, maturity_date: '2026-03-15', interest_payout: 'Quarterly', interest_amount: 19500 }
+        ],
+        insurance: [
+            { id: 'ins1', insurer: 'LIC', insurance_type: 'Term Life', insurance_premium: 35000, payment_frequency: 'Yearly', maturity_date: '2045-12-31', sum_assured: 5000000 },
+            { id: 'ins2', insurer: 'HDFC Ergo', insurance_type: 'Health', insurance_premium: 18000, payment_frequency: 'Yearly', maturity_date: '2025-04-15', sum_assured: 1000000 }
+        ],
+        bankBalances: [{ id: 'bank1', current_balance: 85000, institution_name: 'HDFC Bank' }],
+        others: []
+    };
+    
+    showMessage('✅ Primary member (Pradeep Kumar) restored successfully!', 'success');
+    renderEnhancedDashboard();
+}
 
 // ===== INITIALIZATION =====
 async function initializeSupabase() {
@@ -167,6 +205,14 @@ async function loadDashboardData() {
 
         familyData.members = members || [];
         console.log('✅ Loaded family members:', familyData.members.length);
+
+        // Check if no primary member exists
+        const primaryMember = familyData.members.find(m => m.is_primary);
+        if (!primaryMember && familyData.members.length === 0) {
+            console.log('No primary member found, creating default');
+            restorePrimaryMember();
+            return;
+        }
 
         // Load detailed investment data for each member
         await loadDetailedInvestmentData();
@@ -391,7 +437,25 @@ function calculateEnhancedTotals() {
 }
 
 function renderEnhancedStats(totals) {
-    const statsHTML = `
+    const hasMembers = familyData.members.length > 0;
+    const hasPrimaryMember = familyData.members.some(m => m.is_primary);
+    
+    let extraActions = '';
+    if (!hasPrimaryMember) {
+        extraActions = `
+            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                <div class="stat-label" style="color: rgba(255,255,255,0.9);">⚠️ PRIMARY MEMBER MISSING</div>
+                <div class="stat-value" style="color: white;">Restore Now</div>
+                <div class="stat-change" style="color: rgba(255,255,255,0.9);">
+                    <button onclick="restorePrimaryMember()" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border: 1px solid rgba(255,255,255,0.3);">
+                        ✅ Restore Primary Member
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    const statsHTML = extraActions + `
         <div class="stat-card">
             <div class="stat-label">Total Family Net Worth</div>
             <div class="stat-value primary">₹${totals.totalCurrentValue.toLocaleString()}</div>
@@ -445,7 +509,8 @@ function renderMemberCards() {
                 <div class="member-header">
                     <div class="member-photo-container">
                         ${member.photo_url ? 
-                            `<img src="${member.photo_url}" alt="${member.name}" class="member-photo">` :
+                            `<img src="${member.photo_url}" alt="${member.name}" class="member-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                             <div class="member-avatar" style="background: ${avatarColor}; display: none;">${member.name.charAt(0)}</div>` :
                             `<div class="member-avatar" style="background: ${avatarColor}">${member.name.charAt(0)}</div>`
                         }
                         <button class="photo-upload-btn" onclick="event.stopPropagation(); editMemberPhoto('${member.id}')" title="Change Photo">📷</button>
@@ -867,26 +932,74 @@ function renderOtherTable(others) {
     return '<div class="empty-state">Other investments will be managed here. Feature coming soon!</div>';
 }
 
-// ===== PHOTO MANAGEMENT FUNCTIONS =====
+// ===== ENHANCED PHOTO MANAGEMENT WITH FILE UPLOAD =====
 function openPhotoModal() {
-    // Populate photo options
-    const photoOptionsHTML = MEMBER_PHOTOS.map((photoUrl, index) => `
+    // Populate photo options with upload option first
+    const photoOptionsHTML = `
+        <div class="photo-option upload-option" onclick="triggerFileUpload()">
+            <input type="file" id="photo-file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+            <div style="text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📱</div>
+                <div style="font-size: 0.8rem;">Upload Photo</div>
+            </div>
+        </div>
+    ` + MEMBER_PHOTOS.map((photoUrl, index) => `
         <div class="photo-option" data-photo="${photoUrl}" onclick="selectPhotoOption('${photoUrl}')">
-            <img src="${photoUrl}" alt="Photo ${index + 1}">
+            <img src="${photoUrl}" alt="Photo ${index + 1}" onerror="this.parentElement.style.display='none';">
         </div>
-    `).join('') + `
-        <div class="photo-option upload-option" onclick="selectPhotoOption('')">
-            <div>📷</div>
-        </div>
-    `;
+    `).join('');
     
     document.getElementById('photo-options').innerHTML = photoOptionsHTML;
     document.getElementById('photo-modal').classList.remove('hidden');
 }
 
+function triggerFileUpload() {
+    document.getElementById('photo-file-input').click();
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            alert('Image size should be less than 5MB');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            uploadedPhotoFile = file;
+            selectedPhotoUrl = dataUrl;
+            
+            // Update the upload option to show selected file
+            const uploadOption = document.querySelector('.upload-option');
+            uploadOption.innerHTML = `
+                <img src="${dataUrl}" alt="Uploaded photo" style="width: 100%; height: 100%; object-fit: cover;">
+                <div style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; padding: 2px 4px; border-radius: 4px; font-size: 0.6rem;">
+                    Uploaded
+                </div>
+            `;
+            uploadOption.classList.add('selected');
+            
+            // Remove selected state from other options
+            document.querySelectorAll('.photo-option:not(.upload-option)').forEach(option => {
+                option.classList.remove('selected');
+            });
+        };
+        reader.readAsDataURL(file);
+    } else {
+        alert('Please select a valid image file');
+    }
+}
+
 function closePhotoModal() {
     document.getElementById('photo-modal').classList.add('hidden');
     selectedPhotoUrl = null;
+    uploadedPhotoFile = null;
+    // Reset file input
+    const fileInput = document.getElementById('photo-file-input');
+    if (fileInput) fileInput.value = '';
+    
     // Remove selected state from all options
     document.querySelectorAll('.photo-option').forEach(option => {
         option.classList.remove('selected');
@@ -895,6 +1008,7 @@ function closePhotoModal() {
 
 function selectPhotoOption(photoUrl) {
     selectedPhotoUrl = photoUrl;
+    uploadedPhotoFile = null; // Clear uploaded file if selecting preset
     
     // Remove selected state from all options
     document.querySelectorAll('.photo-option').forEach(option => {
@@ -911,6 +1025,7 @@ function selectPhoto() {
         document.getElementById('member-photo').value = selectedPhotoUrl;
         updatePhotoPreview(selectedPhotoUrl);
         closePhotoModal();
+        showMessage('✅ Photo selected successfully!', 'success');
     } else {
         alert('Please select a photo first');
     }
@@ -1352,12 +1467,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         memberForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Use avatar_url field instead of photo_url for better compatibility
             const memberData = {
                 name: document.getElementById('member-name').value,
                 relationship: document.getElementById('member-relationship').value,
                 is_primary: document.getElementById('member-primary').checked,
-                photo_url: document.getElementById('member-photo').value || null,
-                avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById('member-name').value)}&background=667eea&color=fff`
+                avatar_url: document.getElementById('member-photo').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById('member-name').value)}&background=667eea&color=fff`
             };
             
             try {
@@ -1383,11 +1498,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (editingMemberId) {
                         const memberIndex = familyData.members.findIndex(m => m.id === editingMemberId);
                         if (memberIndex !== -1) {
-                            familyData.members[memberIndex] = { ...familyData.members[memberIndex], ...memberData };
+                            familyData.members[memberIndex] = { 
+                                ...familyData.members[memberIndex], 
+                                ...memberData,
+                                photo_url: memberData.avatar_url // For demo compatibility
+                            };
                         }
                     } else {
                         const newId = Date.now().toString();
-                        familyData.members.push({ id: newId, ...memberData });
+                        familyData.members.push({ 
+                            id: newId, 
+                            ...memberData,
+                            photo_url: memberData.avatar_url // For demo compatibility
+                        });
                         familyData.investments[newId] = { 
                             equity: [], mutualFunds: [], fixedDeposits: [], 
                             insurance: [], bankBalances: [], others: [] 
@@ -1486,8 +1609,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     console.log('✅ Enhanced Family Investment Dashboard loaded successfully!');
-    console.log('✅ Features: Photos, Delete functionality, Visual enhancements');
+    console.log('✅ Features: File upload, Primary member restoration, Enhanced photos');
 });
 
 console.log('🚀 Enhanced Family Investment Dashboard initialized!');
-console.log('✅ All features ready: Photos, Delete actions, Stunning visuals!');
+console.log('✅ All features ready: File upload, Primary member fix, Full photo support!');
