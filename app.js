@@ -1,5 +1,5 @@
-// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - WITH FILE UPLOAD & PRIMARY MEMBER FIX =====
-// Complete working JavaScript with file upload and member restoration
+// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - WITH PHOTO FIX & COMMENTS =====
+// Complete working JavaScript with photo updates and comments functionality
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -19,6 +19,7 @@ let deletingItemId = null;
 let deletingItemType = null;
 let selectedPhotoUrl = null;
 let uploadedPhotoFile = null;
+let photoEditingMemberId = null; // Separate tracking for photo editing
 
 // ===== PHOTO URLS FOR MEMBER SELECTION =====
 const MEMBER_PHOTOS = [
@@ -44,7 +45,7 @@ function restorePrimaryMember() {
         relationship: 'Self',
         is_primary: true,
         photo_url: MEMBER_PHOTOS[0],
-        avatar_url: 'https://ui-avatars.com/api/?name=Pradeep+Kumar&background=667eea&color=fff'
+        avatar_url: MEMBER_PHOTOS[0]
     };
     
     // Add to demo data
@@ -58,12 +59,12 @@ function restorePrimaryMember() {
             { id: 'mf1', symbol_or_name: 'HDFC Top 100 Fund', invested_amount: 250000, current_value: 285000, broker_platform: 'FundsIndia', quantity: 5000 }
         ],
         fixedDeposits: [
-            { id: 'fd1', invested_in: 'HDFC Bank', invested_amount: 500000, interest_rate: 6.75, maturity_date: '2025-12-31', interest_payout: 'Yearly', interest_amount: 33750 },
-            { id: 'fd2', invested_in: 'ICICI Bank', invested_amount: 300000, interest_rate: 6.50, maturity_date: '2026-03-15', interest_payout: 'Quarterly', interest_amount: 19500 }
+            { id: 'fd1', invested_in: 'HDFC Bank', invested_amount: 500000, interest_rate: 6.75, maturity_date: '2025-12-31', interest_payout: 'Yearly', interest_amount: 33750, invested_date: '2024-01-01', comments: 'High-yield FD with excellent bank rating' },
+            { id: 'fd2', invested_in: 'ICICI Bank', invested_amount: 300000, interest_rate: 6.50, maturity_date: '2026-03-15', interest_payout: 'Quarterly', interest_amount: 19500, invested_date: '2024-03-15', comments: 'Quarterly payout for regular income' }
         ],
         insurance: [
-            { id: 'ins1', insurer: 'LIC', insurance_type: 'Term Life', insurance_premium: 35000, payment_frequency: 'Yearly', maturity_date: '2045-12-31', sum_assured: 5000000 },
-            { id: 'ins2', insurer: 'HDFC Ergo', insurance_type: 'Health', insurance_premium: 18000, payment_frequency: 'Yearly', maturity_date: '2025-04-15', sum_assured: 1000000 }
+            { id: 'ins1', insurer: 'LIC', insurance_type: 'Term Life', insurance_premium: 35000, payment_frequency: 'Yearly', maturity_date: '2045-12-31', sum_assured: 5000000, invested_date: '2023-12-31', comments: 'Comprehensive life coverage with tax benefits' },
+            { id: 'ins2', insurer: 'HDFC Ergo', insurance_type: 'Health', insurance_premium: 18000, payment_frequency: 'Yearly', maturity_date: '2025-04-15', sum_assured: 1000000, invested_date: '2024-04-15', comments: 'Family floater health policy with cashless facilities' }
         ],
         bankBalances: [{ id: 'bank1', current_balance: 85000, institution_name: 'HDFC Bank' }],
         others: []
@@ -293,32 +294,36 @@ function loadSampleData() {
             name: 'Pradeep Kumar', 
             relationship: 'Self', 
             is_primary: true,
-            photo_url: MEMBER_PHOTOS[0]
+            photo_url: MEMBER_PHOTOS[0],
+            avatar_url: MEMBER_PHOTOS[0]
         },
         { 
             id: '2', 
             name: 'Priya Kumar', 
             relationship: 'Spouse', 
             is_primary: false,
-            photo_url: MEMBER_PHOTOS[1]
+            photo_url: MEMBER_PHOTOS[1],
+            avatar_url: MEMBER_PHOTOS[1]
         },
         { 
             id: '3', 
             name: 'Ramesh Kumar', 
             relationship: 'Father', 
             is_primary: false,
-            photo_url: MEMBER_PHOTOS[2]
+            photo_url: MEMBER_PHOTOS[2],
+            avatar_url: MEMBER_PHOTOS[2]
         },
         { 
             id: '4', 
             name: 'Sunita Kumar', 
             relationship: 'Mother', 
             is_primary: false,
-            photo_url: MEMBER_PHOTOS[3]
+            photo_url: MEMBER_PHOTOS[3],
+            avatar_url: MEMBER_PHOTOS[3]
         }
     ];
     
-    // Sample investment data with proper structure
+    // Sample investment data with proper structure including comments and invested_date
     familyData.investments = {
         '1': {
             equity: [
@@ -329,12 +334,12 @@ function loadSampleData() {
                 { id: '3', symbol_or_name: 'HDFC Top 100 Fund', invested_amount: 250000, current_value: 285000, broker_platform: 'FundsIndia', quantity: 5000 }
             ],
             fixedDeposits: [
-                { id: '4', invested_in: 'HDFC Bank', invested_amount: 500000, interest_rate: 6.75, maturity_date: '2025-12-31', interest_payout: 'Yearly', interest_amount: 33750 },
-                { id: '5', invested_in: 'ICICI Bank', invested_amount: 300000, interest_rate: 6.50, maturity_date: '2026-03-15', interest_payout: 'Quarterly', interest_amount: 19500 }
+                { id: '4', invested_in: 'HDFC Bank', invested_amount: 500000, interest_rate: 6.75, maturity_date: '2025-12-31', interest_payout: 'Yearly', interest_amount: 33750, invested_date: '2024-01-01', comments: 'High-yield FD with excellent bank rating' },
+                { id: '5', invested_in: 'ICICI Bank', invested_amount: 300000, interest_rate: 6.50, maturity_date: '2026-03-15', interest_payout: 'Quarterly', interest_amount: 19500, invested_date: '2024-03-15', comments: 'Quarterly payout for regular income' }
             ],
             insurance: [
-                { id: '6', insurer: 'LIC', insurance_type: 'Term Life', insurance_premium: 35000, payment_frequency: 'Yearly', maturity_date: '2045-12-31', sum_assured: 5000000 },
-                { id: '7', insurer: 'HDFC Ergo', insurance_type: 'Health', insurance_premium: 18000, payment_frequency: 'Yearly', maturity_date: '2025-04-15', sum_assured: 1000000 }
+                { id: '6', insurer: 'LIC', insurance_type: 'Term Life', insurance_premium: 35000, payment_frequency: 'Yearly', maturity_date: '2045-12-31', sum_assured: 5000000, invested_date: '2023-12-31', comments: 'Comprehensive life coverage with tax benefits' },
+                { id: '7', insurer: 'HDFC Ergo', insurance_type: 'Health', insurance_premium: 18000, payment_frequency: 'Yearly', maturity_date: '2025-04-15', sum_assured: 1000000, invested_date: '2024-04-15', comments: 'Family floater health policy with cashless facilities' }
             ],
             bankBalances: [{ id: '8', current_balance: 85000, institution_name: 'HDFC Bank' }],
             others: []
@@ -342,24 +347,24 @@ function loadSampleData() {
         '2': {
             equity: [{ id: '9', symbol_or_name: 'TCS', invested_amount: 180000, current_value: 195000, broker_platform: 'ICICI Securities', quantity: 100 }],
             mutualFunds: [{ id: '10', symbol_or_name: 'SBI Blue Chip Fund', invested_amount: 300000, current_value: 345000, broker_platform: 'ICICI Securities', quantity: 8000 }],
-            fixedDeposits: [{ id: '11', invested_in: 'SBI', invested_amount: 250000, interest_rate: 6.80, maturity_date: '2025-11-20', interest_payout: 'Maturity', interest_amount: 17000 }],
-            insurance: [{ id: '12', insurer: 'ICICI Prudential', insurance_type: 'ULIP', insurance_premium: 50000, payment_frequency: 'Yearly', maturity_date: '2035-06-30', sum_assured: 800000 }],
+            fixedDeposits: [{ id: '11', invested_in: 'SBI', invested_amount: 250000, interest_rate: 6.80, maturity_date: '2025-11-20', interest_payout: 'Maturity', interest_amount: 17000, invested_date: '2024-11-20', comments: 'Tax-saving FD with competitive rates' }],
+            insurance: [{ id: '12', insurer: 'ICICI Prudential', insurance_type: 'ULIP', insurance_premium: 50000, payment_frequency: 'Yearly', maturity_date: '2035-06-30', sum_assured: 800000, invested_date: '2023-06-30', comments: 'Investment cum insurance with equity exposure' }],
             bankBalances: [{ id: '13', current_balance: 45000, institution_name: 'ICICI Bank' }],
             others: []
         },
         '3': {
             equity: [{ id: '14', symbol_or_name: 'HDFC Bank', invested_amount: 90000, current_value: 95000, broker_platform: 'HDFC Securities', quantity: 50 }],
             mutualFunds: [],
-            fixedDeposits: [{ id: '15', invested_in: 'Post Office', invested_amount: 200000, interest_rate: 7.20, maturity_date: '2025-08-30', interest_payout: 'Yearly', interest_amount: 14400 }],
-            insurance: [{ id: '16', insurer: 'SBI Life', insurance_type: 'Whole Life', insurance_premium: 25000, payment_frequency: 'Yearly', maturity_date: '2030-12-31', sum_assured: 1500000 }],
+            fixedDeposits: [{ id: '15', invested_in: 'Post Office', invested_amount: 200000, interest_rate: 7.20, maturity_date: '2025-08-30', interest_payout: 'Yearly', interest_amount: 14400, invested_date: '2023-08-30', comments: 'Government-backed secure investment' }],
+            insurance: [{ id: '16', insurer: 'SBI Life', insurance_type: 'Whole Life', insurance_premium: 25000, payment_frequency: 'Yearly', maturity_date: '2030-12-31', sum_assured: 1500000, invested_date: '2022-12-31', comments: 'Traditional whole life policy with maturity benefits' }],
             bankBalances: [{ id: '17', current_balance: 32000, institution_name: 'ICICI Bank' }],
             others: []
         },
         '4': {
             equity: [],
             mutualFunds: [{ id: '18', symbol_or_name: 'HDFC Balanced Fund', invested_amount: 150000, current_value: 162000, broker_platform: 'HDFC Securities', quantity: 3000 }],
-            fixedDeposits: [{ id: '19', invested_in: 'Punjab National Bank', invested_amount: 150000, interest_rate: 6.60, maturity_date: '2026-01-10', interest_payout: 'Quarterly', interest_amount: 9900 }],
-            insurance: [{ id: '20', insurer: 'Max Life', insurance_type: 'Endowment', insurance_premium: 40000, payment_frequency: 'Yearly', maturity_date: '2032-09-15', sum_assured: 1200000 }],
+            fixedDeposits: [{ id: '19', invested_in: 'Punjab National Bank', invested_amount: 150000, interest_rate: 6.60, maturity_date: '2026-01-10', interest_payout: 'Quarterly', interest_amount: 9900, invested_date: '2024-01-10', comments: 'Senior citizen rate with quarterly interest' }],
+            insurance: [{ id: '20', insurer: 'Max Life', insurance_type: 'Endowment', insurance_premium: 40000, payment_frequency: 'Yearly', maturity_date: '2032-09-15', sum_assured: 1200000, invested_date: '2022-09-15', comments: 'Endowment policy with guaranteed returns' }],
             bankBalances: [{ id: '21', current_balance: 78000, institution_name: 'HDFC Bank' }],
             others: []
         }
@@ -498,6 +503,7 @@ function renderMemberCards() {
         const memberSummary = calculateMemberSummary(member.id);
         const avatarColors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
         const avatarColor = avatarColors[familyData.members.indexOf(member) % avatarColors.length];
+        const photoUrl = member.photo_url || member.avatar_url;
         
         return `
             <div class="member-card" onclick="showMemberDetails('${member.id}')">
@@ -508,8 +514,8 @@ function renderMemberCards() {
                 
                 <div class="member-header">
                     <div class="member-photo-container">
-                        ${member.photo_url ? 
-                            `<img src="${member.photo_url}" alt="${member.name}" class="member-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        ${photoUrl ? 
+                            `<img src="${photoUrl}" alt="${member.name}" class="member-photo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                              <div class="member-avatar" style="background: ${avatarColor}; display: none;">${member.name.charAt(0)}</div>` :
                             `<div class="member-avatar" style="background: ${avatarColor}">${member.name.charAt(0)}</div>`
                         }
@@ -716,7 +722,7 @@ function hideMemberDetails() {
     currentViewMember = null;
 }
 
-// ===== TABLE RENDERERS WITH DELETE FUNCTIONALITY =====
+// ===== TABLE RENDERERS WITH DELETE FUNCTIONALITY AND COMMENTS =====
 function renderEquityTable(equityHoldings) {
     if (equityHoldings.length === 0) {
         return '<div class="empty-state">No equity holdings found. Add your first equity investment!</div>';
@@ -833,9 +839,11 @@ function renderFDTable(fixedDeposits) {
                     <th>Invested In</th>
                     <th>Invested Amount</th>
                     <th>Interest Rate</th>
+                    <th>Invested Date</th>
                     <th>Maturity Date</th>
                     <th>Interest Payout</th>
                     <th>Interest Amount</th>
+                    <th>Comments</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -851,9 +859,11 @@ function renderFDTable(fixedDeposits) {
                             <td><strong>${fd.invested_in}</strong></td>
                             <td>₹${parseFloat(fd.invested_amount || 0).toLocaleString()}</td>
                             <td>${fd.interest_rate}%</td>
+                            <td>${fd.invested_date ? new Date(fd.invested_date).toLocaleDateString() : 'N/A'}</td>
                             <td>${new Date(fd.maturity_date).toLocaleDateString()}</td>
                             <td>${fd.interest_payout}</td>
                             <td>₹${parseFloat(fd.interest_amount || 0).toLocaleString()}</td>
+                            <td><div class="comment-cell" title="${fd.comments || 'No comments'}">${fd.comments ? (fd.comments.length > 30 ? fd.comments.substring(0, 30) + '...' : fd.comments) : 'No comments'}</div></td>
                             <td>
                                 <span class="status ${isMatured ? 'matured' : (daysToMaturity < 30 ? 'expiring-soon' : 'active')}">
                                     ${isMatured ? 'Matured' : (daysToMaturity < 30 ? `${daysToMaturity} days left` : 'Active')}
@@ -888,8 +898,10 @@ function renderInsuranceTable(insurancePolicies) {
                     <th>Insurance Type</th>
                     <th>Payment Frequency</th>
                     <th>Premium Amount</th>
+                    <th>Invested Date</th>
                     <th>Maturity Date</th>
                     <th>Sum Assured</th>
+                    <th>Comments</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -905,8 +917,10 @@ function renderInsuranceTable(insurancePolicies) {
                             <td>${policy.insurance_type}</td>
                             <td>${policy.payment_frequency}</td>
                             <td>₹${parseFloat(policy.insurance_premium || 0).toLocaleString()}</td>
+                            <td>${policy.invested_date ? new Date(policy.invested_date).toLocaleDateString() : 'N/A'}</td>
                             <td>${maturityDate ? maturityDate.toLocaleDateString() : 'N/A'}</td>
                             <td>₹${parseFloat(policy.sum_assured || 0).toLocaleString()}</td>
+                            <td><div class="comment-cell" title="${policy.comments || 'No comments'}">${policy.comments ? (policy.comments.length > 30 ? policy.comments.substring(0, 30) + '...' : policy.comments) : 'No comments'}</div></td>
                             <td>
                                 <span class="status ${isActive ? 'active' : 'inactive'}">
                                     ${isActive ? 'Active' : 'Inactive'}
@@ -996,6 +1010,7 @@ function closePhotoModal() {
     document.getElementById('photo-modal').classList.add('hidden');
     selectedPhotoUrl = null;
     uploadedPhotoFile = null;
+    photoEditingMemberId = null;
     // Reset file input
     const fileInput = document.getElementById('photo-file-input');
     if (fileInput) fileInput.value = '';
@@ -1019,13 +1034,47 @@ function selectPhotoOption(photoUrl) {
     event.target.closest('.photo-option').classList.add('selected');
 }
 
-function selectPhoto() {
+async function selectPhoto() {
     if (selectedPhotoUrl !== null) {
-        // Update the preview
-        document.getElementById('member-photo').value = selectedPhotoUrl;
-        updatePhotoPreview(selectedPhotoUrl);
+        // If editing existing member photo
+        if (photoEditingMemberId) {
+            try {
+                // Update member photo in data
+                const memberIndex = familyData.members.findIndex(m => m.id === photoEditingMemberId);
+                if (memberIndex !== -1) {
+                    familyData.members[memberIndex].photo_url = selectedPhotoUrl;
+                    familyData.members[memberIndex].avatar_url = selectedPhotoUrl;
+                    
+                    // Update in database if using Supabase
+                    if (supabase) {
+                        const { error } = await supabase
+                            .from('family_members')
+                            .update({ avatar_url: selectedPhotoUrl })
+                            .eq('id', photoEditingMemberId);
+                        
+                        if (error) {
+                            console.error('Error updating photo in database:', error);
+                            showMessage('❌ Failed to update photo in database', 'error');
+                            return;
+                        }
+                    }
+                    
+                    // Re-render member cards to show updated photo
+                    renderMemberCards();
+                    showMessage('✅ Photo updated successfully!', 'success');
+                }
+            } catch (error) {
+                console.error('Error updating member photo:', error);
+                showMessage('❌ Failed to update photo', 'error');
+            }
+        } else {
+            // Adding new member - update the preview
+            document.getElementById('member-photo').value = selectedPhotoUrl;
+            updatePhotoPreview(selectedPhotoUrl);
+            showMessage('✅ Photo selected successfully!', 'success');
+        }
+        
         closePhotoModal();
-        showMessage('✅ Photo selected successfully!', 'success');
     } else {
         alert('Please select a photo first');
     }
@@ -1048,7 +1097,7 @@ function updatePhotoPreview(photoUrl) {
 }
 
 function editMemberPhoto(memberId) {
-    editingMemberId = memberId;
+    photoEditingMemberId = memberId;
     openPhotoModal();
 }
 
@@ -1084,6 +1133,7 @@ function deleteMutualFund(mfId) {
 // ===== MODAL FUNCTIONS =====
 function openAddMemberModal() {
     editingMemberId = null;
+    photoEditingMemberId = null;
     document.getElementById('member-modal-title').textContent = 'Add Family Member';
     document.getElementById('member-submit-btn').textContent = 'Add Member';
     document.getElementById('member-form').reset();
@@ -1094,6 +1144,7 @@ function openAddMemberModal() {
 
 function editMember(memberId) {
     editingMemberId = memberId;
+    photoEditingMemberId = null;
     const member = familyData.members.find(m => m.id === memberId);
     if (!member) return;
     
@@ -1103,8 +1154,8 @@ function editMember(memberId) {
     document.getElementById('member-name').value = member.name;
     document.getElementById('member-relationship').value = member.relationship;
     document.getElementById('member-primary').checked = member.is_primary;
-    document.getElementById('member-photo').value = member.photo_url || '';
-    updatePhotoPreview(member.photo_url || '');
+    document.getElementById('member-photo').value = member.photo_url || member.avatar_url || '';
+    updatePhotoPreview(member.photo_url || member.avatar_url || '');
     
     document.getElementById('member-modal').classList.remove('hidden');
 }
@@ -1124,6 +1175,7 @@ function closeMemberModal() {
     document.getElementById('member-modal').classList.add('hidden');
     document.getElementById('member-form').reset();
     editingMemberId = null;
+    photoEditingMemberId = null;
 }
 
 function closeDeleteModal() {
@@ -1213,6 +1265,10 @@ function openAddFDModal(memberId = null) {
         memberSelect.value = memberId;
         memberSelect.disabled = true;
     }
+    
+    // Set default invested date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fd-invested-date').value = today;
 }
 
 function openAddInsuranceModal(memberId = null) {
@@ -1222,6 +1278,10 @@ function openAddInsuranceModal(memberId = null) {
         memberSelect.value = memberId;
         memberSelect.disabled = true;
     }
+    
+    // Set default invested date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('insurance-invested-date').value = today;
 }
 
 function closeAddFDModal() {
@@ -1258,7 +1318,9 @@ async function handleFDSubmit(formData) {
                 interest_rate: formData.interest_rate,
                 maturity_date: formData.maturity_date,
                 interest_payout: formData.interest_payout,
-                interest_amount: formData.interest_amount
+                interest_amount: formData.interest_amount,
+                invested_date: formData.invested_date,
+                comments: formData.comments
             }]);
             
             if (error) throw error;
@@ -1299,7 +1361,9 @@ async function handleInsuranceSubmit(formData) {
                 insurance_premium: formData.insurance_premium,
                 maturity_date: formData.maturity_date,
                 returns_percentage: formData.returns_percentage,
-                sum_assured: formData.sum_assured
+                sum_assured: formData.sum_assured,
+                invested_date: formData.invested_date,
+                comments: formData.comments
             }]);
             
             if (error) throw error;
@@ -1467,7 +1531,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         memberForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Use avatar_url field instead of photo_url for better compatibility
+            // Use avatar_url field for better compatibility
             const memberData = {
                 name: document.getElementById('member-name').value,
                 relationship: document.getElementById('member-relationship').value,
@@ -1546,7 +1610,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 interest_rate: parseFloat(document.getElementById('fd-rate').value),
                 maturity_date: document.getElementById('fd-maturity').value,
                 interest_payout: document.getElementById('fd-payout').value,
-                interest_amount: parseFloat(document.getElementById('fd-interest-amount').value)
+                interest_amount: parseFloat(document.getElementById('fd-interest-amount').value),
+                invested_date: document.getElementById('fd-invested-date').value,
+                comments: document.getElementById('fd-comments').value || ''
             };
             
             await handleFDSubmit(formData);
@@ -1571,7 +1637,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 insurance_premium: parseFloat(document.getElementById('insurance-premium').value),
                 maturity_date: document.getElementById('insurance-maturity').value || null,
                 returns_percentage: parseFloat(document.getElementById('insurance-returns').value) || null,
-                sum_assured: parseFloat(document.getElementById('insurance-assured').value) || null
+                sum_assured: parseFloat(document.getElementById('insurance-assured').value) || null,
+                invested_date: document.getElementById('insurance-invested-date').value,
+                comments: document.getElementById('insurance-comments').value || ''
             };
             
             await handleInsuranceSubmit(formData);
@@ -1609,8 +1677,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     console.log('✅ Enhanced Family Investment Dashboard loaded successfully!');
-    console.log('✅ Features: File upload, Primary member restoration, Enhanced photos');
+    console.log('✅ Features: Fixed photo updates, Comments & invested date for FD/Insurance');
 });
 
 console.log('🚀 Enhanced Family Investment Dashboard initialized!');
-console.log('✅ All features ready: File upload, Primary member fix, Full photo support!');
+console.log('✅ All features ready: Photo fix, Comments, Invested dates, Full functionality!');
