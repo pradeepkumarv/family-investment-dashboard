@@ -424,6 +424,15 @@
         .table-edit-btn { background: #3b82f6; color: white; }
         .table-delete-btn { background: #ef4444; color: white; }
         
+        /* Comments in tables */
+        .comment-cell {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: help;
+        }
+        
         /* Status indicators */
         .status {
             padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; 
@@ -448,7 +457,7 @@
         }
         .modal.hidden { display: none; }
         .modal-content {
-            background: white; border-radius: 20px; width: 90%; max-width: 500px; 
+            background: white; border-radius: 20px; width: 90%; max-width: 600px; 
             max-height: 90vh; overflow-y: auto; 
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             animation: modalSlideIn 0.3s ease-out;
@@ -528,7 +537,7 @@
                 flex-direction: column; align-items: flex-start; gap: 1rem; 
             }
             .investment-table { overflow-x: auto; }
-            .investment-table table { min-width: 800px; }
+            .investment-table table { min-width: 1000px; }
             .stats-grid { grid-template-columns: 1fr; }
             .members-grid { grid-template-columns: 1fr; }
             .feature-list { grid-template-columns: 1fr; }
@@ -544,7 +553,7 @@
         <div class="landing-container">
             <div class="landing-content">
                 <div class="logo">
-                    <h1>My Family's Wealth</h1>
+                    <h1>Pradeep Fmaily's health</h1>
                     <div class="logo-subtitle">Premium Family Investment Tracking</div>
                     <div class="logo-tagline">Build wealth together, track individually</div>
                 </div>
@@ -754,6 +763,12 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label">Invested Date</label>
+                        <input type="date" id="fd-invested-date" class="form-control" required>
+                        <small class="form-text">Date when the FD was opened</small>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Maturity Date</label>
                         <input type="date" id="fd-maturity" class="form-control" required>
                     </div>
@@ -772,6 +787,12 @@
                         <label class="form-label">Interest Amount (₹/year)</label>
                         <input type="number" id="fd-interest-amount" class="form-control" placeholder="Auto-calculated" readonly>
                         <small class="form-text">This will be calculated automatically based on amount and rate</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Comments</label>
+                        <textarea id="fd-comments" class="form-control" placeholder="Add notes about this FD (e.g., special rates, renewal notes)" rows="3"></textarea>
+                        <small class="form-text">Optional notes for future reference</small>
                     </div>
 
                     <div class="form-actions">
@@ -837,6 +858,12 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label">Invested Date</label>
+                        <input type="date" id="insurance-invested-date" class="form-control" required>
+                        <small class="form-text">Date when the policy was purchased</small>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Maturity Date</label>
                         <input type="date" id="insurance-maturity" class="form-control">
                         <small class="form-text">Optional - leave blank for term policies</small>
@@ -852,6 +879,12 @@
                         <label class="form-label">Sum Assured (₹)</label>
                         <input type="number" id="insurance-assured" class="form-control" placeholder="Enter sum assured">
                         <small class="form-text">Coverage amount</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Comments</label>
+                        <textarea id="insurance-comments" class="form-control" placeholder="Add notes about this policy (e.g., coverage details, renewal notes)" rows="3"></textarea>
+                        <small class="form-text">Optional notes for future reference</small>
                     </div>
 
                     <div class="form-actions">
