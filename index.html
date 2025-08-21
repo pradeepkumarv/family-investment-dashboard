@@ -3,708 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Investment Dashboard - Complete</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        /* Complete Enhanced Styles */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; }
-        
-        /* Enhanced Landing Page */
-        .landing-page { 
-            min-height: 100vh; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            display: flex; align-items: center; justify-content: center;
-            position: relative; overflow: hidden;
-        }
-        
-        /* Animated Background Elements */
-        .landing-page::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 0%, transparent 50%);
-            animation: float 20s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-        
-        .landing-container { 
-            max-width: 900px; padding: 2rem; text-align: center; color: white; 
-            position: relative; z-index: 1;
-        }
-        
-        .logo { 
-            margin-bottom: 3rem; 
-            animation: slideInDown 1s ease-out;
-        }
-        
-        .logo h1 { 
-            font-size: 4rem; margin-bottom: 0.5rem; font-weight: 900; 
-            background: linear-gradient(45deg, #fff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .logo-subtitle { 
-            font-size: 1.3rem; opacity: 0.95; margin-bottom: 0.5rem; 
-            font-weight: 300; letter-spacing: 1px;
-        }
-        
-        .logo-tagline {
-            font-size: 0.9rem; opacity: 0.8; font-style: italic;
-            margin-bottom: 3rem;
-        }
-        
-        .landing-description { 
-            animation: slideInUp 1s ease-out 0.3s both;
-        }
-        
-        .landing-description h2 { 
-            font-size: 2.2rem; margin-bottom: 1.5rem; font-weight: 600;
-            line-height: 1.2;
-        }
-        
-        .landing-description p { 
-            font-size: 1.2rem; opacity: 0.9; margin-bottom: 2.5rem; 
-            line-height: 1.6; max-width: 600px; margin-left: auto; margin-right: auto;
-        }
-        
-        .feature-list { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 1.5rem; margin-bottom: 3rem; 
-        }
-        
-        .feature-item { 
-            background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 12px; 
-            font-weight: 500; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
-            transition: transform 0.3s ease; font-size: 1.1rem;
-        }
-        
-        .feature-item:hover {
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.2);
-        }
-        
-        /* Enhanced Login Form */
-        .login-form { 
-            max-width: 420px; margin: 0 auto; 
-            background: rgba(255,255,255,0.95); padding: 2.5rem; 
-            border-radius: 20px; backdrop-filter: blur(20px); 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.3);
-            animation: slideInUp 1s ease-out 0.6s both;
-        }
-        
-        .form-group { margin-bottom: 1.5rem; }
-        .form-label { 
-            display: block; margin-bottom: 0.5rem; font-weight: 600; 
-            color: #1f2937; font-size: 0.95rem;
-        }
-        
-        .form-control {
-            width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; 
-            border-radius: 12px; font-size: 16px; transition: all 0.3s ease; 
-            background: white; color: #1f2937;
-        }
-        
-        .form-control:focus { 
-            outline: none; border-color: #667eea; 
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1); 
-            transform: translateY(-1px);
-        }
-        
-        .btn {
-            padding: 14px 28px; border: none; border-radius: 12px; font-size: 16px; 
-            font-weight: bold; cursor: pointer; transition: all 0.3s ease; 
-            display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-            position: relative; overflow: hidden;
-        }
-        
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-        .btn--primary { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; position: relative;
-        }
-        
-        .btn--primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        
-        .btn--primary:hover::before {
-            left: 100%;
-        }
-        
-        .btn--primary:disabled { 
-            background: #ccc; transform: none; cursor: not-allowed; 
-        }
-        
-        .btn--success { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-            color: white; 
-        }
-        
-        .btn--danger { 
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
-            color: white; 
-        }
-        
-        .btn--outline { 
-            background: transparent; border: 2px solid #667eea; 
-            color: #667eea; 
-        }
-        
-        .btn--outline:hover {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn--sm { padding: 8px 16px; font-size: 14px; }
-        .hidden { display: none !important; }
-        
-        /* Enhanced Messages */
-        .login-message {
-            margin-top: 1.5rem; padding: 14px 18px; border-radius: 12px; 
-            text-align: center; border: 1px solid; display: none;
-            font-weight: 500;
-        }
-        
-        .demo-info {
-            margin-top: 2rem; text-align: center; font-size: 14px; 
-            color: #4b5563; background: rgba(255,255,255,0.1); 
-            padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .demo-credentials {
-            background: rgba(102, 126, 234, 0.1); padding: 1rem; 
-            border-radius: 8px; margin-top: 1rem; color: #1f2937;
-        }
-        
-        /* Animations */
-        @keyframes slideInDown {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Dashboard */
-        .main-dashboard { min-height: 100vh; background: #f8fafc; }
-        .navbar { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-        }
-        .navbar-flex { 
-            display: flex; justify-content: space-between; align-items: center; 
-            max-width: 1200px; margin: 0 auto; 
-        }
-        .logout-btn { 
-            background: rgba(255,255,255,0.2); color: white; border: none; 
-            padding: 8px 16px; border-radius: 8px; cursor: pointer; 
-            transition: all 0.2s ease; backdrop-filter: blur(10px);
-        }
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-1px);
-        }
-        
-        /* Stats Grid */
-        .stats-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 1.5rem; margin-bottom: 2rem; max-width: 1200px; margin-left: auto; margin-right: auto;
-        }
-        .stat-card { 
-            background: white; padding: 1.5rem; border-radius: 16px; 
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08); transition: all 0.3s ease;
-            border: 1px solid rgba(102, 126, 234, 0.1);
-        }
-        .stat-card:hover { 
-            transform: translateY(-4px); 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-        .stat-label { 
-            font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem; 
-            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .stat-value { font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem; }
-        .stat-value.primary { color: #667eea; }
-        .stat-value.positive { color: #10b981; }
-        .stat-value.negative { color: #ef4444; }
-        .stat-value.neutral { color: #1f2937; }
-        .stat-change { font-size: 0.8rem; font-weight: 600; }
-        .stat-change.positive { color: #10b981; }
-        .stat-change.negative { color: #ef4444; }
-        .stat-change.neutral { color: #6b7280; }
-        
-        /* Enhanced Member Cards */
-        .members-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); 
-            gap: 1.5rem; max-width: 1200px; margin: 0 auto;
-        }
-        .member-card { 
-            background: white; padding: 1.5rem; border-radius: 16px; 
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08); position: relative; 
-            transition: all 0.3s ease; cursor: pointer;
-            border: 1px solid rgba(102, 126, 234, 0.1);
-        }
-        .member-card:hover { 
-            transform: translateY(-6px); 
-            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.15);
-        }
-        .member-actions { 
-            position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; 
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        .member-card:hover .member-actions { opacity: 1; }
-        .action-btn {
-            width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer; 
-            display: inline-flex; align-items: center; justify-content: center; font-size: 14px; 
-            transition: all 0.2s ease; backdrop-filter: blur(10px);
-        }
-        .action-btn:hover { transform: scale(1.1); }
-        .edit-btn { background: rgba(59, 130, 246, 0.9); color: white; }
-        .edit-btn:hover { background: #2563eb; }
-        .delete-btn { background: rgba(239, 68, 68, 0.9); color: white; }
-        .delete-btn:hover { background: #dc2626; }
-        
-        /* Enhanced Member Header with Photo */
-        .member-header { display: flex; align-items: center; margin-bottom: 1rem; }
-        .member-photo-container {
-            position: relative;
-            width: 60px; height: 60px; margin-right: 1rem;
-        }
-        .member-photo {
-            width: 60px; height: 60px; border-radius: 50%; 
-            object-fit: cover; border: 3px solid #667eea;
-            transition: all 0.3s ease;
-        }
-        .member-avatar {
-            width: 60px; height: 60px; border-radius: 50%; display: flex; 
-            align-items: center; justify-content: center; color: white; 
-            font-weight: bold; font-size: 1.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-        .photo-upload-btn {
-            position: absolute; bottom: -2px; right: -2px;
-            width: 20px; height: 20px; border-radius: 50%;
-            background: #667eea; color: white; border: none;
-            cursor: pointer; font-size: 10px; display: flex;
-            align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        .member-photo-container:hover .photo-upload-btn {
-            opacity: 1;
-        }
-        .member-info h4 { margin: 0; color: #1f2937; font-size: 1.2rem; font-weight: 700; }
-        .member-relationship { margin: 0; color: #6b7280; font-size: 0.9rem; font-weight: 500; }
-        
-        /* Investment Summary */
-        .investment-summary {
-            margin: 1rem 0; padding: 1rem 0; 
-            border-top: 1px solid rgba(102, 126, 234, 0.1); 
-            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-        }
-        .investment-row {
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 0.5rem; font-size: 0.9rem;
-        }
-        .investment-count { 
-            color: #6b7280; font-size: 0.8rem; min-width: 80px; 
-            text-align: center; font-weight: 500;
-        }
-        .investment-value { 
-            font-weight: 700; color: #1f2937; min-width: 100px; text-align: right; 
-        }
-        .member-totals { padding-top: 0.75rem; }
-        .total-row { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 0.25rem; 
-        }
-        .total-value { font-size: 1.1rem; color: #667eea; font-weight: 800; }
-        .total-pnl { font-weight: 700; }
-        .view-details-hint {
-            text-align: center; margin-top: 0.75rem; padding-top: 0.75rem; 
-            border-top: 1px dashed rgba(102, 126, 234, 0.3); color: #6b7280;
-            font-weight: 500;
-        }
-        
-        /* Add Member Section */
-        .add-member-section {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); 
-            border: 2px dashed #667eea; border-radius: 16px; 
-            padding: 2rem; text-align: center; cursor: pointer; 
-            transition: all 0.3s ease;
-        }
-        .add-member-section:hover { 
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
-            transform: translateY(-2px);
-        }
-        
-        /* Member Details View */
-        .member-details-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; 
-            padding: 1.5rem; background: white; border-radius: 16px; 
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-        .back-btn {
-            background: #6b7280; color: white; border: none; padding: 12px 20px; 
-            border-radius: 10px; cursor: pointer; font-weight: 600; 
-            transition: all 0.2s ease;
-        }
-        .back-btn:hover { 
-            background: #4b5563; 
-            transform: translateY(-1px);
-        }
-        .member-details-info h2 { margin: 0 0 0.25rem 0; color: #1f2937; }
-        .member-details-info p { margin: 0; color: #6b7280; font-size: 0.9rem; }
-        
-        /* Investment Sections */
-        .investment-sections { display: flex; flex-direction: column; gap: 2rem; }
-        .investment-section {
-            background: white; border-radius: 16px; 
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08); overflow: hidden;
-        }
-        .section-header {
-            display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; 
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05)); 
-            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
-        }
-        .section-header h3 { margin: 0; color: #1f2937; font-size: 1.25rem; font-weight: 700; }
-        
-        /* Investment Tables */
-        .investment-table table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .investment-table th {
-            background: #f8fafc; padding: 1rem; text-align: left; font-weight: 700; 
-            color: #374151; border-bottom: 1px solid #e5e7eb; font-size: 0.85rem;
-        }
-        .investment-table td { 
-            padding: 1rem; border-bottom: 1px solid #f3f4f6; color: #1f2937; 
-        }
-        .investment-table tr:hover { 
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.02), rgba(118, 75, 162, 0.02)); 
-        }
-        .investment-table tr:last-child td { border-bottom: none; }
-        .empty-state { 
-            padding: 3rem 2rem; text-align: center; color: #6b7280; 
-            font-style: italic; 
-        }
-        .empty-state a { color: #667eea; text-decoration: none; font-weight: 600; }
-        .empty-state a:hover { text-decoration: underline; }
-        
-        /* Enhanced Action Buttons in Tables */
-        .table-actions {
-            display: flex; gap: 0.25rem; align-items: center;
-        }
-        .table-action-btn {
-            width: 24px; height: 24px; border: none; border-radius: 6px; cursor: pointer; 
-            display: inline-flex; align-items: center; justify-content: center; font-size: 11px; 
-            transition: all 0.2s ease;
-        }
-        .table-action-btn:hover { transform: scale(1.1); }
-        .table-edit-btn { background: #3b82f6; color: white; }
-        .table-delete-btn { background: #ef4444; color: white; }
-        
-        /* Comments in tables */
-        .comment-cell {
-            max-width: 150px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: help;
-        }
-        
-        /* Status indicators */
-        .status {
-            padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; 
-            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .status.active { background: #dcfce7; color: #16a34a; }
-        .status.inactive { background: #fee2e2; color: #dc2626; }
-        .status.matured { background: #fef3c7; color: #d97706; }
-        .status.expiring-soon { background: #fecaca; color: #dc2626; }
-        
-        /* Color classes */
-        .positive { color: #10b981; }
-        .negative { color: #ef4444; }
-        .primary { color: #667eea; }
-        .neutral { color: #333; }
-        
-        /* Modal Styles */
-        .modal {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-            background: rgba(0,0,0,0.6); display: flex; align-items: center; 
-            justify-content: center; z-index: 1000; backdrop-filter: blur(8px);
-        }
-        .modal.hidden { display: none; }
-        .modal-content {
-            background: white; border-radius: 20px; width: 90%; max-width: 700px; 
-            max-height: 90vh; overflow-y: auto; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            animation: modalSlideIn 0.3s ease-out;
-        }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 1.5rem; border-bottom: 1px solid #e5e7eb;
-        }
-        .modal-close {
-            background: none; border: none; font-size: 24px; cursor: pointer; 
-            width: 32px; height: 32px; display: flex; align-items: center; 
-            justify-content: center; border-radius: 8px; color: #666;
-            transition: all 0.2s ease;
-        }
-        .modal-close:hover { 
-            background: #f3f4f6; 
-            transform: scale(1.1);
-        }
-        .modal-body { padding: 1.5rem; }
-        .form-actions {
-            display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; 
-            padding-top: 1rem; border-top: 1px solid #e5e7eb;
-        }
-        .form-text { 
-            font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem; 
-            display: block; font-style: italic;
-        }
-        
-        /* Photo Upload Modal */
-        .photo-options {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 1rem; margin: 1rem 0;
-        }
-        .photo-option {
-            aspect-ratio: 1;
-            border: 2px solid #e5e7eb;
-            border-radius: 50%;
-            cursor: pointer;
-            overflow: hidden;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .photo-option:hover {
-            border-color: #667eea;
-            transform: scale(1.05);
-        }
-        .photo-option.selected {
-            border-color: #667eea;
-            border-width: 3px;
-        }
-        .photo-option img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .upload-option {
-            background: #f8fafc;
-            color: #6b7280;
-            font-size: 2rem;
-        }
-        
-        /* Container */
-        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        
-        /* Quick Access Menu */
-        .quick-access-menu {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .quick-access-menu h3 {
-            margin-bottom: 1rem;
-            color: #1f2937;
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-        
-        .quick-access-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        
-        /* Animations */
-        @keyframes modalSlideIn {
-            from { opacity: 0; transform: scale(0.9) translateY(-50px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container { padding: 1rem; }
-            .member-details-header { 
-                flex-direction: column; align-items: flex-start; gap: 1rem; 
-            }
-            .investment-table { overflow-x: auto; }
-            .investment-table table { min-width: 1000px; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .members-grid { grid-template-columns: 1fr; }
-            .feature-list { grid-template-columns: 1fr; }
-            .logo h1 { font-size: 3rem; }
-            .landing-description h2 { font-size: 1.8rem; }
-            .login-form { margin: 1rem; padding: 2rem; }
-            .quick-access-buttons { flex-direction: column; }
-        }
-    </style>
+    <title>FamWealth - Family Investment Dashboard</title>
+    <link rel="stylesheet" href="style-1.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Enhanced Landing Page -->
+    <!-- Landing Page -->
     <div id="landing-page" class="landing-page">
         <div class="landing-container">
             <div class="landing-content">
                 <div class="logo">
-                    <h1>FamWealth</h1>
-                    <div class="logo-subtitle">Complete Family Financial Management</div>
-                    <div class="logo-tagline">Assets • Liabilities • Accounts • Nominees</div>
+                    <h1>FamWealth Dashboard</h1>
+                    <p class="logo-subtitle">Comprehensive Family Investment Management</p>
                 </div>
+
+                <div id="loading-state" style="display: none; text-align: center; padding: 20px;">
+                    <h3>🔄 Loading your complete family financial data...</h3>
+                    <p style="color: var(--color-text-secondary); margin-top: 10px;">
+                        Fetching assets, liabilities, and account information
+                    </p>
+                </div>
+
                 <div class="landing-description">
-                    <h2>Complete Financial Portfolio Management</h2>
+                    <h2>Complete Financial Overview</h2>
                     <p>Experience comprehensive family investment tracking with liability management, account oversight, and nominee information. Monitor your complete financial picture with stunning analytics.</p>
+                    
                     <div class="feature-list">
-                        <div class="feature-item">✨ Multi-member Portfolio Tracking</div>
-                        <div class="feature-item">💳 Comprehensive Liability Management</div>
-                        <div class="feature-item">🏦 Account & Nominee Management</div>
-                        <div class="feature-item">📊 Real-time Net Worth Calculations</div>
-                        <div class="feature-item">🔔 Smart Alerts & Notifications</div>
-                        <div class="feature-item">💼 Complete Financial Overview</div>
+                        <div class="feature-item">📊 Portfolio Analytics</div>
+                        <div class="feature-item">🏦 Bank Integration</div>
+                        <div class="feature-item">💳 Liability Tracking</div>
+                        <div class="feature-item">👥 Family Management</div>
+                        <div class="feature-item">🔒 Secure Platform</div>
+                        <div class="feature-item">📱 Mobile Responsive</div>
                     </div>
                 </div>
-                <div class="landing-actions">
-                    <div class="login-form">
-                        <div class="form-group">
-                            <label class="form-label">Email Address</label>
-                            <input type="email" id="login-email" class="form-control" placeholder="Enter your email address" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Password</label>
-                            <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required>
-                        </div>
-                        <button class="btn btn--primary" onclick="handleLogin()" id="login-btn" style="width: 100%;">
-                            <span id="login-text">Access Complete Dashboard</span>
-                            <span id="login-spinner" class="hidden">🔄 Authenticating...</span>
-                        </button>
-                        <div id="login-message" class="login-message hidden"></div>
-                        <div class="demo-info">
-                            <p><strong>🚀 Try the Complete Demo</strong></p>
-                            <div class="demo-credentials">
-                                <p><strong>Email:</strong> demo@famwealth.com</p>
-                                <p><strong>Password:</strong> demo123</p>
-                                <p><small>Experience complete family financial management</small></p>
-                            </div>
-                        </div>
+
+                <div class="demo-section" style="background: var(--color-bg-3); padding: 20px; border-radius: var(--radius-lg); margin: 20px 0;">
+                    <h3>🚀 Try the Complete Demo</h3>
+                    <div class="form-group">
+                        <label class="form-label">Email:</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="demo@famwealth.com" value="demo@famwealth.com">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Password:</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="demo123" value="demo123">
+                    </div>
+                    <button class="btn btn--primary btn--full-width" onclick="handleLogin()">Sign In to Dashboard</button>
                 </div>
+
+                <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm); margin-top: 20px;">
+                    Experience complete family financial management
+                </p>
             </div>
         </div>
     </div>
 
     <!-- Main Dashboard -->
     <div id="main-dashboard" class="main-dashboard" style="display: none;">
-        <!-- Navigation -->
+        <!-- Navigation Bar -->
         <nav class="navbar">
-            <div class="navbar-flex">
-                <h2 style="margin: 0; font-weight: 700;">FamWealth Dashboard</h2>
-                <div>
-                    <span id="user-display" style="margin-right: 1rem; font-size: 14px; opacity: 0.9;"></span>
-                    <button class="logout-btn" onclick="handleLogout()">Logout</button>
-                </div>
+            <div class="navbar-brand">
+                <h2>FamWealth Dashboard</h2>
+            </div>
+            <div class="navbar-nav">
+                <button class="nav-btn active" onclick="showSection('dashboard-overview')">📊 Overview</button>
+                <button class="nav-btn" onclick="showSection('investments-section')">💼 Investments</button>
+                <button class="nav-btn" onclick="showSection('liabilities-section')">📋 Liabilities</button>
+                <button class="nav-btn" onclick="showSection('accounts-section')">🏦 Accounts</button>
+                <button class="nav-btn" onclick="showSection('family-section')">👥 Family</button>
+                <span class="user-email" style="color: var(--color-text-secondary); margin-left: auto;">demo@famwealth.com</span>
+                <button class="btn btn--secondary btn--sm" onclick="handleLogout()">Logout</button>
             </div>
         </nav>
-        
-        <div id="dashboard-container" class="container">
-            <!-- Loading State -->
-            <div id="loading-state" style="text-align: center; padding: 3rem;">
-                <div style="font-size: 2rem; margin-bottom: 1rem;">📊</div>
-                <h3>Loading your complete family financial data...</h3>
-                <p style="color: #666;">Fetching assets, liabilities, and account information</p>
-                <div style="width: 100px; height: 4px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 2px; margin: 1rem auto;"></div>
+
+        <div id="dashboard-content" class="dashboard-container">
+            <!-- Overview Section -->
+            <div id="dashboard-overview" class="dashboard-section active">
+                <div class="section-header">
+                    <h2>Family Financial Overview</h2>
+                    <div class="date-info">
+                        <span id="last-updated">Last updated: Loading...</span>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div id="stats-grid" class="stats-grid">
+                    <!-- Stats will be populated by JavaScript -->
+                </div>
+
+                <!-- Members Section -->
+                <div id="members-section">
+                    <!-- Members will be populated by JavaScript -->
+                </div>
             </div>
 
-            <!-- Dashboard Content -->
-            <div id="dashboard-content" style="display: none;">
-                <!-- Quick Stats -->
-                <div class="stats-grid" id="stats-grid">
-                    <!-- Stats will be populated from database -->
+            <!-- Investments Section -->
+            <div id="investments-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Investment Portfolio</h2>
+                    <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add Investment</button>
                 </div>
 
-                <!-- Quick Access Menu -->
-                <div class="quick-access-menu">
-                    <h3>🚀 Quick Actions</h3>
-                    <div class="quick-access-buttons">
-                        <button class="btn btn--success" onclick="openAddFDModal()">+ Add Fixed Deposit</button>
-                        <button class="btn btn--success" onclick="openAddInsuranceModal()">+ Add Insurance</button>
-                        <button class="btn btn--outline" onclick="showAccountManagement()">🏦 Manage Accounts</button>
-                        <button class="btn btn--outline" onclick="refreshData()">🔄 Refresh Data</button>
-                        <button class="btn btn--outline" onclick="exportData()">📊 Export Report</button>
-                    </div>
+                <div class="investment-tabs">
+                    <button class="tab-btn active" onclick="showInvestmentTab('equity')">📈 Equity</button>
+                    <button class="tab-btn" onclick="showInvestmentTab('mutualFunds')">🏢 Mutual Funds</button>
+                    <button class="tab-btn" onclick="showInvestmentTab('fixedDeposits')">🏦 Fixed Deposits</button>
+                    <button class="tab-btn" onclick="showInvestmentTab('insurance')">🛡️ Insurance</button>
+                    <button class="tab-btn" onclick="showInvestmentTab('bankBalances')">💰 Bank Balances</button>
                 </div>
 
-                <!-- Family Members -->
-                <div style="margin-bottom: 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 style="font-weight: 700; font-size: 1.5rem; color: #1f2937;">👨‍👩‍👧‍👦 Complete Family Portfolio</h3>
-                        <button class="btn btn--success" onclick="openAddMemberModal()">+ Add Family Member</button>
-                    </div>
-                    <div class="members-grid" id="members-grid">
-                        <!-- Members will be populated from database -->
-                    </div>
+                <!-- Investment tabs content will be populated by JavaScript -->
+                <div id="investment-tabs-content">
+                    <!-- Content populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Liabilities Section -->
+            <div id="liabilities-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Liabilities Overview</h2>
+                    <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add Liability</button>
                 </div>
 
-                <!-- Database Status -->
-                <div style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); border: 1px solid #10b981; color: #065f46; padding: 1rem; border-radius: 16px; text-align: center; margin-top: 2rem;">
-                    <h4>🎉 Complete Financial Dashboard Active!</h4>
-                    <p>Your dashboard displays <strong>assets, liabilities, and account data</strong> from Supabase database.</p>
-                    <p><strong>Features:</strong> Net Worth Calculation | Liability Tracking | Account Management</p>
-                    <p><small>Last updated: <span id="last-updated">Loading...</span></small></p>
+                <div class="investment-tabs">
+                    <button class="tab-btn active" onclick="showLiabilityTab('homeLoan')">🏠 Home Loan</button>
+                    <button class="tab-btn" onclick="showLiabilityTab('personalLoan')">👤 Personal Loan</button>
+                    <button class="tab-btn" onclick="showLiabilityTab('creditCard')">💳 Credit Cards</button>
+                    <button class="tab-btn" onclick="showLiabilityTab('other')">📋 Others</button>
+                </div>
+
+                <div id="liability-tabs-content">
+                    <!-- Content populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Accounts Section -->
+            <div id="accounts-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Account Management</h2>
+                    <button class="btn btn--primary" onclick="openAddAccountModal()">+ Add Account</button>
+                </div>
+
+                <div class="card">
+                    <div class="card__body">
+                        <h4>🏦 All Family Accounts & Nominees</h4>
+                        <p>Manage all bank accounts, demat accounts, insurance policies and nominee information</p>
+
+                        <div class="investment-table" style="margin-top: 20px;">
+                            <table id="accounts-table">
+                                <thead>
+                                    <tr>
+                                        <th>Account Type</th>
+                                        <th>Institution</th>
+                                        <th>Account Number</th>
+                                        <th>Holder Name</th>
+                                        <th>Nominee</th>
+                                        <th>Status</th>
+                                        <th>Comments</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family Section -->
+            <div id="family-section" class="dashboard-section">
+                <div class="section-header">
+                    <h2>Family Management</h2>
+                    <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add Family Member</button>
+                </div>
+
+                <div id="family-members-grid">
+                    <!-- Family members will be populated by JavaScript -->
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- All existing modals from previous version -->
-    
-    <!-- Add/Edit Family Member Modal -->
+    <!-- Member Modal -->
     <div id="member-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="member-modal-title">Add Family Member</h3>
-                <button class="modal-close" onclick="closeMemberModal()">&times;</button>
+                <button class="modal-close" onclick="closeModal('member-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="member-form">
-                    <input type="hidden" id="member-id">
+                <form id="member-form" onsubmit="event.preventDefault(); saveMember();">
                     <div class="form-group">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" id="member-name" class="form-control" placeholder="e.g., Priya Kumar" required>
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" id="member-name" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Relationship</label>
+                        <label class="form-label">Relationship *</label>
                         <select id="member-relationship" class="form-control" required>
-                            <option value="">Select relationship...</option>
+                            <option value="">Select Relationship</option>
                             <option value="Self">Self</option>
                             <option value="Spouse">Spouse</option>
                             <option value="Father">Father</option>
@@ -717,25 +215,14 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Profile Photo</label>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <div class="member-photo-container">
-                                <div id="preview-avatar" class="member-avatar">?</div>
-                                <img id="preview-photo" class="member-photo" style="display: none;">
-                            </div>
-                            <button type="button" class="btn btn--outline btn--sm" onclick="openPhotoModal()">Choose Photo</button>
-                        </div>
-                        <input type="hidden" id="member-photo" value="">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="member-primary"> 
-                            Primary account holder
+                        <label class="setting-option">
+                            <input type="checkbox" id="member-is-primary">
+                            Primary Account Holder
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn btn--outline" onclick="closeMemberModal()">Cancel</button>
-                        <button type="submit" class="btn btn--success" id="member-submit-btn">Add Member</button>
+                        <button type="button" class="btn btn--secondary" onclick="closeModal('member-modal')">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Member</button>
                     </div>
                 </form>
             </div>
@@ -746,205 +233,210 @@
     <div id="photo-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Choose Profile Photo</h3>
-                <button class="modal-close" onclick="closePhotoModal()">&times;</button>
+                <h3>Select Member Photo</h3>
+                <button class="modal-close" onclick="closeModal('photo-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="photo-options" id="photo-options">
-                    <!-- Photo options will be populated -->
+                <div id="photo-options" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+                    <!-- Photos will be populated by JavaScript -->
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn--outline" onclick="closePhotoModal()">Cancel</button>
-                    <button type="button" class="btn btn--primary" onclick="selectPhoto()">Select Photo</button>
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('photo-modal')">Cancel</button>
+                    <button type="button" class="btn btn--primary" onclick="savePhoto()">Save Photo</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Enhanced Fixed Deposit Modal -->
-    <div id="add-fd-modal" class="modal hidden">
+    <!-- Delete Member Confirmation Modal -->
+    <div id="delete-member-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Fixed Deposit</h3>
-                <button class="modal-close" onclick="closeAddFDModal()">&times;</button>
+                <h3>Delete Family Member</h3>
+                <button class="modal-close" onclick="closeDeleteMemberModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="add-fd-form">
+                <p>Are you sure you want to delete <strong id="delete-member-name"></strong>?</p>
+                <p style="color: var(--color-error); font-size: var(--font-size-sm);">
+                    ⚠️ This will permanently remove all their investments, liabilities, and account data.
+                </p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--secondary" onclick="closeDeleteMemberModal()">Cancel</button>
+                    <button type="button" class="btn" style="background: var(--color-error); color: white;" onclick="deleteMember()">Delete Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Investment Modal -->
+    <div id="investment-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="investment-modal-title">Add Investment</h3>
+                <button class="modal-close" onclick="closeModal('investment-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="investment-form" onsubmit="event.preventDefault(); saveInvestment();">
                     <div class="form-group">
-                        <label class="form-label">Family Member</label>
-                        <select id="fd-member" class="form-control" required>
-                            <option value="">Select family member...</option>
+                        <label class="form-label">Family Member *</label>
+                        <select id="investment-member" class="form-control member-select" required>
+                            <!-- Populated by JavaScript -->
                         </select>
                     </div>
-
                     <div class="form-group">
-                        <label class="form-label">Invested In (Bank/Institution)</label>
-                        <input type="text" id="fd-bank" class="form-control" placeholder="e.g., HDFC Bank, SBI, Post Office" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Invested Amount (₹)</label>
-                        <input type="number" id="fd-amount" class="form-control" placeholder="Enter amount" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Interest Rate (%)</label>
-                        <input type="number" id="fd-rate" class="form-control" placeholder="e.g., 6.75" step="0.01" min="0" max="100" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Invested Date</label>
-                        <input type="date" id="fd-invested-date" class="form-control" required>
-                        <small class="form-text">Date when the FD was opened</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Maturity Date</label>
-                        <input type="date" id="fd-maturity" class="form-control" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Interest Payout Frequency</label>
-                        <select id="fd-payout" class="form-control" required>
-                            <option value="">Select frequency...</option>
-                            <option value="Quarterly">Quarterly</option>
-                            <option value="Yearly">Yearly</option>
-                            <option value="Maturity">At Maturity</option>
+                        <label class="form-label">Investment Type *</label>
+                        <select id="investment-type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="equity">Equity</option>
+                            <option value="mutualFunds">Mutual Fund</option>
+                            <option value="fixedDeposits">Fixed Deposit</option>
+                            <option value="insurance">Insurance</option>
+                            <option value="bankBalances">Bank Balance</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Interest Amount (₹/year)</label>
-                        <input type="number" id="fd-interest-amount" class="form-control" placeholder="Auto-calculated" readonly>
-                        <small class="form-text">This will be calculated automatically based on amount and rate</small>
+                    <div id="investment-fields">
+                        <!-- Dynamic fields based on investment type -->
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Comments</label>
-                        <textarea id="fd-comments" class="form-control" placeholder="Add notes about this FD (e.g., special rates, renewal notes)" rows="3"></textarea>
-                        <small class="form-text">Optional notes for future reference</small>
-                    </div>
-
                     <div class="form-actions">
-                        <button type="button" class="btn btn--outline" onclick="closeAddFDModal()">Cancel</button>
-                        <button type="submit" class="btn btn--primary">Add Fixed Deposit</button>
+                        <button type="button" class="btn btn--secondary" onclick="closeModal('investment-modal')">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Investment</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Enhanced Insurance Modal -->
-    <div id="add-insurance-modal" class="modal hidden">
+    <!-- Add Liability Modal -->
+    <div id="liability-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Insurance Policy</h3>
-                <button class="modal-close" onclick="closeAddInsuranceModal()">&times;</button>
+                <h3 id="liability-modal-title">Add Liability</h3>
+                <button class="modal-close" onclick="closeModal('liability-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="add-insurance-form">
+                <form id="liability-form" onsubmit="event.preventDefault(); saveLiability();">
                     <div class="form-group">
-                        <label class="form-label">Family Member</label>
-                        <select id="insurance-member" class="form-control" required>
-                            <option value="">Select family member...</option>
+                        <label class="form-label">Family Member *</label>
+                        <select id="liability-member" class="form-control member-select" required>
+                            <!-- Populated by JavaScript -->
                         </select>
                     </div>
-
                     <div class="form-group">
-                        <label class="form-label">Insurer</label>
-                        <input type="text" id="insurance-company" class="form-control" placeholder="e.g., LIC, HDFC Life, ICICI Prudential" required>
+                        <label class="form-label">Liability Type *</label>
+                        <select id="liability-type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="homeLoan">Home Loan</option>
+                            <option value="personalLoan">Personal Loan</option>
+                            <option value="creditCard">Credit Card</option>
+                            <option value="other">Other</option>
+                        </select>
                     </div>
+                    <div id="liability-fields">
+                        <!-- Dynamic fields based on liability type -->
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--secondary" onclick="closeModal('liability-modal')">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Liability</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
+    <!-- Add Account Modal -->
+    <div id="account-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="account-modal-title">Add Account</h3>
+                <button class="modal-close" onclick="closeModal('account-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="account-form" onsubmit="event.preventDefault(); saveAccount();">
                     <div class="form-group">
-                        <label class="form-label">Insurance Type</label>
-                        <select id="insurance-type" class="form-control" required>
-                            <option value="">Select type...</option>
-                            <option value="Term Life">Term Life</option>
-                            <option value="Whole Life">Whole Life</option>
-                            <option value="Health">Health</option>
-                            <option value="Vehicle">Vehicle</option>
-                            <option value="Home">Home</option>
-                            <option value="Travel">Travel</option>
-                            <option value="ULIP">ULIP</option>
-                            <option value="Endowment">Endowment</option>
+                        <label class="form-label">Account Type *</label>
+                        <select id="account-type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="Bank Account">Bank Account</option>
+                            <option value="Demat Account">Demat Account</option>
+                            <option value="Mutual Fund">Mutual Fund</option>
+                            <option value="Insurance Policy">Insurance Policy</option>
+                            <option value="Trading Account">Trading Account</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
-
                     <div class="form-group">
-                        <label class="form-label">Payment Frequency</label>
-                        <select id="insurance-frequency" class="form-control" required>
-                            <option value="">Select frequency...</option>
-                            <option value="Monthly">Monthly</option>
-                            <option value="Quarterly">Quarterly</option>
-                            <option value="Half-yearly">Half-yearly</option>
-                            <option value="Yearly">Yearly</option>
+                        <label class="form-label">Institution *</label>
+                        <input type="text" id="account-institution" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Number *</label>
+                        <input type="text" id="account-number" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Holder *</label>
+                        <select id="account-holder" class="form-control member-select" required>
+                            <!-- Populated by JavaScript -->
                         </select>
                     </div>
-
                     <div class="form-group">
-                        <label class="form-label">Insurance Premium (₹)</label>
-                        <input type="number" id="insurance-premium" class="form-control" placeholder="Enter premium amount" required>
+                        <label class="form-label">Nominee</label>
+                        <select id="account-nominee" class="form-control member-select">
+                            <option value="">Select Nominee</option>
+                            <!-- Populated by JavaScript -->
+                        </select>
                     </div>
-
                     <div class="form-group">
-                        <label class="form-label">Invested Date</label>
-                        <input type="date" id="insurance-invested-date" class="form-control" required>
-                        <small class="form-text">Date when the policy was purchased</small>
+                        <label class="form-label">Status</label>
+                        <select id="account-status" class="form-control">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Closed">Closed</option>
+                        </select>
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Maturity Date</label>
-                        <input type="date" id="insurance-maturity" class="form-control">
-                        <small class="form-text">Optional - leave blank for term policies</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Expected Returns (%)</label>
-                        <input type="number" id="insurance-returns" class="form-control" placeholder="e.g., 8.5" step="0.1" min="0" max="100">
-                        <small class="form-text">Optional - for investment-linked policies</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Sum Assured (₹)</label>
-                        <input type="number" id="insurance-assured" class="form-control" placeholder="Enter sum assured">
-                        <small class="form-text">Coverage amount</small>
-                    </div>
-
                     <div class="form-group">
                         <label class="form-label">Comments</label>
-                        <textarea id="insurance-comments" class="form-control" placeholder="Add notes about this policy (e.g., coverage details, renewal notes)" rows="3"></textarea>
-                        <small class="form-text">Optional notes for future reference</small>
+                        <textarea id="account-comments" class="form-control" rows="3"></textarea>
                     </div>
-
                     <div class="form-actions">
-                        <button type="button" class="btn btn--outline" onclick="closeAddInsuranceModal()">Cancel</button>
-                        <button type="submit" class="btn btn--primary">Add Insurance Policy</button>
+                        <button type="button" class="btn btn--secondary" onclick="closeModal('account-modal')">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Account</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="delete-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="delete-message">Are you sure you want to delete this item?</p>
-                <p style="color: #ef4444; font-size: 14px;">⚠️ This action cannot be undone.</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn--outline" onclick="closeDeleteModal()">Cancel</button>
-                    <button type="button" class="btn btn--danger" onclick="confirmDelete()">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Message Container -->
+    <div id="message" class="message" style="display: none;"></div>
 
-    <!-- Load the corrected JavaScript file -->
-    <script src="app.js"></script>
+    <style>
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-weight: 500;
+            max-width: 400px;
+        }
+        
+        .message.success {
+            background: var(--color-success);
+            color: white;
+        }
+        
+        .message.error {
+            background: var(--color-error);
+            color: white;
+        }
+        
+        .message.info {
+            background: var(--color-info);
+            color: white;
+        }
+    </style>
+
+    <script src="app-fixed.js"></script>
 </body>
 </html>
