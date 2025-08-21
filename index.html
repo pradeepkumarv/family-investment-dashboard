@@ -249,7 +249,7 @@
                 <button class="modal-close" onclick="closeModal('photo-modal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="photo-options" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+                <div id="photo-options" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px;">
                     <!-- Photos will be populated by JavaScript -->
                 </div>
                 <div class="form-actions">
@@ -472,6 +472,33 @@
         .message.info {
             background: var(--color-info);
             color: white;
+        }
+
+        .photo-option {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+            margin: 5px;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        
+        .photo-option:hover,
+        .photo-option.selected {
+            border-color: var(--color-primary);
+        }
+
+        .member-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .member-actions .btn {
+            padding: 6px 12px;
+            font-size: 12px;
         }
     </style>
 
