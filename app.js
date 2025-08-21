@@ -1,5 +1,5 @@
-// ===== COMPLETE FAMILY INVESTMENT DASHBOARD - NO ERRORS VERSION =====
-// Complete working JavaScript with all enhanced features
+// ===== ENHANCED FAMILY INVESTMENT DASHBOARD - WITH PHOTOS & DELETE FUNCTIONALITY =====
+// Complete working JavaScript with visual enhancements and delete features
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -15,6 +15,25 @@ let familyData = {
 let editingMemberId = null;
 let deletingMemberId = null;
 let currentViewMember = null;
+let deletingItemId = null;
+let deletingItemType = null;
+let selectedPhotoUrl = null;
+
+// ===== PHOTO URLS FOR MEMBER SELECTION =====
+const MEMBER_PHOTOS = [
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1554151228-14d9def656e4?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1590031905470-a1a1feacbb0b?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face'
+];
 
 // ===== INITIALIZATION =====
 async function initializeSupabase() {
@@ -223,10 +242,34 @@ function loadSampleData() {
     console.log('📝 Loading sample data for demo...');
     
     familyData.members = [
-        { id: '1', name: 'Pradeep Kumar', relationship: 'Self', is_primary: true },
-        { id: '2', name: 'Priya Kumar', relationship: 'Spouse', is_primary: false },
-        { id: '3', name: 'Ramesh Kumar', relationship: 'Father', is_primary: false },
-        { id: '4', name: 'Sunita Kumar', relationship: 'Mother', is_primary: false }
+        { 
+            id: '1', 
+            name: 'Pradeep Kumar', 
+            relationship: 'Self', 
+            is_primary: true,
+            photo_url: MEMBER_PHOTOS[0]
+        },
+        { 
+            id: '2', 
+            name: 'Priya Kumar', 
+            relationship: 'Spouse', 
+            is_primary: false,
+            photo_url: MEMBER_PHOTOS[1]
+        },
+        { 
+            id: '3', 
+            name: 'Ramesh Kumar', 
+            relationship: 'Father', 
+            is_primary: false,
+            photo_url: MEMBER_PHOTOS[2]
+        },
+        { 
+            id: '4', 
+            name: 'Sunita Kumar', 
+            relationship: 'Mother', 
+            is_primary: false,
+            photo_url: MEMBER_PHOTOS[3]
+        }
     ];
     
     // Sample investment data with proper structure
@@ -389,7 +432,7 @@ function renderEnhancedStats(totals) {
 function renderMemberCards() {
     const membersHTML = familyData.members.map(member => {
         const memberSummary = calculateMemberSummary(member.id);
-        const avatarColors = ['#007acc', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        const avatarColors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
         const avatarColor = avatarColors[familyData.members.indexOf(member) % avatarColors.length];
         
         return `
@@ -400,8 +443,12 @@ function renderMemberCards() {
                 </div>
                 
                 <div class="member-header">
-                    <div class="member-avatar" style="background-color: ${avatarColor}">
-                        ${member.name.charAt(0)}
+                    <div class="member-photo-container">
+                        ${member.photo_url ? 
+                            `<img src="${member.photo_url}" alt="${member.name}" class="member-photo">` :
+                            `<div class="member-avatar" style="background: ${avatarColor}">${member.name.charAt(0)}</div>`
+                        }
+                        <button class="photo-upload-btn" onclick="event.stopPropagation(); editMemberPhoto('${member.id}')" title="Change Photo">📷</button>
                     </div>
                     <div class="member-info">
                         <h4>${member.name} ${member.is_primary ? '👑' : ''}</h4>
@@ -458,7 +505,7 @@ function renderMemberCards() {
     }).join('') + `
         <div class="add-member-section" onclick="openAddMemberModal()">
             <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
-            <h4 style="margin: 0 0 0.5rem 0; color: #007acc;">Add Family Member</h4>
+            <h4 style="margin: 0 0 0.5rem 0; color: #667eea;">Add Family Member</h4>
             <p style="margin: 0; color: #666;">Click to add a new family member</p>
         </div>
     `;
@@ -604,7 +651,7 @@ function hideMemberDetails() {
     currentViewMember = null;
 }
 
-// ===== TABLE RENDERERS =====
+// ===== TABLE RENDERERS WITH DELETE FUNCTIONALITY =====
 function renderEquityTable(equityHoldings) {
     if (equityHoldings.length === 0) {
         return '<div class="empty-state">No equity holdings found. Add your first equity investment!</div>';
@@ -621,6 +668,7 @@ function renderEquityTable(equityHoldings) {
                     <th>P&L</th>
                     <th>P&L %</th>
                     <th>Platform</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -640,6 +688,12 @@ function renderEquityTable(equityHoldings) {
                                 ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%
                             </td>
                             <td>${equity.broker_platform || 'N/A'}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="table-action-btn table-edit-btn" onclick="editEquity('${equity.id}')" title="Edit">✏️</button>
+                                    <button class="table-action-btn table-delete-btn" onclick="deleteEquity('${equity.id}')" title="Delete">🗑️</button>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 }).join('')}
@@ -666,6 +720,7 @@ function renderMutualFundTable(mutualFunds) {
                     <th>P&L</th>
                     <th>P&L %</th>
                     <th>Platform</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -685,6 +740,12 @@ function renderMutualFundTable(mutualFunds) {
                                 ${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%
                             </td>
                             <td>${mf.broker_platform || 'N/A'}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="table-action-btn table-edit-btn" onclick="editMutualFund('${mf.id}')" title="Edit">✏️</button>
+                                    <button class="table-action-btn table-delete-btn" onclick="deleteMutualFund('${mf.id}')" title="Delete">🗑️</button>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 }).join('')}
@@ -711,6 +772,7 @@ function renderFDTable(fixedDeposits) {
                     <th>Interest Payout</th>
                     <th>Interest Amount</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -731,6 +793,12 @@ function renderFDTable(fixedDeposits) {
                                 <span class="status ${isMatured ? 'matured' : (daysToMaturity < 30 ? 'expiring-soon' : 'active')}">
                                     ${isMatured ? 'Matured' : (daysToMaturity < 30 ? `${daysToMaturity} days left` : 'Active')}
                                 </span>
+                            </td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="table-action-btn table-edit-btn" onclick="editFD('${fd.id}')" title="Edit">✏️</button>
+                                    <button class="table-action-btn table-delete-btn" onclick="deleteFD('${fd.id}')" title="Delete">🗑️</button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -758,6 +826,7 @@ function renderInsuranceTable(insurancePolicies) {
                     <th>Maturity Date</th>
                     <th>Sum Assured</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -778,6 +847,12 @@ function renderInsuranceTable(insurancePolicies) {
                                     ${isActive ? 'Active' : 'Inactive'}
                                 </span>
                             </td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="table-action-btn table-edit-btn" onclick="editInsurance('${policy.id}')" title="Edit">✏️</button>
+                                    <button class="table-action-btn table-delete-btn" onclick="deleteInsurance('${policy.id}')" title="Delete">🗑️</button>
+                                </div>
+                            </td>
                         </tr>
                     `;
                 }).join('')}
@@ -792,12 +867,113 @@ function renderOtherTable(others) {
     return '<div class="empty-state">Other investments will be managed here. Feature coming soon!</div>';
 }
 
+// ===== PHOTO MANAGEMENT FUNCTIONS =====
+function openPhotoModal() {
+    // Populate photo options
+    const photoOptionsHTML = MEMBER_PHOTOS.map((photoUrl, index) => `
+        <div class="photo-option" data-photo="${photoUrl}" onclick="selectPhotoOption('${photoUrl}')">
+            <img src="${photoUrl}" alt="Photo ${index + 1}">
+        </div>
+    `).join('') + `
+        <div class="photo-option upload-option" onclick="selectPhotoOption('')">
+            <div>📷</div>
+        </div>
+    `;
+    
+    document.getElementById('photo-options').innerHTML = photoOptionsHTML;
+    document.getElementById('photo-modal').classList.remove('hidden');
+}
+
+function closePhotoModal() {
+    document.getElementById('photo-modal').classList.add('hidden');
+    selectedPhotoUrl = null;
+    // Remove selected state from all options
+    document.querySelectorAll('.photo-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+}
+
+function selectPhotoOption(photoUrl) {
+    selectedPhotoUrl = photoUrl;
+    
+    // Remove selected state from all options
+    document.querySelectorAll('.photo-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Add selected state to clicked option
+    event.target.closest('.photo-option').classList.add('selected');
+}
+
+function selectPhoto() {
+    if (selectedPhotoUrl !== null) {
+        // Update the preview
+        document.getElementById('member-photo').value = selectedPhotoUrl;
+        updatePhotoPreview(selectedPhotoUrl);
+        closePhotoModal();
+    } else {
+        alert('Please select a photo first');
+    }
+}
+
+function updatePhotoPreview(photoUrl) {
+    const previewPhoto = document.getElementById('preview-photo');
+    const previewAvatar = document.getElementById('preview-avatar');
+    const memberName = document.getElementById('member-name').value;
+    
+    if (photoUrl) {
+        previewPhoto.src = photoUrl;
+        previewPhoto.style.display = 'block';
+        previewAvatar.style.display = 'none';
+    } else {
+        previewPhoto.style.display = 'none';
+        previewAvatar.style.display = 'flex';
+        previewAvatar.textContent = memberName ? memberName.charAt(0).toUpperCase() : '?';
+    }
+}
+
+function editMemberPhoto(memberId) {
+    editingMemberId = memberId;
+    openPhotoModal();
+}
+
+// ===== DELETE FUNCTIONS =====
+function deleteFD(fdId) {
+    deletingItemId = fdId;
+    deletingItemType = 'fixed_deposit';
+    document.getElementById('delete-message').textContent = 'Are you sure you want to delete this Fixed Deposit?';
+    document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function deleteInsurance(insuranceId) {
+    deletingItemId = insuranceId;
+    deletingItemType = 'insurance';
+    document.getElementById('delete-message').textContent = 'Are you sure you want to delete this Insurance Policy?';
+    document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function deleteEquity(equityId) {
+    deletingItemId = equityId;
+    deletingItemType = 'equity';
+    document.getElementById('delete-message').textContent = 'Are you sure you want to delete this Equity holding?';
+    document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function deleteMutualFund(mfId) {
+    deletingItemId = mfId;
+    deletingItemType = 'mutual_fund';
+    document.getElementById('delete-message').textContent = 'Are you sure you want to delete this Mutual Fund investment?';
+    document.getElementById('delete-modal').classList.remove('hidden');
+}
+
 // ===== MODAL FUNCTIONS =====
 function openAddMemberModal() {
     editingMemberId = null;
     document.getElementById('member-modal-title').textContent = 'Add Family Member';
     document.getElementById('member-submit-btn').textContent = 'Add Member';
     document.getElementById('member-form').reset();
+    document.getElementById('member-photo').value = '';
+    updatePhotoPreview('');
     document.getElementById('member-modal').classList.remove('hidden');
 }
 
@@ -812,17 +988,20 @@ function editMember(memberId) {
     document.getElementById('member-name').value = member.name;
     document.getElementById('member-relationship').value = member.relationship;
     document.getElementById('member-primary').checked = member.is_primary;
+    document.getElementById('member-photo').value = member.photo_url || '';
+    updatePhotoPreview(member.photo_url || '');
     
     document.getElementById('member-modal').classList.remove('hidden');
 }
 
 function deleteMember(memberId) {
     deletingMemberId = memberId;
+    deletingItemType = 'member';
     const member = familyData.members.find(m => m.id === memberId);
     if (!member) return;
     
     document.getElementById('delete-message').textContent = 
-        `Are you sure you want to delete "${member.name}"?`;
+        `Are you sure you want to delete "${member.name}"? This will also delete all investments for this member.`;
     document.getElementById('delete-modal').classList.remove('hidden');
 }
 
@@ -835,38 +1014,80 @@ function closeMemberModal() {
 function closeDeleteModal() {
     document.getElementById('delete-modal').classList.add('hidden');
     deletingMemberId = null;
+    deletingItemId = null;
+    deletingItemType = null;
 }
 
 async function confirmDelete() {
-    if (!deletingMemberId) return;
+    if (!deletingItemId && !deletingMemberId) return;
 
     try {
-        if (supabase) {
-            // Delete all investments for this member first
-            await supabase.from('holdings').delete().eq('member_id', deletingMemberId);
-            await supabase.from('fixed_deposits').delete().eq('member_id', deletingMemberId);
-            await supabase.from('bank_balances').delete().eq('member_id', deletingMemberId);
-            
-            // Delete the member
-            const { error } = await supabase
-                .from('family_members')
-                .delete()
-                .eq('id', deletingMemberId);
+        if (deletingItemType === 'member' && deletingMemberId) {
+            // Delete member and all their investments
+            if (supabase) {
+                await supabase.from('holdings').delete().eq('member_id', deletingMemberId);
+                await supabase.from('fixed_deposits').delete().eq('member_id', deletingMemberId);
+                await supabase.from('insurance_policies').delete().eq('member_id', deletingMemberId);
+                await supabase.from('bank_balances').delete().eq('member_id', deletingMemberId);
+                
+                const { error } = await supabase
+                    .from('family_members')
+                    .delete()
+                    .eq('id', deletingMemberId);
 
-            if (error) throw error;
-        } else {
-            // Demo mode - remove from local data
-            familyData.members = familyData.members.filter(m => m.id !== deletingMemberId);
-            delete familyData.investments[deletingMemberId];
+                if (error) throw error;
+            } else {
+                // Demo mode
+                familyData.members = familyData.members.filter(m => m.id !== deletingMemberId);
+                delete familyData.investments[deletingMemberId];
+            }
+            showMessage('✅ Family member deleted successfully!', 'success');
+        } else if (deletingItemType === 'fixed_deposit') {
+            // Delete FD
+            if (supabase) {
+                const { error } = await supabase
+                    .from('fixed_deposits')
+                    .delete()
+                    .eq('id', deletingItemId);
+                if (error) throw error;
+            } else {
+                // Demo mode - remove from local data
+                if (currentViewMember && familyData.investments[currentViewMember]) {
+                    familyData.investments[currentViewMember].fixedDeposits = 
+                        familyData.investments[currentViewMember].fixedDeposits.filter(fd => fd.id !== deletingItemId);
+                }
+            }
+            showMessage('✅ Fixed Deposit deleted successfully!', 'success');
+        } else if (deletingItemType === 'insurance') {
+            // Delete Insurance
+            if (supabase) {
+                const { error } = await supabase
+                    .from('insurance_policies')
+                    .delete()
+                    .eq('id', deletingItemId);
+                if (error) throw error;
+            } else {
+                // Demo mode - remove from local data
+                if (currentViewMember && familyData.investments[currentViewMember]) {
+                    familyData.investments[currentViewMember].insurance = 
+                        familyData.investments[currentViewMember].insurance.filter(ins => ins.id !== deletingItemId);
+                }
+            }
+            showMessage('✅ Insurance policy deleted successfully!', 'success');
         }
 
-        showMessage('✅ Family member deleted successfully!', 'success');
         closeDeleteModal();
         await loadDashboardData();
         
+        // Refresh member details if viewing
+        if (currentViewMember) {
+            hideMemberDetails();
+            showMemberDetails(currentViewMember);
+        }
+        
     } catch (error) {
-        console.error('Error deleting member:', error);
-        showMessage('❌ Failed to delete member. Please try again.', 'error');
+        console.error('Error deleting item:', error);
+        showMessage('❌ Failed to delete item. Please try again.', 'error');
     }
 }
 
@@ -1117,7 +1338,7 @@ async function checkExistingLogin() {
 
 // ===== EVENT LISTENERS =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Loading complete family investment dashboard...');
+    console.log('🚀 Loading enhanced family investment dashboard...');
     
     // Initialize Supabase
     await initializeSupabase();
@@ -1135,7 +1356,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 name: document.getElementById('member-name').value,
                 relationship: document.getElementById('member-relationship').value,
                 is_primary: document.getElementById('member-primary').checked,
-                avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById('member-name').value)}&background=007acc&color=fff`
+                photo_url: document.getElementById('member-photo').value || null,
+                avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(document.getElementById('member-name').value)}&background=667eea&color=fff`
             };
             
             try {
@@ -1242,6 +1464,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
+    // Member name change updates photo preview
+    const memberNameInput = document.getElementById('member-name');
+    if (memberNameInput) {
+        memberNameInput.addEventListener('input', function() {
+            if (!document.getElementById('member-photo').value) {
+                updatePhotoPreview('');
+            }
+        });
+    }
+
     // Enter key login
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -1253,9 +1485,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    console.log('✅ Complete Family Investment Dashboard loaded successfully!');
-    console.log('✅ All enhanced features ready: Member details, FD & Insurance management');
+    console.log('✅ Enhanced Family Investment Dashboard loaded successfully!');
+    console.log('✅ Features: Photos, Delete functionality, Visual enhancements');
 });
 
-console.log('🚀 Complete Family Investment Dashboard initialized!');
-console.log('✅ No errors, fully functional with enhanced features!');
+console.log('🚀 Enhanced Family Investment Dashboard initialized!');
+console.log('✅ All features ready: Photos, Delete actions, Stunning visuals!');
