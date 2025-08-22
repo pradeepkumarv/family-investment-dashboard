@@ -1,5 +1,5 @@
-// ===== COMPLETE FUNCTIONAL FAMWEALTH DASHBOARD WITH WORKING DOWNLOADS =====
-// All features working: Add family, investments, edit members, change photos, WORKING EXPORTS
+// ===== COMPLETE FAMWEALTH DASHBOARD WITH SORTING & ALL FIXES =====
+// Features: Family Management, Investments, Liabilities, Accounts, Downloads, Sorting
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -25,6 +25,11 @@ let editingItemMemberId = null;
 let deletingMemberId = null;
 let selectedPresetPhoto = null;
 let uploadedPhotoData = null;
+
+// Sorting state variables
+let currentSortColumn = null;
+let currentSortDirection = 'asc';
+let currentSortTable = null;
 
 const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
@@ -256,11 +261,20 @@ function loadSampleData() {
                 id: '2',
                 invested_in: 'SBI Bank',
                 invested_amount: 500000,
+                current_value: 500000,
                 interest_rate: 6.5,
                 invested_date: '2024-01-01',
                 maturity_date: '2025-01-01'
             }],
-            insurance: [],
+            insurance: [{
+                id: '3',
+                insurer: 'LIC',
+                symbol_or_name: 'LIC Term Plan',
+                invested_amount: 25000,
+                current_value: 25000,
+                coverage_amount: 1000000,
+                policy_number: 'LIC123456'
+            }],
             bankBalances: [],
             mutualFunds: [],
             others: []
@@ -291,7 +305,13 @@ function loadSampleData() {
                 interest_rate: 8.5
             }], 
             personalLoan: [], 
-            creditCard: [], 
+            creditCard: [{
+                id: 'cc1',
+                lender: 'SBI Credit Card',
+                outstanding_amount: 45000,
+                emi_amount: 5000,
+                interest_rate: 18.0
+            }], 
             other: [] 
         },
         '2': { homeLoan: [], personalLoan: [], creditCard: [], other: [] }
@@ -307,10 +327,20 @@ function loadSampleData() {
             nominee: 'Smruthi Kumar',
             status: 'Active',
             comments: 'Primary savings account'
+        },
+        {
+            id: 'acc2',
+            account_type: 'Demat Account',
+            institution: 'Zerodha',
+            account_number: 'ZD1234',
+            holder_name: 'Pradeep Kumar',
+            nominee: 'Smruthi Kumar',
+            status: 'Active',
+            comments: 'Trading and investment account'
         }
     ];
 
-    console.log('✅ Sample data loaded with Smruthi included!');
+    console.log('✅ Sample data loaded with comprehensive examples!');
 }
 
 // ===== DATA PERSISTENCE =====
@@ -335,6 +365,91 @@ function loadDataFromStorage() {
         console.error('❌ Error loading data from localStorage:', error);
     }
     return false;
+}
+
+// ===== SORTING FUNCTIONALITY =====
+function sortData(data, column, direction = 'asc') {
+    return [...data].sort((a, b) => {
+        let aVal = getNestedValue(a, column);
+        let bVal = getNestedValue(b, column);
+        
+        // Handle different data types
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+        }
+        
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+            return direction === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+        
+        if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+}
+
+function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key) => {
+        return current && current[key] !== undefined ? current[key] : '';
+    }, obj);
+}
+
+function handleTableSort(column, tableType) {
+    console.log(`🔄 Sorting ${tableType} by ${column}`);
+    
+    // Toggle direction if same column
+    if (currentSortColumn === column && currentSortTable === tableType) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortDirection = 'asc';
+    }
+    
+    currentSortColumn = column;
+    currentSortTable = tableType;
+    
+    // Re-render the appropriate table
+    switch (tableType) {
+        case 'accounts':
+            renderAccountsTable();
+            break;
+        case 'family':
+            renderFamilyManagement();
+            break;
+        case 'investment':
+            // Get current active investment tab
+            const activeInvestmentTab = document.querySelector('#investments-section .tab-btn.active');
+            const tabName = activeInvestmentTab ? activeInvestmentTab.textContent.toLowerCase().replace(/\s+/g, '') : 'equity';
+            renderInvestmentTabContent(tabName);
+            break;
+        case 'liability':
+            // Get current active liability tab
+            const activeLiabilityTab = document.querySelector('#liabilities-section .tab-btn.active');
+            const liabilityTabName = activeLiabilityTab ? activeLiabilityTab.textContent.toLowerCase().replace(/\s+/g, '') : 'homeLoan';
+            renderLiabilityTabContent(liabilityTabName);
+            break;
+    }
+    
+    showMessage(`✅ Sorted by ${column} (${currentSortDirection.toUpperCase()})`, 'info');
+}
+
+function createSortableHeader(text, column, tableType) {
+    const isActive = currentSortColumn === column && currentSortTable === tableType;
+    const direction = isActive ? currentSortDirection : 'asc';
+    const arrow = isActive ? (direction === 'asc' ? '▲' : '▼') : '⬍';
+    
+    return `
+        <th class="sortable-header ${isActive ? 'active' : ''}" 
+            onclick="handleTableSort('${column}', '${tableType}')"
+            style="cursor: pointer; user-select: none; position: relative;">
+            <span class="header-content">
+                ${text}
+                <span class="sort-arrow" style="margin-left: 8px; opacity: ${isActive ? 1 : 0.3};">
+                    ${arrow}
+                </span>
+            </span>
+        </th>
+    `;
 }
 
 // ===== FAMILY MEMBER MANAGEMENT =====
@@ -594,12 +709,40 @@ function updateInvestmentForm() {
 }
 
 function saveInvestment() {
-    const memberId = document.getElementById('investment-member').value;
-    const type = document.getElementById('investment-type').value;
-    const name = document.getElementById('investment-name').value.trim();
-    const amount = document.getElementById('investment-amount').value;
-    const currentValue = document.getElementById('investment-current-value').value;
-    const platform = document.getElementById('investment-platform').value.trim();
+    console.log('🔄 Starting saveInvestment function...');
+    
+    // Check if all required elements exist
+    const memberSelect = document.getElementById('investment-member');
+    const typeSelect = document.getElementById('investment-type');
+    const nameInput = document.getElementById('investment-name');
+    const amountInput = document.getElementById('investment-amount');
+    const currentValueInput = document.getElementById('investment-current-value');
+    const platformInput = document.getElementById('investment-platform');
+    
+    // Debug: Check which elements are missing
+    console.log('Investment form element check:', {
+        member: memberSelect ? 'Found' : 'Missing',
+        type: typeSelect ? 'Found' : 'Missing',
+        name: nameInput ? 'Found' : 'Missing',
+        amount: amountInput ? 'Found' : 'Missing',
+        currentValue: currentValueInput ? 'Found' : 'Missing',
+        platform: platformInput ? 'Found' : 'Missing'
+    });
+    
+    if (!memberSelect || !typeSelect || !nameInput || !amountInput) {
+        showMessage('❌ Investment form elements not found. Please refresh the page.', 'error');
+        console.error('Missing form elements in investment modal');
+        return;
+    }
+    
+    const memberId = memberSelect.value;
+    const type = typeSelect.value;
+    const name = nameInput.value.trim();
+    const amount = amountInput.value;
+    const currentValue = currentValueInput ? currentValueInput.value : '';
+    const platform = platformInput ? platformInput.value.trim() : '';
+    
+    console.log('Investment form values:', { memberId, type, name, amount, currentValue, platform });
     
     if (!memberId || !type || !name || !amount) {
         showMessage('Please fill all required fields', 'error');
@@ -613,6 +756,31 @@ function saveInvestment() {
         current_value: parseFloat(currentValue) || parseFloat(amount),
         broker_platform: platform
     };
+    
+    // Handle specific investment types
+    if (type === 'fixedDeposits') {
+        const interestRateInput = document.getElementById('fd-interest-rate');
+        const investedDateInput = document.getElementById('fd-invested-date');
+        const maturityDateInput = document.getElementById('fd-maturity-date');
+        
+        investmentData.invested_in = name;
+        investmentData.interest_rate = interestRateInput ? parseFloat(interestRateInput.value) || 0 : 0;
+        investmentData.invested_date = investedDateInput ? investedDateInput.value : '';
+        investmentData.maturity_date = maturityDateInput ? maturityDateInput.value : '';
+    }
+    
+    if (type === 'insurance') {
+        const insurerInput = document.getElementById('insurance-insurer');
+        const policyNumberInput = document.getElementById('insurance-policy-number');
+        const coverageAmountInput = document.getElementById('insurance-coverage-amount');
+        
+        investmentData.insurer = insurerInput ? insurerInput.value.trim() : name;
+        investmentData.policy_number = policyNumberInput ? policyNumberInput.value.trim() : '';
+        investmentData.coverage_amount = coverageAmountInput ? parseFloat(coverageAmountInput.value) || 0 : 0;
+        investmentData.insurance_premium = parseFloat(amount);
+    }
+    
+    console.log('Investment data to save:', investmentData);
     
     if (!familyData.investments[memberId]) {
         familyData.investments[memberId] = {
@@ -628,6 +796,9 @@ function saveInvestment() {
             familyData.investments[memberId][type][itemIndex] = investmentData;
         }
         showMessage('✅ Investment updated successfully', 'success');
+        editingItemId = null;
+        editingItemMemberId = null;
+        editingItemType = null;
     } else {
         // Add new investment
         familyData.investments[memberId][type].push(investmentData);
@@ -638,6 +809,8 @@ function saveInvestment() {
     renderEnhancedDashboard();
     renderInvestmentTabContent(type);
     document.getElementById('investment-modal').classList.add('hidden');
+    
+    console.log('✅ Investment saved successfully');
 }
 
 // ===== ACCOUNT MANAGEMENT =====
@@ -703,6 +876,7 @@ function saveAccount() {
             familyData.accounts[accountIndex] = accountData;
         }
         showMessage('✅ Account updated successfully', 'success');
+        editingItemId = null;
     } else {
         // Add new account
         familyData.accounts.push(accountData);
@@ -734,12 +908,40 @@ function populateLiabilityMemberDropdown() {
 }
 
 function saveLiability() {
-    const memberId = document.getElementById('liability-member').value;
-    const type = document.getElementById('liability-type').value;
-    const lender = document.getElementById('liability-lender').value.trim();
-    const amount = document.getElementById('liability-amount').value;
-    const emi = document.getElementById('liability-emi').value;
-    const rate = document.getElementById('liability-rate').value;
+    console.log('🔄 Starting saveLiability function...');
+    
+    // Check if all required elements exist
+    const memberSelect = document.getElementById('liability-member');
+    const typeSelect = document.getElementById('liability-type');
+    const lenderInput = document.getElementById('liability-lender');
+    const amountInput = document.getElementById('liability-amount');
+    const emiInput = document.getElementById('liability-emi');
+    const rateInput = document.getElementById('liability-rate');
+    
+    // Debug: Check which elements are missing
+    console.log('Element check:', {
+        member: memberSelect ? 'Found' : 'Missing',
+        type: typeSelect ? 'Found' : 'Missing',
+        lender: lenderInput ? 'Found' : 'Missing',
+        amount: amountInput ? 'Found' : 'Missing',
+        emi: emiInput ? 'Found' : 'Missing',
+        rate: rateInput ? 'Found' : 'Missing'
+    });
+    
+    if (!memberSelect || !typeSelect || !lenderInput || !amountInput) {
+        showMessage('❌ Liability form elements not found. Please refresh the page.', 'error');
+        console.error('Missing form elements in liability modal');
+        return;
+    }
+    
+    const memberId = memberSelect.value;
+    const type = typeSelect.value;
+    const lender = lenderInput.value.trim();
+    const amount = amountInput.value;
+    const emi = emiInput ? emiInput.value : '';
+    const rate = rateInput ? rateInput.value : '';
+    
+    console.log('Form values:', { memberId, type, lender, amount, emi, rate });
     
     if (!memberId || !type || !lender || !amount) {
         showMessage('Please fill all required fields', 'error');
@@ -754,6 +956,8 @@ function saveLiability() {
         interest_rate: parseFloat(rate) || 0
     };
     
+    console.log('Liability data to save:', liabilityData);
+    
     if (!familyData.liabilities[memberId]) {
         familyData.liabilities[memberId] = {
             homeLoan: [], personalLoan: [], creditCard: [], other: []
@@ -766,6 +970,9 @@ function saveLiability() {
             familyData.liabilities[memberId][type][itemIndex] = liabilityData;
         }
         showMessage('✅ Liability updated successfully', 'success');
+        editingItemId = null;
+        editingItemMemberId = null;
+        editingItemType = null;
     } else {
         familyData.liabilities[memberId][type].push(liabilityData);
         showMessage('✅ Liability added successfully', 'success');
@@ -775,6 +982,173 @@ function saveLiability() {
     renderEnhancedDashboard();
     renderLiabilityTabContent(type);
     document.getElementById('liability-modal').classList.add('hidden');
+    
+    console.log('✅ Liability saved successfully');
+}
+
+// ===== EDIT FUNCTIONS =====
+function editItem(itemId, itemType, memberId) {
+    console.log('🔄 Editing item:', { itemId, itemType, memberId });
+    
+    if (itemType === 'account') {
+        editAccount(itemId);
+    } else if (memberId && familyData.investments[memberId] && familyData.investments[memberId][itemType]) {
+        editInvestment(itemId, itemType, memberId);
+    } else if (memberId && familyData.liabilities[memberId] && familyData.liabilities[memberId][itemType]) {
+        editLiability(itemId, itemType, memberId);
+    } else {
+        showMessage(`❌ Unable to edit ${itemType}. Data not found.`, 'error');
+    }
+}
+
+function editInvestment(itemId, itemType, memberId) {
+    console.log('🔄 Editing investment:', { itemId, itemType, memberId });
+    
+    const item = familyData.investments[memberId][itemType].find(i => i.id === itemId);
+    if (!item) {
+        showMessage('❌ Investment not found', 'error');
+        return;
+    }
+    
+    editingItemId = itemId;
+    editingItemMemberId = memberId;
+    editingItemType = itemType;
+    
+    // Populate the investment modal with existing data
+    document.getElementById('investment-modal-title').textContent = `Edit ${itemType}`;
+    
+    // Populate form fields
+    const memberSelect = document.getElementById('investment-member');
+    const typeSelect = document.getElementById('investment-type');
+    const nameInput = document.getElementById('investment-name');
+    const amountInput = document.getElementById('investment-amount');
+    const currentValueInput = document.getElementById('investment-current-value');
+    const platformInput = document.getElementById('investment-platform');
+    
+    if (memberSelect) memberSelect.value = memberId;
+    if (typeSelect) typeSelect.value = itemType;
+    if (nameInput) nameInput.value = item.symbol_or_name || item.invested_in || item.insurer || '';
+    if (amountInput) amountInput.value = item.invested_amount || item.insurance_premium || '';
+    if (currentValueInput) currentValueInput.value = item.current_value || item.invested_amount || item.insurance_premium || '';
+    if (platformInput) platformInput.value = item.broker_platform || '';
+    
+    // Handle specific fields for different investment types
+    if (itemType === 'fixedDeposits') {
+        const interestRateInput = document.getElementById('fd-interest-rate');
+        const investedDateInput = document.getElementById('fd-invested-date');
+        const maturityDateInput = document.getElementById('fd-maturity-date');
+        
+        if (interestRateInput) interestRateInput.value = item.interest_rate || '';
+        if (investedDateInput) investedDateInput.value = item.invested_date || '';
+        if (maturityDateInput) maturityDateInput.value = item.maturity_date || '';
+        
+        // Show FD specific fields
+        const fdFields = document.getElementById('fd-specific-fields');
+        if (fdFields) fdFields.style.display = 'block';
+    }
+    
+    if (itemType === 'insurance') {
+        const insurerInput = document.getElementById('insurance-insurer');
+        const policyNumberInput = document.getElementById('insurance-policy-number');
+        const coverageAmountInput = document.getElementById('insurance-coverage-amount');
+        
+        if (insurerInput) insurerInput.value = item.insurer || '';
+        if (policyNumberInput) policyNumberInput.value = item.policy_number || '';
+        if (coverageAmountInput) coverageAmountInput.value = item.coverage_amount || '';
+        
+        // Show insurance specific fields
+        const insFields = document.getElementById('insurance-specific-fields');
+        if (insFields) insFields.style.display = 'block';
+    }
+    
+    populateInvestmentMemberDropdown();
+    document.getElementById('investment-modal').classList.remove('hidden');
+    
+    showMessage(`✅ Editing ${itemType} for ${familyData.members.find(m => m.id === memberId)?.name}`, 'info');
+}
+
+function editLiability(itemId, itemType, memberId) {
+    console.log('🔄 Editing liability:', { itemId, itemType, memberId });
+    
+    const item = familyData.liabilities[memberId][itemType].find(i => i.id === itemId);
+    if (!item) {
+        showMessage('❌ Liability not found', 'error');
+        return;
+    }
+    
+    editingItemId = itemId;
+    editingItemMemberId = memberId;
+    editingItemType = itemType;
+    
+    // Populate the liability modal with existing data
+    document.getElementById('liability-modal-title').textContent = `Edit ${itemType}`;
+    
+    // Populate form fields
+    const memberSelect = document.getElementById('liability-member');
+    const typeSelect = document.getElementById('liability-type');
+    const lenderInput = document.getElementById('liability-lender');
+    const amountInput = document.getElementById('liability-amount');
+    const emiInput = document.getElementById('liability-emi');
+    const rateInput = document.getElementById('liability-rate');
+    
+    if (memberSelect) memberSelect.value = memberId;
+    if (typeSelect) typeSelect.value = itemType;
+    if (lenderInput) lenderInput.value = item.lender || '';
+    if (amountInput) amountInput.value = item.outstanding_amount || '';
+    if (emiInput) emiInput.value = item.emi_amount || '';
+    if (rateInput) rateInput.value = item.interest_rate || '';
+    
+    populateLiabilityMemberDropdown();
+    document.getElementById('liability-modal').classList.remove('hidden');
+    
+    showMessage(`✅ Editing ${itemType} for ${familyData.members.find(m => m.id === memberId)?.name}`, 'info');
+}
+
+function editAccount(itemId) {
+    console.log('🔄 Editing account:', itemId);
+    
+    const account = familyData.accounts.find(a => a.id === itemId);
+    if (!account) {
+        showMessage('❌ Account not found', 'error');
+        return;
+    }
+    
+    editingItemId = itemId;
+    
+    // Populate the account modal with existing data
+    document.getElementById('account-modal-title').textContent = 'Edit Account';
+    
+    // Populate form fields
+    const typeSelect = document.getElementById('account-type');
+    const institutionInput = document.getElementById('account-institution');
+    const numberInput = document.getElementById('account-number');
+    const statusSelect = document.getElementById('account-status');
+    const commentsInput = document.getElementById('account-comments');
+    
+    if (typeSelect) typeSelect.value = account.account_type || '';
+    if (institutionInput) institutionInput.value = account.institution || '';
+    if (numberInput) numberInput.value = account.account_number || '';
+    if (statusSelect) statusSelect.value = account.status || '';
+    if (commentsInput) commentsInput.value = account.comments || '';
+    
+    // Set holder and nominee
+    const holderSelect = document.getElementById('account-holder');
+    const nomineeSelect = document.getElementById('account-nominee');
+    
+    if (holderSelect) {
+        const holder = familyData.members.find(m => m.name === account.holder_name);
+        if (holder) holderSelect.value = holder.id;
+    }
+    
+    if (nomineeSelect) {
+        const nominee = familyData.members.find(m => m.name === account.nominee);
+        if (nominee) nomineeSelect.value = nominee.id;
+    }
+    
+    populateAccountDropdowns();
+    document.getElementById('account-modal').classList.remove('hidden');
+    
+    showMessage(`✅ Editing account: ${account.account_type} - ${account.institution}`, 'info');
 }
 
 // ===== IMPROVED DOWNLOAD UTILITIES =====
@@ -1166,12 +1540,11 @@ function debugDataSources() {
         </div>
         
         <div class="debug-section">
-            <h4>🔍 Smruthi Status</h4>
+            <h4>🔍 Sorting Status</h4>
             <div class="debug-info">
-                ${familyData.members.find(m => m.name.includes('Smruthi')) ? 
-                    '✅ Smruthi Kumar found in family members' : 
-                    '❌ Smruthi not found'
-                }
+                <p><strong>Current Sort Column:</strong> ${currentSortColumn || 'None'}</p>
+                <p><strong>Sort Direction:</strong> ${currentSortDirection}</p>
+                <p><strong>Sort Table:</strong> ${currentSortTable || 'None'}</p>
             </div>
         </div>
         
@@ -1410,10 +1783,10 @@ function renderFamilyManagement() {
                 <table class="family-table">
                     <thead>
                         <tr>
-                            <th>Photo</th>
-                            <th>Name</th>
-                            <th>Relationship</th>
-                            <th>Total Assets</th>
+                            ${createSortableHeader('Photo', 'photo_url', 'family')}
+                            ${createSortableHeader('Name', 'name', 'family')}
+                            ${createSortableHeader('Relationship', 'relationship', 'family')}
+                            ${createSortableHeader('Total Assets', 'totalAssets', 'family')}
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -1443,7 +1816,8 @@ function renderFamilyMemberRows() {
         `;
     }
 
-    return familyData.members.map(member => {
+    // Prepare data with calculated totals for sorting
+    const memberData = familyData.members.map(member => {
         const investments = familyData.investments[member.id] || {};
         let totalAssets = 0;
         
@@ -1453,6 +1827,15 @@ function renderFamilyMemberRows() {
             });
         });
 
+        return { ...member, totalAssets };
+    });
+
+    // Apply sorting
+    const sortedData = currentSortTable === 'family' && currentSortColumn 
+        ? sortData(memberData, currentSortColumn, currentSortDirection)
+        : memberData;
+
+    return sortedData.map(member => {
         return `
             <tr>
                 <td>
@@ -1462,7 +1845,7 @@ function renderFamilyMemberRows() {
                 </td>
                 <td><strong>${member.name}</strong></td>
                 <td>${member.relationship}</td>
-                <td>₹${totalAssets.toLocaleString()}</td>
+                <td>₹${member.totalAssets.toLocaleString()}</td>
                 <td>
                     <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
                     <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
@@ -1475,9 +1858,30 @@ function renderFamilyMemberRows() {
 
 function renderAccountsTable() {
     const tableBody = document.querySelector('#accounts-table tbody');
+    const tableHead = document.querySelector('#accounts-table thead tr');
+    
     if (!tableBody) return;
     
-    tableBody.innerHTML = familyData.accounts.map(account => `
+    // Render sortable headers
+    if (tableHead) {
+        tableHead.innerHTML = `
+            ${createSortableHeader('Account Type', 'account_type', 'accounts')}
+            ${createSortableHeader('Institution', 'institution', 'accounts')}
+            ${createSortableHeader('Account Number', 'account_number', 'accounts')}
+            ${createSortableHeader('Holder Name', 'holder_name', 'accounts')}
+            ${createSortableHeader('Nominee', 'nominee', 'accounts')}
+            ${createSortableHeader('Status', 'status', 'accounts')}
+            <th>Comments</th>
+            <th>Actions</th>
+        `;
+    }
+    
+    // Apply sorting
+    const sortedAccounts = currentSortTable === 'accounts' && currentSortColumn 
+        ? sortData(familyData.accounts, currentSortColumn, currentSortDirection)
+        : familyData.accounts;
+    
+    tableBody.innerHTML = sortedAccounts.map(account => `
         <tr>
             <td>${account.account_type}</td>
             <td>${account.institution}</td>
@@ -1496,127 +1900,170 @@ function renderAccountsTable() {
 }
 
 function renderInvestmentTabContent(tabName) {
-    let contentHTML = '';
+    let allInvestments = [];
     
+    // Collect all investments of this type from all members
     familyData.members.forEach(member => {
         const investments = familyData.investments[member.id] || {};
         const items = investments[tabName] || [];
         
-        if (items.length > 0) {
-            contentHTML += `
-                <div class="investment-table" style="margin-bottom: 2rem;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Investment Name</th>
-                                <th>Invested Amount</th>
-                                <th>Current Value</th>
-                                <th>P&L</th>
-                                <th>Platform</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
+        items.forEach(item => {
+            allInvestments.push({
+                ...item,
+                memberName: member.name,
+                memberId: member.id
+            });
+        });
+    });
+    
+    if (allInvestments.length > 0) {
+        // Apply sorting
+        const sortedInvestments = currentSortTable === 'investment' && currentSortColumn 
+            ? sortData(allInvestments, currentSortColumn, currentSortDirection)
+            : allInvestments;
+        
+        const contentHTML = `
+            <div class="investment-table" style="margin-bottom: 2rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            ${createSortableHeader('Member', 'memberName', 'investment')}
+                            ${createSortableHeader('Investment Name', 'symbol_or_name', 'investment')}
+                            ${createSortableHeader('Invested Amount', 'invested_amount', 'investment')}
+                            ${createSortableHeader('Current Value', 'current_value', 'investment')}
+                            ${createSortableHeader('P&L', 'pnl', 'investment')}
+                            ${createSortableHeader('Platform', 'broker_platform', 'investment')}
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedInvestments.map(item => {
+                            const pnl = (item.current_value || item.invested_amount || 0) - (item.invested_amount || 0);
+                            return `
                                 <tr>
-                                    <td>${member.name}</td>
+                                    <td>${item.memberName}</td>
                                     <td>${item.symbol_or_name || item.invested_in || 'N/A'}</td>
                                     <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
                                     <td>₹${(item.current_value || item.invested_amount || 0).toLocaleString()}</td>
-                                    <td class="pnl-positive">₹${((item.current_value || item.invested_amount || 0) - (item.invested_amount || 0)).toLocaleString()}</td>
+                                    <td class="pnl-${pnl >= 0 ? 'positive' : 'negative'}">₹${pnl.toLocaleString()}</td>
                                     <td>${item.broker_platform || 'N/A'}</td>
                                     <td>
-                                        <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${member.id}" title="Edit">✏️</button>
-                                        <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${member.id}" title="Delete">🗑️</button>
+                                        <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Edit">✏️</button>
+                                        <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Delete">🗑️</button>
                                     </td>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-    });
-    
-    if (!contentHTML) {
-        contentHTML = `
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('investment-tabs-content').innerHTML = contentHTML;
+    } else {
+        const contentHTML = `
             <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
                 <h4>No ${tabName} investments found</h4>
                 <p>Add your first ${tabName} investment to get started.</p>
                 <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add ${tabName}</button>
             </div>
         `;
+        
+        document.getElementById('investment-tabs-content').innerHTML = contentHTML;
     }
-    
-    document.getElementById('investment-tabs-content').innerHTML = contentHTML;
 }
 
 function renderLiabilityTabContent(tabName) {
-    let contentHTML = '';
+    let allLiabilities = [];
     
+    // Collect all liabilities of this type from all members
     familyData.members.forEach(member => {
         const liabilities = familyData.liabilities[member.id] || {};
         const items = liabilities[tabName] || [];
         
-        if (items.length > 0) {
-            contentHTML += `
-                <div class="investment-table" style="margin-bottom: 2rem;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Lender</th>
-                                <th>Outstanding Amount</th>
-                                <th>EMI</th>
-                                <th>Interest Rate</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
-                                <tr>
-                                    <td>${member.name}</td>
-                                    <td>${item.lender || 'N/A'}</td>
-                                    <td>₹${(item.outstanding_amount || 0).toLocaleString()}</td>
-                                    <td>₹${(item.emi_amount || 0).toLocaleString()}</td>
-                                    <td>${item.interest_rate || 0}%</td>
-                                    <td>
-                                        <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${member.id}" title="Edit">✏️</button>
-                                        <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${member.id}" title="Delete">🗑️</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
+        items.forEach(item => {
+            allLiabilities.push({
+                ...item,
+                memberName: member.name,
+                memberId: member.id
+            });
+        });
     });
     
-    if (!contentHTML) {
-        contentHTML = `
+    if (allLiabilities.length > 0) {
+        // Apply sorting
+        const sortedLiabilities = currentSortTable === 'liability' && currentSortColumn 
+            ? sortData(allLiabilities, currentSortColumn, currentSortDirection)
+            : allLiabilities;
+        
+        const contentHTML = `
+            <div class="investment-table" style="margin-bottom: 2rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            ${createSortableHeader('Member', 'memberName', 'liability')}
+                            ${createSortableHeader('Lender', 'lender', 'liability')}
+                            ${createSortableHeader('Outstanding Amount', 'outstanding_amount', 'liability')}
+                            ${createSortableHeader('EMI', 'emi_amount', 'liability')}
+                            ${createSortableHeader('Interest Rate', 'interest_rate', 'liability')}
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedLiabilities.map(item => `
+                            <tr>
+                                <td>${item.memberName}</td>
+                                <td>${item.lender || 'N/A'}</td>
+                                <td>₹${(item.outstanding_amount || 0).toLocaleString()}</td>
+                                <td>₹${(item.emi_amount || 0).toLocaleString()}</td>
+                                <td>${item.interest_rate || 0}%</td>
+                                <td>
+                                    <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Edit">✏️</button>
+                                    <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Delete">🗑️</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('liability-tabs-content').innerHTML = contentHTML;
+    } else {
+        const contentHTML = `
             <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
                 <h4>No ${tabName} found</h4>
                 <p>Add your first ${tabName} to get started.</p>
                 <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add ${tabName}</button>
             </div>
         `;
+        
+        document.getElementById('liability-tabs-content').innerHTML = contentHTML;
     }
-    
-    document.getElementById('liability-tabs-content').innerHTML = contentHTML;
 }
 
 // ===== TAB FUNCTIONS =====
 function showInvestmentTab(tabName) {
     document.querySelectorAll('#investments-section .tab-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
+    
+    // Reset sorting when changing tabs
+    currentSortColumn = null;
+    currentSortDirection = 'asc';
+    currentSortTable = null;
+    
     renderInvestmentTabContent(tabName);
 }
 
 function showLiabilityTab(tabName) {
     document.querySelectorAll('#liabilities-section .tab-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
+    
+    // Reset sorting when changing tabs
+    currentSortColumn = null;
+    currentSortDirection = 'asc';
+    currentSortTable = null;
+    
     renderLiabilityTabContent(tabName);
 }
 
@@ -1666,11 +2113,6 @@ function setupEventDelegation() {
     });
 }
 
-function editItem(itemId, itemType, memberId) {
-    // This would open appropriate modal with existing data
-    showMessage(`✅ Edit ${itemType} feature - item ${itemId}`, 'info');
-}
-
 function deleteItem(itemId, itemType, memberId) {
     if (confirm(`Are you sure you want to delete this ${itemType}?`)) {
         if (itemType === 'account') {
@@ -1700,11 +2142,13 @@ function closeModal(modalId) {
     } else if (modalId === 'investment-modal') {
         editingItemId = null;
         editingItemMemberId = null;
+        editingItemType = null;
     } else if (modalId === 'account-modal') {
         editingItemId = null;
     } else if (modalId === 'liability-modal') {
         editingItemId = null;
         editingItemMemberId = null;
+        editingItemType = null;
     } else if (modalId === 'photo-modal') {
         editingMemberId = null;
         selectedPresetPhoto = null;
@@ -1787,11 +2231,16 @@ function showSection(sectionId) {
     if (event && event.target) {
         event.target.classList.add('active');
     }
+    
+    // Reset sorting when switching sections
+    currentSortColumn = null;
+    currentSortDirection = 'asc';
+    currentSortTable = null;
 }
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Complete FamWealth Dashboard with WORKING DOWNLOADS initializing...');
+    console.log('🚀 Complete FamWealth Dashboard with SORTING & ALL FIXES initializing...');
     
     // Initialize Supabase
     await initializeSupabase();
@@ -1816,7 +2265,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadDashboardData();
     }
     
-    console.log('✅ Complete Dashboard with WORKING DOWNLOADS Ready! 🎉');
+    console.log('✅ Complete Dashboard with SORTING, DOWNLOADS & ALL FIXES Ready! 🎉');
 });
 
-console.log('📊 FamWealth Dashboard loaded with WORKING DOWNLOAD functionality');
+console.log('📊 FamWealth Dashboard loaded with COMPLETE FUNCTIONALITY including SORTING!');
