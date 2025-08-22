@@ -1372,3 +1372,218 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
 console.log('📊 FamWealth Dashboard loaded with complete functionality');
+// ===== ADD THESE MISSING FUNCTIONS TO YOUR EXISTING APP.JS =====
+// Just copy and paste these functions at the end of your current app.js file
+
+// ===== MISSING EXPORT FUNCTIONS =====
+function exportLiabilities(format = 'csv') {
+    const liabilityData = [];
+    
+    familyData.members.forEach(member => {
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        Object.entries(liabilities).forEach(([type, items]) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    liabilityData.push({
+                        'Member Name': member.name,
+                        'Relationship': member.relationship,
+                        'Liability Type': type,
+                        'Lender/Bank': item.lender || 'N/A',
+                        'Outstanding Amount': item.outstanding_amount || 0,
+                        'EMI Amount': item.emi_amount || 0,
+                        'Interest Rate': item.interest_rate || 'N/A',
+                        'Export Date': new Date().toISOString().split('T')[0]
+                    });
+                });
+            }
+        });
+    });
+    
+    if (format === 'csv') {
+        downloadCSV(liabilityData, `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Liability data exported as CSV', 'success');
+    } else {
+        downloadJSON(liabilityData, `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Liability data exported as JSON', 'success');
+    }
+}
+
+// ===== MISSING IMPORT FUNCTION =====
+function importBackup() {
+    // Create a file input dynamically
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = function(event) {
+        handleImportFile(event);
+    };
+    
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            if (importedData.version && importedData.data) {
+                if (confirm('⚠️ This will replace all current data. Continue with import?')) {
+                    familyData = {
+                        members: importedData.data.members || [],
+                        investments: importedData.data.investments || {},
+                        liabilities: importedData.data.liabilities || {},
+                        accounts: importedData.data.accounts || [],
+                        totals: {}
+                    };
+                    
+                    saveDataToStorage();
+                    renderEnhancedDashboard();
+                    renderAccountsTable();
+                    
+                    showMessage(`✅ Backup imported successfully! Restored ${familyData.members.length} members.`, 'success');
+                }
+            } else {
+                showMessage('❌ Invalid backup file format', 'error');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            showMessage('❌ Error importing backup file', 'error');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// ===== MISSING DEBUG FUNCTIONS =====
+function refreshDebugData() {
+    debugDataSources();
+    showMessage('🔄 Debug data refreshed', 'info');
+}
+
+function syncDataSources() {
+    showMessage('🔄 Syncing data sources...', 'info');
+    saveDataToStorage();
+    renderEnhancedDashboard();
+    renderAccountsTable();
+    showMessage('✅ Data sync completed', 'success');
+}
+
+function showDataSummary() {
+    const totalInvestments = Object.values(familyData.investments).reduce((sum, memberInv) => 
+        sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
+    
+    const totalLiabilities = Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
+        sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
+    
+    const summaryHTML = `
+        <h4>📊 Complete Data Summary</h4>
+        <div class="summary-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0;">
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.members.length}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Family Members</div>
+            </div>
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalInvestments}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Investments</div>
+            </div>
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalLiabilities}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Liabilities</div>
+            </div>
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.accounts.length}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Accounts</div>
+            </div>
+        </div>
+        
+        <h5>👥 Member Breakdown</h5>
+        <div class="member-breakdown" style="margin-top: 1rem;">
+            ${familyData.members.map(member => {
+                const investments = familyData.investments[member.id] || {};
+                const liabilities = familyData.liabilities[member.id] || {};
+                const memberInvestments = Object.values(investments).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+                const memberLiabilities = Object.values(liabilities).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+                return `
+                    <div class="breakdown-item" style="padding: 0.5rem; margin: 0.25rem 0; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
+                        <strong>${member.name}:</strong> ${memberInvestments} investments, ${memberLiabilities} liabilities
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    
+    document.getElementById('debug-content').innerHTML = summaryHTML;
+}
+
+// ===== MISSING FORM UPDATE FUNCTION =====
+function updateInvestmentForm() {
+    // Function called when investment type changes
+    const type = document.getElementById('investment-type').value;
+    
+    // Hide all type-specific fields first
+    const fdFields = document.getElementById('fd-specific-fields');
+    const insFields = document.getElementById('insurance-specific-fields');
+    
+    if (fdFields) fdFields.style.display = 'none';
+    if (insFields) insFields.style.display = 'none';
+    
+    // Show relevant fields based on type
+    if (type === 'fixedDeposits' && fdFields) {
+        fdFields.style.display = 'block';
+    } else if (type === 'insurance' && insFields) {
+        insFields.style.display = 'block';
+    }
+    
+    console.log('Investment form updated for type:', type);
+}
+
+// ===== MISSING DOWNLOAD UTILITY FUNCTIONS =====
+function downloadCSV(data, filename) {
+    if (data.length === 0) {
+        showMessage('No data to export', 'warning');
+        return;
+    }
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => {
+            const value = row[header];
+            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+        }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function downloadJSON(data, filename) {
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+console.log('✅ All missing functions loaded successfully!');
