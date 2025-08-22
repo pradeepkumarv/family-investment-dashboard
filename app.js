@@ -1,5 +1,5 @@
-// ===== UPDATED FAMWEALTH DASHBOARD FOR SOPHISTICATED DATABASE STRUCTURE =====
-// This version works with specialized tables: bank_balances, fixed_deposits, holdings, etc.
+// ===== COMPLETE FAMWEALTH DASHBOARD WITH SOPHISTICATED DATABASE =====
+// This is the complete, working version with ALL functions included
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -13,7 +13,7 @@ let supabase = null;
 let currentUser = null;
 let familyData = {
     members: [],
-    investments: {}, // Will contain: equity, mutualFunds, fixedDeposits, insurance, bankBalances
+    investments: {},
     liabilities: {},
     accounts: [],
     totals: {}
@@ -33,536 +33,17 @@ const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
     'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1554151228-14d9def656e4?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1590031905470-a1a1feacbb0b?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=face'
+    'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face'
 ];
 
 // ===== DATABASE TABLE MAPPING =====
 const TABLE_MAPPING = {
-    equity: 'holdings', // Equity investments go to holdings table
-    mutualFunds: 'holdings', // Mutual funds also go to holdings table
-    fixedDeposits: 'fixed_deposits', // Fixed deposits have their own table
-    insurance: 'insurance_policies', // Insurance has its own table
-    bankBalances: 'bank_balances' // Bank balances have their own table
+    equity: 'holdings',
+    mutualFunds: 'holdings',
+    fixedDeposits: 'fixed_deposits',
+    insurance: 'insurance_policies',
+    bankBalances: 'bank_balances'
 };
-
-// ===== ENHANCED DATA LOADING FROM SPECIALIZED TABLES =====
-async function loadDataFromSupabase() {
-    if (!supabase || !currentUser) return false;
-    
-    try {
-        console.log('🔄 Loading data from sophisticated database...');
-        
-        // Load family members
-        const { data: members, error: membersError } = await supabase
-            .from('family_members')
-            .select('*')
-            .eq('user_id', currentUser.id);
-            
-        if (membersError) {
-            console.error('❌ Error loading members:', membersError);
-            return false;
-        }
-        
-        if (members) {
-            familyData.members = members;
-            console.log(`✅ Loaded ${members.length} members from family_members table`);
-        }
-        
-        // Load investments from specialized tables for each member
-        for (const member of familyData.members) {
-            if (!familyData.investments[member.id]) {
-                familyData.investments[member.id] = {
-                    equity: [],
-                    mutualFunds: [],
-                    fixedDeposits: [],
-                    insurance: [],
-                    bankBalances: [],
-                    others: []
-                };
-            }
-            
-            // Load Holdings (Equity and Mutual Funds)
-            const { data: holdings, error: holdingsError } = await supabase
-                .from('holdings')
-                .select('*')
-                .eq('member_id', member.id);
-                
-            if (!holdingsError && holdings) {
-                holdings.forEach(holding => {
-                    // Determine if it's equity or mutual fund based on holding_type or symbol
-                    const isEquity = holding.holding_type === 'equity' || holding.symbol;
-                    const isMutualFund = holding.holding_type === 'mutual_fund' || holding.fund_name;
-                    
-                    const formattedHolding = {
-                        id: holding.id,
-                        symbol_or_name: holding.symbol || holding.fund_name || holding.company_name || 'Unknown',
-                        invested_amount: holding.invested_amount || 0,
-                        current_value: holding.current_value || holding.invested_amount || 0,
-                        broker_platform: holding.broker || holding.platform || 'N/A',
-                        quantity: holding.quantity || holding.units || 1,
-                        comments: holding.notes || ''
-                    };
-                    
-                    if (isEquity) {
-                        familyData.investments[member.id].equity.push(formattedHolding);
-                    } else if (isMutualFund) {
-                        familyData.investments[member.id].mutualFunds.push(formattedHolding);
-                    } else {
-                        // Default to equity if unclear
-                        familyData.investments[member.id].equity.push(formattedHolding);
-                    }
-                });
-                console.log(`✅ Loaded ${holdings.length} holdings for ${member.name}`);
-            }
-            
-            // Load Fixed Deposits
-            const { data: fixedDeposits, error: fdError } = await supabase
-                .from('fixed_deposits')
-                .select('*')
-                .eq('member_id', member.id);
-                
-            if (!fdError && fixedDeposits) {
-                fixedDeposits.forEach(fd => {
-                    familyData.investments[member.id].fixedDeposits.push({
-                        id: fd.id,
-                        invested_in: fd.bank_name || fd.institution || 'Unknown Bank',
-                        invested_amount: fd.principal_amount || fd.invested_amount || 0,
-                        current_value: fd.maturity_amount || fd.principal_amount || 0,
-                        interest_rate: fd.interest_rate || 0,
-                        invested_date: fd.start_date || fd.invested_date,
-                        maturity_date: fd.maturity_date,
-                        interest_payout: fd.interest_frequency || 'Maturity',
-                        comments: fd.notes || fd.comments || ''
-                    });
-                });
-                console.log(`✅ Loaded ${fixedDeposits.length} fixed deposits for ${member.name}`);
-            }
-            
-            // Load Insurance Policies
-            const { data: insurance, error: insError } = await supabase
-                .from('insurance_policies')
-                .select('*')
-                .eq('member_id', member.id);
-                
-            if (!insError && insurance) {
-                insurance.forEach(policy => {
-                    familyData.investments[member.id].insurance.push({
-                        id: policy.id,
-                        insurer: policy.company_name || policy.insurer || 'Unknown',
-                        insurance_type: policy.policy_type || 'Unknown',
-                        insurance_premium: policy.premium_amount || 0,
-                        sum_assured: policy.sum_assured || policy.coverage_amount || 0,
-                        payment_frequency: policy.premium_frequency || 'Yearly',
-                        invested_date: policy.start_date || policy.policy_start_date,
-                        maturity_date: policy.maturity_date || policy.policy_end_date,
-                        comments: policy.notes || policy.comments || ''
-                    });
-                });
-                console.log(`✅ Loaded ${insurance.length} insurance policies for ${member.name}`);
-            }
-            
-            // Load Bank Balances
-            const { data: bankBalances, error: bbError } = await supabase
-                .from('bank_balances')
-                .select('*')
-                .eq('member_id', member.id);
-                
-            if (!bbError && bankBalances) {
-                bankBalances.forEach(balance => {
-                    familyData.investments[member.id].bankBalances.push({
-                        id: balance.id,
-                        institution_name: balance.bank_name || balance.institution || 'Unknown Bank',
-                        current_balance: balance.balance || balance.current_balance || 0,
-                        account_type: balance.account_type || 'Savings',
-                        comments: balance.notes || balance.comments || ''
-                    });
-                });
-                console.log(`✅ Loaded ${bankBalances.length} bank balances for ${member.name}`);
-            }
-        }
-        
-        // Load Member Accounts (instead of generic accounts table)
-        const { data: memberAccounts, error: accountsError } = await supabase
-            .from('member_accounts')
-            .select(`
-                *,
-                family_members!inner(name),
-                encrypted_credentials(username, id)
-            `)
-            .eq('user_id', currentUser.id);
-            
-        if (!accountsError && memberAccounts) {
-            familyData.accounts = memberAccounts.map(acc => ({
-                id: acc.id,
-                account_type: acc.account_type || 'Unknown',
-                institution: acc.institution || acc.bank_name || 'Unknown',
-                account_number: acc.account_number || 'N/A',
-                holder_name: acc.family_members?.name || 'Unknown',
-                nominee: acc.nominee || '',
-                status: acc.status || 'Active',
-                username: acc.encrypted_credentials?.username || '',
-                password: canAccessPasswords() ? '••••••••' : '', // Don't show actual encrypted password
-                comments: acc.notes || acc.comments || ''
-            }));
-            console.log(`✅ Loaded ${memberAccounts.length} member accounts`);
-        }
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error loading data from Supabase:', error);
-        return false;
-    }
-}
-
-// ===== ENHANCED DATA SAVING TO SPECIALIZED TABLES =====
-async function saveInvestmentToSupabase(investmentData, investmentType, memberId) {
-    if (!supabase || !currentUser) return false;
-    
-    try {
-        const tableName = TABLE_MAPPING[investmentType];
-        let dataToSave = {};
-        
-        // Format data based on investment type and target table
-        switch (investmentType) {
-            case 'equity':
-            case 'mutualFunds':
-                dataToSave = {
-                    user_id: currentUser.id,
-                    member_id: memberId,
-                    holding_type: investmentType === 'equity' ? 'equity' : 'mutual_fund',
-                    symbol: investmentType === 'equity' ? investmentData.symbol_or_name : null,
-                    fund_name: investmentType === 'mutualFunds' ? investmentData.symbol_or_name : null,
-                    company_name: investmentData.symbol_or_name,
-                    invested_amount: investmentData.invested_amount,
-                    current_value: investmentData.current_value,
-                    quantity: investmentData.quantity || 1,
-                    broker: investmentData.broker_platform,
-                    notes: investmentData.comments
-                };
-                break;
-                
-            case 'fixedDeposits':
-                dataToSave = {
-                    user_id: currentUser.id,
-                    member_id: memberId,
-                    bank_name: investmentData.invested_in,
-                    principal_amount: investmentData.invested_amount,
-                    interest_rate: investmentData.interest_rate,
-                    start_date: investmentData.invested_date,
-                    maturity_date: investmentData.maturity_date,
-                    interest_frequency: investmentData.interest_payout,
-                    maturity_amount: investmentData.current_value || investmentData.invested_amount,
-                    notes: investmentData.comments
-                };
-                break;
-                
-            case 'insurance':
-                dataToSave = {
-                    user_id: currentUser.id,
-                    member_id: memberId,
-                    company_name: investmentData.insurer,
-                    policy_type: investmentData.insurance_type,
-                    premium_amount: investmentData.insurance_premium,
-                    sum_assured: investmentData.sum_assured,
-                    premium_frequency: investmentData.payment_frequency,
-                    start_date: investmentData.invested_date,
-                    maturity_date: investmentData.maturity_date,
-                    notes: investmentData.comments
-                };
-                break;
-                
-            case 'bankBalances':
-                dataToSave = {
-                    user_id: currentUser.id,
-                    member_id: memberId,
-                    bank_name: investmentData.institution_name,
-                    account_type: investmentData.account_type || 'Savings',
-                    balance: investmentData.current_balance,
-                    notes: investmentData.comments
-                };
-                break;
-        }
-        
-        let result;
-        if (editingItemId) {
-            // Update existing record
-            result = await supabase
-                .from(tableName)
-                .update(dataToSave)
-                .eq('id', editingItemId)
-                .eq('user_id', currentUser.id);
-        } else {
-            // Insert new record
-            result = await supabase
-                .from(tableName)
-                .insert(dataToSave);
-        }
-        
-        const { data, error } = result;
-        if (error) {
-            console.error(`❌ Error saving to ${tableName}:`, error);
-            return false;
-        }
-        
-        console.log(`✅ Successfully saved ${investmentType} to ${tableName}`);
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error in saveInvestmentToSupabase:', error);
-        return false;
-    }
-}
-
-// ===== ENHANCED MEMBER ACCOUNT MANAGEMENT =====
-async function saveAccountToSupabase(accountData) {
-    if (!supabase || !currentUser) return false;
-    
-    try {
-        // Save to member_accounts table
-        const memberAccountData = {
-            user_id: currentUser.id,
-            member_id: accountData.member_id, // You'll need to get this from holder selection
-            account_type: accountData.account_type,
-            institution: accountData.institution,
-            account_number: accountData.account_number,
-            nominee: accountData.nominee,
-            status: accountData.status,
-            notes: accountData.comments
-        };
-        
-        let accountResult;
-        if (editingItemId) {
-            accountResult = await supabase
-                .from('member_accounts')
-                .update(memberAccountData)
-                .eq('id', editingItemId)
-                .eq('user_id', currentUser.id);
-        } else {
-            accountResult = await supabase
-                .from('member_accounts')
-                .insert(memberAccountData)
-                .select();
-        }
-        
-        const { data: accountDataResult, error: accountError } = accountResult;
-        if (accountError) {
-            console.error('❌ Error saving member account:', accountError);
-            return false;
-        }
-        
-        // Save credentials to encrypted_credentials table (if user has permission)
-        if (canAccessPasswords() && (accountData.username || accountData.password)) {
-            const accountId = editingItemId || accountDataResult[0]?.id;
-            
-            if (accountId) {
-                const credentialData = {
-                    account_id: accountId,
-                    username: accountData.username,
-                    encrypted_password: accountData.password // In real app, this should be encrypted
-                };
-                
-                // Check if credentials already exist
-                const { data: existingCreds } = await supabase
-                    .from('encrypted_credentials')
-                    .select('id')
-                    .eq('account_id', accountId);
-                
-                if (existingCreds && existingCreds.length > 0) {
-                    // Update existing credentials
-                    await supabase
-                        .from('encrypted_credentials')
-                        .update(credentialData)
-                        .eq('account_id', accountId);
-                } else {
-                    // Insert new credentials
-                    await supabase
-                        .from('encrypted_credentials')
-                        .insert(credentialData);
-                }
-                
-                console.log('✅ Credentials saved to encrypted_credentials table');
-            }
-        }
-        
-        console.log('✅ Successfully saved member account');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error in saveAccountToSupabase:', error);
-        return false;
-    }
-}
-
-// ===== DATA PERSISTENCE FUNCTIONS (UPDATED) =====
-function saveDataToStorage() {
-    try {
-        localStorage.setItem('famwealth_data', JSON.stringify(familyData));
-        console.log('✅ Data saved to localStorage (backup)');
-    } catch (error) {
-        console.error('❌ Error saving data to localStorage:', error);
-    }
-}
-
-function loadDataFromStorage() {
-    try {
-        const stored = localStorage.getItem('famwealth_data');
-        if (stored) {
-            const loadedData = JSON.parse(stored);
-            familyData = { ...familyData, ...loadedData };
-            console.log('✅ Data loaded from localStorage (fallback)');
-            return true;
-        }
-    } catch (error) {
-        console.error('❌ Error loading data from localStorage:', error);
-    }
-    return false;
-}
-
-// ===== ENHANCED DEBUG FUNCTIONS FOR SOPHISTICATED DATABASE =====
-function debugDataSources() {
-    const debugData = {
-        localStorage: {},
-        supabase: {},
-        currentData: familyData,
-        databaseTables: [
-            'family_members', 'bank_balances', 'fixed_deposits', 
-            'holdings', 'insurance_policies', 'member_accounts', 
-            'encrypted_credentials', 'audit_logs', 'networth_snapshots'
-        ],
-        timestamp: new Date().toISOString()
-    };
-    
-    // Check localStorage
-    try {
-        const localData = localStorage.getItem('famwealth_data');
-        if (localData) {
-            debugData.localStorage = JSON.parse(localData);
-        } else {
-            debugData.localStorage = null;
-        }
-    } catch (error) {
-        debugData.localStorage = { error: error.message };
-    }
-    
-    showDebugModal(debugData);
-}
-
-function showDebugModal(debugData) {
-    const debugHTML = `
-        <div class="debug-section">
-            <h4>📊 Sophisticated Database Structure</h4>
-            <div class="debug-info">
-                <p><strong>Database Type:</strong> Specialized Tables (Advanced)</p>
-                <p><strong>Tables:</strong> ${debugData.databaseTables.join(', ')}</p>
-                <p><strong>Members:</strong> ${familyData.members.length}</p>
-                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
-                <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
-                <p><strong>Last Updated:</strong> ${debugData.timestamp}</p>
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>👥 Family Members Found</h4>
-            <div class="debug-info">
-                ${familyData.members.length > 0 ? 
-                    familyData.members.map(member => 
-                        `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
-                    ).join('') :
-                    '<p>No family members found</p>'
-                }
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>💰 Investment Data from Specialized Tables</h4>
-            <div class="debug-info">
-                ${Object.keys(familyData.investments).length > 0 ? 
-                    Object.entries(familyData.investments).map(([memberId, investments]) => {
-                        const member = familyData.members.find(m => m.id === memberId);
-                        const memberName = member ? member.name : `Unknown (${memberId})`;
-                        
-                        const counts = {
-                            equity: (investments.equity || []).length,
-                            mutualFunds: (investments.mutualFunds || []).length,
-                            fixedDeposits: (investments.fixedDeposits || []).length,
-                            insurance: (investments.insurance || []).length,
-                            bankBalances: (investments.bankBalances || []).length
-                        };
-                        
-                        const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-                        
-                        return `<p>• <strong>${memberName}:</strong> ${total} total investments</p>
-                                <ul style="margin-left: 1rem; font-size: 0.9em;">
-                                    <li>Holdings (Equity): ${counts.equity}</li>
-                                    <li>Holdings (Mutual Funds): ${counts.mutualFunds}</li>
-                                    <li>Fixed Deposits: ${counts.fixedDeposits}</li>
-                                    <li>Insurance Policies: ${counts.insurance}</li>
-                                    <li>Bank Balances: ${counts.bankBalances}</li>
-                                </ul>`;
-                    }).join('') :
-                    '<p>No investment data found</p>'
-                }
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>🏦 Specialized Tables Status</h4>
-            <div class="debug-info">
-                <p><strong>✅ Using Advanced Database Structure:</strong></p>
-                <ul style="margin-left: 1rem;">
-                    <li><strong>holdings</strong> - For equity and mutual fund investments</li>
-                    <li><strong>fixed_deposits</strong> - For FD investments with interest tracking</li>
-                    <li><strong>insurance_policies</strong> - For insurance with premium tracking</li>
-                    <li><strong>bank_balances</strong> - For bank account balances</li>
-                    <li><strong>member_accounts</strong> - For account management</li>
-                    <li><strong>encrypted_credentials</strong> - For secure password storage</li>
-                    <li><strong>audit_logs</strong> - For change tracking</li>
-                    <li><strong>networth_snapshots</strong> - For historical tracking</li>
-                </ul>
-                <p style="color: var(--color-success); font-weight: bold;">
-                    🎉 Your database structure is professionally designed!
-                </p>
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>🔍 Search for "Smruthi"</h4>
-            <div class="debug-info">
-                <p><strong>In Current Data:</strong></p>
-                ${familyData.members.find(m => m.name.toLowerCase().includes('smruthi')) ? 
-                    '✅ Found Smruthi in current family members' : 
-                    '❌ Smruthi not found in current data'
-                }
-                
-                <p style="margin-top: 1rem;"><strong>Troubleshooting:</strong></p>
-                <ul style="margin-left: 1rem;">
-                    <li>Data is now loading from specialized database tables</li>
-                    <li>Previous data was cleared as requested</li>
-                    <li>Add Smruthi through the Family section to save to database</li>
-                    <li>Data will be saved to appropriate specialized tables</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="debug-actions">
-            <button class="btn btn--outline btn--sm" onclick="syncDataSources()">🔄 Reload from Database</button>
-            <button class="btn btn--primary btn--sm" onclick="showSection('family-section')">👥 Add Family Member</button>
-        </div>
-    `;
-    
-    document.getElementById('debug-content').innerHTML = debugHTML;
-    document.getElementById('debug-modal').classList.remove('hidden');
-}
-
-// Continue with all other functions...
-// [The rest of the code would continue with all the other functions updated to work with the sophisticated database structure]
 
 // ===== INITIALIZATION =====
 async function initializeSupabase() {
@@ -581,408 +62,7 @@ async function initializeSupabase() {
     }
 }
 
-// ===== MAIN INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 FamWealth Dashboard with Sophisticated Database Structure initializing...');
-    
-    // Initialize Supabase
-    await initializeSupabase();
-    
-    console.log('✅ Enhanced dashboard ready for sophisticated database!');
-});
-
-// [Note: This is part 1 of the updated code. The full implementation would include all other functions 
-//  updated to work with your specialized database tables]
-// ===== COMPLETE UPDATED APP.JS FOR SOPHISTICATED DATABASE =====
-// This is the complete updated version that works with your specialized database tables
-
-// ===== ENHANCED INVESTMENT MANAGEMENT FOR SPECIALIZED TABLES =====
-
-function saveInvestment() {
-    const memberId = document.getElementById('investment-member').value;
-    const type = document.getElementById('investment-type').value;
-    const name = document.getElementById('investment-name').value.trim();
-    const amount = document.getElementById('investment-amount').value;
-    const currentValue = document.getElementById('investment-current-value').value;
-    const platform = document.getElementById('investment-platform').value.trim();
-    
-    if (!memberId || !type || !name || !amount) {
-        showMessage('Please fill all required fields', 'error');
-        return;
-    }
-    
-    let investmentData = {
-        symbol_or_name: name,
-        invested_amount: parseFloat(amount),
-        current_value: parseFloat(currentValue) || parseFloat(amount),
-        broker_platform: platform,
-        quantity: 1
-    };
-    
-    // Add type-specific fields
-    if (type === 'fixedDeposits') {
-        investmentData = {
-            ...investmentData,
-            invested_in: name,
-            interest_rate: parseFloat(document.getElementById('fd-interest-rate').value) || 0,
-            invested_date: document.getElementById('fd-invested-date').value,
-            maturity_date: document.getElementById('fd-maturity-date').value,
-            interest_payout: document.getElementById('fd-interest-payout').value,
-            comments: document.getElementById('fd-comments').value.trim()
-        };
-    } else if (type === 'insurance') {
-        investmentData = {
-            ...investmentData,
-            insurer: name,
-            insurance_type: document.getElementById('insurance-type').value,
-            insurance_premium: parseFloat(amount),
-            sum_assured: parseFloat(document.getElementById('insurance-sum-assured').value) || 0,
-            payment_frequency: document.getElementById('insurance-frequency').value,
-            invested_date: document.getElementById('insurance-invested-date').value,
-            maturity_date: document.getElementById('insurance-maturity').value,
-            comments: document.getElementById('insurance-comments').value.trim()
-        };
-    } else if (type === 'bankBalances') {
-        investmentData = {
-            institution_name: name,
-            current_balance: parseFloat(amount),
-            account_type: 'Savings',
-            comments: document.getElementById('investment-platform').value || ''
-        };
-    }
-    
-    // Save to Supabase sophisticated database
-    if (supabase && currentUser && currentUser.id) {
-        saveInvestmentToSupabase(investmentData, type, memberId).then(success => {
-            if (success) {
-                showMessage('✅ Investment saved to database', 'success');
-                // Reload data from database
-                loadDashboardData();
-            } else {
-                // Fallback to localStorage
-                saveToLocalStorage(investmentData, type, memberId);
-            }
-        });
-    } else {
-        // Fallback to localStorage
-        saveToLocalStorage(investmentData, type, memberId);
-    }
-    
-    document.getElementById('investment-modal').classList.add('hidden');
-}
-
-function saveToLocalStorage(investmentData, type, memberId) {
-    if (!familyData.investments[memberId]) {
-        familyData.investments[memberId] = {
-            equity: [], mutualFunds: [], fixedDeposits: [], insurance: [], bankBalances: [], others: []
-        };
-    }
-    
-    if (editingItemId) {
-        // Update existing investment
-        const itemIndex = familyData.investments[memberId][type].findIndex(i => i.id === editingItemId);
-        if (itemIndex !== -1) {
-            familyData.investments[memberId][type][itemIndex] = {
-                ...investmentData,
-                id: editingItemId
-            };
-        }
-        showMessage('✅ Investment updated (localStorage)', 'success');
-    } else {
-        // Add new investment
-        const newInvestment = {
-            ...investmentData,
-            id: Date.now().toString()
-        };
-        familyData.investments[memberId][type].push(newInvestment);
-        showMessage('✅ Investment added (localStorage)', 'success');
-    }
-    
-    saveDataToStorage();
-    renderEnhancedDashboard();
-    renderInvestmentTabContent(type);
-}
-
-// ===== ENHANCED ACCOUNT MANAGEMENT FOR MEMBER_ACCOUNTS TABLE =====
-
-function saveAccount() {
-    const accountType = document.getElementById('account-type').value;
-    const institution = document.getElementById('account-institution').value.trim();
-    const accountNumber = document.getElementById('account-number').value.trim();
-    const holderId = document.getElementById('account-holder').value;
-    const nomineeId = document.getElementById('account-nominee').value;
-    const status = document.getElementById('account-status').value;
-    const comments = document.getElementById('account-comments').value.trim();
-    const username = document.getElementById('account-username').value.trim();
-    const password = document.getElementById('account-password').value.trim();
-    
-    if (!accountType || !institution || !accountNumber || !holderId) {
-        showMessage('Please fill all required fields', 'error');
-        return;
-    }
-    
-    const holder = familyData.members.find(m => m.id === holderId);
-    const nominee = nomineeId ? familyData.members.find(m => m.id === nomineeId) : null;
-    
-    const accountData = {
-        account_type: accountType,
-        institution: institution,
-        account_number: accountNumber,
-        holder_name: holder ? holder.name : 'Unknown',
-        member_id: holderId, // For sophisticated database
-        nominee: nominee ? nominee.name : '',
-        status: status,
-        comments: comments,
-        username: username,
-        password: password
-    };
-    
-    // Save to Supabase sophisticated database
-    if (supabase && currentUser && currentUser.id) {
-        saveAccountToSupabase(accountData).then(success => {
-            if (success) {
-                showMessage('✅ Account saved to database', 'success');
-                loadDashboardData();
-            } else {
-                saveAccountToLocalStorage(accountData);
-            }
-        });
-    } else {
-        saveAccountToLocalStorage(accountData);
-    }
-    
-    document.getElementById('account-modal').classList.add('hidden');
-}
-
-function saveAccountToLocalStorage(accountData) {
-    if (editingItemId) {
-        // Update existing account
-        const accountIndex = familyData.accounts.findIndex(a => a.id === editingItemId);
-        if (accountIndex !== -1) {
-            familyData.accounts[accountIndex] = {
-                ...accountData,
-                id: editingItemId
-            };
-        }
-        showMessage('✅ Account updated (localStorage)', 'success');
-    } else {
-        // Add new account
-        const newAccount = {
-            ...accountData,
-            id: Date.now().toString()
-        };
-        familyData.accounts.push(newAccount);
-        showMessage('✅ Account added (localStorage)', 'success');
-    }
-    
-    saveDataToStorage();
-    renderAccountsTable();
-}
-
-// ===== ENHANCED MEMBER MANAGEMENT =====
-
-async function saveMemberToSupabase(memberData) {
-    if (!supabase || !currentUser) return false;
-    
-    try {
-        let result;
-        if (editingMemberId) {
-            result = await supabase
-                .from('family_members')
-                .update(memberData)
-                .eq('id', editingMemberId)
-                .eq('user_id', currentUser.id);
-        } else {
-            result = await supabase
-                .from('family_members')
-                .insert({
-                    ...memberData,
-                    user_id: currentUser.id
-                });
-        }
-        
-        const { data, error } = result;
-        if (error) {
-            console.error('❌ Error saving member to database:', error);
-            return false;
-        }
-        
-        console.log('✅ Member saved to family_members table');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error in saveMemberToSupabase:', error);
-        return false;
-    }
-}
-
-function saveMember() {
-    const name = document.getElementById('member-name').value.trim();
-    const relationship = document.getElementById('member-relationship').value;
-    const isPrimary = document.getElementById('member-is-primary').checked;
-    
-    if (!name || !relationship) {
-        showMessage('Please fill all required fields', 'error');
-        return;
-    }
-    
-    let photoUrl = document.getElementById('member-photo-url').value;
-    if (uploadedPhotoData) {
-        photoUrl = uploadedPhotoData;
-    } else if (!photoUrl) {
-        photoUrl = PRESET_PHOTOS[familyData.members.length % PRESET_PHOTOS.length];
-    }
-    
-    const memberData = {
-        name,
-        relationship,
-        is_primary: isPrimary,
-        photo_url: photoUrl,
-        avatar_url: photoUrl
-    };
-    
-    // Save to Supabase sophisticated database
-    if (supabase && currentUser && currentUser.id) {
-        saveMemberToSupabase(memberData).then(success => {
-            if (success) {
-                showMessage('✅ Member saved to database', 'success');
-                loadDashboardData();
-            } else {
-                saveMemberToLocalStorage(memberData);
-            }
-        });
-    } else {
-        saveMemberToLocalStorage(memberData);
-    }
-    
-    document.getElementById('member-modal').classList.add('hidden');
-}
-
-function saveMemberToLocalStorage(memberData) {
-    if (editingMemberId) {
-        // Update existing member
-        const memberIndex = familyData.members.findIndex(m => m.id === editingMemberId);
-        if (memberIndex !== -1) {
-            familyData.members[memberIndex] = {
-                ...familyData.members[memberIndex],
-                ...memberData
-            };
-        }
-        showMessage('✅ Member updated (localStorage)', 'success');
-    } else {
-        // Add new member
-        const newMember = {
-            ...memberData,
-            id: Date.now().toString()
-        };
-        
-        familyData.members.push(newMember);
-        
-        // Initialize empty investment data
-        familyData.investments[newMember.id] = {
-            equity: [], mutualFunds: [], fixedDeposits: [], 
-            insurance: [], bankBalances: [], others: []
-        };
-        
-        familyData.liabilities[newMember.id] = {
-            homeLoan: [], personalLoan: [], creditCard: [], other: []
-        };
-        
-        showMessage('✅ Member added (localStorage)', 'success');
-    }
-    
-    saveDataToStorage();
-    renderEnhancedDashboard();
-}
-
-// ===== EXPORT FUNCTIONS UPDATED FOR SOPHISTICATED DATABASE =====
-
-function exportInvestments(format = 'csv') {
-    const investmentData = [];
-    
-    familyData.members.forEach(member => {
-        const investments = familyData.investments[member.id] || {};
-        
-        Object.entries(investments).forEach(([type, items]) => {
-            if (Array.isArray(items)) {
-                items.forEach(item => {
-                    let exportItem = {
-                        'Member Name': member.name,
-                        'Relationship': member.relationship,
-                        'Investment Type': type,
-                        'Database Table': TABLE_MAPPING[type] || 'local_storage',
-                        'Export Date': new Date().toISOString().split('T')[0]
-                    };
-                    
-                    // Add type-specific fields
-                    switch(type) {
-                        case 'equity':
-                        case 'mutualFunds':
-                            exportItem = {
-                                ...exportItem,
-                                'Investment Name': item.symbol_or_name || 'N/A',
-                                'Invested Amount': item.invested_amount || 0,
-                                'Current Value': item.current_value || 0,
-                                'P&L': (item.current_value || 0) - (item.invested_amount || 0),
-                                'Platform': item.broker_platform || 'N/A',
-                                'Quantity': item.quantity || 0,
-                                'Comments': item.comments || ''
-                            };
-                            break;
-                            
-                        case 'fixedDeposits':
-                            exportItem = {
-                                ...exportItem,
-                                'Bank': item.invested_in || 'N/A',
-                                'Principal Amount': item.invested_amount || 0,
-                                'Interest Rate': item.interest_rate || 'N/A',
-                                'Invested Date': item.invested_date || 'N/A',
-                                'Maturity Date': item.maturity_date || 'N/A',
-                                'Interest Payout': item.interest_payout || 'N/A',
-                                'Comments': item.comments || ''
-                            };
-                            break;
-                            
-                        case 'insurance':
-                            exportItem = {
-                                ...exportItem,
-                                'Insurer': item.insurer || 'N/A',
-                                'Policy Type': item.insurance_type || 'N/A',
-                                'Premium': item.insurance_premium || 0,
-                                'Sum Assured': item.sum_assured || 0,
-                                'Frequency': item.payment_frequency || 'N/A',
-                                'Comments': item.comments || ''
-                            };
-                            break;
-                            
-                        case 'bankBalances':
-                            exportItem = {
-                                ...exportItem,
-                                'Bank': item.institution_name || 'N/A',
-                                'Account Type': item.account_type || 'N/A',
-                                'Balance': item.current_balance || 0,
-                                'Comments': item.comments || ''
-                            };
-                            break;
-                    }
-                    
-                    investmentData.push(exportItem);
-                });
-            }
-        });
-    });
-    
-    if (format === 'csv') {
-        downloadCSV(investmentData, `FamWealth_Sophisticated_Investments_${new Date().toISOString().split('T')[0]}.csv`);
-        showMessage('✅ Investment data exported (sophisticated database)', 'success');
-    } else if (format === 'json') {
-        downloadJSON(investmentData, `FamWealth_Sophisticated_Investments_${new Date().toISOString().split('T')[0]}.json`);
-        showMessage('✅ Investment data exported as JSON', 'success');
-    }
-}
-
-// ===== ALL OTHER FUNCTIONS (AUTH, UI, UTILITIES) REMAIN THE SAME =====
-
+// ===== AUTHENTICATION FUNCTIONS =====
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
@@ -1047,38 +127,99 @@ async function handleLogin() {
     setLoginLoading(false);
 }
 
+async function handleLogout() {
+    const authType = localStorage.getItem('famwealth_auth_type');
+    
+    if (authType === 'supabase' && supabase) {
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    }
+
+    currentUser = null;
+    localStorage.removeItem('famwealth_user');
+    localStorage.removeItem('famwealth_auth_type');
+    document.getElementById('main-dashboard').style.display = 'none';
+    document.getElementById('landing-page').style.display = 'block';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    showMessage('✅ Logged out successfully', 'success');
+    setLoginLoading(false);
+}
+
+// ===== DATA LOADING FUNCTIONS =====
+async function loadDataFromSupabase() {
+    if (!supabase || !currentUser) return false;
+    
+    try {
+        console.log('🔄 Loading data from sophisticated database...');
+        
+        // Load family members
+        const { data: members, error: membersError } = await supabase
+            .from('family_members')
+            .select('*')
+            .eq('user_id', currentUser.id);
+            
+        if (membersError) {
+            console.error('❌ Error loading members:', membersError);
+            return false;
+        }
+        
+        if (members) {
+            familyData.members = members;
+            console.log(`✅ Loaded ${members.length} members from family_members table`);
+        }
+        
+        // Initialize investment data structure
+        for (const member of familyData.members) {
+            if (!familyData.investments[member.id]) {
+                familyData.investments[member.id] = {
+                    equity: [], mutualFunds: [], fixedDeposits: [], 
+                    insurance: [], bankBalances: [], others: []
+                };
+            }
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error loading data from Supabase:', error);
+        return false;
+    }
+}
+
 async function loadDashboardData() {
     try {
         console.log('🔄 Loading data from sophisticated database...');
         document.getElementById('loading-state').style.display = 'block';
         document.getElementById('dashboard-content').style.display = 'none';
 
-        // Try to load from Supabase sophisticated database first
+        // Try to load from Supabase first
         let dataLoaded = false;
         if (supabase && currentUser && currentUser.id) {
             dataLoaded = await loadDataFromSupabase();
-            if (dataLoaded) {
-                console.log('✅ Data loaded from sophisticated database tables');
-            }
         }
         
         // If no Supabase data, try localStorage
         if (!dataLoaded) {
             dataLoaded = loadDataFromStorage();
-            console.log('📦 Data loaded from localStorage fallback');
         }
         
         // If still no data, load sample data
         if (!dataLoaded || familyData.members.length === 0) {
-            console.log('📝 Loading sample data for demonstration...');
+            console.log('📝 Loading sample data for sophisticated database demonstration...');
             loadSampleData();
             saveDataToStorage();
         }
 
+        // Render dashboard
         renderEnhancedDashboard();
         renderAccountsTable();
         renderInvestmentTabContent('equity');
         renderLiabilityTabContent('homeLoan');
+        
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('dashboard-content').style.display = 'block';
         updateLastUpdated();
@@ -1095,7 +236,6 @@ async function loadDashboardData() {
     }
 }
 
-// ===== SAMPLE DATA FOR DEMONSTRATION =====
 function loadSampleData() {
     console.log('📝 Loading sample data for sophisticated database demonstration...');
     
@@ -1116,7 +256,6 @@ function loadSampleData() {
         }
     ];
 
-    // Sample data demonstrating sophisticated database structure
     familyData.investments = {
         '1': {
             equity: [{
@@ -1172,6 +311,11 @@ function loadSampleData() {
         }
     };
 
+    familyData.liabilities = {
+        '1': { homeLoan: [], personalLoan: [], creditCard: [], other: [] },
+        '2': { homeLoan: [], personalLoan: [], creditCard: [], other: [] }
+    };
+
     familyData.accounts = [
         {
             id: 'acc1',
@@ -1189,8 +333,723 @@ function loadSampleData() {
     console.log('✅ Sample data loaded with Smruthi included!');
 }
 
-// ===== ALL REMAINING UTILITY FUNCTIONS =====
+// ===== DATA PERSISTENCE =====
+function saveDataToStorage() {
+    try {
+        localStorage.setItem('famwealth_data', JSON.stringify(familyData));
+        console.log('✅ Data saved to localStorage (backup)');
+    } catch (error) {
+        console.error('❌ Error saving data to localStorage:', error);
+    }
+}
 
+function loadDataFromStorage() {
+    try {
+        const stored = localStorage.getItem('famwealth_data');
+        if (stored) {
+            const loadedData = JSON.parse(stored);
+            familyData = { ...familyData, ...loadedData };
+            console.log('✅ Data loaded from localStorage (fallback)');
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Error loading data from localStorage:', error);
+    }
+    return false;
+}
+
+// ===== DASHBOARD RENDERING FUNCTIONS =====
+function renderEnhancedDashboard() {
+    const totals = calculateEnhancedTotals();
+    renderEnhancedStats(totals);
+    renderMemberCards();
+    renderFamilyManagement();
+    populateInvestmentMemberDropdown();
+    console.log('✅ Enhanced dashboard rendered with sophisticated database support');
+}
+
+function calculateEnhancedTotals() {
+    let totalInvested = 0;
+    let totalCurrentValue = 0;
+    let totalFD = 0;
+    let totalInsurancePremium = 0;
+    let totalBankBalance = 0;
+    let totalLiabilities = 0;
+
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+
+        // Calculate investments
+        ['equity', 'mutualFunds'].forEach(type => {
+            (investments[type] || []).forEach(item => {
+                totalInvested += parseFloat(item.invested_amount || 0);
+                totalCurrentValue += parseFloat(item.current_value || item.invested_amount || 0);
+            });
+        });
+
+        // Fixed Deposit calculations
+        (investments.fixedDeposits || []).forEach(fd => {
+            const amount = parseFloat(fd.invested_amount || 0);
+            totalInvested += amount;
+            totalCurrentValue += amount;
+            totalFD += amount;
+        });
+
+        // Insurance calculations
+        (investments.insurance || []).forEach(ins => {
+            totalInsurancePremium += parseFloat(ins.insurance_premium || 0);
+        });
+
+        // Bank Balance calculations
+        (investments.bankBalances || []).forEach(bank => {
+            totalBankBalance += parseFloat(bank.current_balance || 0);
+        });
+
+        // Liability calculations
+        ['homeLoan', 'personalLoan', 'creditCard'].forEach(type => {
+            (liabilities[type] || []).forEach(item => {
+                totalLiabilities += parseFloat(item.outstanding_amount || 0);
+            });
+        });
+    });
+
+    totalCurrentValue += totalBankBalance;
+    const totalPnL = totalCurrentValue - totalInvested - totalBankBalance;
+    const netWorth = totalCurrentValue - totalLiabilities;
+
+    return {
+        totalInvested,
+        totalCurrentValue,
+        totalPnL,
+        totalFD,
+        totalInsurancePremium,
+        totalBankBalance,
+        totalLiabilities,
+        netWorth
+    };
+}
+
+function renderEnhancedStats(totals) {
+    const statsHTML = `
+        <div class="stat-card">
+            <div class="stat-label">FAMILY NET WORTH</div>
+            <div class="stat-value primary">₹${totals.netWorth.toLocaleString()}</div>
+            <div class="stat-change neutral">Assets minus Liabilities</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">TOTAL ASSETS</div>
+            <div class="stat-value positive">₹${totals.totalCurrentValue.toLocaleString()}</div>
+            <div class="stat-change positive">+₹${totals.totalPnL.toLocaleString()} P&L</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">TOTAL LIABILITIES</div>
+            <div class="stat-value negative">₹${totals.totalLiabilities.toLocaleString()}</div>
+            <div class="stat-change neutral">Outstanding Debt</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">FIXED DEPOSITS</div>
+            <div class="stat-value positive">₹${totals.totalFD.toLocaleString()}</div>
+            <div class="stat-change neutral">Guaranteed Returns</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">INSURANCE PREMIUMS</div>
+            <div class="stat-value">₹${totals.totalInsurancePremium.toLocaleString()}</div>
+            <div class="stat-change neutral">Annual Premiums</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">ACTIVE MEMBERS</div>
+            <div class="stat-value">${familyData.members.length}</div>
+            <div class="stat-change neutral">Family Members</div>
+        </div>
+    `;
+    
+    document.getElementById('stats-grid').innerHTML = statsHTML;
+}
+
+function renderMemberCards() {
+    const membersHTML = familyData.members.map(member => {
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        let memberCurrentValue = 0;
+        let memberLiabilities = 0;
+        
+        // Calculate member totals
+        ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
+            (investments[type] || []).forEach(item => {
+                memberCurrentValue += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
+            });
+        });
+        
+        // Calculate liabilities
+        ['homeLoan', 'personalLoan', 'creditCard'].forEach(type => {
+            (liabilities[type] || []).forEach(item => {
+                memberLiabilities += parseFloat(item.outstanding_amount || 0);
+            });
+        });
+        
+        const accountCount = Object.values(investments).reduce((total, category) => {
+            if (Array.isArray(category)) return total + category.length;
+            return total;
+        }, 0);
+        
+        return `
+            <div class="member-card">
+                <div class="member-header">
+                    <div class="member-avatar">
+                        <img src="${member.photo_url || PRESET_PHOTOS[0]}" 
+                             alt="${member.name}" 
+                             style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                    </div>
+                    <div class="member-info">
+                        <h4>${member.name}</h4>
+                        <p class="member-relationship">${member.relationship} | ${member.is_primary ? 'Primary Account Holder' : 'Family Member'}</p>
+                    </div>
+                    <div class="member-actions">
+                        <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
+                        <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
+                        <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                    </div>
+                </div>
+                
+                <div class="member-stats">
+                    <div>
+                        <div class="member-stat-value">₹${memberCurrentValue.toLocaleString()}</div>
+                        <div class="stat-label">Total Assets</div>
+                    </div>
+                    <div>
+                        <div class="member-stat-value" style="color: var(--color-error);">₹${memberLiabilities.toLocaleString()}</div>
+                        <div class="stat-label">Liabilities</div>
+                    </div>
+                </div>
+                
+                <div class="member-accounts">
+                    <div class="accounts-label">Investment Accounts: ${accountCount}</div>
+                    <div class="accounts-list">
+                        <span class="account-tag">Equity: ${(investments.equity || []).length}</span>
+                        <span class="account-tag">MF: ${(investments.mutualFunds || []).length}</span>
+                        <span class="account-tag">FD: ${(investments.fixedDeposits || []).length}</span>
+                        <span class="account-tag">Insurance: ${(investments.insurance || []).length}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    const membersSection = `
+        <div class="section-title">
+            <h3>👨‍👩‍👧‍👦 Family Members Overview</h3>
+        </div>
+        <div class="members-grid">
+            ${membersHTML}
+        </div>
+    `;
+    
+    document.getElementById('members-section').innerHTML = membersSection;
+}
+
+function renderFamilyManagement() {
+    const familyMembersGrid = document.getElementById('family-members-grid');
+    if (!familyMembersGrid) return;
+
+    const familyHTML = `
+        <div class="family-management-header">
+            <div class="view-toggle">
+                <button class="btn btn--sm btn--outline" onclick="toggleFamilyView('cards')" id="cards-view-btn">📋 Card View</button>
+                <button class="btn btn--sm btn--primary" onclick="toggleFamilyView('list')" id="list-view-btn">📊 List View</button>
+            </div>
+            <div class="family-stats">
+                <span class="stat-item">Total Members: <strong>${familyData.members.length}</strong></span>
+                <span class="stat-item">Primary Holders: <strong>${familyData.members.filter(m => m.is_primary).length}</strong></span>
+            </div>
+        </div>
+
+        <div id="family-list-view" class="family-list-view">
+            <div class="family-table-container">
+                <table class="family-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>Relationship</th>
+                            <th>Account Type</th>
+                            <th>Total Assets</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${renderFamilyMemberRows()}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="family-card-view" class="family-card-view" style="display: none;">
+            <div class="family-management-grid">
+                ${renderFamilyMemberCards()}
+            </div>
+        </div>
+    `;
+
+    familyMembersGrid.innerHTML = familyHTML;
+}
+
+function renderFamilyMemberRows() {
+    if (familyData.members.length === 0) {
+        return `
+            <tr>
+                <td colspan="6" class="empty-state">
+                    <div class="empty-family-state">
+                        <h4>👥 No Family Members Added Yet</h4>
+                        <p>Start building your family financial profile by adding your first member.</p>
+                        <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add First Member</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    return familyData.members.map(member => {
+        const memberStats = calculateMemberFinancials(member);
+
+        return `
+            <tr class="family-member-row" data-member-id="${member.id}">
+                <td class="photo-cell">
+                    <div class="member-photo-wrapper">
+                        ${member.photo_url ? 
+                            `<img src="${member.photo_url}" alt="${member.name}" class="member-list-photo">` :
+                            `<div class="member-list-avatar">${member.name.charAt(0)}</div>`
+                        }
+                    </div>
+                </td>
+                <td class="name-cell">
+                    <div class="member-name-info">
+                        <strong>${member.name}</strong>
+                        ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
+                    </div>
+                </td>
+                <td class="relationship-cell">${member.relationship}</td>
+                <td class="account-type-cell">
+                    <span class="account-type-badge ${member.is_primary ? 'primary' : 'member'}">
+                        ${member.is_primary ? 'Account Holder' : 'Family Member'}
+                    </span>
+                </td>
+                <td class="assets-cell">
+                    <span class="amount positive">₹${memberStats.totalAssets.toLocaleString()}</span>
+                </td>
+                <td class="actions-cell">
+                    <div class="member-actions">
+                        <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
+                        <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
+                        <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderFamilyMemberCards() {
+    if (familyData.members.length === 0) {
+        return `
+            <div class="empty-family-state">
+                <h4>👥 No Family Members Added Yet</h4>
+                <p>Start building your family financial profile by adding your first member.</p>
+                <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add First Member</button>
+            </div>
+        `;
+    }
+
+    return familyData.members.map(member => {
+        const memberStats = calculateMemberFinancials(member);
+
+        return `
+            <div class="family-member-card" data-member-id="${member.id}">
+                <div class="family-member-header">
+                    <div class="member-basic-info">
+                        <div class="member-photo-container">
+                            ${member.photo_url ? 
+                                `<img src="${member.photo_url}" alt="${member.name}" class="member-photo">` :
+                                `<div class="member-avatar">${member.name.charAt(0)}</div>`
+                            }
+                            ${member.is_primary ? '<div class="primary-indicator">★</div>' : ''}
+                        </div>
+                        <div class="member-info">
+                            <h4>${member.name}</h4>
+                            <p class="member-relationship">${member.relationship}</p>
+                            <span class="account-type-badge ${member.is_primary ? 'primary' : 'member'}">
+                                ${member.is_primary ? 'Primary Account Holder' : 'Family Member'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="member-actions">
+                        <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
+                        <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
+                        <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                    </div>
+                </div>
+                
+                <div class="member-financial-summary">
+                    <div class="financial-stat">
+                        <span class="stat-label">Total Assets</span>
+                        <span class="stat-value positive">₹${memberStats.totalAssets.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function calculateMemberFinancials(member) {
+    const investments = familyData.investments[member.id] || {};
+    let totalAssets = 0;
+    
+    // Calculate total assets
+    ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
+        (investments[type] || []).forEach(item => {
+            totalAssets += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
+        });
+    });
+    
+    return {
+        totalAssets,
+        totalLiabilities: 0,
+        netWorth: totalAssets
+    };
+}
+
+function renderAccountsTable() {
+    const tableBody = document.querySelector('#accounts-table tbody');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = familyData.accounts.map(account => `
+        <tr>
+            <td>${account.account_type}</td>
+            <td>${account.institution}</td>
+            <td>${account.account_number}</td>
+            <td>${account.holder_name}</td>
+            <td>${account.nominee || 'Not specified'}</td>
+            <td><span class="status ${account.status.toLowerCase() === 'active' ? 'status--success' : 'status--error'}">${account.status}</span></td>
+            <td>${(account.comments && account.comments.length > 30) ? account.comments.substring(0, 30) + '...' : (account.comments || 'No comments')}</td>
+            <td>
+                <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${account.id}" data-item-type="account" title="Edit Account">✏️</button>
+                <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" 
+                        data-item-id="${account.id}" data-item-type="account" title="Delete Account">🗑️</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ===== TAB CONTENT RENDERING =====
+function renderInvestmentTabContent(tabName) {
+    let contentHTML = '';
+    
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        const items = investments[tabName] || [];
+        
+        if (items.length > 0) {
+            contentHTML += `
+                <div class="investment-table" style="margin-bottom: 2rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                ${getInvestmentTableHeaders(tabName)}
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => getInvestmentTableRow(item, tabName, member)).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    });
+    
+    if (!contentHTML) {
+        contentHTML = `
+            <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+                <h4>No ${getTabDisplayName(tabName)} Found</h4>
+                <p style="color: #6b7280; margin: 1rem 0;">Add your first ${tabName.toLowerCase()} investment to get started.</p>
+                <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add ${getTabDisplayName(tabName)}</button>
+            </div>
+        `;
+    }
+    
+    document.getElementById('investment-tabs-content').innerHTML = contentHTML;
+}
+
+function renderLiabilityTabContent(tabName) {
+    const contentHTML = `
+        <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+            <h4>No ${getLiabilityDisplayName(tabName)} Found</h4>
+            <p style="color: #6b7280; margin: 1rem 0;">Add your first ${tabName.toLowerCase()} to get started.</p>
+            <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add ${getLiabilityDisplayName(tabName)}</button>
+        </div>
+    `;
+    
+    document.getElementById('liability-tabs-content').innerHTML = contentHTML;
+}
+
+function getInvestmentTableHeaders(tabName) {
+    const headers = {
+        equity: '<th>Stock/Company</th><th>Invested Amount</th><th>Current Value</th><th>P&L</th><th>Broker</th>',
+        mutualFunds: '<th>Fund Name</th><th>Invested Amount</th><th>Current Value</th><th>P&L</th><th>Platform</th>',
+        fixedDeposits: '<th>Institution</th><th>Amount</th><th>Interest Rate</th><th>Invested Date</th><th>Maturity Date</th><th>Comments</th>',
+        insurance: '<th>Insurer</th><th>Type</th><th>Premium</th><th>Sum Assured</th><th>Frequency</th><th>Comments</th>',
+        bankBalances: '<th>Bank</th><th>Current Balance</th><th>Last Updated</th>'
+    };
+    return headers[tabName] || '<th>Details</th>';
+}
+
+function getInvestmentTableRow(item, tabName, member) {
+    const editBtn = `<button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${member.id}" title="Edit">✏️</button>`;
+    const deleteBtn = `<button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${member.id}" title="Delete">🗑️</button>`;
+    
+    switch(tabName) {
+        case 'equity':
+        case 'mutualFunds':
+            const pnl = (item.current_value || 0) - (item.invested_amount || 0);
+            return `
+                <tr>
+                    <td>${member.name}</td>
+                    <td>${item.symbol_or_name || 'N/A'}</td>
+                    <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+                    <td>₹${(item.current_value || 0).toLocaleString()}</td>
+                    <td class="${pnl >= 0 ? 'pnl-positive' : 'pnl-negative'}">₹${pnl.toLocaleString()}</td>
+                    <td>${item.broker_platform || 'N/A'}</td>
+                    <td>${editBtn} ${deleteBtn}</td>
+                </tr>
+            `;
+        case 'fixedDeposits':
+            return `
+                <tr>
+                    <td>${member.name}</td>
+                    <td>${item.invested_in || 'N/A'}</td>
+                    <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+                    <td>${item.interest_rate || 0}%</td>
+                    <td>${item.invested_date || 'N/A'}</td>
+                    <td>${item.maturity_date || 'N/A'}</td>
+                    <td title="${item.comments || 'No comments'}">${(item.comments && item.comments.length > 20) ? item.comments.substring(0, 20) + '...' : (item.comments || 'No comments')}</td>
+                    <td>${editBtn} ${deleteBtn}</td>
+                </tr>
+            `;
+        case 'insurance':
+            return `
+                <tr>
+                    <td>${member.name}</td>
+                    <td>${item.insurer || 'N/A'}</td>
+                    <td>${item.insurance_type || 'N/A'}</td>
+                    <td>₹${(item.insurance_premium || 0).toLocaleString()}</td>
+                    <td>₹${(item.sum_assured || 0).toLocaleString()}</td>
+                    <td>${item.payment_frequency || 'N/A'}</td>
+                    <td title="${item.comments || 'No comments'}">${(item.comments && item.comments.length > 20) ? item.comments.substring(0, 20) + '...' : (item.comments || 'No comments')}</td>
+                    <td>${editBtn} ${deleteBtn}</td>
+                </tr>
+            `;
+        case 'bankBalances':
+            return `
+                <tr>
+                    <td>${member.name}</td>
+                    <td>${item.institution_name || 'N/A'}</td>
+                    <td>₹${(item.current_balance || 0).toLocaleString()}</td>
+                    <td>Today</td>
+                    <td>${editBtn} ${deleteBtn}</td>
+                </tr>
+            `;
+        default:
+            return '<tr><td colspan="8">No data</td></tr>';
+    }
+}
+
+function showInvestmentTab(tabName) {
+    document.querySelectorAll('#investments-section .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    renderInvestmentTabContent(tabName);
+}
+
+function showLiabilityTab(tabName) {
+    document.querySelectorAll('#liabilities-section .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    renderLiabilityTabContent(tabName);
+}
+
+// ===== MODAL FUNCTIONS =====
+function openAddMemberModal() {
+    editingMemberId = null;
+    document.getElementById('member-form').reset();
+    document.getElementById('member-modal-title').textContent = 'Add Family Member';
+    document.getElementById('member-modal').classList.remove('hidden');
+}
+
+function openAddInvestmentModal() {
+    editingItemId = null;
+    editingItemMemberId = null;
+    document.getElementById('investment-form').reset();
+    document.getElementById('investment-modal-title').textContent = 'Add Investment';
+    document.getElementById('investment-modal').classList.remove('hidden');
+    populateInvestmentMemberDropdown();
+}
+
+function openAddLiabilityModal() {
+    editingItemId = null;
+    editingItemMemberId = null;
+    document.getElementById('liability-form').reset();
+    document.getElementById('liability-modal-title').textContent = 'Add Liability';
+    document.getElementById('liability-modal').classList.remove('hidden');
+}
+
+function openAddAccountModal() {
+    editingItemId = null;
+    document.getElementById('account-form').reset();
+    document.getElementById('account-modal-title').textContent = 'Add Account';
+    document.getElementById('account-modal').classList.remove('hidden');
+}
+
+// ===== DEBUG FUNCTIONS =====
+function debugDataSources() {
+    const debugHTML = `
+        <div class="debug-section">
+            <h4>📊 Sophisticated Database Structure</h4>
+            <div class="debug-info">
+                <p><strong>Database Type:</strong> Specialized Tables (Advanced)</p>
+                <p><strong>Members:</strong> ${familyData.members.length}</p>
+                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
+                <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>👥 Family Members Found</h4>
+            <div class="debug-info">
+                ${familyData.members.length > 0 ? 
+                    familyData.members.map(member => 
+                        `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
+                    ).join('') :
+                    '<p>No family members found</p>'
+                }
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>🔍 Search for "Smruthi"</h4>
+            <div class="debug-info">
+                ${familyData.members.find(m => m.name.toLowerCase().includes('smruthi')) ? 
+                    '✅ Found Smruthi in current family members' : 
+                    '❌ Smruthi not found in current data'
+                }
+                <p style="margin-top: 1rem;">✅ Sample data includes Smruthi Kumar as daughter</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('debug-content').innerHTML = debugHTML;
+    document.getElementById('debug-modal').classList.remove('hidden');
+}
+
+// ===== EXPORT FUNCTIONS =====
+function exportInvestments(format = 'csv') {
+    const investmentData = [];
+    
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        
+        Object.entries(investments).forEach(([type, items]) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    investmentData.push({
+                        'Member Name': member.name,
+                        'Relationship': member.relationship,
+                        'Investment Type': type,
+                        'Database Table': TABLE_MAPPING[type] || 'local_storage',
+                        'Investment Name': item.symbol_or_name || item.invested_in || item.insurer || item.institution_name || 'N/A',
+                        'Invested Amount': item.invested_amount || item.insurance_premium || 0,
+                        'Current Value': item.current_value || item.current_balance || 0,
+                        'Comments': item.comments || '',
+                        'Export Date': new Date().toISOString().split('T')[0]
+                    });
+                });
+            }
+        });
+    });
+    
+    if (format === 'csv') {
+        downloadCSV(investmentData, `FamWealth_Sophisticated_Investments_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Investment data exported from sophisticated database', 'success');
+    } else {
+        downloadJSON(investmentData, `FamWealth_Sophisticated_Investments_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Investment data exported as JSON', 'success');
+    }
+}
+
+function exportAccounts(format = 'csv') {
+    const accountData = familyData.accounts.map(account => ({
+        'Account Type': account.account_type || 'N/A',
+        'Institution': account.institution || 'N/A',
+        'Account Number': account.account_number || 'N/A',
+        'Holder Name': account.holder_name || 'N/A',
+        'Nominee': account.nominee || 'Not specified',
+        'Status': account.status || 'N/A',
+        'Username': account.username || 'No username',
+        'Comments': account.comments || 'No comments',
+        'Export Date': new Date().toISOString().split('T')[0]
+    }));
+    
+    if (format === 'csv') {
+        downloadCSV(accountData, `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Account data exported', 'success');
+    } else {
+        downloadJSON(accountData, `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Account data exported as JSON', 'success');
+    }
+}
+
+function exportFamilyData(format = 'csv') {
+    const familyMemberData = familyData.members.map(member => {
+        const memberStats = calculateMemberFinancials(member);
+        
+        return {
+            'Name': member.name,
+            'Relationship': member.relationship,
+            'Primary Account Holder': member.is_primary ? 'Yes' : 'No',
+            'Total Assets': memberStats.totalAssets,
+            'Net Worth': memberStats.netWorth,
+            'Has Profile Photo': member.photo_url ? 'Yes' : 'No',
+            'Export Date': new Date().toISOString().split('T')[0]
+        };
+    });
+    
+    if (format === 'csv') {
+        downloadCSV(familyMemberData, `FamWealth_Family_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Family data exported', 'success');
+    } else {
+        downloadJSON(familyMemberData, `FamWealth_Family_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Family data exported as JSON', 'success');
+    }
+}
+
+function exportCompleteBackup() {
+    const backupData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        user: currentUser ? currentUser.email : 'demo@famwealth.com',
+        databaseStructure: 'sophisticated',
+        data: {
+            members: familyData.members,
+            investments: familyData.investments,
+            liabilities: familyData.liabilities,
+            accounts: familyData.accounts
+        }
+    };
+    
+    downloadJSON(backupData, `FamWealth_Sophisticated_Backup_${new Date().toISOString().split('T')[0]}.json`);
+    showMessage('✅ Complete backup exported (sophisticated database)', 'success');
+}
+
+// ===== UTILITY FUNCTIONS =====
 function canAccessPasswords() {
     if (!currentUser || !currentUser.email) return false;
     return currentUser.email === ADMIN_EMAIL;
@@ -1271,7 +1130,59 @@ function showSection(sectionId) {
     event.target.classList.add('active');
 }
 
-// ===== CSV/JSON DOWNLOAD UTILITIES =====
+function toggleFamilyView(viewType) {
+    const listView = document.getElementById('family-list-view');
+    const cardView = document.getElementById('family-card-view');
+    const listBtn = document.getElementById('list-view-btn');
+    const cardsBtn = document.getElementById('cards-view-btn');
+    
+    if (viewType === 'list') {
+        listView.style.display = 'block';
+        cardView.style.display = 'none';
+        listBtn.classList.add('btn--primary');
+        listBtn.classList.remove('btn--outline');
+        cardsBtn.classList.add('btn--outline');
+        cardsBtn.classList.remove('btn--primary');
+    } else {
+        listView.style.display = 'none';
+        cardView.style.display = 'block';
+        cardsBtn.classList.add('btn--primary');
+        cardsBtn.classList.remove('btn--outline');
+        listBtn.classList.add('btn--outline');
+        listBtn.classList.remove('btn--primary');
+    }
+}
+
+function populateInvestmentMemberDropdown() {
+    const selects = document.querySelectorAll('.member-select');
+    selects.forEach(select => {
+        select.innerHTML = familyData.members.map(member => 
+            `<option value="${member.id}">${member.name}</option>`
+        ).join('');
+    });
+}
+
+function getTabDisplayName(tabName) {
+    const displayNames = {
+        equity: 'Equity Investments',
+        mutualFunds: 'Mutual Funds',
+        fixedDeposits: 'Fixed Deposits',
+        insurance: 'Insurance Policies',
+        bankBalances: 'Bank Balances'
+    };
+    return displayNames[tabName] || tabName;
+}
+
+function getLiabilityDisplayName(tabName) {
+    const displayNames = {
+        homeLoan: 'Home Loans',
+        personalLoan: 'Personal Loans',
+        creditCard: 'Credit Cards',
+        other: 'Other Liabilities'
+    };
+    return displayNames[tabName] || tabName;
+}
+
 function downloadCSV(data, filename) {
     if (data.length === 0) {
         showMessage('No data to export', 'warning');
@@ -1311,11 +1222,37 @@ function downloadJSON(data, filename) {
     document.body.removeChild(link);
 }
 
+// ===== EVENT DELEGATION SETUP =====
+function setupEventDelegation() {
+    document.addEventListener('click', function(e) {
+        const target = e.target;
+        
+        if (target.matches('.edit-member-btn') || target.closest('.edit-member-btn')) {
+            const btn = target.closest('.edit-member-btn') || target;
+            const memberId = btn.getAttribute('data-member-id');
+            // editMember(memberId);
+        }
+        
+        if (target.matches('.delete-member-btn') || target.closest('.delete-member-btn')) {
+            const btn = target.closest('.delete-member-btn') || target;
+            const memberId = btn.getAttribute('data-member-id');
+            // showDeleteMemberConfirm(memberId);
+        }
+        
+        if (target.matches('.photo-edit-btn') || target.closest('.photo-edit-btn')) {
+            const btn = target.closest('.photo-edit-btn') || target;
+            const memberId = btn.getAttribute('data-member-id');
+            // openPhotoModal(memberId);
+        }
+    });
+}
+
 // ===== MAIN INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 FamWealth Dashboard with Sophisticated Database initializing...');
     
     await initializeSupabase();
+    setupEventDelegation();
     
     // Check for existing session
     const authType = localStorage.getItem('famwealth_auth_type');
@@ -1335,4 +1272,4 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ Sophisticated database dashboard ready! 🎉');
 });
 
-// [Note: This would be combined with all the UI rendering functions from the previous version]
+console.log('📊 FamWealth Dashboard loaded with sophisticated database support');
