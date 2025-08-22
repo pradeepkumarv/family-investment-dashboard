@@ -1,5 +1,5 @@
-// ===== ENHANCED FAMWEALTH DASHBOARD - COMPLETE VERSION WITH ALL IMPROVEMENTS =====
-// Enhanced JavaScript with edit functionality, photo upload, password restrictions, and more
+// ===== COMPLETE FAMWEALTH DASHBOARD - ALL FUNCTIONALITY INTEGRATED =====
+// Complete JavaScript with ALL enhancements including family management
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -426,15 +426,15 @@ function setupEventDelegation() {
     });
 }
 
-// ===== RENDER FUNCTIONS =====
+// ===== ENHANCED DASHBOARD RENDER FUNCTIONS =====
 function renderEnhancedDashboard() {
     const totals = calculateEnhancedTotals();
     renderEnhancedStats(totals);
     renderMemberCards();
+    renderFamilyManagement(); // Add family management rendering
     populateInvestmentMemberDropdown();
-    console.log('✅ Enhanced dashboard rendered with detailed data');
+    console.log('✅ Enhanced dashboard rendered with complete family management');
 }
-
 
 function calculateEnhancedTotals() {
     let totalInvested = 0;
@@ -514,7 +514,7 @@ function renderEnhancedStats(totals) {
         </div>
         <div class="stat-card">
             <div class="stat-label">TOTAL LIABILITIES</div>
-            <div class="stat-value" style="color: var(--color-error);">₹${totals.totalLiabilities.toLocaleString()}</div>
+            <div class="stat-value negative">₹${totals.totalLiabilities.toLocaleString()}</div>
             <div class="stat-change neutral">Outstanding Debt</div>
         </div>
         <div class="stat-card">
@@ -630,7 +630,6 @@ function renderMemberCards() {
         `;
     }).join('');
     
-    // Note: Removed quick actions and add family member button from overview as requested
     const membersSection = `
         <div class="section-title">
             <h3>👨‍👩‍👧‍👦 Family Members Overview</h3>
@@ -641,6 +640,416 @@ function renderMemberCards() {
     `;
     
     document.getElementById('members-section').innerHTML = membersSection;
+}
+
+// ===== ENHANCED FAMILY MANAGEMENT FUNCTIONS =====
+function renderFamilyManagement() {
+    const familyMembersGrid = document.getElementById('family-members-grid');
+    if (!familyMembersGrid) return;
+
+    const familyHTML = `
+        <!-- Family Management Header -->
+        <div class="family-management-header">
+            <div class="view-toggle">
+                <button class="btn btn--sm btn--outline" onclick="toggleFamilyView('cards')" id="cards-view-btn">
+                    📋 Card View
+                </button>
+                <button class="btn btn--sm btn--primary" onclick="toggleFamilyView('list')" id="list-view-btn">
+                    📊 List View
+                </button>
+            </div>
+            <div class="family-stats">
+                <span class="stat-item">Total Members: <strong>${familyData.members.length}</strong></span>
+                <span class="stat-item">Primary Holders: <strong>${familyData.members.filter(m => m.is_primary).length}</strong></span>
+                <span class="stat-item">Total Net Worth: <strong>₹${calculateFamilyNetWorth().toLocaleString()}</strong></span>
+            </div>
+        </div>
+
+        <!-- List View (Default) -->
+        <div id="family-list-view" class="family-list-view">
+            <div class="family-table-container">
+                <table class="family-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>Relationship</th>
+                            <th>Account Type</th>
+                            <th>Total Assets</th>
+                            <th>Total Liabilities</th>
+                            <th>Net Worth</th>
+                            <th>Investments</th>
+                            <th>Date Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${renderFamilyMemberRows()}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card View -->
+        <div id="family-card-view" class="family-card-view" style="display: none;">
+            <div class="family-management-grid">
+                ${renderFamilyMemberCards()}
+            </div>
+        </div>
+    `;
+
+    familyMembersGrid.innerHTML = familyHTML;
+}
+
+function renderFamilyMemberRows() {
+    if (familyData.members.length === 0) {
+        return `
+            <tr>
+                <td colspan="10" class="empty-state">
+                    <div class="empty-family-state">
+                        <h4>👥 No Family Members Added Yet</h4>
+                        <p>Start building your family financial profile by adding your first member.</p>
+                        <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add First Member</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+
+    return familyData.members.map(member => {
+        const memberStats = calculateMemberFinancials(member);
+        const investmentCounts = getMemberInvestmentCounts(member.id);
+        const memberAge = 'Recently added';
+
+        return `
+            <tr class="family-member-row" data-member-id="${member.id}">
+                <td class="photo-cell">
+                    <div class="member-photo-wrapper">
+                        ${member.photo_url ? 
+                            `<img src="${member.photo_url}" alt="${member.name}" class="member-list-photo">` :
+                            `<div class="member-list-avatar">${member.name.charAt(0)}</div>`
+                        }
+                    </div>
+                </td>
+                <td class="name-cell">
+                    <div class="member-name-info">
+                        <strong>${member.name}</strong>
+                        ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
+                    </div>
+                </td>
+                <td class="relationship-cell">${member.relationship}</td>
+                <td class="account-type-cell">
+                    <span class="account-type-badge ${member.is_primary ? 'primary' : 'member'}">
+                        ${member.is_primary ? 'Account Holder' : 'Family Member'}
+                    </span>
+                </td>
+                <td class="assets-cell">
+                    <span class="amount positive">₹${memberStats.totalAssets.toLocaleString()}</span>
+                </td>
+                <td class="liabilities-cell">
+                    <span class="amount negative">₹${memberStats.totalLiabilities.toLocaleString()}</span>
+                </td>
+                <td class="networth-cell">
+                    <span class="amount ${memberStats.netWorth >= 0 ? 'positive' : 'negative'}">
+                        ₹${memberStats.netWorth.toLocaleString()}
+                    </span>
+                </td>
+                <td class="investments-cell">
+                    <div class="investment-summary">
+                        <span class="investment-count" title="Equity: ${investmentCounts.equity}">📈 ${investmentCounts.equity}</span>
+                        <span class="investment-count" title="Mutual Funds: ${investmentCounts.mutualFunds}">🏛️ ${investmentCounts.mutualFunds}</span>
+                        <span class="investment-count" title="Fixed Deposits: ${investmentCounts.fixedDeposits}">🏦 ${investmentCounts.fixedDeposits}</span>
+                        <span class="investment-count" title="Insurance: ${investmentCounts.insurance}">🛡️ ${investmentCounts.insurance}</span>
+                    </div>
+                </td>
+                <td class="date-cell">
+                    <span class="date-info">${memberAge}</span>
+                </td>
+                <td class="actions-cell">
+                    <div class="member-actions">
+                        <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
+                        <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
+                        <button class="btn btn--sm btn--outline" onclick="viewMemberDetails('${member.id}')" title="View Details">👁️</button>
+                        <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderFamilyMemberCards() {
+    if (familyData.members.length === 0) {
+        return `
+            <div class="empty-family-state">
+                <h4>👥 No Family Members Added Yet</h4>
+                <p>Start building your family financial profile by adding your first member.</p>
+                <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add First Member</button>
+            </div>
+        `;
+    }
+
+    return familyData.members.map(member => {
+        const memberStats = calculateMemberFinancials(member);
+        const investmentCounts = getMemberInvestmentCounts(member.id);
+
+        return `
+            <div class="family-member-card" data-member-id="${member.id}">
+                <div class="family-member-header">
+                    <div class="member-basic-info">
+                        <div class="member-photo-container">
+                            ${member.photo_url ? 
+                                `<img src="${member.photo_url}" alt="${member.name}" class="member-photo">` :
+                                `<div class="member-avatar">${member.name.charAt(0)}</div>`
+                            }
+                            ${member.is_primary ? '<div class="primary-indicator">★</div>' : ''}
+                        </div>
+                        <div class="member-info">
+                            <h4>${member.name}</h4>
+                            <p class="member-relationship">${member.relationship}</p>
+                            <span class="account-type-badge ${member.is_primary ? 'primary' : 'member'}">
+                                ${member.is_primary ? 'Primary Account Holder' : 'Family Member'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="member-actions">
+                        <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
+                        <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
+                        <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                    </div>
+                </div>
+                
+                <div class="member-financial-summary">
+                    <div class="financial-stat">
+                        <span class="stat-label">Total Assets</span>
+                        <span class="stat-value positive">₹${memberStats.totalAssets.toLocaleString()}</span>
+                    </div>
+                    <div class="financial-stat">
+                        <span class="stat-label">Liabilities</span>
+                        <span class="stat-value negative">₹${memberStats.totalLiabilities.toLocaleString()}</span>
+                    </div>
+                    <div class="financial-stat">
+                        <span class="stat-label">Net Worth</span>
+                        <span class="stat-value ${memberStats.netWorth >= 0 ? 'positive' : 'negative'}">
+                            ₹${memberStats.netWorth.toLocaleString()}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="member-investments-overview">
+                    <h5>Investment Portfolio</h5>
+                    <div class="investment-breakdown">
+                        <div class="investment-item">
+                            <span class="investment-icon">📈</span>
+                            <span class="investment-label">Equity</span>
+                            <span class="investment-value">${investmentCounts.equity}</span>
+                        </div>
+                        <div class="investment-item">
+                            <span class="investment-icon">🏛️</span>
+                            <span class="investment-label">Mutual Funds</span>
+                            <span class="investment-value">${investmentCounts.mutualFunds}</span>
+                        </div>
+                        <div class="investment-item">
+                            <span class="investment-icon">🏦</span>
+                            <span class="investment-label">Fixed Deposits</span>
+                            <span class="investment-value">${investmentCounts.fixedDeposits}</span>
+                        </div>
+                        <div class="investment-item">
+                            <span class="investment-icon">🛡️</span>
+                            <span class="investment-label">Insurance</span>
+                            <span class="investment-value">${investmentCounts.insurance}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="member-card-actions">
+                    <button class="btn btn--outline btn--sm" onclick="viewMemberDetails('${member.id}')">👁️ View Details</button>
+                    <button class="btn btn--primary btn--sm" onclick="showSection('investments-section')">💼 Manage Investments</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Helper Functions for Family Management
+function calculateMemberFinancials(member) {
+    const investments = familyData.investments[member.id] || {};
+    const liabilities = familyData.liabilities[member.id] || {};
+    
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+    
+    // Calculate total assets
+    ['equity', 'mutualFunds'].forEach(type => {
+        (investments[type] || []).forEach(item => {
+            totalAssets += parseFloat(item.current_value || item.invested_amount || 0);
+        });
+    });
+    
+    // Add FDs and bank balances
+    (investments.fixedDeposits || []).forEach(fd => {
+        totalAssets += parseFloat(fd.invested_amount || 0);
+    });
+    
+    (investments.bankBalances || []).forEach(bank => {
+        totalAssets += parseFloat(bank.current_balance || 0);
+    });
+    
+    // Calculate total liabilities
+    ['homeLoan', 'personalLoan', 'creditCard'].forEach(type => {
+        (liabilities[type] || []).forEach(item => {
+            totalLiabilities += parseFloat(item.outstanding_amount || 0);
+        });
+    });
+    
+    return {
+        totalAssets,
+        totalLiabilities,
+        netWorth: totalAssets - totalLiabilities
+    };
+}
+
+function getMemberInvestmentCounts(memberId) {
+    const investments = familyData.investments[memberId] || {};
+    
+    return {
+        equity: (investments.equity || []).length,
+        mutualFunds: (investments.mutualFunds || []).length,
+        fixedDeposits: (investments.fixedDeposits || []).length,
+        insurance: (investments.insurance || []).length,
+        bankBalances: (investments.bankBalances || []).length
+    };
+}
+
+function calculateFamilyNetWorth() {
+    let totalNetWorth = 0;
+    familyData.members.forEach(member => {
+        const memberStats = calculateMemberFinancials(member);
+        totalNetWorth += memberStats.netWorth;
+    });
+    return totalNetWorth;
+}
+
+function toggleFamilyView(viewType) {
+    const listView = document.getElementById('family-list-view');
+    const cardView = document.getElementById('family-card-view');
+    const listBtn = document.getElementById('list-view-btn');
+    const cardsBtn = document.getElementById('cards-view-btn');
+    
+    if (viewType === 'list') {
+        listView.style.display = 'block';
+        cardView.style.display = 'none';
+        listBtn.classList.add('btn--primary');
+        listBtn.classList.remove('btn--outline');
+        cardsBtn.classList.add('btn--outline');
+        cardsBtn.classList.remove('btn--primary');
+    } else {
+        listView.style.display = 'none';
+        cardView.style.display = 'block';
+        cardsBtn.classList.add('btn--primary');
+        cardsBtn.classList.remove('btn--outline');
+        listBtn.classList.add('btn--outline');
+        listBtn.classList.remove('btn--primary');
+    }
+}
+
+function viewMemberDetails(memberId) {
+    const member = familyData.members.find(m => m.id === memberId);
+    if (!member) return;
+    
+    const memberStats = calculateMemberFinancials(member);
+    const investmentCounts = getMemberInvestmentCounts(memberId);
+    
+    const detailsHTML = `
+        <div class="member-details-content">
+            <div class="member-profile-header">
+                <div class="profile-photo">
+                    ${member.photo_url ? 
+                        `<img src="${member.photo_url}" alt="${member.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">` :
+                        `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: bold;">${member.name.charAt(0)}</div>`
+                    }
+                </div>
+                <div class="profile-info">
+                    <h3>${member.name}</h3>
+                    <p>${member.relationship} ${member.is_primary ? '• Primary Account Holder' : ''}</p>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4>💰 Financial Summary</h4>
+                <div class="financial-grid">
+                    <div class="financial-item">
+                        <span class="label">Total Assets</span>
+                        <span class="value positive">₹${memberStats.totalAssets.toLocaleString()}</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">Total Liabilities</span>
+                        <span class="value negative">₹${memberStats.totalLiabilities.toLocaleString()}</span>
+                    </div>
+                    <div class="financial-item">
+                        <span class="label">Net Worth</span>
+                        <span class="value ${memberStats.netWorth >= 0 ? 'positive' : 'negative'}">₹${memberStats.netWorth.toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4>📊 Investment Portfolio</h4>
+                <div class="portfolio-grid">
+                    <div class="portfolio-item">
+                        <span class="icon">📈</span>
+                        <span class="label">Equity</span>
+                        <span class="count">${investmentCounts.equity}</span>
+                    </div>
+                    <div class="portfolio-item">
+                        <span class="icon">🏛️</span>
+                        <span class="label">Mutual Funds</span>
+                        <span class="count">${investmentCounts.mutualFunds}</span>
+                    </div>
+                    <div class="portfolio-item">
+                        <span class="icon">🏦</span>
+                        <span class="label">Fixed Deposits</span>
+                        <span class="count">${investmentCounts.fixedDeposits}</span>
+                    </div>
+                    <div class="portfolio-item">
+                        <span class="icon">🛡️</span>
+                        <span class="label">Insurance</span>
+                        <span class="count">${investmentCounts.insurance}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Create and show modal
+    const modal = document.createElement('div');
+    modal.id = 'member-details-modal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 ${member.name} - Complete Profile</h3>
+                <button class="modal-close" onclick="closeMemberDetailsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                ${detailsHTML}
+                <div class="modal-actions" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                    <button class="btn btn--secondary" onclick="closeMemberDetailsModal()">Close</button>
+                    <button class="btn btn--primary edit-member-btn" data-member-id="${memberId}">Edit Member</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.classList.remove('hidden');
+}
+
+function closeMemberDetailsModal() {
+    const modal = document.getElementById('member-details-modal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 // ===== MEMBER MANAGEMENT FUNCTIONS =====
@@ -1289,7 +1698,7 @@ function renderAccountsTable() {
                 <td>${account.account_number}</td>
                 <td>${account.holder_name}</td>
                 <td>${account.nominee || 'Not specified'}</td>
-                <td><span class="status status--${account.status.toLowerCase() === 'active' ? 'success' : 'error'}">${account.status}</span></td>
+                <td><span class="status ${account.status.toLowerCase() === 'active' ? 'status--success' : 'status--error'}">${account.status}</span></td>
                 <td>${(account.comments && account.comments.length > 30) ? account.comments.substring(0, 30) + '...' : (account.comments || 'No comments')}</td>
                 <td>
                     <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${account.id}" data-item-type="account" title="Edit Account">✏️</button>
@@ -1642,7 +2051,7 @@ function showSection(sectionId) {
 
 // ===== INITIALIZATION ON DOM LOAD =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Enhanced FamWealth Dashboard initializing...');
+    console.log('🚀 Complete FamWealth Dashboard initializing...');
     
     // Initialize Supabase
     await initializeSupabase();
@@ -1665,5 +2074,5 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadDashboardData();
     }
     
-    console.log('✅ Enhanced Dashboard initialization complete with all improvements');
+    console.log('✅ Complete Dashboard initialization with all enhancements complete!');
 });
