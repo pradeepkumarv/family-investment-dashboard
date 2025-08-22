@@ -27,7 +27,7 @@
                         <div class="feature-item">💳 Comprehensive Liability Management</div>
                         <div class="feature-item">🏦 Account & Nominee Management</div>
                         <div class="feature-item">📊 Real-time Net Worth Calculations</div>
-                        <div class="feature-item">🔔 Smart Alerts & Notifications</div>
+                        <div class="feature-item">📋 Data Export & Backup</div>
                         <div class="feature-item">💼 Complete Financial Overview</div>
                     </div>
                 </div>
@@ -74,6 +74,7 @@
                     <button class="nav-btn" onclick="showSection('liabilities-section')">💳 Liabilities</button>
                     <button class="nav-btn" onclick="showSection('accounts-section')">🏦 Accounts</button>
                     <button class="nav-btn" onclick="showSection('family-section')">👨‍👩‍👧‍👦 Family</button>
+                    <button class="nav-btn" onclick="showSection('export-section')">📋 Export</button>
                     <span id="user-display" style="margin-left: auto; margin-right: 1rem; font-size: 14px; opacity: 0.9;"></span>
                     <button class="logout-btn" onclick="handleLogout()">Logout</button>
                 </div>
@@ -95,8 +96,11 @@
                 <div id="overview-section" class="dashboard-section active">
                     <div class="section-header">
                         <h2>Family Financial Overview</h2>
-                        <div class="date-info">
-                            <span id="last-updated">Last updated: Loading...</span>
+                        <div class="header-actions">
+                            <button class="btn btn--outline btn--sm" onclick="debugDataSources()">🔍 Debug Data</button>
+                            <div class="date-info">
+                                <span id="last-updated">Last updated: Loading...</span>
+                            </div>
                         </div>
                     </div>
 
@@ -114,7 +118,7 @@
                     <div class="dashboard-status">
                         <h4>🎉 Complete Financial Dashboard Active!</h4>
                         <p>Your dashboard displays <strong>assets, liabilities, and account data</strong> with real-time calculations.</p>
-                        <p><strong>Features:</strong> Net Worth Calculation | Liability Tracking | Account Management | Photo Upload</p>
+                        <p><strong>Features:</strong> Net Worth Calculation | Liability Tracking | Account Management | Photo Upload | Data Export</p>
                     </div>
                 </div>
 
@@ -122,7 +126,10 @@
                 <div id="investments-section" class="dashboard-section">
                     <div class="section-header">
                         <h2>Investment Portfolio</h2>
-                        <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add Investment</button>
+                        <div class="header-actions">
+                            <button class="btn btn--outline btn--sm" onclick="exportInvestments()">📊 Export Data</button>
+                            <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add Investment</button>
+                        </div>
                     </div>
 
                     <div class="investment-tabs">
@@ -142,7 +149,10 @@
                 <div id="liabilities-section" class="dashboard-section">
                     <div class="section-header">
                         <h2>Liabilities Overview</h2>
-                        <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add Liability</button>
+                        <div class="header-actions">
+                            <button class="btn btn--outline btn--sm" onclick="exportLiabilities()">📊 Export Data</button>
+                            <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add Liability</button>
+                        </div>
                     </div>
 
                     <div class="investment-tabs">
@@ -161,7 +171,10 @@
                 <div id="accounts-section" class="dashboard-section">
                     <div class="section-header">
                         <h2>Account Management</h2>
-                        <button class="btn btn--primary" onclick="openAddAccountModal()">+ Add Account</button>
+                        <div class="header-actions">
+                            <button class="btn btn--outline btn--sm" onclick="exportAccounts()">📊 Export Data</button>
+                            <button class="btn btn--primary" onclick="openAddAccountModal()">+ Add Account</button>
+                        </div>
                     </div>
 
                     <div class="section-title">
@@ -194,16 +207,87 @@
                 <div id="family-section" class="dashboard-section">
                     <div class="section-header">
                         <h2>👨‍👩‍👧‍👦 Complete Family Management</h2>
-                        <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add Family Member</button>
+                        <div class="header-actions">
+                            <button class="btn btn--outline btn--sm" onclick="exportFamilyData()">📊 Export Family</button>
+                            <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add Family Member</button>
+                        </div>
                     </div>
 
                     <div id="family-members-grid">
                         <!-- Enhanced family members will be populated by JavaScript -->
                     </div>
                 </div>
+
+                <!-- NEW: Export Section -->
+                <div id="export-section" class="dashboard-section">
+                    <div class="section-header">
+                        <h2>📋 Data Export & Backup</h2>
+                        <p>Export your financial data for backup, analysis, or sharing</p>
+                    </div>
+
+                    <div class="export-options">
+                        <div class="export-category">
+                            <h3>💰 Investment Data</h3>
+                            <p>Export all investment portfolios across family members</p>
+                            <div class="export-buttons">
+                                <button class="btn btn--primary" onclick="exportInvestments('csv')">📊 Export as CSV</button>
+                                <button class="btn btn--secondary" onclick="exportInvestments('json')">📁 Export as JSON</button>
+                            </div>
+                        </div>
+
+                        <div class="export-category">
+                            <h3>💳 Liability Data</h3>
+                            <p>Export all loans and credit information</p>
+                            <div class="export-buttons">
+                                <button class="btn btn--primary" onclick="exportLiabilities('csv')">📊 Export as CSV</button>
+                                <button class="btn btn--secondary" onclick="exportLiabilities('json')">📁 Export as JSON</button>
+                            </div>
+                        </div>
+
+                        <div class="export-category">
+                            <h3>🏦 Account Data</h3>
+                            <p>Export all account and nominee information</p>
+                            <div class="export-buttons">
+                                <button class="btn btn--primary" onclick="exportAccounts('csv')">📊 Export as CSV</button>
+                                <button class="btn btn--secondary" onclick="exportAccounts('json')">📁 Export as JSON</button>
+                            </div>
+                        </div>
+
+                        <div class="export-category">
+                            <h3>👨‍👩‍👧‍👦 Family Data</h3>
+                            <p>Export complete family profile and member information</p>
+                            <div class="export-buttons">
+                                <button class="btn btn--primary" onclick="exportFamilyData('csv')">📊 Export as CSV</button>
+                                <button class="btn btn--secondary" onclick="exportFamilyData('json')">📁 Export as JSON</button>
+                            </div>
+                        </div>
+
+                        <div class="export-category complete-backup">
+                            <h3>💾 Complete Backup</h3>
+                            <p>Export all your financial data in one comprehensive file</p>
+                            <div class="export-buttons">
+                                <button class="btn btn--primary btn--lg" onclick="exportCompleteBackup()">🎯 Complete Backup</button>
+                                <button class="btn btn--outline btn--lg" onclick="importBackup()">📁 Import Backup</button>
+                            </div>
+                        </div>
+
+                        <div class="data-debug-section">
+                            <h3>🔍 Data Debugging</h3>
+                            <p>Debug and check your data sources</p>
+                            <div class="export-buttons">
+                                <button class="btn btn--outline" onclick="debugDataSources()">🔍 Check Data Sources</button>
+                                <button class="btn btn--outline" onclick="showDataSummary()">📊 Data Summary</button>
+                                <button class="btn btn--warning" onclick="syncDataSources()">🔄 Sync Data</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Import File Input (Hidden) -->
+    <input type="file" id="import-file-input" accept=".json" style="display: none;" onchange="handleImportFile(event)">
 
     <!-- Member Modal with Photo Upload -->
     <div id="member-modal" class="modal hidden">
@@ -578,6 +662,25 @@
                 <div class="form-actions">
                     <button type="button" class="btn btn--secondary" onclick="closeDeleteMemberModal()">Cancel</button>
                     <button type="button" class="btn" style="background: var(--color-error); color: white;" onclick="deleteMember()">Delete Member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Debug Modal -->
+    <div id="debug-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🔍 Data Debug Information</h3>
+                <button class="modal-close" onclick="closeModal('debug-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="debug-content">
+                    <!-- Debug content will be populated by JavaScript -->
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--secondary" onclick="closeModal('debug-modal')">Close</button>
+                    <button type="button" class="btn btn--primary" onclick="refreshDebugData()">Refresh</button>
                 </div>
             </div>
         </div>
