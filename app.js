@@ -1,4 +1,4 @@
-// ===== COMPLETE WORKING FAMWEALTH DASHBOARD =====
+// ===== COMPLETE FAMWEALTH DASHBOARD WITH WORKING SUPABASE AUTH =====
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -18,7 +18,9 @@ let familyData = {
 
 const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-    'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
+    'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
 ];
 
 // ===== INITIALIZATION =====
@@ -26,31 +28,44 @@ async function initializeSupabase() {
     try {
         if (window.supabase) {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log('✅ Supabase initialized');
+            console.log('✅ Supabase initialized successfully');
+            
+            // Check for existing session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                console.log('✅ Found existing Supabase session:', currentUser.email);
+            }
+            
             return true;
+        } else {
+            console.log('❌ Supabase library not loaded');
+            return false;
         }
     } catch (error) {
-        console.error('Supabase initialization error:', error);
+        console.error('❌ Supabase initialization error:', error);
         return false;
     }
 }
 
-// ===== AUTHENTICATION =====
+// ===== ENHANCED AUTHENTICATION =====
 async function handleLogin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     
     if (!email || !password) {
-        showMessage('Please enter email and password.', 'error');
+        showMessage('Please enter both email and password.', 'error');
         return;
     }
 
     setLoginLoading(true);
+    showMessage('🔄 Authenticating...', 'info');
 
+    // Demo login check first
     if (email === 'demo@famwealth.com' && password === 'demo123') {
-        currentUser = { email: 'demo@famwealth.com' };
-        localStorage.setItem('famwealth_auth_type', 'demo');
         showMessage('✅ Demo login successful!', 'success');
+        currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
+        localStorage.setItem('famwealth_auth_type', 'demo');
         setTimeout(() => {
             showDashboard();
             updateUserInfo(currentUser);
@@ -60,32 +75,323 @@ async function handleLogin() {
         return;
     }
 
-    showMessage('❌ Invalid credentials. Try demo@famwealth.com / demo123', 'error');
+    // Try Supabase authentication
+    if (supabase) {
+        try {
+            console.log('🔄 Attempting Supabase authentication...');
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                console.error('❌ Supabase login error:', error);
+                if (error.message.includes('Invalid login credentials')) {
+                    showMessage('❌ Invalid email or password. Please check your credentials.', 'error');
+                } else if (error.message.includes('Email not confirmed')) {
+                    showMessage('❌ Please check your email and confirm your account first.', 'error');
+                } else {
+                    showMessage(`❌ Login failed: ${error.message}`, 'error');
+                }
+                setLoginLoading(false);
+                return;
+            }
+
+            if (data.user) {
+                showMessage(`✅ Welcome back, ${data.user.email}!`, 'success');
+                currentUser = data.user;
+                localStorage.setItem('famwealth_user', JSON.stringify(data.user));
+                localStorage.setItem('famwealth_auth_type', 'supabase');
+                
+                console.log('✅ Supabase login successful:', {
+                    id: data.user.id,
+                    email: data.user.email
+                });
+                
+                setTimeout(() => {
+                    showDashboard();
+                    updateUserInfo(data.user);
+                    loadDashboardData();
+                }, 1500);
+                setLoginLoading(false);
+                return;
+            }
+        } catch (error) {
+            console.error('❌ Login exception:', error);
+            showMessage(`❌ Login error: ${error.message}`, 'error');
+        }
+    } else {
+        console.log('⚠️ Supabase not available, checking credentials...');
+        showMessage('⚠️ Database connection unavailable. Using demo mode.', 'warning');
+    }
+
+    // Fallback error message
+    showMessage('❌ Invalid credentials. Try demo@famwealth.com / demo123 or check your Supabase account.', 'error');
     setLoginLoading(false);
 }
 
 async function handleLogout() {
+    const authType = localStorage.getItem('famwealth_auth_type');
+    
+    if (authType === 'supabase' && supabase) {
+        try {
+            console.log('🔄 Signing out from Supabase...');
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('❌ Supabase logout error:', error);
+            } else {
+                console.log('✅ Supabase logout successful');
+            }
+        } catch (error) {
+            console.error('❌ Logout exception:', error);
+        }
+    }
+
+    // Clear all session data
     currentUser = null;
     localStorage.removeItem('famwealth_user');
     localStorage.removeItem('famwealth_auth_type');
+    localStorage.removeItem('famwealth_data'); // Also clear cached data
+    
+    // Reset UI
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('landing-page').style.display = 'block';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    
     showMessage('✅ Logged out successfully', 'success');
+    setLoginLoading(false);
+    
+    console.log('✅ Complete logout successful');
 }
 
-// ===== DATA LOADING =====
+// ===== ENHANCED DATA LOADING =====
+async function loadDataFromSupabase() {
+    if (!supabase || !currentUser) return false;
+    
+    try {
+        console.log('🔄 Loading data from Supabase for user:', currentUser.email);
+        
+        // Load family members
+        const { data: members, error: membersError } = await supabase
+            .from('family_members')
+            .select('*')
+            .eq('user_id', currentUser.id);
+            
+        if (membersError) {
+            console.error('❌ Error loading members:', membersError);
+            showMessage('⚠️ Could not load family members from database', 'warning');
+            return false;
+        }
+        
+        if (members && members.length > 0) {
+            familyData.members = members;
+            console.log(`✅ Loaded ${members.length} family members from database`);
+            
+            // Initialize investment structure for each member
+            members.forEach(member => {
+                if (!familyData.investments[member.id]) {
+                    familyData.investments[member.id] = {
+                        equity: [], mutualFunds: [], fixedDeposits: [], 
+                        insurance: [], bankBalances: [], others: []
+                    };
+                }
+                if (!familyData.liabilities[member.id]) {
+                    familyData.liabilities[member.id] = {
+                        homeLoan: [], personalLoan: [], creditCard: [], other: []
+                    };
+                }
+            });
+            
+            // Load investments from specialized tables
+            await loadInvestmentsFromSupabase();
+            
+            // Load accounts
+            await loadAccountsFromSupabase();
+            
+            showMessage('✅ Data loaded from database successfully', 'success');
+            return true;
+        } else {
+            console.log('📝 No family members found in database');
+            showMessage('📝 No family data found. Starting with sample data.', 'info');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading data from Supabase:', error);
+        showMessage('⚠️ Database connection issue. Using local data.', 'warning');
+        return false;
+    }
+}
+
+async function loadInvestmentsFromSupabase() {
+    if (!supabase || !currentUser) return false;
+    
+    try {
+        for (const member of familyData.members) {
+            // Load Holdings (Equity & Mutual Funds)
+            const { data: holdings, error: holdingsError } = await supabase
+                .from('holdings')
+                .select('*')
+                .eq('member_id', member.id);
+                
+            if (!holdingsError && holdings) {
+                holdings.forEach(holding => {
+                    const formattedHolding = {
+                        id: holding.id,
+                        symbol_or_name: holding.symbol || holding.fund_name || holding.company_name || 'Unknown',
+                        invested_amount: holding.invested_amount || 0,
+                        current_value: holding.current_value || holding.invested_amount || 0,
+                        broker_platform: holding.broker || holding.platform || 'N/A',
+                        quantity: holding.quantity || holding.units || 1
+                    };
+                    
+                    if (holding.holding_type === 'equity' || holding.symbol) {
+                        familyData.investments[member.id].equity.push(formattedHolding);
+                    } else {
+                        familyData.investments[member.id].mutualFunds.push(formattedHolding);
+                    }
+                });
+                console.log(`✅ Loaded ${holdings.length} holdings for ${member.name}`);
+            }
+            
+            // Load Fixed Deposits
+            const { data: fixedDeposits, error: fdError } = await supabase
+                .from('fixed_deposits')
+                .select('*')
+                .eq('member_id', member.id);
+                
+            if (!fdError && fixedDeposits) {
+                fixedDeposits.forEach(fd => {
+                    familyData.investments[member.id].fixedDeposits.push({
+                        id: fd.id,
+                        invested_in: fd.bank_name || fd.institution || 'Unknown Bank',
+                        invested_amount: fd.principal_amount || fd.invested_amount || 0,
+                        current_value: fd.maturity_amount || fd.principal_amount || 0,
+                        interest_rate: fd.interest_rate || 0,
+                        invested_date: fd.start_date || fd.invested_date,
+                        maturity_date: fd.maturity_date,
+                        comments: fd.notes || fd.comments || ''
+                    });
+                });
+                console.log(`✅ Loaded ${fixedDeposits.length} fixed deposits for ${member.name}`);
+            }
+            
+            // Load Insurance Policies
+            const { data: insurance, error: insError } = await supabase
+                .from('insurance_policies')
+                .select('*')
+                .eq('member_id', member.id);
+                
+            if (!insError && insurance) {
+                insurance.forEach(policy => {
+                    familyData.investments[member.id].insurance.push({
+                        id: policy.id,
+                        insurer: policy.company_name || policy.insurer || 'Unknown',
+                        insurance_type: policy.policy_type || 'Unknown',
+                        insurance_premium: policy.premium_amount || 0,
+                        sum_assured: policy.sum_assured || policy.coverage_amount || 0,
+                        payment_frequency: policy.premium_frequency || 'Yearly',
+                        comments: policy.notes || policy.comments || ''
+                    });
+                });
+                console.log(`✅ Loaded ${insurance.length} insurance policies for ${member.name}`);
+            }
+            
+            // Load Bank Balances
+            const { data: bankBalances, error: bbError } = await supabase
+                .from('bank_balances')
+                .select('*')
+                .eq('member_id', member.id);
+                
+            if (!bbError && bankBalances) {
+                bankBalances.forEach(balance => {
+                    familyData.investments[member.id].bankBalances.push({
+                        id: balance.id,
+                        institution_name: balance.bank_name || balance.institution || 'Unknown Bank',
+                        current_balance: balance.balance || balance.current_balance || 0,
+                        account_type: balance.account_type || 'Savings'
+                    });
+                });
+                console.log(`✅ Loaded ${bankBalances.length} bank balances for ${member.name}`);
+            }
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error loading investments from Supabase:', error);
+        return false;
+    }
+}
+
+async function loadAccountsFromSupabase() {
+    if (!supabase || !currentUser) return false;
+    
+    try {
+        const { data: memberAccounts, error: accountsError } = await supabase
+            .from('member_accounts')
+            .select(`
+                *,
+                family_members!inner(name)
+            `)
+            .eq('user_id', currentUser.id);
+            
+        if (!accountsError && memberAccounts) {
+            familyData.accounts = memberAccounts.map(acc => ({
+                id: acc.id,
+                account_type: acc.account_type || 'Unknown',
+                institution: acc.institution || acc.bank_name || 'Unknown',
+                account_number: acc.account_number || 'N/A',
+                holder_name: acc.family_members?.name || 'Unknown',
+                nominee: acc.nominee || '',
+                status: acc.status || 'Active',
+                comments: acc.notes || acc.comments || ''
+            }));
+            console.log(`✅ Loaded ${memberAccounts.length} member accounts from database`);
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error loading accounts from Supabase:', error);
+        return false;
+    }
+}
+
 async function loadDashboardData() {
     try {
+        console.log('🔄 Loading family data...');
         document.getElementById('loading-state').style.display = 'block';
         document.getElementById('dashboard-content').style.display = 'none';
 
-        // Load sample data
-        loadSampleData();
+        // Try to load from Supabase first if available
+        let dataLoaded = false;
+        if (supabase && currentUser && currentUser.id) {
+            dataLoaded = await loadDataFromSupabase();
+        }
         
+        // If no Supabase data, try localStorage
+        if (!dataLoaded) {
+            dataLoaded = loadDataFromStorage();
+            if (dataLoaded) {
+                console.log('📦 Data loaded from localStorage');
+            }
+        }
+        
+        // If still no data, load sample data
+        if (!dataLoaded || familyData.members.length === 0) {
+            console.log('📝 Loading sample data for demonstration...');
+            loadSampleData();
+            saveDataToStorage();
+        }
+
         // Render dashboard
         renderEnhancedDashboard();
         renderAccountsTable();
         renderInvestmentTabContent('equity');
+        renderLiabilityTabContent('homeLoan');
         
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('dashboard-content').style.display = 'block';
@@ -93,7 +399,9 @@ async function loadDashboardData() {
         
     } catch (error) {
         console.error('Error loading dashboard data:', error);
+        // Fallback to sample data
         loadSampleData();
+        saveDataToStorage();
         renderEnhancedDashboard();
         renderAccountsTable();
         document.getElementById('loading-state').style.display = 'none';
@@ -177,7 +485,32 @@ function loadSampleData() {
     console.log('✅ Sample data loaded with Smruthi included!');
 }
 
-// ===== DASHBOARD RENDERING =====
+// ===== DATA PERSISTENCE =====
+function saveDataToStorage() {
+    try {
+        localStorage.setItem('famwealth_data', JSON.stringify(familyData));
+        console.log('✅ Data saved to localStorage (backup)');
+    } catch (error) {
+        console.error('❌ Error saving data to localStorage:', error);
+    }
+}
+
+function loadDataFromStorage() {
+    try {
+        const stored = localStorage.getItem('famwealth_data');
+        if (stored) {
+            const loadedData = JSON.parse(stored);
+            familyData = { ...familyData, ...loadedData };
+            console.log('✅ Data loaded from localStorage');
+            return true;
+        }
+    } catch (error) {
+        console.error('❌ Error loading data from localStorage:', error);
+    }
+    return false;
+}
+
+// ===== DASHBOARD RENDERING (SAME AS BEFORE) =====
 function renderEnhancedDashboard() {
     const totals = calculateEnhancedTotals();
     renderEnhancedStats(totals);
@@ -227,6 +560,11 @@ function renderEnhancedStats(totals) {
             <div class="stat-label">ACTIVE MEMBERS</div>
             <div class="stat-value">${familyData.members.length}</div>
             <div class="stat-change neutral">Family Members</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">DATABASE</div>
+            <div class="stat-value ${supabase && currentUser && currentUser.id ? 'positive' : 'neutral'}">${supabase && currentUser && currentUser.id ? 'CONNECTED' : 'LOCAL'}</div>
+            <div class="stat-change neutral">${currentUser ? currentUser.email : 'Demo Mode'}</div>
         </div>
     `;
     
@@ -302,7 +640,7 @@ function renderFamilyManagement() {
         <div class="family-management-header">
             <div class="family-stats">
                 <span class="stat-item">Total Members: <strong>${familyData.members.length}</strong></span>
-                <span class="stat-item">Including Smruthi: <strong>✅ Yes</strong></span>
+                <span class="stat-item">Database: <strong>${supabase && currentUser && currentUser.id ? '✅ Connected' : '📦 Local'}</strong></span>
             </div>
         </div>
 
@@ -426,14 +764,7 @@ function renderInvestmentTabContent(tabName) {
     document.getElementById('investment-tabs-content').innerHTML = contentHTML;
 }
 
-// ===== TAB FUNCTIONS =====
-function showInvestmentTab(tabName) {
-    document.querySelectorAll('#investments-section .tab-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    renderInvestmentTabContent(tabName);
-}
-
-function showLiabilityTab(tabName) {
+function renderLiabilityTabContent(tabName) {
     document.getElementById('liability-tabs-content').innerHTML = `
         <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
             <h4>No liabilities found</h4>
@@ -442,23 +773,38 @@ function showLiabilityTab(tabName) {
     `;
 }
 
+// ===== TAB FUNCTIONS =====
+function showInvestmentTab(tabName) {
+    document.querySelectorAll('#investments-section .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    renderInvestmentTabContent(tabName);
+}
+
+function showLiabilityTab(tabName) {
+    document.querySelectorAll('#liabilities-section .tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    renderLiabilityTabContent(tabName);
+}
+
 // ===== DEBUG FUNCTIONS =====
 function debugDataSources() {
     const debugHTML = `
         <div class="debug-section">
-            <h4>📊 Dashboard Status</h4>
+            <h4>📊 Database Connection Status</h4>
             <div class="debug-info">
-                <p><strong>Members:</strong> ${familyData.members.length}</p>
-                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
+                <p><strong>Supabase Status:</strong> ${supabase ? '✅ Connected' : '❌ Not Available'}</p>
                 <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
+                <p><strong>User ID:</strong> ${currentUser && currentUser.id ? currentUser.id : 'No ID'}</p>
+                <p><strong>Auth Type:</strong> ${localStorage.getItem('famwealth_auth_type') || 'None'}</p>
             </div>
         </div>
         
         <div class="debug-section">
             <h4>👥 Family Members</h4>
             <div class="debug-info">
+                <p><strong>Total Members:</strong> ${familyData.members.length}</p>
                 ${familyData.members.map(member => 
-                    `<p>• <strong>${member.name}</strong> (${member.relationship})</p>`
+                    `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
                 ).join('')}
             </div>
         </div>
@@ -528,6 +874,7 @@ function showMessage(message, type = 'info') {
             messageDiv.style.display = 'none';
         }, 4000);
     }
+    console.log(`${type.toUpperCase()}: ${message}`);
 }
 
 function setLoginLoading(loading) {
@@ -594,8 +941,9 @@ function showSection(sectionId) {
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 FamWealth Dashboard initializing...');
+    console.log('🚀 FamWealth Dashboard with Enhanced Supabase Auth initializing...');
     
+    // Initialize Supabase first
     await initializeSupabase();
     
     // Check for existing session
@@ -603,13 +951,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (authType) {
         showDashboard();
         if (authType === 'demo') {
-            currentUser = { email: 'demo@famwealth.com' };
+            currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
             updateUserInfo(currentUser);
+        } else if (authType === 'supabase') {
+            const user = JSON.parse(localStorage.getItem('famwealth_user') || '{}');
+            if (user && user.id) {
+                currentUser = user;
+                updateUserInfo(user);
+                console.log('✅ Restored Supabase session:', user.email);
+            }
         }
         loadDashboardData();
     }
     
-    console.log('✅ Dashboard ready with Smruthi included! 🎉');
+    console.log('✅ Dashboard ready with full Supabase authentication! 🎉');
 });
 
-console.log('📊 FamWealth Dashboard loaded successfully');
+console.log('📊 FamWealth Dashboard loaded with enhanced Supabase auth');
