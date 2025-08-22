@@ -1,5 +1,5 @@
-// ===== COMPLETE FAMWEALTH DASHBOARD - ALL FUNCTIONALITY INTEGRATED =====
-// Complete JavaScript with ALL enhancements including family management
+// ===== COMPLETE FAMWEALTH DASHBOARD WITH EXPORT & DEBUG FEATURES =====
+// Complete JavaScript with ALL enhancements including export functionality and data debugging
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -56,7 +56,12 @@ function loadDataFromStorage() {
     try {
         const stored = localStorage.getItem('famwealth_data');
         if (stored) {
-            familyData = JSON.parse(stored);
+            const loadedData = JSON.parse(stored);
+            // Merge with existing data instead of replacing
+            familyData = {
+                ...familyData,
+                ...loadedData
+            };
             console.log('✅ Data loaded from localStorage');
             return true;
         }
@@ -64,6 +69,552 @@ function loadDataFromStorage() {
         console.error('❌ Error loading data from localStorage:', error);
     }
     return false;
+}
+
+// ===== SUPABASE DATA FUNCTIONS =====
+async function loadDataFromSupabase() {
+    if (!supabase || !currentUser) return false;
+    
+    try {
+        console.log('🔄 Loading data from Supabase...');
+        
+        // Load members
+        const { data: members, error: membersError } = await supabase
+            .from('family_members')
+            .select('*')
+            .eq('user_id', currentUser.id);
+            
+        if (membersError) {
+            console.error('❌ Error loading members from Supabase:', membersError);
+        } else if (members && members.length > 0) {
+            familyData.members = members;
+            console.log(`✅ Loaded ${members.length} members from Supabase`);
+        }
+        
+        // Load investments for each member
+        for (const member of familyData.members) {
+            const { data: investments, error: investError } = await supabase
+                .from('investments')
+                .select('*')
+                .eq('member_id', member.id);
+                
+            if (!investError && investments) {
+                // Group investments by type
+                if (!familyData.investments[member.id]) {
+                    familyData.investments[member.id] = {
+                        equity: [], mutualFunds: [], fixedDeposits: [], 
+                        insurance: [], bankBalances: [], others: []
+                    };
+                }
+                
+                investments.forEach(inv => {
+                    const type = inv.investment_type || 'others';
+                    if (familyData.investments[member.id][type]) {
+                        familyData.investments[member.id][type].push(inv);
+                    }
+                });
+            }
+        }
+        
+        // Load liabilities
+        for (const member of familyData.members) {
+            const { data: liabilities, error: liabError } = await supabase
+                .from('liabilities')
+                .select('*')
+                .eq('member_id', member.id);
+                
+            if (!liabError && liabilities) {
+                if (!familyData.liabilities[member.id]) {
+                    familyData.liabilities[member.id] = {
+                        homeLoan: [], personalLoan: [], creditCard: [], other: []
+                    };
+                }
+                
+                liabilities.forEach(liab => {
+                    const type = liab.liability_type || 'other';
+                    if (familyData.liabilities[member.id][type]) {
+                        familyData.liabilities[member.id][type].push(liab);
+                    }
+                });
+            }
+        }
+        
+        // Load accounts
+        const { data: accounts, error: accountsError } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', currentUser.id);
+            
+        if (!accountsError && accounts) {
+            familyData.accounts = accounts;
+            console.log(`✅ Loaded ${accounts.length} accounts from Supabase`);
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error loading data from Supabase:', error);
+        return false;
+    }
+}
+
+// ===== DATA DEBUGGING FUNCTIONS =====
+function debugDataSources() {
+    const debugData = {
+        localStorage: {},
+        supabase: {},
+        currentData: familyData,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Check localStorage
+    try {
+        const localData = localStorage.getItem('famwealth_data');
+        if (localData) {
+            debugData.localStorage = JSON.parse(localData);
+        } else {
+            debugData.localStorage = null;
+        }
+    } catch (error) {
+        debugData.localStorage = { error: error.message };
+    }
+    
+    // Show debug modal
+    showDebugModal(debugData);
+}
+
+function showDebugModal(debugData) {
+    const debugHTML = `
+        <div class="debug-section">
+            <h4>📊 Current Data Status</h4>
+            <div class="debug-info">
+                <p><strong>Members:</strong> ${familyData.members.length}</p>
+                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
+                <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
+                <p><strong>Auth Type:</strong> ${localStorage.getItem('famwealth_auth_type') || 'None'}</p>
+                <p><strong>Last Updated:</strong> ${debugData.timestamp}</p>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>👥 Family Members Found</h4>
+            <div class="debug-info">
+                ${familyData.members.length > 0 ? 
+                    familyData.members.map(member => 
+                        `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
+                    ).join('') :
+                    '<p>No family members found</p>'
+                }
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>💰 Investment Data</h4>
+            <div class="debug-info">
+                ${Object.keys(familyData.investments).length > 0 ? 
+                    Object.entries(familyData.investments).map(([memberId, investments]) => {
+                        const member = familyData.members.find(m => m.id === memberId);
+                        const memberName = member ? member.name : `Unknown (${memberId})`;
+                        const totalInvestments = Object.values(investments).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+                        return `<p>• <strong>${memberName}:</strong> ${totalInvestments} investments</p>`;
+                    }).join('') :
+                    '<p>No investment data found</p>'
+                }
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>💾 localStorage Status</h4>
+            <div class="debug-info">
+                <p><strong>Has Data:</strong> ${debugData.localStorage ? 'Yes' : 'No'}</p>
+                ${debugData.localStorage && typeof debugData.localStorage === 'object' ? 
+                    `<p><strong>Members in Storage:</strong> ${debugData.localStorage.members ? debugData.localStorage.members.length : 0}</p>` : 
+                    ''
+                }
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>🔍 Missing Data Investigation</h4>
+            <div class="debug-info">
+                <p><strong>Looking for "Smruthi":</strong></p>
+                ${familyData.members.find(m => m.name.toLowerCase().includes('smruthi')) ? 
+                    '✅ Found Smruthi in current data' : 
+                    '❌ Smruthi not found in current data'
+                }
+                
+                ${debugData.localStorage && debugData.localStorage.members ? 
+                    `<p><strong>In localStorage:</strong> ${
+                        debugData.localStorage.members.find(m => m.name.toLowerCase().includes('smruthi')) ? 
+                        '✅ Smruthi found in localStorage' : 
+                        '❌ Smruthi not in localStorage'
+                    }</p>` : ''
+                }
+                
+                <p style="margin-top: 1rem;"><strong>Possible Issues:</strong></p>
+                <ul style="margin-left: 1rem;">
+                    <li>Data might be in Supabase but not syncing properly</li>
+                    <li>Member might have been created but data didn't save</li>
+                    <li>Browser cache might need clearing</li>
+                    <li>Different user account might have the data</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="debug-actions">
+            <button class="btn btn--outline btn--sm" onclick="clearAllData()">🗑️ Clear All Data</button>
+            <button class="btn btn--outline btn--sm" onclick="exportCompleteBackup()">💾 Export Backup</button>
+            <button class="btn btn--primary btn--sm" onclick="syncDataSources()">🔄 Sync Data</button>
+        </div>
+    `;
+    
+    document.getElementById('debug-content').innerHTML = debugHTML;
+    document.getElementById('debug-modal').classList.remove('hidden');
+}
+
+function refreshDebugData() {
+    debugDataSources();
+}
+
+function showDataSummary() {
+    const summary = {
+        totalMembers: familyData.members.length,
+        totalAccounts: familyData.accounts.length,
+        totalInvestments: 0,
+        totalLiabilities: 0,
+        memberBreakdown: {}
+    };
+    
+    // Calculate totals
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        const memberInvestments = Object.values(investments).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+        const memberLiabilities = Object.values(liabilities).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+        
+        summary.totalInvestments += memberInvestments;
+        summary.totalLiabilities += memberLiabilities;
+        
+        summary.memberBreakdown[member.name] = {
+            investments: memberInvestments,
+            liabilities: memberLiabilities
+        };
+    });
+    
+    const summaryHTML = `
+        <h4>📊 Complete Data Summary</h4>
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <div class="stat-value">${summary.totalMembers}</div>
+                <div class="stat-label">Family Members</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-value">${summary.totalInvestments}</div>
+                <div class="stat-label">Total Investments</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-value">${summary.totalLiabilities}</div>
+                <div class="stat-label">Total Liabilities</div>
+            </div>
+            <div class="summary-stat">
+                <div class="stat-value">${summary.totalAccounts}</div>
+                <div class="stat-label">Total Accounts</div>
+            </div>
+        </div>
+        
+        <h5>👥 Member Breakdown</h5>
+        <div class="member-breakdown">
+            ${Object.entries(summary.memberBreakdown).map(([name, data]) => `
+                <div class="breakdown-item">
+                    <strong>${name}:</strong> ${data.investments} investments, ${data.liabilities} liabilities
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    document.getElementById('debug-content').innerHTML = summaryHTML;
+    document.getElementById('debug-modal').classList.remove('hidden');
+}
+
+async function syncDataSources() {
+    showMessage('🔄 Syncing data sources...', 'info');
+    
+    // Try to load from Supabase if available
+    if (supabase && currentUser && currentUser.id) {
+        const supabaseLoaded = await loadDataFromSupabase();
+        if (supabaseLoaded) {
+            showMessage('✅ Data synced from Supabase', 'success');
+        }
+    }
+    
+    // Save current data to localStorage
+    saveDataToStorage();
+    
+    // Refresh dashboard
+    renderEnhancedDashboard();
+    renderAccountsTable();
+    
+    showMessage('✅ Data sync completed', 'success');
+}
+
+function clearAllData() {
+    if (confirm('⚠️ This will delete ALL your data. Are you sure?')) {
+        if (confirm('⚠️ This action cannot be undone. Continue?')) {
+            // Clear localStorage
+            localStorage.removeItem('famwealth_data');
+            
+            // Reset familyData
+            familyData = {
+                members: [],
+                investments: {},
+                liabilities: {},
+                accounts: [],
+                totals: {}
+            };
+            
+            // Refresh dashboard
+            renderEnhancedDashboard();
+            renderAccountsTable();
+            
+            showMessage('✅ All data cleared', 'success');
+            document.getElementById('debug-modal').classList.add('hidden');
+        }
+    }
+}
+
+// ===== EXPORT FUNCTIONS =====
+function exportInvestments(format = 'csv') {
+    const investmentData = [];
+    
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        
+        Object.entries(investments).forEach(([type, items]) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    investmentData.push({
+                        'Member Name': member.name,
+                        'Relationship': member.relationship,
+                        'Investment Type': type,
+                        'Investment Name': item.symbol_or_name || item.invested_in || item.insurer || 'N/A',
+                        'Invested Amount': item.invested_amount || item.insurance_premium || 0,
+                        'Current Value': item.current_value || item.invested_amount || 0,
+                        'P&L': (item.current_value || item.invested_amount || 0) - (item.invested_amount || item.insurance_premium || 0),
+                        'Platform': item.broker_platform || 'N/A',
+                        'Interest Rate': item.interest_rate || 'N/A',
+                        'Maturity Date': item.maturity_date || 'N/A',
+                        'Comments': item.comments || 'No comments',
+                        'Export Date': new Date().toISOString().split('T')[0]
+                    });
+                });
+            }
+        });
+    });
+    
+    if (format === 'csv') {
+        downloadCSV(investmentData, `FamWealth_Investments_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Investment data exported as CSV', 'success');
+    } else if (format === 'json') {
+        downloadJSON(investmentData, `FamWealth_Investments_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Investment data exported as JSON', 'success');
+    }
+}
+
+function exportLiabilities(format = 'csv') {
+    const liabilityData = [];
+    
+    familyData.members.forEach(member => {
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        Object.entries(liabilities).forEach(([type, items]) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    liabilityData.push({
+                        'Member Name': member.name,
+                        'Relationship': member.relationship,
+                        'Liability Type': type,
+                        'Lender/Bank': item.lender || item.bank || 'N/A',
+                        'Outstanding Amount': item.outstanding_amount || 0,
+                        'EMI Amount': item.emi_amount || 0,
+                        'Interest Rate': item.interest_rate || 'N/A',
+                        'Comments': item.comments || 'No comments',
+                        'Export Date': new Date().toISOString().split('T')[0]
+                    });
+                });
+            }
+        });
+    });
+    
+    if (format === 'csv') {
+        downloadCSV(liabilityData, `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Liability data exported as CSV', 'success');
+    } else if (format === 'json') {
+        downloadJSON(liabilityData, `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Liability data exported as JSON', 'success');
+    }
+}
+
+function exportAccounts(format = 'csv') {
+    const accountData = familyData.accounts.map(account => ({
+        'Account Type': account.account_type || 'N/A',
+        'Institution': account.institution || 'N/A',
+        'Account Number': account.account_number || 'N/A',
+        'Holder Name': account.holder_name || 'N/A',
+        'Nominee': account.nominee || 'Not specified',
+        'Status': account.status || 'N/A',
+        'Username': account.username || 'No username',
+        'Has Password': account.password ? 'Yes' : 'No',
+        'Comments': account.comments || 'No comments',
+        'Export Date': new Date().toISOString().split('T')[0]
+    }));
+    
+    if (format === 'csv') {
+        downloadCSV(accountData, `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Account data exported as CSV', 'success');
+    } else if (format === 'json') {
+        downloadJSON(accountData, `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Account data exported as JSON', 'success');
+    }
+}
+
+function exportFamilyData(format = 'csv') {
+    const familyMemberData = familyData.members.map(member => {
+        const memberStats = calculateMemberFinancials(member);
+        const investmentCounts = getMemberInvestmentCounts(member.id);
+        
+        return {
+            'Name': member.name,
+            'Relationship': member.relationship,
+            'Primary Account Holder': member.is_primary ? 'Yes' : 'No',
+            'Total Assets': memberStats.totalAssets,
+            'Total Liabilities': memberStats.totalLiabilities,
+            'Net Worth': memberStats.netWorth,
+            'Equity Investments': investmentCounts.equity,
+            'Mutual Funds': investmentCounts.mutualFunds,
+            'Fixed Deposits': investmentCounts.fixedDeposits,
+            'Insurance Policies': investmentCounts.insurance,
+            'Bank Accounts': investmentCounts.bankBalances,
+            'Has Profile Photo': member.photo_url ? 'Yes' : 'No',
+            'Export Date': new Date().toISOString().split('T')[0]
+        };
+    });
+    
+    if (format === 'csv') {
+        downloadCSV(familyMemberData, `FamWealth_Family_${new Date().toISOString().split('T')[0]}.csv`);
+        showMessage('✅ Family data exported as CSV', 'success');
+    } else if (format === 'json') {
+        downloadJSON(familyMemberData, `FamWealth_Family_${new Date().toISOString().split('T')[0]}.json`);
+        showMessage('✅ Family data exported as JSON', 'success');
+    }
+}
+
+function exportCompleteBackup() {
+    const backupData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        user: currentUser ? currentUser.email : 'demo@famwealth.com',
+        data: {
+            members: familyData.members,
+            investments: familyData.investments,
+            liabilities: familyData.liabilities,
+            accounts: familyData.accounts
+        },
+        summary: {
+            totalMembers: familyData.members.length,
+            totalAccounts: familyData.accounts.length,
+            totalInvestments: Object.values(familyData.investments).reduce((sum, memberInv) => 
+                sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0),
+            totalLiabilities: Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
+                sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0)
+        }
+    };
+    
+    downloadJSON(backupData, `FamWealth_Complete_Backup_${new Date().toISOString().split('T')[0]}.json`);
+    showMessage('✅ Complete backup exported successfully', 'success');
+}
+
+function importBackup() {
+    document.getElementById('import-file-input').click();
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            if (importedData.version && importedData.data) {
+                // Validate backup format
+                if (confirm('⚠️ This will replace all current data. Continue with import?')) {
+                    familyData = {
+                        members: importedData.data.members || [],
+                        investments: importedData.data.investments || {},
+                        liabilities: importedData.data.liabilities || {},
+                        accounts: importedData.data.accounts || [],
+                        totals: {}
+                    };
+                    
+                    saveDataToStorage();
+                    renderEnhancedDashboard();
+                    renderAccountsTable();
+                    
+                    showMessage(`✅ Backup imported successfully! Restored ${importedData.summary.totalMembers} members, ${importedData.summary.totalInvestments} investments, ${importedData.summary.totalLiabilities} liabilities, and ${importedData.summary.totalAccounts} accounts.`, 'success');
+                }
+            } else {
+                showMessage('❌ Invalid backup file format', 'error');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            showMessage('❌ Error importing backup file', 'error');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// ===== CSV/JSON DOWNLOAD UTILITIES =====
+function downloadCSV(data, filename) {
+    if (data.length === 0) {
+        showMessage('No data to export', 'warning');
+        return;
+    }
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => {
+            const value = row[header];
+            // Handle values that might contain commas
+            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+        }).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function downloadJSON(data, filename) {
+    const jsonContent = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // ===== INITIALIZATION =====
@@ -184,11 +735,20 @@ async function loadDashboardData() {
         document.getElementById('loading-state').style.display = 'block';
         document.getElementById('dashboard-content').style.display = 'none';
 
-        // First try to load from localStorage
-        if (loadDataFromStorage()) {
-            console.log('✅ Loaded existing data from storage');
-        } else {
-            console.log('📝 No existing data, loading sample data...');
+        // Try to load from Supabase first if available
+        let dataLoaded = false;
+        if (supabase && currentUser && currentUser.id) {
+            dataLoaded = await loadDataFromSupabase();
+        }
+        
+        // If no Supabase data, try localStorage
+        if (!dataLoaded) {
+            dataLoaded = loadDataFromStorage();
+        }
+        
+        // If still no data, load sample data
+        if (!dataLoaded || familyData.members.length === 0) {
+            console.log('📝 Loading sample data...');
             loadSampleData();
             saveDataToStorage();
         }
@@ -433,7 +993,7 @@ function renderEnhancedDashboard() {
     renderMemberCards();
     renderFamilyManagement(); // Add family management rendering
     populateInvestmentMemberDropdown();
-    console.log('✅ Enhanced dashboard rendered with complete family management');
+    console.log('✅ Enhanced dashboard rendered with complete family management and export features');
 }
 
 function calculateEnhancedTotals() {
@@ -1052,6 +1612,8 @@ function closeMemberDetailsModal() {
     }
 }
 
+// Continue with all other functions...
+// [I'll create another file with the remaining functions due to length limits]
 // ===== MEMBER MANAGEMENT FUNCTIONS =====
 function openAddMemberModal() {
     editingMemberId = null;
@@ -2051,7 +2613,7 @@ function showSection(sectionId) {
 
 // ===== INITIALIZATION ON DOM LOAD =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Complete FamWealth Dashboard initializing...');
+    console.log('🚀 Complete FamWealth Dashboard with Export & Debug features initializing...');
     
     // Initialize Supabase
     await initializeSupabase();
@@ -2074,5 +2636,5 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadDashboardData();
     }
     
-    console.log('✅ Complete Dashboard initialization with all enhancements complete!');
+    console.log('✅ Complete Dashboard with Export & Debug features initialization complete!');
 });
