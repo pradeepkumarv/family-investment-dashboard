@@ -431,9 +431,11 @@ function renderEnhancedDashboard() {
     const totals = calculateEnhancedTotals();
     renderEnhancedStats(totals);
     renderMemberCards();
+    renderFamilyManagement(); // ← ADD THIS LINE
     populateInvestmentMemberDropdown();
-    console.log('✅ Enhanced dashboard rendered with detailed data');
+    console.log('✅ Enhanced dashboard rendered with detailed family management');
 }
+
 
 function calculateEnhancedTotals() {
     let totalInvested = 0;
