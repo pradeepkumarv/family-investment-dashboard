@@ -1,5 +1,5 @@
-// ===== COMPLETE FUNCTIONAL FAMWEALTH DASHBOARD =====
-// All features working: Add family, investments, edit members, change photos, etc.
+// ===== COMPLETE FUNCTIONAL FAMWEALTH DASHBOARD WITH WORKING DOWNLOADS =====
+// All features working: Add family, investments, edit members, change photos, WORKING EXPORTS
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -282,7 +282,18 @@ function loadSampleData() {
     };
 
     familyData.liabilities = {
-        '1': { homeLoan: [], personalLoan: [], creditCard: [], other: [] },
+        '1': { 
+            homeLoan: [{
+                id: 'hl1',
+                lender: 'HDFC Bank',
+                outstanding_amount: 1500000,
+                emi_amount: 25000,
+                interest_rate: 8.5
+            }], 
+            personalLoan: [], 
+            creditCard: [], 
+            other: [] 
+        },
         '2': { homeLoan: [], personalLoan: [], creditCard: [], other: [] }
     };
 
@@ -294,7 +305,8 @@ function loadSampleData() {
             account_number: 'XXXX1234',
             holder_name: 'Pradeep Kumar',
             nominee: 'Smruthi Kumar',
-            status: 'Active'
+            status: 'Active',
+            comments: 'Primary savings account'
         }
     ];
 
@@ -560,6 +572,27 @@ function populateInvestmentMemberDropdown() {
     }
 }
 
+function updateInvestmentForm() {
+    // Function called when investment type changes
+    const type = document.getElementById('investment-type').value;
+    
+    // Hide all type-specific fields first
+    const fdFields = document.getElementById('fd-specific-fields');
+    const insFields = document.getElementById('insurance-specific-fields');
+    
+    if (fdFields) fdFields.style.display = 'none';
+    if (insFields) insFields.style.display = 'none';
+    
+    // Show relevant fields based on type
+    if (type === 'fixedDeposits' && fdFields) {
+        fdFields.style.display = 'block';
+    } else if (type === 'insurance' && insFields) {
+        insFields.style.display = 'block';
+    }
+    
+    console.log('Investment form updated for type:', type);
+}
+
 function saveInvestment() {
     const memberId = document.getElementById('investment-member').value;
     const type = document.getElementById('investment-type').value;
@@ -742,6 +775,475 @@ function saveLiability() {
     renderEnhancedDashboard();
     renderLiabilityTabContent(type);
     document.getElementById('liability-modal').classList.add('hidden');
+}
+
+// ===== IMPROVED DOWNLOAD UTILITIES =====
+function downloadCSV(data, filename) {
+    console.log('📥 Attempting to download CSV:', filename);
+    console.log('📊 Data to export:', data);
+    
+    if (!data || data.length === 0) {
+        showMessage('❌ No data to export', 'warning');
+        console.log('❌ Empty data array');
+        return;
+    }
+    
+    try {
+        const headers = Object.keys(data[0]);
+        console.log('📋 CSV Headers:', headers);
+        
+        // Create CSV content
+        const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(header => {
+                let value = row[header];
+                // Handle undefined/null values
+                if (value === undefined || value === null) {
+                    value = '';
+                }
+                // Escape commas and quotes
+                if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                    value = `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            }).join(','))
+        ].join('\n');
+        
+        console.log('📄 CSV content preview:', csvContent.substring(0, 200) + '...');
+        
+        // Create and download file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        // Add to page, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up URL
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        
+        console.log('✅ CSV download initiated successfully');
+        showMessage(`✅ ${filename} download started`, 'success');
+        
+    } catch (error) {
+        console.error('❌ CSV download error:', error);
+        showMessage('❌ Error downloading CSV file', 'error');
+    }
+}
+
+function downloadJSON(data, filename) {
+    console.log('📥 Attempting to download JSON:', filename);
+    console.log('📊 Data to export:', data);
+    
+    if (!data) {
+        showMessage('❌ No data to export', 'warning');
+        console.log('❌ No data provided');
+        return;
+    }
+    
+    try {
+        const jsonContent = JSON.stringify(data, null, 2);
+        console.log('📄 JSON content preview:', jsonContent.substring(0, 200) + '...');
+        
+        // Create and download file
+        const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        // Add to page, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up URL
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        
+        console.log('✅ JSON download initiated successfully');
+        showMessage(`✅ ${filename} download started`, 'success');
+        
+    } catch (error) {
+        console.error('❌ JSON download error:', error);
+        showMessage('❌ Error downloading JSON file', 'error');
+    }
+}
+
+// ===== WORKING EXPORT FUNCTIONS =====
+function exportInvestments(format = 'csv') {
+    console.log('🔄 Starting investments export...');
+    
+    if (!familyData || !familyData.members || familyData.members.length === 0) {
+        showMessage('❌ No family members found', 'warning');
+        return;
+    }
+    
+    const investmentData = [];
+    
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        console.log(`Processing investments for ${member.name}:`, investments);
+        
+        Object.entries(investments).forEach(([type, items]) => {
+            if (Array.isArray(items) && items.length > 0) {
+                items.forEach(item => {
+                    investmentData.push({
+                        'Member Name': member.name,
+                        'Relationship': member.relationship,
+                        'Investment Type': type,
+                        'Investment Name': item.symbol_or_name || item.invested_in || item.insurer || 'N/A',
+                        'Invested Amount': item.invested_amount || item.insurance_premium || 0,
+                        'Current Value': item.current_value || item.invested_amount || 0,
+                        'P&L': (item.current_value || item.invested_amount || 0) - (item.invested_amount || item.insurance_premium || 0),
+                        'Platform': item.broker_platform || 'N/A',
+                        'Export Date': new Date().toISOString().split('T')[0],
+                        'Export Time': new Date().toLocaleTimeString('en-IN')
+                    });
+                });
+            }
+        });
+    });
+    
+    console.log('📊 Investment data prepared:', investmentData);
+    
+    if (investmentData.length === 0) {
+        showMessage('❌ No investment data found to export', 'warning');
+        return;
+    }
+    
+    const filename = `FamWealth_Investments_${new Date().toISOString().split('T')[0]}.${format}`;
+    
+    if (format === 'csv') {
+        downloadCSV(investmentData, filename);
+    } else {
+        downloadJSON(investmentData, filename);
+    }
+}
+
+function exportLiabilities(format = 'csv') {
+    console.log('🔄 Starting liabilities export...');
+    
+    const liabilityData = [];
+    
+    familyData.members.forEach(member => {
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        Object.entries(liabilities).forEach(([type, items]) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    liabilityData.push({
+                        'Member Name': member.name,
+                        'Relationship': member.relationship,
+                        'Liability Type': type,
+                        'Lender/Bank': item.lender || 'N/A',
+                        'Outstanding Amount': item.outstanding_amount || 0,
+                        'EMI Amount': item.emi_amount || 0,
+                        'Interest Rate': item.interest_rate || 'N/A',
+                        'Export Date': new Date().toISOString().split('T')[0],
+                        'Export Time': new Date().toLocaleTimeString('en-IN')
+                    });
+                });
+            }
+        });
+    });
+    
+    console.log('📊 Liability data prepared:', liabilityData);
+    
+    if (liabilityData.length === 0) {
+        showMessage('❌ No liability data found to export', 'warning');
+        return;
+    }
+    
+    const filename = `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.${format}`;
+    
+    if (format === 'csv') {
+        downloadCSV(liabilityData, filename);
+    } else {
+        downloadJSON(liabilityData, filename);
+    }
+}
+
+function exportAccounts(format = 'csv') {
+    console.log('🔄 Starting accounts export...');
+    
+    if (!familyData || !familyData.accounts || familyData.accounts.length === 0) {
+        showMessage('❌ No accounts found to export', 'warning');
+        console.log('❌ familyData.accounts:', familyData.accounts);
+        return;
+    }
+    
+    const accountData = familyData.accounts.map(account => ({
+        'Account Type': account.account_type || 'N/A',
+        'Institution': account.institution || 'N/A',
+        'Account Number': account.account_number || 'N/A',
+        'Holder Name': account.holder_name || 'N/A',
+        'Nominee': account.nominee || 'Not specified',
+        'Status': account.status || 'N/A',
+        'Comments': account.comments || 'No comments',
+        'Export Date': new Date().toISOString().split('T')[0],
+        'Export Time': new Date().toLocaleTimeString('en-IN')
+    }));
+    
+    console.log('📊 Account data prepared:', accountData);
+    
+    const filename = `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.${format}`;
+    
+    if (format === 'csv') {
+        downloadCSV(accountData, filename);
+    } else {
+        downloadJSON(accountData, filename);
+    }
+}
+
+function exportFamilyData(format = 'csv') {
+    console.log('🔄 Starting family data export...');
+    
+    if (!familyData || !familyData.members || familyData.members.length === 0) {
+        showMessage('❌ No family members found to export', 'warning');
+        console.log('❌ familyData.members:', familyData.members);
+        return;
+    }
+    
+    const familyMemberData = familyData.members.map(member => {
+        console.log('Processing member:', member.name);
+        
+        // Calculate member financials
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        let totalAssets = 0;
+        let totalLiabilities = 0;
+        
+        // Calculate assets
+        ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
+            (investments[type] || []).forEach(item => {
+                totalAssets += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
+            });
+        });
+        
+        // Calculate liabilities
+        ['homeLoan', 'personalLoan', 'creditCard', 'other'].forEach(type => {
+            (liabilities[type] || []).forEach(item => {
+                totalLiabilities += parseFloat(item.outstanding_amount || 0);
+            });
+        });
+        
+        return {
+            'Name': member.name || 'Unknown',
+            'Relationship': member.relationship || 'Unknown',
+            'Primary Account Holder': member.is_primary ? 'Yes' : 'No',
+            'Total Assets': totalAssets,
+            'Total Liabilities': totalLiabilities,
+            'Net Worth': totalAssets - totalLiabilities,
+            'Has Profile Photo': member.photo_url ? 'Yes' : 'No',
+            'Export Date': new Date().toISOString().split('T')[0],
+            'Export Time': new Date().toLocaleTimeString('en-IN')
+        };
+    });
+    
+    console.log('📊 Family data prepared:', familyMemberData);
+    
+    const filename = `FamWealth_Family_${new Date().toISOString().split('T')[0]}.${format}`;
+    
+    if (format === 'csv') {
+        downloadCSV(familyMemberData, filename);
+    } else {
+        downloadJSON(familyMemberData, filename);
+    }
+}
+
+function exportCompleteBackup() {
+    console.log('🔄 Starting complete backup export...');
+    
+    const backupData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        user: currentUser ? currentUser.email : 'demo@famwealth.com',
+        data: {
+            members: familyData.members,
+            investments: familyData.investments,
+            liabilities: familyData.liabilities,
+            accounts: familyData.accounts
+        },
+        summary: {
+            totalMembers: familyData.members.length,
+            totalAccounts: familyData.accounts.length,
+            totalInvestments: Object.values(familyData.investments).reduce((sum, memberInv) => 
+                sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0),
+            totalLiabilities: Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
+                sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0)
+        }
+    };
+    
+    const filename = `FamWealth_Complete_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    downloadJSON(backupData, filename);
+}
+
+// ===== IMPORT FUNCTIONS =====
+function importBackup() {
+    // Create a file input dynamically
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+    fileInput.style.display = 'none';
+    
+    fileInput.onchange = function(event) {
+        handleImportFile(event);
+    };
+    
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            
+            if (importedData.version && importedData.data) {
+                if (confirm('⚠️ This will replace all current data. Continue with import?')) {
+                    familyData = {
+                        members: importedData.data.members || [],
+                        investments: importedData.data.investments || {},
+                        liabilities: importedData.data.liabilities || {},
+                        accounts: importedData.data.accounts || [],
+                        totals: {}
+                    };
+                    
+                    saveDataToStorage();
+                    renderEnhancedDashboard();
+                    renderAccountsTable();
+                    
+                    showMessage(`✅ Backup imported successfully! Restored ${familyData.members.length} members.`, 'success');
+                }
+            } else {
+                showMessage('❌ Invalid backup file format', 'error');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            showMessage('❌ Error importing backup file', 'error');
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// ===== DEBUG FUNCTIONS =====
+function debugDataSources() {
+    const debugHTML = `
+        <div class="debug-section">
+            <h4>📊 Dashboard Status</h4>
+            <div class="debug-info">
+                <p><strong>Supabase Status:</strong> ${supabase ? '✅ Connected' : '❌ Not Available'}</p>
+                <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
+                <p><strong>Members:</strong> ${familyData.members.length}</p>
+                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>👥 Family Members</h4>
+            <div class="debug-info">
+                ${familyData.members.map(member => 
+                    `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
+                ).join('')}
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h4>🔍 Smruthi Status</h4>
+            <div class="debug-info">
+                ${familyData.members.find(m => m.name.includes('Smruthi')) ? 
+                    '✅ Smruthi Kumar found in family members' : 
+                    '❌ Smruthi not found'
+                }
+            </div>
+        </div>
+        
+        <div class="debug-actions">
+            <button class="btn btn--outline btn--sm" onclick="refreshDebugData()">🔄 Refresh</button>
+            <button class="btn btn--outline btn--sm" onclick="syncDataSources()">🔄 Sync Data</button>
+            <button class="btn btn--primary btn--sm" onclick="showDataSummary()">📊 Show Summary</button>
+        </div>
+    `;
+    
+    document.getElementById('debug-content').innerHTML = debugHTML;
+    document.getElementById('debug-modal').classList.remove('hidden');
+}
+
+function refreshDebugData() {
+    debugDataSources();
+    showMessage('🔄 Debug data refreshed', 'info');
+}
+
+function syncDataSources() {
+    showMessage('🔄 Syncing data sources...', 'info');
+    saveDataToStorage();
+    renderEnhancedDashboard();
+    renderAccountsTable();
+    showMessage('✅ Data sync completed', 'success');
+}
+
+function showDataSummary() {
+    const totalInvestments = Object.values(familyData.investments).reduce((sum, memberInv) => 
+        sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
+    
+    const totalLiabilities = Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
+        sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
+    
+    const summaryHTML = `
+        <h4>📊 Complete Data Summary</h4>
+        <div class="summary-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0;">
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.members.length}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Family Members</div>
+            </div>
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalInvestments}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Investments</div>
+            </div>
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalLiabilities}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Liabilities</div>
+            </div>
+            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.accounts.length}</div>
+                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Accounts</div>
+            </div>
+        </div>
+        
+        <h5>👥 Member Breakdown</h5>
+        <div class="member-breakdown" style="margin-top: 1rem;">
+            ${familyData.members.map(member => {
+                const investments = familyData.investments[member.id] || {};
+                const liabilities = familyData.liabilities[member.id] || {};
+                const memberInvestments = Object.values(investments).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+                const memberLiabilities = Object.values(liabilities).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+                return `
+                    <div class="breakdown-item" style="padding: 0.5rem; margin: 0.25rem 0; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
+                        <strong>${member.name}:</strong> ${memberInvestments} investments, ${memberLiabilities} liabilities
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    
+    document.getElementById('debug-content').innerHTML = summaryHTML;
 }
 
 // ===== DASHBOARD RENDERING =====
@@ -1188,60 +1690,6 @@ function deleteItem(itemId, itemType, memberId) {
     }
 }
 
-// ===== DEBUG FUNCTIONS =====
-function debugDataSources() {
-    const debugHTML = `
-        <div class="debug-section">
-            <h4>📊 Dashboard Status</h4>
-            <div class="debug-info">
-                <p><strong>Supabase Status:</strong> ${supabase ? '✅ Connected' : '❌ Not Available'}</p>
-                <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
-                <p><strong>Members:</strong> ${familyData.members.length}</p>
-                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>👥 Family Members</h4>
-            <div class="debug-info">
-                ${familyData.members.map(member => 
-                    `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
-                ).join('')}
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>🔍 Smruthi Status</h4>
-            <div class="debug-info">
-                ${familyData.members.find(m => m.name.includes('Smruthi')) ? 
-                    '✅ Smruthi Kumar found in family members' : 
-                    '❌ Smruthi not found'
-                }
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('debug-content').innerHTML = debugHTML;
-    document.getElementById('debug-modal').classList.remove('hidden');
-}
-
-// ===== EXPORT FUNCTIONS =====
-function exportInvestments(format = 'csv') {
-    showMessage('✅ Export feature working - comprehensive data export available', 'success');
-}
-
-function exportAccounts(format = 'csv') {
-    showMessage('✅ Account export feature working', 'success');
-}
-
-function exportFamilyData(format = 'csv') {
-    showMessage('✅ Family data export feature working', 'success');
-}
-
-function exportCompleteBackup() {
-    showMessage('✅ Complete backup export feature working', 'success');
-}
-
 // ===== MODAL CLOSE FUNCTIONS =====
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
@@ -1343,7 +1791,7 @@ function showSection(sectionId) {
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Complete FamWealth Dashboard with Full Functionality initializing...');
+    console.log('🚀 Complete FamWealth Dashboard with WORKING DOWNLOADS initializing...');
     
     // Initialize Supabase
     await initializeSupabase();
@@ -1368,222 +1816,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadDashboardData();
     }
     
-    console.log('✅ Complete Dashboard with Full Functionality Ready! 🎉');
+    console.log('✅ Complete Dashboard with WORKING DOWNLOADS Ready! 🎉');
 });
 
-console.log('📊 FamWealth Dashboard loaded with complete functionality');
-// ===== ADD THESE MISSING FUNCTIONS TO YOUR EXISTING APP.JS =====
-// Just copy and paste these functions at the end of your current app.js file
-
-// ===== MISSING EXPORT FUNCTIONS =====
-function exportLiabilities(format = 'csv') {
-    const liabilityData = [];
-    
-    familyData.members.forEach(member => {
-        const liabilities = familyData.liabilities[member.id] || {};
-        
-        Object.entries(liabilities).forEach(([type, items]) => {
-            if (Array.isArray(items)) {
-                items.forEach(item => {
-                    liabilityData.push({
-                        'Member Name': member.name,
-                        'Relationship': member.relationship,
-                        'Liability Type': type,
-                        'Lender/Bank': item.lender || 'N/A',
-                        'Outstanding Amount': item.outstanding_amount || 0,
-                        'EMI Amount': item.emi_amount || 0,
-                        'Interest Rate': item.interest_rate || 'N/A',
-                        'Export Date': new Date().toISOString().split('T')[0]
-                    });
-                });
-            }
-        });
-    });
-    
-    if (format === 'csv') {
-        downloadCSV(liabilityData, `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.csv`);
-        showMessage('✅ Liability data exported as CSV', 'success');
-    } else {
-        downloadJSON(liabilityData, `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.json`);
-        showMessage('✅ Liability data exported as JSON', 'success');
-    }
-}
-
-// ===== MISSING IMPORT FUNCTION =====
-function importBackup() {
-    // Create a file input dynamically
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.json';
-    fileInput.style.display = 'none';
-    
-    fileInput.onchange = function(event) {
-        handleImportFile(event);
-    };
-    
-    document.body.appendChild(fileInput);
-    fileInput.click();
-    document.body.removeChild(fileInput);
-}
-
-function handleImportFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importedData = JSON.parse(e.target.result);
-            
-            if (importedData.version && importedData.data) {
-                if (confirm('⚠️ This will replace all current data. Continue with import?')) {
-                    familyData = {
-                        members: importedData.data.members || [],
-                        investments: importedData.data.investments || {},
-                        liabilities: importedData.data.liabilities || {},
-                        accounts: importedData.data.accounts || [],
-                        totals: {}
-                    };
-                    
-                    saveDataToStorage();
-                    renderEnhancedDashboard();
-                    renderAccountsTable();
-                    
-                    showMessage(`✅ Backup imported successfully! Restored ${familyData.members.length} members.`, 'success');
-                }
-            } else {
-                showMessage('❌ Invalid backup file format', 'error');
-            }
-        } catch (error) {
-            console.error('Import error:', error);
-            showMessage('❌ Error importing backup file', 'error');
-        }
-    };
-    
-    reader.readAsText(file);
-}
-
-// ===== MISSING DEBUG FUNCTIONS =====
-function refreshDebugData() {
-    debugDataSources();
-    showMessage('🔄 Debug data refreshed', 'info');
-}
-
-function syncDataSources() {
-    showMessage('🔄 Syncing data sources...', 'info');
-    saveDataToStorage();
-    renderEnhancedDashboard();
-    renderAccountsTable();
-    showMessage('✅ Data sync completed', 'success');
-}
-
-function showDataSummary() {
-    const totalInvestments = Object.values(familyData.investments).reduce((sum, memberInv) => 
-        sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
-    
-    const totalLiabilities = Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
-        sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
-    
-    const summaryHTML = `
-        <h4>📊 Complete Data Summary</h4>
-        <div class="summary-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0;">
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.members.length}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Family Members</div>
-            </div>
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalInvestments}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Investments</div>
-            </div>
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalLiabilities}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Liabilities</div>
-            </div>
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.accounts.length}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Accounts</div>
-            </div>
-        </div>
-        
-        <h5>👥 Member Breakdown</h5>
-        <div class="member-breakdown" style="margin-top: 1rem;">
-            ${familyData.members.map(member => {
-                const investments = familyData.investments[member.id] || {};
-                const liabilities = familyData.liabilities[member.id] || {};
-                const memberInvestments = Object.values(investments).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-                const memberLiabilities = Object.values(liabilities).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-                return `
-                    <div class="breakdown-item" style="padding: 0.5rem; margin: 0.25rem 0; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
-                        <strong>${member.name}:</strong> ${memberInvestments} investments, ${memberLiabilities} liabilities
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-    
-    document.getElementById('debug-content').innerHTML = summaryHTML;
-}
-
-// ===== MISSING FORM UPDATE FUNCTION =====
-function updateInvestmentForm() {
-    // Function called when investment type changes
-    const type = document.getElementById('investment-type').value;
-    
-    // Hide all type-specific fields first
-    const fdFields = document.getElementById('fd-specific-fields');
-    const insFields = document.getElementById('insurance-specific-fields');
-    
-    if (fdFields) fdFields.style.display = 'none';
-    if (insFields) insFields.style.display = 'none';
-    
-    // Show relevant fields based on type
-    if (type === 'fixedDeposits' && fdFields) {
-        fdFields.style.display = 'block';
-    } else if (type === 'insurance' && insFields) {
-        insFields.style.display = 'block';
-    }
-    
-    console.log('Investment form updated for type:', type);
-}
-
-// ===== MISSING DOWNLOAD UTILITY FUNCTIONS =====
-function downloadCSV(data, filename) {
-    if (data.length === 0) {
-        showMessage('No data to export', 'warning');
-        return;
-    }
-    
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-        headers.join(','),
-        ...data.map(row => headers.map(header => {
-            const value = row[header];
-            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-        }).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function downloadJSON(data, filename) {
-    const jsonContent = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-console.log('✅ All missing functions loaded successfully!');
+console.log('📊 FamWealth Dashboard loaded with WORKING DOWNLOAD functionality');
