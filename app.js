@@ -486,20 +486,14 @@ function updateInvestmentForm() {
 }
 
 function saveInvestment() {
-    // Get required elements with validation
     const memberEl = document.getElementById('investment-member');
     const typeEl = document.getElementById('investment-type');
     const nameEl = document.getElementById('investment-name');
     const amountEl = document.getElementById('investment-amount');
     const currentValueEl = document.getElementById('investment-current-value');
+    const platformEl = document.getElementById('investment-platform');
     
     if (!memberEl || !typeEl || !nameEl || !amountEl) {
-        console.error('Investment modal is missing required elements:', {
-            hasMember: !!memberEl,
-            hasType: !!typeEl,
-            hasName: !!nameEl,
-            hasAmount: !!amountEl
-        });
         showMessage('Some required fields are missing in the form. Please reload the page.', 'error');
         return;
     }
@@ -508,55 +502,86 @@ function saveInvestment() {
     const type = typeEl.value;
     const name = nameEl.value.trim();
     const amount = amountEl.value;
-    const currentValue = currentValueEl ? currentValueEl.value : '';
+    const currentValue = currentValueEl ? currentValueEl.value : amount;
+    const platform = platformEl ? platformEl.value : '';
     
     if (!memberId || !type || !name || !amount) {
         showMessage('Please fill all required fields', 'error');
         return;
     }
+
+    // Get member name for the database
+    const member = familyData.members.find(m => m.id === memberId);
+    const memberName = member ? member.name : 'Unknown';
+
+    // Use different tables based on investment type
+    let tableName, investmentData;
     
-    const investmentData = {
-        id: editingItemId || Date.now().toString(),
-        symbol_or_name: name,
-        invested_amount: parseFloat(amount),
-        current_value: parseFloat(currentValue) || parseFloat(amount),
-        broker_platform: document.getElementById('investment-platform')?.value || ''
-    };
-    
-    // Add type-specific fields
     if (type === 'fixedDeposits') {
-        investmentData.interest_rate = parseFloat(document.getElementById('investment-interest-rate')?.value || 0);
-        investmentData.maturity_date = document.getElementById('investment-maturity')?.value || '';
-    } else if (type === 'insurance') {
-        investmentData.policy_number = document.getElementById('investment-policy-number')?.value || '';
-        investmentData.coverage_amount = parseFloat(document.getElementById('investment-coverage')?.value || 0);
-    }
-    
-    if (!familyData.investments[memberId]) {
-        familyData.investments[memberId] = {
-            equity: [], mutualFunds: [], fixedDeposits: [], 
-            insurance: [], bankBalances: [], others: []
+        tableName = 'fixed_deposits';
+        investmentData = {
+            member_id: memberId,
+            member_name: memberName,
+            invested_in: name,
+            invested_amount: parseFloat(amount),
+            interest_rate: 6.5, // Default rate, can be made editable
+            maturity_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 year from now
+            interest_payout: 'Yearly',
+            interest_amount: parseFloat(amount) * 0.065, // Calculate interest
+            is_active: true
+        };
+    } else {
+        tableName = 'holdings';
+        investmentData = {
+            member_id: memberId,
+            member_name: memberName,
+            asset_type: type,
+            symbol_or_name: name,
+            invested_amount: parseFloat(amount),
+            current_value: parseFloat(currentValue) || parseFloat(amount),
+            broker_platform: platform,
+            quantity: 1, // Default quantity
+            purchase_date: new Date().toISOString().split('T')[0],
+            last_updated: new Date().toISOString(),
+            is_active: true,
+            profit_loss: (parseFloat(currentValue) || parseFloat(amount)) - parseFloat(amount),
+            profit_loss_percentage: ((parseFloat(currentValue) || parseFloat(amount)) - parseFloat(amount)) / parseFloat(amount) * 100
         };
     }
-    
-    if (editingItemId) {
-        // Update existing investment
-        const itemIndex = familyData.investments[memberId][type].findIndex(i => i.id === editingItemId);
-        if (itemIndex !== -1) {
-            familyData.investments[memberId][type][itemIndex] = investmentData;
-        }
-        showMessage('✅ Investment updated successfully', 'success');
+
+    // Save to Supabase if available
+    if (supabase && currentUser) {
+        saveInvestmentToSupabase(tableName, investmentData, type);
     } else {
-        // Add new investment
-        familyData.investments[memberId][type].push(investmentData);
-        showMessage('✅ Investment added successfully', 'success');
+        // Save to localStorage as before
+        saveInvestmentToLocalStorage(memberId, type, investmentData);
     }
-    
-    saveDataToStorage();
-    renderDashboard();
-    renderInvestmentTabContent(type);
-    closeModal('investment-modal');
 }
+
+async function saveInvestmentToSupabase(tableName, data, type) {
+    try {
+        const { data: result, error } = await supabase
+            .from(tableName)
+            .insert([data]);
+
+        if (error) {
+            console.error('Supabase save error:', error);
+            showMessage('❌ Error saving to database: ' + error.message, 'error');
+            return;
+        }
+
+        showMessage('✅ Investment saved to database successfully', 'success');
+        saveDataToStorage(); // Also save locally as backup
+        renderDashboard();
+        renderInvestmentTabContent(type);
+        closeModal('investment-modal');
+        
+    } catch (error) {
+        console.error('Exception saving investment:', error);
+        showMessage('❌ Error saving investment: ' + error.message, 'error');
+    }
+}
+
 
 function editInvestment(itemId, itemType, memberId) {
     const investment = familyData.investments[memberId]?.[itemType]?.find(i => i.id === itemId);
