@@ -238,7 +238,6 @@ async function loadDataFromSupabase() {
                             broker_platform: holding.broker_platform
                         };
                         
-                        // Map asset_type to frontend categories
                         if (holding.asset_type === 'equity') {
                             memberInvestments.equity.push(investment);
                         } else if (holding.asset_type === 'mutualFunds') {
@@ -446,15 +445,14 @@ async function saveMember() {
         name,
         relationship,
         is_primary: isPrimary,
-        avatar_url: photoUrl,  // Use avatar_url as per your database schema
+        avatar_url: photoUrl,
         user_id: currentUser ? currentUser.id : 'demo-user-id'
     };
 
     try {
         if (editingMemberId) {
-            // Update existing member
             if (supabase && currentUser) {
-                const { data, error } = await supabase
+                const { error } = await supabase
                     .from('family_members')
                     .update(memberData)
                     .eq('id', editingMemberId);
@@ -468,17 +466,15 @@ async function saveMember() {
                 showMessage('✅ Member updated in database successfully', 'success');
             }
             
-            // Update in local data
             const memberIndex = familyData.members.findIndex(m => m.id === editingMemberId);
             if (memberIndex !== -1) {
                 familyData.members[memberIndex] = {
                     ...familyData.members[memberIndex],
                     ...memberData,
-                    photo_url: photoUrl  // Keep local naming for consistency
+                    photo_url: photoUrl
                 };
             }
         } else {
-            // Add new member
             let newMemberId;
             
             if (supabase && currentUser) {
@@ -502,12 +498,11 @@ async function saveMember() {
             const newMember = {
                 id: newMemberId,
                 ...memberData,
-                photo_url: photoUrl  // Keep local naming
+                photo_url: photoUrl
             };
             
             familyData.members.push(newMember);
             
-            // Initialize empty investment and liability data
             familyData.investments[newMemberId] = {
                 equity: [], mutualFunds: [], fixedDeposits: [], 
                 insurance: [], bankBalances: [], others: []
@@ -528,18 +523,121 @@ async function saveMember() {
     }
 }
 
-function deleteMember(memberId) {
+// ===== BACKEND-AWARE DELETES =====
+async function deleteMember(memberId) {
     const member = familyData.members.find(m => m.id === memberId);
     if (!member) return;
-    
-    if (confirm(`Are you sure you want to delete ${member.name}? This will also delete all their investments and liabilities.`)) {
-        familyData.members = familyData.members.filter(m => m.id !== memberId);
-        delete familyData.investments[memberId];
-        delete familyData.liabilities[memberId];
-        
-        saveDataToStorage();
-        renderDashboard();
-        showMessage('✅ Member deleted successfully', 'success');
+
+    if (confirm(`Are you sure you want to delete ${member.name}? This will also delete all investments, liabilities, and accounts.`)) {
+        try {
+            if (supabase && currentUser) {
+                // Delete dependent data first to avoid FK issues if enforced
+                await supabase.from('holdings').delete().eq('member_id', memberId);
+                await supabase.from('fixed_deposits').delete().eq('member_id', memberId);
+                // If you actually have an 'accounts' table keyed by member_id, this will work:
+                await supabase.from('accounts').delete().eq('member_id', memberId);
+                // If you have a separate liabilities table keyed by member_id, delete here; 
+                // if not, ignore/remove this line:
+                // await supabase.from('liabilities').delete().eq('member_id', memberId);
+
+                // Finally delete the member
+                const { error: memberErr } = await supabase
+                    .from('family_members')
+                    .delete()
+                    .eq('id', memberId);
+                if (memberErr) {
+                    console.error('Failed to delete member in backend:', memberErr);
+                    showMessage(`❌ Failed to delete member in backend: ${memberErr.message}`, 'error');
+                    return;
+                }
+            }
+
+            // Local state cleanup
+            familyData.members = familyData.members.filter(m => m.id !== memberId);
+            delete familyData.investments[memberId];
+            delete familyData.liabilities[memberId];
+
+            saveDataToStorage();
+            renderDashboard();
+            showMessage('✅ Member deleted from frontend and backend.', 'success');
+        } catch (e) {
+            console.error('Delete member exception:', e);
+            showMessage('❌ Unexpected error deleting member', 'error');
+        }
+    }
+}
+
+async function deleteInvestment(itemId, itemType, memberId) {
+    if (confirm('Are you sure you want to delete this investment?')) {
+        try {
+            if (supabase && currentUser) {
+                const tableName = (itemType === 'fixedDeposits') ? 'fixed_deposits' : 'holdings';
+                const { error } = await supabase.from(tableName).delete().eq('id', itemId);
+                if (error) {
+                    console.error('Failed to delete investment:', error);
+                    showMessage(`❌ Failed to delete investment: ${error.message}`, 'error');
+                    return;
+                }
+            }
+
+            familyData.investments[memberId][itemType] =
+                (familyData.investments[memberId][itemType] || []).filter(i => i.id !== itemId);
+
+            saveDataToStorage();
+            renderDashboard();
+            renderInvestmentTabContent(itemType);
+            showMessage('✅ Investment deleted.', 'success');
+        } catch (e) {
+            console.error('Delete investment exception:', e);
+            showMessage('❌ Unexpected error deleting investment', 'error');
+        }
+    }
+}
+
+async function deleteLiability(itemId, itemType, memberId) {
+    if (confirm('Are you sure you want to delete this liability?')) {
+        try {
+            // If your liabilities are stored in a single Supabase table, delete here.
+            // Example schema idea:
+            // await supabase.from('liabilities').delete().eq('id', itemId);
+
+            // Local state
+            familyData.liabilities[memberId][itemType] =
+                (familyData.liabilities[memberId][itemType] || []).filter(i => i.id !== itemId);
+
+            saveDataToStorage();
+            renderDashboard();
+            renderLiabilityTabContent(itemType);
+            showMessage('✅ Liability deleted successfully', 'success');
+        } catch (e) {
+            console.error('Delete liability exception:', e);
+            showMessage('❌ Unexpected error deleting liability', 'error');
+        }
+    }
+}
+
+async function deleteAccount(accountId) {
+    if (confirm('Are you sure you want to delete this account?')) {
+        try {
+            if (supabase && currentUser) {
+                // If you have an accounts table and a primary key id:
+                const { error } = await supabase.from('accounts').delete().eq('id', accountId);
+                if (error) {
+                    console.error('Failed to delete account in backend:', error);
+                    showMessage(`❌ Failed to delete account: ${error.message}`, 'error');
+                    return;
+                }
+            }
+
+            familyData.accounts = familyData.accounts.filter(a => a.id !== accountId);
+            saveDataToStorage();
+            renderDashboard();
+            renderAccountsTable();
+            showMessage('✅ Account deleted successfully', 'success');
+        } catch (e) {
+            console.error('Delete account exception:', e);
+            showMessage('❌ Unexpected error deleting account', 'error');
+        }
     }
 }
 
@@ -564,11 +662,9 @@ function populateInvestmentMemberDropdown() {
 }
 
 function updateInvestmentForm() {
-    // Type-specific form updates can be added here
     console.log('Investment form updated');
 }
 
-// ===== CORRECTED SAVE INVESTMENT FUNCTION =====
 async function saveInvestment() {
     const memberEl = document.getElementById('investment-member');
     const typeEl = document.getElementById('investment-type');
@@ -595,12 +691,10 @@ async function saveInvestment() {
         return;
     }
 
-    // Get member name for the database
     const member = familyData.members.find(m => m.id === memberId);
     const memberName = member ? member.name : 'Unknown';
 
     try {
-        // Save to Supabase if available
         if (supabase && currentUser) {
             let tableName, investmentData;
             
@@ -611,15 +705,14 @@ async function saveInvestment() {
                     member_name: memberName,
                     invested_in: name,
                     invested_amount: parseFloat(amount),
-                    interest_rate: 6.5, // Default rate
-                    maturity_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    interest_rate: 6.5,
+                    maturity_date: new Date(Date.now() + 365*24*60*60*1000).toISOString().split('T')[0],
                     interest_payout: 'Yearly',
                     interest_amount: parseFloat(amount) * 0.065,
                     is_active: true
                 };
             } else {
                 tableName = 'holdings';
-                // ✅ CORRECTED: Clean investmentData object without generated columns
                 investmentData = {
                     member_id: memberId,
                     member_name: memberName,
@@ -632,20 +725,16 @@ async function saveInvestment() {
                     purchase_date: new Date().toISOString().split('T')[0],
                     last_updated: new Date().toISOString(),
                     is_active: true
-                    // ✅ REMOVED: profit_loss and profit_loss_percentage - database will calculate these automatically
                 };
             }
 
-            // Handle both INSERT and UPDATE operations
             let result;
             if (editingItemId) {
-                // UPDATE existing record
                 result = await supabase
                     .from(tableName)
                     .update(investmentData)
                     .eq('id', editingItemId);
             } else {
-                // INSERT new record
                 result = await supabase
                     .from(tableName)
                     .insert([investmentData]);
@@ -660,7 +749,6 @@ async function saveInvestment() {
             showMessage('✅ Investment saved to database successfully', 'success');
         }
         
-        // Save to local data (keep calculations for frontend display)
         const localInvestmentData = {
             id: editingItemId || Date.now().toString(),
             symbol_or_name: name,
@@ -677,13 +765,11 @@ async function saveInvestment() {
         }
         
         if (editingItemId) {
-            // Update existing investment
-            const itemIndex = familyData.investments[memberId][type].findIndex(i => i.id === editingItemId);
+            const itemIndex = (familyData.investments[memberId][type] || []).findIndex(i => i.id === editingItemId);
             if (itemIndex !== -1) {
                 familyData.investments[memberId][type][itemIndex] = localInvestmentData;
             }
         } else {
-            // Add new investment
             familyData.investments[memberId][type].push(localInvestmentData);
         }
         
@@ -716,16 +802,6 @@ function editInvestment(itemId, itemType, memberId) {
     document.getElementById('investment-modal').classList.remove('hidden');
 }
 
-function deleteInvestment(itemId, itemType, memberId) {
-    if (confirm('Are you sure you want to delete this investment?')) {
-        familyData.investments[memberId][itemType] = familyData.investments[memberId][itemType].filter(i => i.id !== itemId);
-        saveDataToStorage();
-        renderDashboard();
-        renderInvestmentTabContent(itemType);
-        showMessage('✅ Investment deleted successfully', 'success');
-    }
-}
-
 // ===== LIABILITY MANAGEMENT (FIXED) =====
 function openAddLiabilityModal() {
     editingItemId = null;
@@ -747,9 +823,8 @@ function populateLiabilityMemberDropdown() {
 }
 
 function saveLiability() {
-    console.log('🔄 Saving liability...'); // Debug log
+    console.log('🔄 Saving liability...');
     
-    // Look up elements safely with validation
     const elMember = document.getElementById('liability-member');
     const elType = document.getElementById('liability-type');
     const elLender = document.getElementById('liability-lender');
@@ -757,19 +832,14 @@ function saveLiability() {
     const elEmi = document.getElementById('liability-emi');
     const elRate = document.getElementById('liability-rate');
 
-    // Validate presence of required elements
     if (!elMember || !elType || !elLender || !elAmount) {
-        console.error('Liability modal is missing one or more required elements:', {
-            hasMember: !!elMember,
-            hasType: !!elType,
-            hasLender: !!elLender,
-            hasAmount: !!elAmount
+        console.error('Liability modal missing elements', {
+            hasMember: !!elMember, hasType: !!elType, hasLender: !!elLender, hasAmount: !!elAmount
         });
         showMessage('Some required fields are missing in the form. Please reload the page or try again.', 'error');
         return;
     }
 
-    // Read values safely
     const memberId = elMember.value;
     const type = elType.value;
     const lender = elLender.value.trim();
@@ -777,13 +847,12 @@ function saveLiability() {
     const emi = elEmi ? elEmi.value : '';
     const rate = elRate ? elRate.value : '';
 
-    // Validate required values
     if (!memberId || !type || !lender || !amount) {
         showMessage('Please fill all required fields', 'error');
         return;
     }
 
-    console.log('✅ Form validation passed, creating liability data...'); // Debug log
+    console.log('✅ Form validation passed, creating liability data...');
 
     const liabilityData = {
         id: editingItemId || Date.now().toString(),
@@ -793,7 +862,6 @@ function saveLiability() {
         interest_rate: parseFloat(rate) || 0
     };
 
-    // Ensure liability structure exists for member
     if (!familyData.liabilities[memberId]) {
         familyData.liabilities[memberId] = {
             homeLoan: [], personalLoan: [], creditCard: [], other: []
@@ -801,19 +869,17 @@ function saveLiability() {
     }
 
     if (editingItemId) {
-        // Update existing liability
         const itemIndex = familyData.liabilities[memberId][type].findIndex(i => i.id === editingItemId);
         if (itemIndex !== -1) {
             familyData.liabilities[memberId][type][itemIndex] = liabilityData;
         }
         showMessage('✅ Liability updated successfully', 'success');
     } else {
-        // Add new liability
         familyData.liabilities[memberId][type].push(liabilityData);
         showMessage('✅ Liability added successfully', 'success');
     }
 
-    console.log('✅ Liability saved successfully:', liabilityData); // Debug log
+    console.log('✅ Liability saved successfully:', liabilityData);
 
     saveDataToStorage();
     renderDashboard();
@@ -837,16 +903,6 @@ function editLiability(itemId, itemType, memberId) {
     
     document.getElementById('liability-modal-title').textContent = 'Edit Liability';
     document.getElementById('liability-modal').classList.remove('hidden');
-}
-
-function deleteLiability(itemId, itemType, memberId) {
-    if (confirm('Are you sure you want to delete this liability?')) {
-        familyData.liabilities[memberId][itemType] = familyData.liabilities[memberId][itemType].filter(i => i.id !== itemId);
-        saveDataToStorage();
-        renderDashboard();
-        renderLiabilityTabContent(itemType);
-        showMessage('✅ Liability deleted successfully', 'success');
-    }
 }
 
 // ===== ACCOUNT MANAGEMENT =====
@@ -920,14 +976,12 @@ function saveAccount() {
     };
     
     if (editingItemId) {
-        // Update existing account
         const accountIndex = familyData.accounts.findIndex(a => a.id === editingItemId);
         if (accountIndex !== -1) {
             familyData.accounts[accountIndex] = accountData;
         }
         showMessage('✅ Account updated successfully', 'success');
     } else {
-        // Add new account
         familyData.accounts.push(accountData);
         showMessage('✅ Account added successfully', 'success');
     }
@@ -950,13 +1004,11 @@ function editAccount(accountId) {
     document.getElementById('account-status').value = account.status || 'Active';
     document.getElementById('account-comments').value = account.comments || '';
     
-    // Find holder by name
     const holder = familyData.members.find(m => m.name === account.holder_name);
     if (holder) {
         document.getElementById('account-holder').value = holder.id;
     }
     
-    // Find nominee by name
     const nominee = familyData.members.find(m => m.name === account.nominee);
     if (nominee) {
         document.getElementById('account-nominee').value = nominee.id;
@@ -966,14 +1018,29 @@ function editAccount(accountId) {
     document.getElementById('account-modal').classList.remove('hidden');
 }
 
-function deleteAccount(accountId) {
-    if (confirm('Are you sure you want to delete this account?')) {
-        familyData.accounts = familyData.accounts.filter(a => a.id !== accountId);
-        saveDataToStorage();
-        renderDashboard();
-        renderAccountsTable();
-        showMessage('✅ Account deleted successfully', 'success');
-    }
+// ===== FRONTEND-ONLY DELETES (Fallbacks wired to backend above) =====
+function deleteInvestmentFrontend(itemId, itemType, memberId) {
+    familyData.investments[memberId][itemType] = (familyData.investments[memberId][itemType] || []).filter(i => i.id !== itemId);
+    saveDataToStorage();
+    renderDashboard();
+    renderInvestmentTabContent(itemType);
+    showMessage('✅ Investment deleted successfully', 'success');
+}
+
+function deleteLiabilityFrontend(itemId, itemType, memberId) {
+    familyData.liabilities[memberId][itemType] = (familyData.liabilities[memberId][itemType] || []).filter(i => i.id !== itemId);
+    saveDataToStorage();
+    renderDashboard();
+    renderLiabilityTabContent(itemType);
+    showMessage('✅ Liability deleted successfully', 'success');
+}
+
+function deleteAccountFrontend(accountId) {
+    familyData.accounts = familyData.accounts.filter(a => a.id !== accountId);
+    saveDataToStorage();
+    renderDashboard();
+    renderAccountsTable();
+    showMessage('✅ Account deleted successfully', 'success');
 }
 
 // ===== PHOTO MANAGEMENT =====
@@ -982,7 +1049,6 @@ function openPhotoModal(memberId) {
     selectedPresetPhoto = null;
     uploadedPhotoData = null;
     
-    // Populate preset photos
     const photoOptions = document.getElementById('preset-photos-grid');
     if (photoOptions) {
         photoOptions.innerHTML = PRESET_PHOTOS.map((photoUrl, index) => 
@@ -997,7 +1063,6 @@ function selectPresetPhoto(photoUrl) {
     selectedPresetPhoto = photoUrl;
     uploadedPhotoData = null;
     
-    // Update visual selection
     document.querySelectorAll('.photo-option').forEach(img => {
         img.classList.remove('selected');
     });
@@ -1018,7 +1083,6 @@ function handlePhotoUpload(event) {
         uploadedPhotoData = e.target.result;
         selectedPresetPhoto = null;
         
-        // Clear preset selection
         document.querySelectorAll('.photo-option').forEach(img => {
             img.classList.remove('selected');
         });
@@ -1067,7 +1131,6 @@ function downloadCSV(data, filename) {
     try {
         const headers = Object.keys(data[0]);
         
-        // Create CSV content
         const csvContent = [
             headers.join(','),
             ...data.map(row => headers.map(header => {
@@ -1075,7 +1138,6 @@ function downloadCSV(data, filename) {
                 if (value === undefined || value === null) {
                     value = '';
                 }
-                // Escape commas and quotes
                 if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
                     value = `"${value.replace(/"/g, '""')}"`;
                 }
@@ -1083,7 +1145,6 @@ function downloadCSV(data, filename) {
             }).join(','))
         ].join('\n');
         
-        // Create and download file
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         
@@ -1170,7 +1231,7 @@ function exportInvestments(format = 'csv') {
         return;
     }
     
-    const filename = `FamWealth_Investments_${new Date().toISOString().split('T')[0]}.${format}`;
+    const filename = `FamWealth_Investments_${new Date().toISOString().split('T')}.${format}`;
     
     if (format === 'csv') {
         downloadCSV(investmentData, filename);
@@ -1209,7 +1270,7 @@ function exportLiabilities(format = 'csv') {
         return;
     }
     
-    const filename = `FamWealth_Liabilities_${new Date().toISOString().split('T')[0]}.${format}`;
+    const filename = `FamWealth_Liabilities_${new Date().toISOString().split('T')}.${format}`;
     
     if (format === 'csv') {
         downloadCSV(liabilityData, filename);
@@ -1236,7 +1297,7 @@ function exportAccounts(format = 'csv') {
         'Export Time': new Date().toLocaleTimeString('en-IN')
     }));
     
-    const filename = `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.${format}`;
+    const filename = `FamWealth_Accounts_${new Date().toISOString().split('T')}.${format}`;
     
     if (format === 'csv') {
         downloadCSV(accountData, filename);
@@ -1252,21 +1313,18 @@ function exportFamilyData(format = 'csv') {
     }
     
     const familyMemberData = familyData.members.map(member => {
-        // Calculate member financials
         const investments = familyData.investments[member.id] || {};
         const liabilities = familyData.liabilities[member.id] || {};
         
         let totalAssets = 0;
         let totalLiabilities = 0;
         
-        // Calculate assets
         ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
             (investments[type] || []).forEach(item => {
                 totalAssets += parseFloat(item.current_value || item.invested_amount || 0);
             });
         });
         
-        // Calculate liabilities
         ['homeLoan', 'personalLoan', 'creditCard', 'other'].forEach(type => {
             (liabilities[type] || []).forEach(item => {
                 totalLiabilities += parseFloat(item.outstanding_amount || 0);
@@ -1286,82 +1344,13 @@ function exportFamilyData(format = 'csv') {
         };
     });
     
-    const filename = `FamWealth_Family_${new Date().toISOString().split('T')[0]}.${format}`;
+    const filename = `FamWealth_Family_${new Date().toISOString().split('T')}.${format}`;
     
     if (format === 'csv') {
         downloadCSV(familyMemberData, filename);
     } else {
         downloadJSON(familyMemberData, filename);
     }
-}
-
-function exportCompleteBackup() {
-    const backupData = {
-        version: '1.0',
-        exportDate: new Date().toISOString(),
-        user: currentUser ? currentUser.email : 'demo@famwealth.com',
-        data: {
-            members: familyData.members,
-            investments: familyData.investments,
-            liabilities: familyData.liabilities,
-            accounts: familyData.accounts
-        },
-        summary: {
-            totalMembers: familyData.members.length,
-            totalAccounts: familyData.accounts.length,
-            totalInvestments: Object.values(familyData.investments).reduce((sum, memberInv) => 
-                sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0),
-            totalLiabilities: Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
-                sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0)
-        }
-    };
-    
-    const filename = `FamWealth_Complete_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    downloadJSON(backupData, filename);
-}
-
-function importBackup() {
-    const fileInput = document.getElementById('import-file-input');
-    if (fileInput) {
-        fileInput.click();
-    } else {
-        // Create a temporary file input
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = handleImportFile;
-        input.click();
-    }
-}
-
-function handleImportFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importData = JSON.parse(e.target.result);
-            
-            if (importData.data) {
-                familyData = {
-                    ...familyData,
-                    ...importData.data
-                };
-                
-                saveDataToStorage();
-                renderDashboard();
-                showMessage('✅ Data imported successfully', 'success');
-            } else {
-                showMessage('❌ Invalid backup file format', 'error');
-            }
-        } catch (error) {
-            console.error('Import error:', error);
-            showMessage('❌ Error importing data', 'error');
-        }
-    };
-    
-    reader.readAsText(file);
 }
 
 // ===== TABLE SORTING =====
@@ -1375,21 +1364,17 @@ function sortTable(tableId, columnIndex) {
     const rows = Array.from(tbody.querySelectorAll('tr'));
     if (rows.length === 0) return;
     
-    // Determine sort direction
     let sortDirection = 'asc';
     if (currentSort.table === tableId && currentSort.column === columnIndex) {
         sortDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
     }
     
-    // Update current sort state
     currentSort = { table: tableId, column: columnIndex, direction: sortDirection };
     
-    // Sort rows
     rows.sort((a, b) => {
         const aText = a.cells[columnIndex]?.textContent.trim() || '';
         const bText = b.cells[columnIndex]?.textContent.trim() || '';
         
-        // Try to parse as numbers
         const aNum = parseFloat(aText.replace(/[^\d.-]/g, ''));
         const bNum = parseFloat(bText.replace(/[^\d.-]/g, ''));
         
@@ -1403,10 +1388,7 @@ function sortTable(tableId, columnIndex) {
         return sortDirection === 'asc' ? result : -result;
     });
     
-    // Re-append sorted rows
     rows.forEach(row => tbody.appendChild(row));
-    
-    // Update sort indicators
     updateSortIndicators(tableId, columnIndex, sortDirection);
 }
 
@@ -1414,12 +1396,10 @@ function updateSortIndicators(tableId, columnIndex, direction) {
     const table = document.getElementById(tableId);
     if (!table) return;
     
-    // Clear all indicators
     table.querySelectorAll('.sort-indicator').forEach(indicator => {
         indicator.textContent = '';
     });
     
-    // Set current indicator
     const currentHeader = table.querySelector(`th:nth-child(${columnIndex + 1}) .sort-indicator`);
     if (currentHeader) {
         currentHeader.textContent = direction === 'asc' ? ' ↑' : ' ↓';
@@ -1747,20 +1727,17 @@ function showLiabilityTab(tabName) {
 
 // ===== NAVIGATION FUNCTIONS =====
 function showSection(sectionId) {
-    // Hide all sections
     document.querySelectorAll('.dashboard-section').forEach(section => {
         section.classList.remove('active');
         section.style.display = 'none';
     });
     
-    // Show target section
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
         targetSection.style.display = 'block';
     }
     
-    // Update navigation buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -1769,7 +1746,6 @@ function showSection(sectionId) {
         event.target.classList.add('active');
     }
     
-    // Render content based on section
     if (sectionId === 'dashboard-overview') {
         renderDashboard();
     } else if (sectionId === 'investments-section') {
@@ -1785,7 +1761,6 @@ function showSection(sectionId) {
 function closeModal(modalId) {
     document.getElementById(modalId)?.classList.add('hidden');
     
-    // Reset editing states
     if (modalId === 'member-modal') {
         editingMemberId = null;
     } else if (modalId === 'investment-modal') {
@@ -1887,10 +1862,8 @@ function syncDataSources() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 FamWealth Dashboard initializing...');
     
-    // Initialize Supabase
     await initializeSupabase();
     
-    // Check for existing session
     const authType = localStorage.getItem('famwealth_auth_type');
     if (authType) {
         showDashboard();
