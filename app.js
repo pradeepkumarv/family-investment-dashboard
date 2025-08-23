@@ -568,6 +568,7 @@ function updateInvestmentForm() {
     console.log('Investment form updated');
 }
 
+// ===== CORRECTED SAVE INVESTMENT FUNCTION =====
 async function saveInvestment() {
     const memberEl = document.getElementById('investment-member');
     const typeEl = document.getElementById('investment-type');
@@ -618,6 +619,7 @@ async function saveInvestment() {
                 };
             } else {
                 tableName = 'holdings';
+                // ✅ CORRECTED: Clean investmentData object without generated columns
                 investmentData = {
                     member_id: memberId,
                     member_name: memberName,
@@ -629,25 +631,36 @@ async function saveInvestment() {
                     quantity: 1,
                     purchase_date: new Date().toISOString().split('T')[0],
                     last_updated: new Date().toISOString(),
-                    is_active: true,
-                    
+                    is_active: true
+                    // ✅ REMOVED: profit_loss and profit_loss_percentage - database will calculate these automatically
                 };
             }
 
-            const { data, error } = await supabase
-                .from(tableName)
-                .insert([investmentData]);
+            // Handle both INSERT and UPDATE operations
+            let result;
+            if (editingItemId) {
+                // UPDATE existing record
+                result = await supabase
+                    .from(tableName)
+                    .update(investmentData)
+                    .eq('id', editingItemId);
+            } else {
+                // INSERT new record
+                result = await supabase
+                    .from(tableName)
+                    .insert([investmentData]);
+            }
 
-            if (error) {
-                console.error('Supabase investment save error:', error);
-                showMessage('❌ Error saving to database: ' + error.message, 'error');
+            if (result.error) {
+                console.error('Supabase investment save error:', result.error);
+                showMessage('❌ Error saving to database: ' + result.error.message, 'error');
                 return;
             }
 
             showMessage('✅ Investment saved to database successfully', 'success');
         }
         
-        // Save to local data
+        // Save to local data (keep calculations for frontend display)
         const localInvestmentData = {
             id: editingItemId || Date.now().toString(),
             symbol_or_name: name,
