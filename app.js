@@ -630,21 +630,7 @@ async function saveInvestment() {
                     purchase_date: new Date().toISOString().split('T')[0],
                     last_updated: new Date().toISOString(),
                     is_active: true,
-                    investmentData = {
-    member_id: memberId,
-    member_name: memberName,
-    asset_type: type,
-    symbol_or_name: name,
-    invested_amount: parseFloat(amount),
-    current_value: parseFloat(currentValue) || parseFloat(amount),
-    broker_platform: platform,
-    quantity: 1,
-    purchase_date: new Date().toISOString().split('T')[0],
-    last_updated: new Date().toISOString(),
-    is_active: true
-    // ✅ No profit_loss or profit_loss_percentage - database will calculate automatically
-};
-
+                    
                 };
             }
 
