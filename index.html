@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FamWealth - Complete Family Financial Management</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-1.css">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -511,24 +511,6 @@
                 <div class="form-actions">
                     <button type="button" class="btn btn--secondary" onclick="closeModal('account-modal')">Cancel</button>
                     <button type="button" class="btn btn--primary" onclick="saveAccount()">Save Account</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delete Member Modal -->
-    <div id="delete-member-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Delete Family Member</h3>
-                <button class="modal-close" onclick="closeDeleteMemberModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong id="delete-member-name"></strong>?</p>
-                <p style="color: #e74c3c;">This will also delete all their investments, liabilities, and accounts.</p>
-                <div class="form-actions">
-                    <button type="button" class="btn btn--secondary" onclick="closeDeleteMemberModal()">Cancel</button>
-                    <button type="button" class="btn" style="background: #e74c3c; color: white;" onclick="deleteMember()">Delete Member</button>
                 </div>
             </div>
         </div>
