@@ -1,5 +1,5 @@
-// ===== COMPLETE FAMWEALTH DASHBOARD WITH ALL FIXES AND SORTING =====
-// All features working: Family management, investments, liabilities, accounts, downloads, sorting, edit functions
+// ===== COMPLETE FAMWEALTH DASHBOARD WITH ALL FIXES =====
+// Fixed: Liability modal form elements, edit functions, sorting, downloads
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -25,11 +25,7 @@ let editingItemMemberId = null;
 let deletingMemberId = null;
 let selectedPresetPhoto = null;
 let uploadedPhotoData = null;
-
-// Sorting state variables
-let currentSortColumn = null;
-let currentSortDirection = 'asc';
-let currentSortTable = null;
+let currentSort = { table: null, column: -1, direction: 'asc' };
 
 const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
@@ -66,30 +62,31 @@ async function initializeSupabase() {
 
 // ===== AUTHENTICATION =====
 async function handleLogin() {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
+    const email = document.getElementById('login-email')?.value;
+    const password = document.getElementById('login-password')?.value;
     
     if (!email || !password) {
         showMessage('Please enter both email and password.', 'error');
         return;
     }
 
-    setLoginLoading(true);
     showMessage('🔄 Authenticating...', 'info');
 
+    // Demo login
     if (email === 'demo@famwealth.com' && password === 'demo123') {
         showMessage('✅ Demo login successful!', 'success');
         currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
         localStorage.setItem('famwealth_auth_type', 'demo');
+        
         setTimeout(() => {
             showDashboard();
             updateUserInfo(currentUser);
             loadDashboardData();
         }, 1000);
-        setLoginLoading(false);
         return;
     }
 
+    // Supabase login
     if (supabase) {
         try {
             const { data, error } = await supabase.auth.signInWithPassword({
@@ -100,7 +97,6 @@ async function handleLogin() {
             if (error) {
                 console.error('❌ Supabase login error:', error);
                 showMessage(`❌ Login failed: ${error.message}`, 'error');
-                setLoginLoading(false);
                 return;
             }
 
@@ -115,17 +111,16 @@ async function handleLogin() {
                     updateUserInfo(data.user);
                     loadDashboardData();
                 }, 1500);
-                setLoginLoading(false);
                 return;
             }
         } catch (error) {
             console.error('❌ Login exception:', error);
             showMessage(`❌ Login error: ${error.message}`, 'error');
+            return;
         }
     }
 
     showMessage('❌ Invalid credentials. Try demo@famwealth.com / demo123', 'error');
-    setLoginLoading(false);
 }
 
 async function handleLogout() {
@@ -150,14 +145,12 @@ async function handleLogout() {
     document.getElementById('login-password').value = '';
     
     showMessage('✅ Logged out successfully', 'success');
-    setLoginLoading(false);
 }
 
 // ===== DATA LOADING =====
 async function loadDashboardData() {
     try {
-        document.getElementById('loading-state').style.display = 'block';
-        document.getElementById('dashboard-content').style.display = 'none';
+        showMessage('🔄 Loading dashboard data...', 'info');
 
         let dataLoaded = false;
         if (supabase && currentUser && currentUser.id) {
@@ -173,23 +166,15 @@ async function loadDashboardData() {
             saveDataToStorage();
         }
 
-        renderEnhancedDashboard();
-        renderAccountsTable();
-        renderInvestmentTabContent('equity');
-        renderLiabilityTabContent('homeLoan');
-        
-        document.getElementById('loading-state').style.display = 'none';
-        document.getElementById('dashboard-content').style.display = 'block';
-        updateLastUpdated();
+        renderDashboard();
+        showMessage('✅ Dashboard loaded successfully', 'success');
         
     } catch (error) {
         console.error('Error loading dashboard data:', error);
         loadSampleData();
         saveDataToStorage();
-        renderEnhancedDashboard();
-        renderAccountsTable();
-        document.getElementById('loading-state').style.display = 'none';
-        document.getElementById('dashboard-content').style.display = 'block';
+        renderDashboard();
+        showMessage('✅ Dashboard loaded with sample data', 'success');
     }
 }
 
@@ -205,6 +190,7 @@ async function loadDataFromSupabase() {
         if (!membersError && members && members.length > 0) {
             familyData.members = members;
             
+            // Initialize investment and liability objects for each member
             members.forEach(member => {
                 if (!familyData.investments[member.id]) {
                     familyData.investments[member.id] = {
@@ -241,8 +227,8 @@ function loadSampleData() {
         },
         {
             id: '2',
-            name: 'Smruthi Kumar',
-            relationship: 'Daughter',
+            name: 'Smruthi Pradeep',
+            relationship: 'Spouse',
             is_primary: false,
             photo_url: PRESET_PHOTOS[1]
         }
@@ -261,20 +247,11 @@ function loadSampleData() {
                 id: '2',
                 invested_in: 'SBI Bank',
                 invested_amount: 500000,
-                current_value: 500000,
                 interest_rate: 6.5,
                 invested_date: '2024-01-01',
                 maturity_date: '2025-01-01'
             }],
-            insurance: [{
-                id: '3',
-                insurer: 'LIC',
-                symbol_or_name: 'LIC Term Plan',
-                invested_amount: 25000,
-                current_value: 25000,
-                coverage_amount: 1000000,
-                policy_number: 'LIC123456'
-            }],
+            insurance: [],
             bankBalances: [],
             mutualFunds: [],
             others: []
@@ -305,13 +282,7 @@ function loadSampleData() {
                 interest_rate: 8.5
             }], 
             personalLoan: [], 
-            creditCard: [{
-                id: 'cc1',
-                lender: 'SBI Credit Card',
-                outstanding_amount: 45000,
-                emi_amount: 5000,
-                interest_rate: 18.0
-            }], 
+            creditCard: [], 
             other: [] 
         },
         '2': { homeLoan: [], personalLoan: [], creditCard: [], other: [] }
@@ -320,27 +291,17 @@ function loadSampleData() {
     familyData.accounts = [
         {
             id: 'acc1',
-            account_type: 'Bank Account',
+            account_type: 'Savings Account',
             institution: 'HDFC Bank',
             account_number: 'XXXX1234',
             holder_name: 'Pradeep Kumar',
-            nominee: 'Smruthi Kumar',
+            nominee: 'Smruthi Pradeep',
             status: 'Active',
             comments: 'Primary savings account'
-        },
-        {
-            id: 'acc2',
-            account_type: 'Demat Account',
-            institution: 'Zerodha',
-            account_number: 'ZD1234',
-            holder_name: 'Pradeep Kumar',
-            nominee: 'Smruthi Kumar',
-            status: 'Active',
-            comments: 'Trading and investment account'
         }
     ];
 
-    console.log('✅ Sample data loaded with comprehensive examples!');
+    console.log('✅ Sample data loaded successfully');
 }
 
 // ===== DATA PERSISTENCE =====
@@ -367,102 +328,12 @@ function loadDataFromStorage() {
     return false;
 }
 
-// ===== SORTING FUNCTIONALITY =====
-function sortData(data, column, direction = 'asc') {
-    return [...data].sort((a, b) => {
-        let aVal = getNestedValue(a, column);
-        let bVal = getNestedValue(b, column);
-        
-        // Handle different data types
-        if (typeof aVal === 'string' && typeof bVal === 'string') {
-            aVal = aVal.toLowerCase();
-            bVal = bVal.toLowerCase();
-        }
-        
-        if (typeof aVal === 'number' && typeof bVal === 'number') {
-            return direction === 'asc' ? aVal - bVal : bVal - aVal;
-        }
-        
-        if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-        if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-        return 0;
-    });
-}
-
-function getNestedValue(obj, path) {
-    return path.split('.').reduce((current, key) => {
-        return current && current[key] !== undefined ? current[key] : '';
-    }, obj);
-}
-
-function handleTableSort(column, tableType) {
-    console.log(`🔄 Sorting ${tableType} by ${column}`);
-    
-    // Toggle direction if same column
-    if (currentSortColumn === column && currentSortTable === tableType) {
-        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSortDirection = 'asc';
-    }
-    
-    currentSortColumn = column;
-    currentSortTable = tableType;
-    
-    // Re-render the appropriate table
-    switch (tableType) {
-        case 'accounts':
-            renderAccountsTable();
-            break;
-        case 'family':
-            renderFamilyManagement();
-            break;
-        case 'investment':
-            // Get current active investment tab
-            const activeInvestmentTab = document.querySelector('#investments-section .tab-btn.active');
-            const tabName = activeInvestmentTab ? activeInvestmentTab.textContent.toLowerCase().replace(/\s+/g, '') : 'equity';
-            renderInvestmentTabContent(tabName);
-            break;
-        case 'liability':
-            // Get current active liability tab
-            const activeLiabilityTab = document.querySelector('#liabilities-section .tab-btn.active');
-            const liabilityTabName = activeLiabilityTab ? activeLiabilityTab.textContent.toLowerCase().replace(/\s+/g, '') : 'homeLoan';
-            renderLiabilityTabContent(liabilityTabName);
-            break;
-    }
-    
-    showMessage(`✅ Sorted by ${column} (${currentSortDirection.toUpperCase()})`, 'info');
-}
-
-function createSortableHeader(text, column, tableType) {
-    const isActive = currentSortColumn === column && currentSortTable === tableType;
-    const direction = isActive ? currentSortDirection : 'asc';
-    const arrow = isActive ? (direction === 'asc' ? '▲' : '▼') : '⬍';
-    
-    return `
-        <th class="sortable-header ${isActive ? 'active' : ''}" 
-            onclick="handleTableSort('${column}', '${tableType}')"
-            style="cursor: pointer; user-select: none; position: relative;">
-            <span class="header-content">
-                ${text}
-                <span class="sort-arrow" style="margin-left: 8px; opacity: ${isActive ? 1 : 0.3};">
-                    ${arrow}
-                </span>
-            </span>
-        </th>
-    `;
-}
-
 // ===== FAMILY MEMBER MANAGEMENT =====
 function openAddMemberModal() {
     editingMemberId = null;
-    document.getElementById('member-form').reset();
+    const form = document.getElementById('member-form');
+    if (form) form.reset();
     document.getElementById('member-modal-title').textContent = 'Add Family Member';
-    document.getElementById('photo-avatar').textContent = '?';
-    document.getElementById('photo-preview').style.display = 'none';
-    document.getElementById('photo-avatar').style.display = 'flex';
-    document.getElementById('member-photo-url').value = '';
-    uploadedPhotoData = null;
-    selectedPresetPhoto = null;
     document.getElementById('member-modal').classList.remove('hidden');
 }
 
@@ -475,32 +346,32 @@ function editMember(memberId) {
     document.getElementById('member-relationship').value = member.relationship;
     document.getElementById('member-is-primary').checked = member.is_primary;
     
-    if (member.photo_url) {
-        document.getElementById('photo-preview').src = member.photo_url;
-        document.getElementById('photo-preview').style.display = 'block';
-        document.getElementById('photo-avatar').style.display = 'none';
-        document.getElementById('member-photo-url').value = member.photo_url;
-    }
-    
     document.getElementById('member-modal-title').textContent = 'Edit Family Member';
     document.getElementById('member-modal').classList.remove('hidden');
 }
 
 function saveMember() {
-    const name = document.getElementById('member-name').value.trim();
-    const relationship = document.getElementById('member-relationship').value;
-    const isPrimary = document.getElementById('member-is-primary').checked;
+    const nameEl = document.getElementById('member-name');
+    const relationshipEl = document.getElementById('member-relationship');
+    const isPrimaryEl = document.getElementById('member-is-primary');
+    
+    if (!nameEl || !relationshipEl || !isPrimaryEl) {
+        showMessage('Form elements missing. Please reload the page.', 'error');
+        return;
+    }
+    
+    const name = nameEl.value.trim();
+    const relationship = relationshipEl.value;
+    const isPrimary = isPrimaryEl.checked;
     
     if (!name || !relationship) {
         showMessage('Please fill all required fields', 'error');
         return;
     }
     
-    let photoUrl = document.getElementById('member-photo-url').value;
+    let photoUrl = PRESET_PHOTOS[familyData.members.length % PRESET_PHOTOS.length];
     if (uploadedPhotoData) {
         photoUrl = uploadedPhotoData;
-    } else if (!photoUrl) {
-        photoUrl = PRESET_PHOTOS[familyData.members.length % PRESET_PHOTOS.length];
     }
     
     if (editingMemberId) {
@@ -512,8 +383,7 @@ function saveMember() {
                 name,
                 relationship,
                 is_primary: isPrimary,
-                photo_url: photoUrl,
-                avatar_url: photoUrl
+                photo_url: photoUrl
             };
         }
         showMessage('✅ Member updated successfully', 'success');
@@ -524,163 +394,51 @@ function saveMember() {
             name,
             relationship,
             is_primary: isPrimary,
-            photo_url: photoUrl,
-            avatar_url: photoUrl
+            photo_url: photoUrl
         };
         
         familyData.members.push(newMember);
         
         // Initialize empty investment and liability data
         familyData.investments[newMember.id] = {
-            equity: [],
-            mutualFunds: [],
-            fixedDeposits: [],
-            insurance: [],
-            bankBalances: [],
-            others: []
+            equity: [], mutualFunds: [], fixedDeposits: [], 
+            insurance: [], bankBalances: [], others: []
         };
         
         familyData.liabilities[newMember.id] = {
-            homeLoan: [],
-            personalLoan: [],
-            creditCard: [],
-            other: []
+            homeLoan: [], personalLoan: [], creditCard: [], other: []
         };
         
         showMessage('✅ Member added successfully', 'success');
     }
     
     saveDataToStorage();
-    renderEnhancedDashboard();
-    document.getElementById('member-modal').classList.add('hidden');
+    renderDashboard();
+    closeModal('member-modal');
 }
 
-function showDeleteMemberConfirm(memberId) {
+function deleteMember(memberId) {
     const member = familyData.members.find(m => m.id === memberId);
     if (!member) return;
     
-    deletingMemberId = memberId;
-    document.getElementById('delete-member-name').textContent = member.name;
-    document.getElementById('delete-member-modal').classList.remove('hidden');
-}
-
-function deleteMember() {
-    if (!deletingMemberId) return;
-    
-    familyData.members = familyData.members.filter(m => m.id !== deletingMemberId);
-    delete familyData.investments[deletingMemberId];
-    delete familyData.liabilities[deletingMemberId];
-    
-    saveDataToStorage();
-    renderEnhancedDashboard();
-    renderAccountsTable();
-    document.getElementById('delete-member-modal').classList.add('hidden');
-    deletingMemberId = null;
-    
-    showMessage('✅ Member deleted successfully', 'success');
-}
-
-function closeDeleteMemberModal() {
-    document.getElementById('delete-member-modal').classList.add('hidden');
-    deletingMemberId = null;
-}
-
-// ===== PHOTO MANAGEMENT =====
-function openPhotoModal(memberId) {
-    editingMemberId = memberId;
-    selectedPresetPhoto = null;
-    
-    // Clear previous selections
-    document.querySelectorAll('.photo-option').forEach(img => {
-        img.classList.remove('selected');
-    });
-    
-    // Populate preset photos
-    const photoGrid = document.getElementById('preset-photos-grid');
-    photoGrid.innerHTML = PRESET_PHOTOS.map(photoUrl => 
-        `<img src="${photoUrl}" class="photo-option" data-photo="${photoUrl}" alt="Preset photo">`
-    ).join('');
-    
-    // Add click handlers
-    document.querySelectorAll('.photo-option').forEach(img => {
-        img.addEventListener('click', function() {
-            document.querySelectorAll('.photo-option').forEach(p => p.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedPresetPhoto = this.dataset.photo;
-        });
-    });
-    
-    document.getElementById('photo-modal').classList.remove('hidden');
-}
-
-function savePhoto() {
-    if (!editingMemberId) return;
-    
-    let newPhotoUrl = null;
-    
-    if (selectedPresetPhoto) {
-        newPhotoUrl = selectedPresetPhoto;
-    } else if (uploadedPhotoData) {
-        newPhotoUrl = uploadedPhotoData;
-    }
-    
-    if (newPhotoUrl) {
-        const memberIndex = familyData.members.findIndex(m => m.id === editingMemberId);
-        if (memberIndex !== -1) {
-            familyData.members[memberIndex].photo_url = newPhotoUrl;
-            familyData.members[memberIndex].avatar_url = newPhotoUrl;
-        }
+    if (confirm(`Are you sure you want to delete ${member.name}? This will also delete all their investments and liabilities.`)) {
+        familyData.members = familyData.members.filter(m => m.id !== memberId);
+        delete familyData.investments[memberId];
+        delete familyData.liabilities[memberId];
         
         saveDataToStorage();
-        renderEnhancedDashboard();
-        showMessage('✅ Photo updated successfully', 'success');
-    } else {
-        showMessage('Please select a photo first', 'error');
-        return;
+        renderDashboard();
+        showMessage('✅ Member deleted successfully', 'success');
     }
-    
-    document.getElementById('photo-modal').classList.add('hidden');
-    editingMemberId = null;
-}
-
-function handlePhotoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    if (!file.type.startsWith('image/')) {
-        showMessage('Please select an image file', 'error');
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        uploadedPhotoData = e.target.result;
-        
-        // Clear preset selection
-        document.querySelectorAll('.photo-option').forEach(img => {
-            img.classList.remove('selected');
-        });
-        selectedPresetPhoto = null;
-        
-        showMessage('✅ Photo uploaded! Click Save to apply.', 'success');
-    };
-    
-    reader.readAsDataURL(file);
 }
 
 // ===== INVESTMENT MANAGEMENT =====
 function openAddInvestmentModal() {
     editingItemId = null;
     editingItemMemberId = null;
-    document.getElementById('investment-form').reset();
+    const form = document.getElementById('investment-form');
+    if (form) form.reset();
     document.getElementById('investment-modal-title').textContent = 'Add Investment';
-    
-    // Hide all type-specific fields
-    const fdFields = document.getElementById('fd-specific-fields');
-    const insFields = document.getElementById('insurance-specific-fields');
-    if (fdFields) fdFields.style.display = 'none';
-    if (insFields) insFields.style.display = 'none';
-    
     populateInvestmentMemberDropdown();
     document.getElementById('investment-modal').classList.remove('hidden');
 }
@@ -695,60 +453,62 @@ function populateInvestmentMemberDropdown() {
 }
 
 function updateInvestmentForm() {
-    // Function called when investment type changes
-    const type = document.getElementById('investment-type').value;
+    const type = document.getElementById('investment-type')?.value;
+    const typeFields = document.getElementById('investment-type-fields');
     
-    // Hide all type-specific fields first
-    const fdFields = document.getElementById('fd-specific-fields');
-    const insFields = document.getElementById('insurance-specific-fields');
+    if (!typeFields) return;
     
-    if (fdFields) fdFields.style.display = 'none';
-    if (insFields) insFields.style.display = 'none';
+    typeFields.innerHTML = '';
     
-    // Show relevant fields based on type
-    if (type === 'fixedDeposits' && fdFields) {
-        fdFields.style.display = 'block';
-    } else if (type === 'insurance' && insFields) {
-        insFields.style.display = 'block';
+    if (type === 'fixedDeposits') {
+        typeFields.innerHTML = `
+            <div class="form-group">
+                <label for="investment-interest-rate">Interest Rate (%)</label>
+                <input type="number" id="investment-interest-rate" step="0.01">
+            </div>
+            <div class="form-group">
+                <label for="investment-maturity">Maturity Date</label>
+                <input type="date" id="investment-maturity">
+            </div>
+        `;
+    } else if (type === 'insurance') {
+        typeFields.innerHTML = `
+            <div class="form-group">
+                <label for="investment-policy-number">Policy Number</label>
+                <input type="text" id="investment-policy-number">
+            </div>
+            <div class="form-group">
+                <label for="investment-coverage">Coverage Amount</label>
+                <input type="number" id="investment-coverage" step="0.01">
+            </div>
+        `;
     }
-    
-    console.log('Investment form updated for type:', type);
 }
 
 function saveInvestment() {
-    console.log('🔄 Starting saveInvestment function...');
+    // Get required elements with validation
+    const memberEl = document.getElementById('investment-member');
+    const typeEl = document.getElementById('investment-type');
+    const nameEl = document.getElementById('investment-name');
+    const amountEl = document.getElementById('investment-amount');
+    const currentValueEl = document.getElementById('investment-current-value');
     
-    // Check if all required elements exist with proper error handling
-    const memberSelect = document.getElementById('investment-member');
-    const typeSelect = document.getElementById('investment-type');
-    const nameInput = document.getElementById('investment-name');
-    const amountInput = document.getElementById('investment-amount');
-    const currentValueInput = document.getElementById('investment-current-value');
-    const platformInput = document.getElementById('investment-platform');
-    
-    console.log('Investment form element check:', {
-        member: memberSelect ? 'Found' : 'Missing',
-        type: typeSelect ? 'Found' : 'Missing',
-        name: nameInput ? 'Found' : 'Missing',
-        amount: amountInput ? 'Found' : 'Missing',
-        currentValue: currentValueInput ? 'Found' : 'Missing',
-        platform: platformInput ? 'Found' : 'Missing'
-    });
-    
-    if (!memberSelect || !typeSelect || !nameInput || !amountInput) {
-        showMessage('❌ Investment form elements not found. Please refresh the page.', 'error');
-        console.error('Missing form elements in investment modal');
+    if (!memberEl || !typeEl || !nameEl || !amountEl) {
+        console.error('Investment modal is missing required elements:', {
+            hasMember: !!memberEl,
+            hasType: !!typeEl,
+            hasName: !!nameEl,
+            hasAmount: !!amountEl
+        });
+        showMessage('Some required fields are missing in the form. Please reload the page.', 'error');
         return;
     }
     
-    const memberId = memberSelect.value;
-    const type = typeSelect.value;
-    const name = nameInput.value.trim();
-    const amount = amountInput.value;
-    const currentValue = currentValueInput ? currentValueInput.value : '';
-    const platform = platformInput ? platformInput.value.trim() : '';
-    
-    console.log('Investment form values:', { memberId, type, name, amount, currentValue, platform });
+    const memberId = memberEl.value;
+    const type = typeEl.value;
+    const name = nameEl.value.trim();
+    const amount = amountEl.value;
+    const currentValue = currentValueEl ? currentValueEl.value : '';
     
     if (!memberId || !type || !name || !amount) {
         showMessage('Please fill all required fields', 'error');
@@ -760,33 +520,17 @@ function saveInvestment() {
         symbol_or_name: name,
         invested_amount: parseFloat(amount),
         current_value: parseFloat(currentValue) || parseFloat(amount),
-        broker_platform: platform
+        broker_platform: document.getElementById('investment-platform')?.value || ''
     };
     
-    // Handle specific investment types
+    // Add type-specific fields
     if (type === 'fixedDeposits') {
-        const interestRateInput = document.getElementById('fd-interest-rate');
-        const investedDateInput = document.getElementById('fd-invested-date');
-        const maturityDateInput = document.getElementById('fd-maturity-date');
-        
-        investmentData.invested_in = name;
-        investmentData.interest_rate = interestRateInput ? parseFloat(interestRateInput.value) || 0 : 0;
-        investmentData.invested_date = investedDateInput ? investedDateInput.value : '';
-        investmentData.maturity_date = maturityDateInput ? maturityDateInput.value : '';
+        investmentData.interest_rate = parseFloat(document.getElementById('investment-interest-rate')?.value || 0);
+        investmentData.maturity_date = document.getElementById('investment-maturity')?.value || '';
+    } else if (type === 'insurance') {
+        investmentData.policy_number = document.getElementById('investment-policy-number')?.value || '';
+        investmentData.coverage_amount = parseFloat(document.getElementById('investment-coverage')?.value || 0);
     }
-    
-    if (type === 'insurance') {
-        const insurerInput = document.getElementById('insurance-insurer');
-        const policyNumberInput = document.getElementById('insurance-policy-number');
-        const coverageAmountInput = document.getElementById('insurance-coverage-amount');
-        
-        investmentData.insurer = insurerInput ? insurerInput.value.trim() : name;
-        investmentData.policy_number = policyNumberInput ? policyNumberInput.value.trim() : '';
-        investmentData.coverage_amount = coverageAmountInput ? parseFloat(coverageAmountInput.value) || 0 : 0;
-        investmentData.insurance_premium = parseFloat(amount);
-    }
-    
-    console.log('Investment data to save:', investmentData);
     
     if (!familyData.investments[memberId]) {
         familyData.investments[memberId] = {
@@ -802,9 +546,6 @@ function saveInvestment() {
             familyData.investments[memberId][type][itemIndex] = investmentData;
         }
         showMessage('✅ Investment updated successfully', 'success');
-        editingItemId = null;
-        editingItemMemberId = null;
-        editingItemType = null;
     } else {
         // Add new investment
         familyData.investments[memberId][type].push(investmentData);
@@ -812,17 +553,172 @@ function saveInvestment() {
     }
     
     saveDataToStorage();
-    renderEnhancedDashboard();
+    renderDashboard();
     renderInvestmentTabContent(type);
-    document.getElementById('investment-modal').classList.add('hidden');
+    closeModal('investment-modal');
+}
+
+function editInvestment(itemId, itemType, memberId) {
+    const investment = familyData.investments[memberId]?.[itemType]?.find(i => i.id === itemId);
+    if (!investment) return;
     
-    console.log('✅ Investment saved successfully');
+    editingItemId = itemId;
+    editingItemMemberId = memberId;
+    
+    document.getElementById('investment-member').value = memberId;
+    document.getElementById('investment-type').value = itemType;
+    document.getElementById('investment-name').value = investment.symbol_or_name || '';
+    document.getElementById('investment-amount').value = investment.invested_amount || '';
+    document.getElementById('investment-current-value').value = investment.current_value || '';
+    
+    updateInvestmentForm();
+    
+    document.getElementById('investment-modal-title').textContent = 'Edit Investment';
+    document.getElementById('investment-modal').classList.remove('hidden');
+}
+
+function deleteInvestment(itemId, itemType, memberId) {
+    if (confirm('Are you sure you want to delete this investment?')) {
+        familyData.investments[memberId][itemType] = familyData.investments[memberId][itemType].filter(i => i.id !== itemId);
+        saveDataToStorage();
+        renderDashboard();
+        renderInvestmentTabContent(itemType);
+        showMessage('✅ Investment deleted successfully', 'success');
+    }
+}
+
+// ===== LIABILITY MANAGEMENT (FIXED) =====
+function openAddLiabilityModal() {
+    editingItemId = null;
+    editingItemMemberId = null;
+    const form = document.getElementById('liability-form');
+    if (form) form.reset();
+    document.getElementById('liability-modal-title').textContent = 'Add Liability';
+    populateLiabilityMemberDropdown();
+    document.getElementById('liability-modal').classList.remove('hidden');
+}
+
+function populateLiabilityMemberDropdown() {
+    const memberSelect = document.getElementById('liability-member');
+    if (memberSelect) {
+        memberSelect.innerHTML = familyData.members.map(member => 
+            `<option value="${member.id}">${member.name}</option>`
+        ).join('');
+    }
+}
+
+function saveLiability() {
+    console.log('🔄 Saving liability...'); // Debug log
+    
+    // Look up elements safely with validation
+    const elMember = document.getElementById('liability-member');
+    const elType = document.getElementById('liability-type');
+    const elLender = document.getElementById('liability-lender');
+    const elAmount = document.getElementById('liability-amount');
+    const elEmi = document.getElementById('liability-emi');
+    const elRate = document.getElementById('liability-rate');
+    const elComments = document.getElementById('liability-comments');
+
+    // Validate presence of required elements
+    if (!elMember || !elType || !elLender || !elAmount) {
+        console.error('Liability modal is missing one or more required elements:', {
+            hasMember: !!elMember,
+            hasType: !!elType,
+            hasLender: !!elLender,
+            hasAmount: !!elAmount
+        });
+        showMessage('Some required fields are missing in the form. Please reload the page or try again.', 'error');
+        return;
+    }
+
+    // Read values safely
+    const memberId = elMember.value;
+    const type = elType.value;
+    const lender = elLender.value.trim();
+    const amount = elAmount.value;
+    const emi = elEmi ? elEmi.value : '';
+    const rate = elRate ? elRate.value : '';
+    const comments = elComments ? elComments.value.trim() : '';
+
+    // Validate required values
+    if (!memberId || !type || !lender || !amount) {
+        showMessage('Please fill all required fields', 'error');
+        return;
+    }
+
+    console.log('✅ Form validation passed, creating liability data...'); // Debug log
+
+    const liabilityData = {
+        id: editingItemId || Date.now().toString(),
+        lender: lender,
+        outstanding_amount: parseFloat(amount) || 0,
+        emi_amount: parseFloat(emi) || 0,
+        interest_rate: parseFloat(rate) || 0,
+        comments: comments
+    };
+
+    // Ensure liability structure exists for member
+    if (!familyData.liabilities[memberId]) {
+        familyData.liabilities[memberId] = {
+            homeLoan: [], personalLoan: [], creditCard: [], other: []
+        };
+    }
+
+    if (editingItemId) {
+        // Update existing liability
+        const itemIndex = familyData.liabilities[memberId][type].findIndex(i => i.id === editingItemId);
+        if (itemIndex !== -1) {
+            familyData.liabilities[memberId][type][itemIndex] = liabilityData;
+        }
+        showMessage('✅ Liability updated successfully', 'success');
+    } else {
+        // Add new liability
+        familyData.liabilities[memberId][type].push(liabilityData);
+        showMessage('✅ Liability added successfully', 'success');
+    }
+
+    console.log('✅ Liability saved successfully:', liabilityData); // Debug log
+
+    saveDataToStorage();
+    renderDashboard();
+    renderLiabilityTabContent(type);
+    closeModal('liability-modal');
+}
+
+function editLiability(itemId, itemType, memberId) {
+    const liability = familyData.liabilities[memberId]?.[itemType]?.find(i => i.id === itemId);
+    if (!liability) return;
+    
+    editingItemId = itemId;
+    editingItemMemberId = memberId;
+    
+    document.getElementById('liability-member').value = memberId;
+    document.getElementById('liability-type').value = itemType;
+    document.getElementById('liability-lender').value = liability.lender || '';
+    document.getElementById('liability-amount').value = liability.outstanding_amount || '';
+    document.getElementById('liability-emi').value = liability.emi_amount || '';
+    document.getElementById('liability-rate').value = liability.interest_rate || '';
+    document.getElementById('liability-comments').value = liability.comments || '';
+    
+    document.getElementById('liability-modal-title').textContent = 'Edit Liability';
+    document.getElementById('liability-modal').classList.remove('hidden');
+}
+
+function deleteLiability(itemId, itemType, memberId) {
+    if (confirm('Are you sure you want to delete this liability?')) {
+        familyData.liabilities[memberId][itemType] = familyData.liabilities[memberId][itemType].filter(i => i.id !== itemId);
+        saveDataToStorage();
+        renderDashboard();
+        renderLiabilityTabContent(itemType);
+        showMessage('✅ Liability deleted successfully', 'success');
+    }
 }
 
 // ===== ACCOUNT MANAGEMENT =====
 function openAddAccountModal() {
     editingItemId = null;
-    document.getElementById('account-form').reset();
+    const form = document.getElementById('account-form');
+    if (form) form.reset();
     document.getElementById('account-modal-title').textContent = 'Add Account';
     populateAccountDropdowns();
     document.getElementById('account-modal').classList.remove('hidden');
@@ -848,13 +744,28 @@ function populateAccountDropdowns() {
 }
 
 function saveAccount() {
-    const accountType = document.getElementById('account-type').value;
-    const institution = document.getElementById('account-institution').value.trim();
-    const accountNumber = document.getElementById('account-number').value.trim();
-    const holderId = document.getElementById('account-holder').value;
-    const nomineeId = document.getElementById('account-nominee').value;
-    const status = document.getElementById('account-status').value;
-    const comments = document.getElementById('account-comments').value.trim();
+    const accountTypeEl = document.getElementById('account-type');
+    const institutionEl = document.getElementById('account-institution');
+    const accountNumberEl = document.getElementById('account-number');
+    const holderEl = document.getElementById('account-holder');
+    const nomineeEl = document.getElementById('account-nominee');
+    const usernameEl = document.getElementById('account-username');
+    const passwordEl = document.getElementById('account-password');
+    const commentsEl = document.getElementById('account-comments');
+    
+    if (!accountTypeEl || !institutionEl || !accountNumberEl || !holderEl) {
+        showMessage('Some required fields are missing in the form. Please reload the page.', 'error');
+        return;
+    }
+    
+    const accountType = accountTypeEl.value;
+    const institution = institutionEl.value.trim();
+    const accountNumber = accountNumberEl.value.trim();
+    const holderId = holderEl.value;
+    const nomineeId = nomineeEl ? nomineeEl.value : '';
+    const username = usernameEl ? usernameEl.value.trim() : '';
+    const password = passwordEl ? passwordEl.value : '';
+    const comments = commentsEl ? commentsEl.value.trim() : '';
     
     if (!accountType || !institution || !accountNumber || !holderId) {
         showMessage('Please fill all required fields', 'error');
@@ -871,7 +782,9 @@ function saveAccount() {
         account_number: accountNumber,
         holder_name: holder ? holder.name : 'Unknown',
         nominee: nominee ? nominee.name : '',
-        status: status,
+        username: username,
+        password: password,
+        status: 'Active',
         comments: comments
     };
     
@@ -882,7 +795,6 @@ function saveAccount() {
             familyData.accounts[accountIndex] = accountData;
         }
         showMessage('✅ Account updated successfully', 'success');
-        editingItemId = null;
     } else {
         // Add new account
         familyData.accounts.push(accountData);
@@ -890,293 +802,146 @@ function saveAccount() {
     }
     
     saveDataToStorage();
+    renderDashboard();
     renderAccountsTable();
-    document.getElementById('account-modal').classList.add('hidden');
+    closeModal('account-modal');
 }
 
-// ===== LIABILITY MANAGEMENT (FIXED) =====
-function openAddLiabilityModal() {
-    editingItemId = null;
-    editingItemMemberId = null;
-    document.getElementById('liability-form').reset();
-    document.getElementById('liability-modal-title').textContent = 'Add Liability';
-    populateLiabilityMemberDropdown();
-    document.getElementById('liability-modal').classList.remove('hidden');
+function editAccount(accountId) {
+    const account = familyData.accounts.find(a => a.id === accountId);
+    if (!account) return;
+    
+    editingItemId = accountId;
+    
+    document.getElementById('account-type').value = account.account_type || '';
+    document.getElementById('account-institution').value = account.institution || '';
+    document.getElementById('account-number').value = account.account_number || '';
+    document.getElementById('account-username').value = account.username || '';
+    document.getElementById('account-password').value = account.password || '';
+    document.getElementById('account-comments').value = account.comments || '';
+    
+    // Find holder by name
+    const holder = familyData.members.find(m => m.name === account.holder_name);
+    if (holder) {
+        document.getElementById('account-holder').value = holder.id;
+    }
+    
+    // Find nominee by name
+    const nominee = familyData.members.find(m => m.name === account.nominee);
+    if (nominee) {
+        document.getElementById('account-nominee').value = nominee.id;
+    }
+    
+    document.getElementById('account-modal-title').textContent = 'Edit Account';
+    document.getElementById('account-modal').classList.remove('hidden');
 }
 
-function populateLiabilityMemberDropdown() {
-    const memberSelect = document.getElementById('liability-member');
-    if (memberSelect) {
-        memberSelect.innerHTML = familyData.members.map(member => 
-            `<option value="${member.id}">${member.name}</option>`
+function deleteAccount(accountId) {
+    if (confirm('Are you sure you want to delete this account?')) {
+        familyData.accounts = familyData.accounts.filter(a => a.id !== accountId);
+        saveDataToStorage();
+        renderDashboard();
+        renderAccountsTable();
+        showMessage('✅ Account deleted successfully', 'success');
+    }
+}
+
+// ===== PHOTO MANAGEMENT =====
+function openPhotoModal(memberId) {
+    editingMemberId = memberId;
+    selectedPresetPhoto = null;
+    uploadedPhotoData = null;
+    
+    // Populate preset photos
+    const photoOptions = document.getElementById('photo-options');
+    if (photoOptions) {
+        photoOptions.innerHTML = PRESET_PHOTOS.map((photoUrl, index) => 
+            `<img src="${photoUrl}" class="photo-option" data-photo="${photoUrl}" onclick="selectPresetPhoto('${photoUrl}')" alt="Preset photo ${index + 1}">`
         ).join('');
     }
+    
+    document.getElementById('photo-modal').classList.remove('hidden');
 }
 
-function saveLiability() {
-    console.log('🔄 Starting saveLiability function...');
+function selectPresetPhoto(photoUrl) {
+    selectedPresetPhoto = photoUrl;
+    uploadedPhotoData = null;
     
-    // Check if all required elements exist with proper error handling
-    const memberSelect = document.getElementById('liability-member');
-    const typeSelect = document.getElementById('liability-type');
-    const lenderInput = document.getElementById('liability-lender');
-    const amountInput = document.getElementById('liability-amount');
-    const emiInput = document.getElementById('liability-emi');
-    const rateInput = document.getElementById('liability-rate');
-    
-    console.log('Liability form element check:', {
-        member: memberSelect ? 'Found' : 'Missing',
-        type: typeSelect ? 'Found' : 'Missing',
-        lender: lenderInput ? 'Found' : 'Missing',
-        amount: amountInput ? 'Found' : 'Missing',
-        emi: emiInput ? 'Found' : 'Missing',
-        rate: rateInput ? 'Found' : 'Missing'
+    // Update visual selection
+    document.querySelectorAll('.photo-option').forEach(img => {
+        img.classList.remove('selected');
     });
+    document.querySelector(`[data-photo="${photoUrl}"]`)?.classList.add('selected');
+}
+
+function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
     
-    if (!memberSelect || !typeSelect || !lenderInput || !amountInput) {
-        showMessage('❌ Liability form elements not found. Please refresh the page.', 'error');
-        console.error('Missing form elements in liability modal');
+    if (!file.type.startsWith('image/')) {
+        showMessage('Please select an image file', 'error');
         return;
     }
     
-    const memberId = memberSelect.value;
-    const type = typeSelect.value;
-    const lender = lenderInput.value.trim();
-    const amount = amountInput.value;
-    const emi = emiInput ? emiInput.value : '';
-    const rate = rateInput ? rateInput.value : '';
-    
-    console.log('Liability form values:', { memberId, type, lender, amount, emi, rate });
-    
-    if (!memberId || !type || !lender || !amount) {
-        showMessage('Please fill all required fields', 'error');
-        return;
-    }
-    
-    const liabilityData = {
-        id: editingItemId || Date.now().toString(),
-        lender: lender,
-        outstanding_amount: parseFloat(amount),
-        emi_amount: parseFloat(emi) || 0,
-        interest_rate: parseFloat(rate) || 0
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        uploadedPhotoData = e.target.result;
+        selectedPresetPhoto = null;
+        
+        // Clear preset selection
+        document.querySelectorAll('.photo-option').forEach(img => {
+            img.classList.remove('selected');
+        });
+        
+        showMessage('✅ Photo uploaded! Click Save to apply.', 'success');
     };
     
-    console.log('Liability data to save:', liabilityData);
+    reader.readAsDataURL(file);
+}
+
+function savePhoto() {
+    if (!editingMemberId) return;
     
-    if (!familyData.liabilities[memberId]) {
-        familyData.liabilities[memberId] = {
-            homeLoan: [], personalLoan: [], creditCard: [], other: []
-        };
+    let newPhotoUrl = null;
+    
+    if (uploadedPhotoData) {
+        newPhotoUrl = uploadedPhotoData;
+    } else if (selectedPresetPhoto) {
+        newPhotoUrl = selectedPresetPhoto;
     }
     
-    if (editingItemId) {
-        const itemIndex = familyData.liabilities[memberId][type].findIndex(i => i.id === editingItemId);
-        if (itemIndex !== -1) {
-            familyData.liabilities[memberId][type][itemIndex] = liabilityData;
+    if (newPhotoUrl) {
+        const memberIndex = familyData.members.findIndex(m => m.id === editingMemberId);
+        if (memberIndex !== -1) {
+            familyData.members[memberIndex].photo_url = newPhotoUrl;
         }
-        showMessage('✅ Liability updated successfully', 'success');
-        editingItemId = null;
-        editingItemMemberId = null;
-        editingItemType = null;
+        
+        saveDataToStorage();
+        renderDashboard();
+        showMessage('✅ Photo updated successfully', 'success');
+        closeModal('photo-modal');
     } else {
-        familyData.liabilities[memberId][type].push(liabilityData);
-        showMessage('✅ Liability added successfully', 'success');
-    }
-    
-    saveDataToStorage();
-    renderEnhancedDashboard();
-    renderLiabilityTabContent(type);
-    document.getElementById('liability-modal').classList.add('hidden');
-    
-    console.log('✅ Liability saved successfully');
-}
-
-// ===== EDIT FUNCTIONS (FIXED) =====
-function editItem(itemId, itemType, memberId) {
-    console.log('🔄 Editing item:', { itemId, itemType, memberId });
-    
-    if (itemType === 'account') {
-        editAccount(itemId);
-    } else if (memberId && familyData.investments[memberId] && familyData.investments[memberId][itemType]) {
-        editInvestment(itemId, itemType, memberId);
-    } else if (memberId && familyData.liabilities[memberId] && familyData.liabilities[memberId][itemType]) {
-        editLiability(itemId, itemType, memberId);
-    } else {
-        showMessage(`❌ Unable to edit ${itemType}. Data not found.`, 'error');
+        showMessage('Please select a photo first', 'error');
     }
 }
 
-function editInvestment(itemId, itemType, memberId) {
-    console.log('🔄 Editing investment:', { itemId, itemType, memberId });
-    
-    const item = familyData.investments[memberId][itemType].find(i => i.id === itemId);
-    if (!item) {
-        showMessage('❌ Investment not found', 'error');
-        return;
-    }
-    
-    editingItemId = itemId;
-    editingItemMemberId = memberId;
-    editingItemType = itemType;
-    
-    // Populate the investment modal with existing data
-    document.getElementById('investment-modal-title').textContent = `Edit ${itemType}`;
-    
-    // Populate form fields
-    const memberSelect = document.getElementById('investment-member');
-    const typeSelect = document.getElementById('investment-type');
-    const nameInput = document.getElementById('investment-name');
-    const amountInput = document.getElementById('investment-amount');
-    const currentValueInput = document.getElementById('investment-current-value');
-    const platformInput = document.getElementById('investment-platform');
-    
-    if (memberSelect) memberSelect.value = memberId;
-    if (typeSelect) typeSelect.value = itemType;
-    if (nameInput) nameInput.value = item.symbol_or_name || item.invested_in || item.insurer || '';
-    if (amountInput) amountInput.value = item.invested_amount || item.insurance_premium || '';
-    if (currentValueInput) currentValueInput.value = item.current_value || item.invested_amount || item.insurance_premium || '';
-    if (platformInput) platformInput.value = item.broker_platform || '';
-    
-    // Handle specific fields for different investment types
-    if (itemType === 'fixedDeposits') {
-        const interestRateInput = document.getElementById('fd-interest-rate');
-        const investedDateInput = document.getElementById('fd-invested-date');
-        const maturityDateInput = document.getElementById('fd-maturity-date');
-        
-        if (interestRateInput) interestRateInput.value = item.interest_rate || '';
-        if (investedDateInput) investedDateInput.value = item.invested_date || '';
-        if (maturityDateInput) maturityDateInput.value = item.maturity_date || '';
-        
-        // Show FD specific fields
-        const fdFields = document.getElementById('fd-specific-fields');
-        if (fdFields) fdFields.style.display = 'block';
-    }
-    
-    if (itemType === 'insurance') {
-        const insurerInput = document.getElementById('insurance-insurer');
-        const policyNumberInput = document.getElementById('insurance-policy-number');
-        const coverageAmountInput = document.getElementById('insurance-coverage-amount');
-        
-        if (insurerInput) insurerInput.value = item.insurer || '';
-        if (policyNumberInput) policyNumberInput.value = item.policy_number || '';
-        if (coverageAmountInput) coverageAmountInput.value = item.coverage_amount || '';
-        
-        // Show insurance specific fields
-        const insFields = document.getElementById('insurance-specific-fields');
-        if (insFields) insFields.style.display = 'block';
-    }
-    
-    populateInvestmentMemberDropdown();
-    document.getElementById('investment-modal').classList.remove('hidden');
-    
-    showMessage(`✅ Editing ${itemType} for ${familyData.members.find(m => m.id === memberId)?.name}`, 'info');
-}
-
-function editLiability(itemId, itemType, memberId) {
-    console.log('🔄 Editing liability:', { itemId, itemType, memberId });
-    
-    const item = familyData.liabilities[memberId][itemType].find(i => i.id === itemId);
-    if (!item) {
-        showMessage('❌ Liability not found', 'error');
-        return;
-    }
-    
-    editingItemId = itemId;
-    editingItemMemberId = memberId;
-    editingItemType = itemType;
-    
-    // Populate the liability modal with existing data
-    document.getElementById('liability-modal-title').textContent = `Edit ${itemType}`;
-    
-    // Populate form fields
-    const memberSelect = document.getElementById('liability-member');
-    const typeSelect = document.getElementById('liability-type');
-    const lenderInput = document.getElementById('liability-lender');
-    const amountInput = document.getElementById('liability-amount');
-    const emiInput = document.getElementById('liability-emi');
-    const rateInput = document.getElementById('liability-rate');
-    
-    if (memberSelect) memberSelect.value = memberId;
-    if (typeSelect) typeSelect.value = itemType;
-    if (lenderInput) lenderInput.value = item.lender || '';
-    if (amountInput) amountInput.value = item.outstanding_amount || '';
-    if (emiInput) emiInput.value = item.emi_amount || '';
-    if (rateInput) rateInput.value = item.interest_rate || '';
-    
-    populateLiabilityMemberDropdown();
-    document.getElementById('liability-modal').classList.remove('hidden');
-    
-    showMessage(`✅ Editing ${itemType} for ${familyData.members.find(m => m.id === memberId)?.name}`, 'info');
-}
-
-function editAccount(itemId) {
-    console.log('🔄 Editing account:', itemId);
-    
-    const account = familyData.accounts.find(a => a.id === itemId);
-    if (!account) {
-        showMessage('❌ Account not found', 'error');
-        return;
-    }
-    
-    editingItemId = itemId;
-    
-    // Populate the account modal with existing data
-    document.getElementById('account-modal-title').textContent = 'Edit Account';
-    
-    // Populate form fields
-    const typeSelect = document.getElementById('account-type');
-    const institutionInput = document.getElementById('account-institution');
-    const numberInput = document.getElementById('account-number');
-    const statusSelect = document.getElementById('account-status');
-    const commentsInput = document.getElementById('account-comments');
-    
-    if (typeSelect) typeSelect.value = account.account_type || '';
-    if (institutionInput) institutionInput.value = account.institution || '';
-    if (numberInput) numberInput.value = account.account_number || '';
-    if (statusSelect) statusSelect.value = account.status || '';
-    if (commentsInput) commentsInput.value = account.comments || '';
-    
-    // Set holder and nominee
-    const holderSelect = document.getElementById('account-holder');
-    const nomineeSelect = document.getElementById('account-nominee');
-    
-    if (holderSelect) {
-        const holder = familyData.members.find(m => m.name === account.holder_name);
-        if (holder) holderSelect.value = holder.id;
-    }
-    
-    if (nomineeSelect) {
-        const nominee = familyData.members.find(m => m.name === account.nominee);
-        if (nominee) nomineeSelect.value = nominee.id;
-    }
-    
-    populateAccountDropdowns();
-    document.getElementById('account-modal').classList.remove('hidden');
-    
-    showMessage(`✅ Editing account: ${account.account_type} - ${account.institution}`, 'info');
-}
-
-// ===== DOWNLOAD UTILITIES =====
+// ===== EXPORT FUNCTIONS (WORKING) =====
 function downloadCSV(data, filename) {
     console.log('📥 Attempting to download CSV:', filename);
-    console.log('📊 Data to export:', data);
     
     if (!data || data.length === 0) {
         showMessage('❌ No data to export', 'warning');
-        console.log('❌ Empty data array');
         return;
     }
     
     try {
         const headers = Object.keys(data[0]);
-        console.log('📋 CSV Headers:', headers);
         
         // Create CSV content
         const csvContent = [
             headers.join(','),
             ...data.map(row => headers.map(header => {
                 let value = row[header];
-                // Handle undefined/null values
                 if (value === undefined || value === null) {
                     value = '';
                 }
@@ -1188,27 +953,21 @@ function downloadCSV(data, filename) {
             }).join(','))
         ].join('\n');
         
-        console.log('📄 CSV content preview:', csvContent.substring(0, 200) + '...');
-        
         // Create and download file
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         
-        // Create download link
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
         link.style.display = 'none';
         
-        // Add to page, click, and remove
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        // Clean up URL
         setTimeout(() => URL.revokeObjectURL(url), 100);
         
-        console.log('✅ CSV download initiated successfully');
         showMessage(`✅ ${filename} download started`, 'success');
         
     } catch (error) {
@@ -1219,37 +978,29 @@ function downloadCSV(data, filename) {
 
 function downloadJSON(data, filename) {
     console.log('📥 Attempting to download JSON:', filename);
-    console.log('📊 Data to export:', data);
     
     if (!data) {
         showMessage('❌ No data to export', 'warning');
-        console.log('❌ No data provided');
         return;
     }
     
     try {
         const jsonContent = JSON.stringify(data, null, 2);
-        console.log('📄 JSON content preview:', jsonContent.substring(0, 200) + '...');
         
-        // Create and download file
         const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         
-        // Create download link
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
         link.style.display = 'none';
         
-        // Add to page, click, and remove
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        // Clean up URL
         setTimeout(() => URL.revokeObjectURL(url), 100);
         
-        console.log('✅ JSON download initiated successfully');
         showMessage(`✅ ${filename} download started`, 'success');
         
     } catch (error) {
@@ -1258,20 +1009,13 @@ function downloadJSON(data, filename) {
     }
 }
 
-// ===== EXPORT FUNCTIONS =====
 function exportInvestments(format = 'csv') {
     console.log('🔄 Starting investments export...');
-    
-    if (!familyData || !familyData.members || familyData.members.length === 0) {
-        showMessage('❌ No family members found', 'warning');
-        return;
-    }
     
     const investmentData = [];
     
     familyData.members.forEach(member => {
         const investments = familyData.investments[member.id] || {};
-        console.log(`Processing investments for ${member.name}:`, investments);
         
         Object.entries(investments).forEach(([type, items]) => {
             if (Array.isArray(items) && items.length > 0) {
@@ -1280,10 +1024,10 @@ function exportInvestments(format = 'csv') {
                         'Member Name': member.name,
                         'Relationship': member.relationship,
                         'Investment Type': type,
-                        'Investment Name': item.symbol_or_name || item.invested_in || item.insurer || 'N/A',
-                        'Invested Amount': item.invested_amount || item.insurance_premium || 0,
+                        'Investment Name': item.symbol_or_name || 'N/A',
+                        'Invested Amount': item.invested_amount || 0,
                         'Current Value': item.current_value || item.invested_amount || 0,
-                        'P&L': (item.current_value || item.invested_amount || 0) - (item.invested_amount || item.insurance_premium || 0),
+                        'P&L': (item.current_value || item.invested_amount || 0) - (item.invested_amount || 0),
                         'Platform': item.broker_platform || 'N/A',
                         'Export Date': new Date().toISOString().split('T')[0],
                         'Export Time': new Date().toLocaleTimeString('en-IN')
@@ -1292,8 +1036,6 @@ function exportInvestments(format = 'csv') {
             }
         });
     });
-    
-    console.log('📊 Investment data prepared:', investmentData);
     
     if (investmentData.length === 0) {
         showMessage('❌ No investment data found to export', 'warning');
@@ -1328,6 +1070,7 @@ function exportLiabilities(format = 'csv') {
                         'Outstanding Amount': item.outstanding_amount || 0,
                         'EMI Amount': item.emi_amount || 0,
                         'Interest Rate': item.interest_rate || 'N/A',
+                        'Comments': item.comments || '',
                         'Export Date': new Date().toISOString().split('T')[0],
                         'Export Time': new Date().toLocaleTimeString('en-IN')
                     });
@@ -1335,8 +1078,6 @@ function exportLiabilities(format = 'csv') {
             }
         });
     });
-    
-    console.log('📊 Liability data prepared:', liabilityData);
     
     if (liabilityData.length === 0) {
         showMessage('❌ No liability data found to export', 'warning');
@@ -1355,9 +1096,8 @@ function exportLiabilities(format = 'csv') {
 function exportAccounts(format = 'csv') {
     console.log('🔄 Starting accounts export...');
     
-    if (!familyData || !familyData.accounts || familyData.accounts.length === 0) {
+    if (!familyData.accounts || familyData.accounts.length === 0) {
         showMessage('❌ No accounts found to export', 'warning');
-        console.log('❌ familyData.accounts:', familyData.accounts);
         return;
     }
     
@@ -1367,13 +1107,12 @@ function exportAccounts(format = 'csv') {
         'Account Number': account.account_number || 'N/A',
         'Holder Name': account.holder_name || 'N/A',
         'Nominee': account.nominee || 'Not specified',
+        'Username': account.username || 'N/A',
         'Status': account.status || 'N/A',
         'Comments': account.comments || 'No comments',
         'Export Date': new Date().toISOString().split('T')[0],
         'Export Time': new Date().toLocaleTimeString('en-IN')
     }));
-    
-    console.log('📊 Account data prepared:', accountData);
     
     const filename = `FamWealth_Accounts_${new Date().toISOString().split('T')[0]}.${format}`;
     
@@ -1387,15 +1126,12 @@ function exportAccounts(format = 'csv') {
 function exportFamilyData(format = 'csv') {
     console.log('🔄 Starting family data export...');
     
-    if (!familyData || !familyData.members || familyData.members.length === 0) {
+    if (!familyData.members || familyData.members.length === 0) {
         showMessage('❌ No family members found to export', 'warning');
-        console.log('❌ familyData.members:', familyData.members);
         return;
     }
     
     const familyMemberData = familyData.members.map(member => {
-        console.log('Processing member:', member.name);
-        
         // Calculate member financials
         const investments = familyData.investments[member.id] || {};
         const liabilities = familyData.liabilities[member.id] || {};
@@ -1406,7 +1142,7 @@ function exportFamilyData(format = 'csv') {
         // Calculate assets
         ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
             (investments[type] || []).forEach(item => {
-                totalAssets += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
+                totalAssets += parseFloat(item.current_value || item.invested_amount || 0);
             });
         });
         
@@ -1429,8 +1165,6 @@ function exportFamilyData(format = 'csv') {
             'Export Time': new Date().toLocaleTimeString('en-IN')
         };
     });
-    
-    console.log('📊 Family data prepared:', familyMemberData);
     
     const filename = `FamWealth_Family_${new Date().toISOString().split('T')[0]}.${format}`;
     
@@ -1469,23 +1203,7 @@ function exportCompleteBackup() {
 }
 
 // ===== IMPORT FUNCTIONS =====
-function importBackup() {
-    // Create a file input dynamically
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.json';
-    fileInput.style.display = 'none';
-    
-    fileInput.onchange = function(event) {
-        handleImportFile(event);
-    };
-    
-    document.body.appendChild(fileInput);
-    fileInput.click();
-    document.body.removeChild(fileInput);
-}
-
-function handleImportFile(event) {
+function importBackup(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -1505,8 +1223,7 @@ function handleImportFile(event) {
                     };
                     
                     saveDataToStorage();
-                    renderEnhancedDashboard();
-                    renderAccountsTable();
+                    renderDashboard();
                     
                     showMessage(`✅ Backup imported successfully! Restored ${familyData.members.length} members.`, 'success');
                 }
@@ -1520,152 +1237,86 @@ function handleImportFile(event) {
     };
     
     reader.readAsText(file);
-}
-
-// ===== DEBUG FUNCTIONS =====
-function debugDataSources() {
-    const debugHTML = `
-        <div class="debug-section">
-            <h4>📊 Dashboard Status</h4>
-            <div class="debug-info">
-                <p><strong>Supabase Status:</strong> ${supabase ? '✅ Connected' : '❌ Not Available'}</p>
-                <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'None'}</p>
-                <p><strong>Members:</strong> ${familyData.members.length}</p>
-                <p><strong>Accounts:</strong> ${familyData.accounts.length}</p>
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>👥 Family Members</h4>
-            <div class="debug-info">
-                ${familyData.members.map(member => 
-                    `<p>• <strong>${member.name}</strong> (${member.relationship}) - ID: ${member.id}</p>`
-                ).join('')}
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h4>🔍 Sorting Status</h4>
-            <div class="debug-info">
-                <p><strong>Current Sort Column:</strong> ${currentSortColumn || 'None'}</p>
-                <p><strong>Sort Direction:</strong> ${currentSortDirection}</p>
-                <p><strong>Sort Table:</strong> ${currentSortTable || 'None'}</p>
-            </div>
-        </div>
-        
-        <div class="debug-actions">
-            <button class="btn btn--outline btn--sm" onclick="refreshDebugData()">🔄 Refresh</button>
-            <button class="btn btn--outline btn--sm" onclick="syncDataSources()">🔄 Sync Data</button>
-            <button class="btn btn--primary btn--sm" onclick="showDataSummary()">📊 Show Summary</button>
-        </div>
-    `;
     
-    document.getElementById('debug-content').innerHTML = debugHTML;
-    document.getElementById('debug-modal').classList.remove('hidden');
+    // Reset file input
+    event.target.value = '';
 }
 
-function refreshDebugData() {
-    debugDataSources();
-    showMessage('🔄 Debug data refreshed', 'info');
-}
-
-function syncDataSources() {
-    showMessage('🔄 Syncing data sources...', 'info');
-    saveDataToStorage();
-    renderEnhancedDashboard();
-    renderAccountsTable();
-    showMessage('✅ Data sync completed', 'success');
-}
-
-function showDataSummary() {
-    const totalInvestments = Object.values(familyData.investments).reduce((sum, memberInv) => 
-        sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
+// ===== TABLE SORTING =====
+function sortTable(tableId, columnIndex) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
     
-    const totalLiabilities = Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
-        sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
     
-    const summaryHTML = `
-        <h4>📊 Complete Data Summary</h4>
-        <div class="summary-stats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0;">
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.members.length}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Family Members</div>
-            </div>
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalInvestments}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Investments</div>
-            </div>
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${totalLiabilities}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Liabilities</div>
-            </div>
-            <div class="summary-stat" style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <div class="stat-value" style="font-size: 1.5rem; font-weight: bold;">${familyData.accounts.length}</div>
-                <div class="stat-label" style="font-size: 0.9rem; color: #666;">Total Accounts</div>
-            </div>
-        </div>
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    if (rows.length === 0) return;
+    
+    // Determine sort direction
+    let sortDirection = 'asc';
+    if (currentSort.table === tableId && currentSort.column === columnIndex) {
+        sortDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    }
+    
+    // Update current sort state
+    currentSort = { table: tableId, column: columnIndex, direction: sortDirection };
+    
+    // Sort rows
+    rows.sort((a, b) => {
+        const aText = a.cells[columnIndex]?.textContent.trim() || '';
+        const bText = b.cells[columnIndex]?.textContent.trim() || '';
         
-        <h5>👥 Member Breakdown</h5>
-        <div class="member-breakdown" style="margin-top: 1rem;">
-            ${familyData.members.map(member => {
-                const investments = familyData.investments[member.id] || {};
-                const liabilities = familyData.liabilities[member.id] || {};
-                const memberInvestments = Object.values(investments).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-                const memberLiabilities = Object.values(liabilities).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
-                return `
-                    <div class="breakdown-item" style="padding: 0.5rem; margin: 0.25rem 0; background: #fff; border: 1px solid #ddd; border-radius: 4px;">
-                        <strong>${member.name}:</strong> ${memberInvestments} investments, ${memberLiabilities} liabilities
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-    
-    document.getElementById('debug-content').innerHTML = summaryHTML;
-}
-
-// ===== DASHBOARD RENDERING =====
-function renderEnhancedDashboard() {
-    const totals = calculateEnhancedTotals();
-    renderEnhancedStats(totals);
-    renderMemberCards();
-    renderFamilyManagement();
-    console.log('✅ Dashboard rendered successfully');
-}
-
-function calculateEnhancedTotals() {
-    let totalInvested = 0;
-    let totalCurrentValue = 0;
-    let totalLiabilities = 0;
-
-    familyData.members.forEach(member => {
-        const investments = familyData.investments[member.id] || {};
-        const liabilities = familyData.liabilities[member.id] || {};
-
-        ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
-            (investments[type] || []).forEach(item => {
-                totalInvested += parseFloat(item.invested_amount || item.current_balance || 0);
-                totalCurrentValue += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
-            });
-        });
-
-        ['homeLoan', 'personalLoan', 'creditCard', 'other'].forEach(type => {
-            (liabilities[type] || []).forEach(item => {
-                totalLiabilities += parseFloat(item.outstanding_amount || 0);
-            });
-        });
+        // Try to parse as numbers
+        const aNum = parseFloat(aText.replace(/[^\d.-]/g, ''));
+        const bNum = parseFloat(bText.replace(/[^\d.-]/g, ''));
+        
+        let result = 0;
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+            result = aNum - bNum;
+        } else {
+            result = aText.localeCompare(bText);
+        }
+        
+        return sortDirection === 'asc' ? result : -result;
     });
-
-    return {
-        totalInvested,
-        totalCurrentValue,
-        totalPnL: totalCurrentValue - totalInvested,
-        totalLiabilities,
-        netWorth: totalCurrentValue - totalLiabilities
-    };
+    
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Update sort indicators
+    updateSortIndicators(tableId, columnIndex, sortDirection);
 }
 
-function renderEnhancedStats(totals) {
+function updateSortIndicators(tableId, columnIndex, direction) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    // Clear all indicators
+    table.querySelectorAll('.sort-indicator').forEach(indicator => {
+        indicator.textContent = '';
+    });
+    
+    // Set current indicator
+    const currentHeader = table.querySelector(`th:nth-child(${columnIndex + 1}) .sort-indicator`);
+    if (currentHeader) {
+        currentHeader.textContent = direction === 'asc' ? ' ↑' : ' ↓';
+    }
+}
+
+// ===== RENDERING FUNCTIONS =====
+function renderDashboard() {
+    renderStatsGrid();
+    renderFamilyMembersGrid();
+    renderInvestmentTabContent('equity');
+    renderLiabilityTabContent('homeLoan');
+    renderAccountsTable();
+    renderFamilyTable();
+}
+
+function renderStatsGrid() {
+    const totals = calculateTotals();
+    
     const statsHTML = `
         <div class="stat-card">
             <div class="stat-label">FAMILY NET WORTH</div>
@@ -1689,10 +1340,45 @@ function renderEnhancedStats(totals) {
         </div>
     `;
     
-    document.getElementById('stats-grid').innerHTML = statsHTML;
+    const statsGrid = document.getElementById('stats-grid');
+    if (statsGrid) {
+        statsGrid.innerHTML = statsHTML;
+    }
 }
 
-function renderMemberCards() {
+function calculateTotals() {
+    let totalInvested = 0;
+    let totalCurrentValue = 0;
+    let totalLiabilities = 0;
+
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+
+        ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
+            (investments[type] || []).forEach(item => {
+                totalInvested += parseFloat(item.invested_amount || 0);
+                totalCurrentValue += parseFloat(item.current_value || item.invested_amount || 0);
+            });
+        });
+
+        ['homeLoan', 'personalLoan', 'creditCard', 'other'].forEach(type => {
+            (liabilities[type] || []).forEach(item => {
+                totalLiabilities += parseFloat(item.outstanding_amount || 0);
+            });
+        });
+    });
+
+    return {
+        totalInvested,
+        totalCurrentValue,
+        totalPnL: totalCurrentValue - totalInvested,
+        totalLiabilities,
+        netWorth: totalCurrentValue - totalLiabilities
+    };
+}
+
+function renderFamilyMembersGrid() {
     const membersHTML = familyData.members.map(member => {
         const investments = familyData.investments[member.id] || {};
         const liabilities = familyData.liabilities[member.id] || {};
@@ -1702,7 +1388,7 @@ function renderMemberCards() {
         
         ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
             (investments[type] || []).forEach(item => {
-                memberCurrentValue += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
+                memberCurrentValue += parseFloat(item.current_value || item.invested_amount || 0);
             });
         });
         
@@ -1720,30 +1406,32 @@ function renderMemberCards() {
         return `
             <div class="member-card">
                 <div class="member-header">
-                    <div class="member-avatar">
-                        <img src="${member.photo_url || PRESET_PHOTOS[0]}" 
-                             alt="${member.name}" 
-                             style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
-                    </div>
                     <div class="member-info">
-                        <h4>${member.name}</h4>
-                        <p class="member-relationship">${member.relationship}</p>
+                        <img src="${member.photo_url || PRESET_PHOTOS[0]}" alt="${member.name}" class="member-photo">
+                        <div>
+                            <h4>${member.name}</h4>
+                            <p class="member-relationship">${member.relationship}</p>
+                        </div>
                     </div>
                     <div class="member-actions">
-                        <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
-                        <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
-                        <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                        <button class="btn btn-sm" onclick="openPhotoModal('${member.id}')" title="Change Photo">📷</button>
+                        <button class="btn btn-sm" onclick="editMember('${member.id}')" title="Edit Member">✏️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')" title="Delete Member">🗑️</button>
                     </div>
                 </div>
                 
                 <div class="member-stats">
-                    <div>
-                        <div class="member-stat-value">₹${memberCurrentValue.toLocaleString()}</div>
+                    <div class="stat-item">
+                        <div class="stat-value">₹${memberCurrentValue.toLocaleString()}</div>
                         <div class="stat-label">Total Assets</div>
                     </div>
-                    <div>
-                        <div class="member-stat-value" style="color: var(--color-error);">₹${memberLiabilities.toLocaleString()}</div>
+                    <div class="stat-item">
+                        <div class="stat-value negative">₹${memberLiabilities.toLocaleString()}</div>
                         <div class="stat-label">Liabilities</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value ${memberCurrentValue - memberLiabilities >= 0 ? 'positive' : 'negative'}">₹${(memberCurrentValue - memberLiabilities).toLocaleString()}</div>
+                        <div class="stat-label">Net Worth</div>
                     </div>
                 </div>
                 
@@ -1759,387 +1447,279 @@ function renderMemberCards() {
         `;
     }).join('');
     
-    const membersSection = `
-        <div class="section-title">
-            <h3>👨‍👩‍👧‍👦 Family Members Overview</h3>
-        </div>
-        <div class="members-grid">
-            ${membersHTML}
-        </div>
-    `;
-    
-    document.getElementById('members-section').innerHTML = membersSection;
-}
-
-function renderFamilyManagement() {
     const familyMembersGrid = document.getElementById('family-members-grid');
-    if (!familyMembersGrid) return;
-
-    const familyHTML = `
-        <div class="family-management-header">
-            <div class="family-stats">
-                <span class="stat-item">Total Members: <strong>${familyData.members.length}</strong></span>
-                <span class="stat-item">Database: <strong>${supabase && currentUser && currentUser.id ? '✅ Connected' : '📦 Local'}</strong></span>
-            </div>
-        </div>
-
-        <div class="family-list-view">
-            <div class="family-table-container">
-                <table class="family-table">
-                    <thead>
-                        <tr>
-                            ${createSortableHeader('Photo', 'photo_url', 'family')}
-                            ${createSortableHeader('Name', 'name', 'family')}
-                            ${createSortableHeader('Relationship', 'relationship', 'family')}
-                            ${createSortableHeader('Total Assets', 'totalAssets', 'family')}
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${renderFamilyMemberRows()}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-
-    familyMembersGrid.innerHTML = familyHTML;
+    if (familyMembersGrid) {
+        familyMembersGrid.innerHTML = membersHTML;
+    }
+    
+    const familyMembersList = document.getElementById('family-members-list');
+    if (familyMembersList) {
+        familyMembersList.innerHTML = membersHTML;
+    }
 }
 
-function renderFamilyMemberRows() {
+function renderFamilyTable() {
+    const tbody = document.querySelector('#family-table tbody');
+    if (!tbody) return;
+    
     if (familyData.members.length === 0) {
-        return `
+        tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="empty-state">
-                    <div class="empty-family-state">
-                        <h4>👥 No Family Members Added Yet</h4>
-                        <p>Start building your family financial profile by adding your first member.</p>
-                        <button class="btn btn--primary" onclick="openAddMemberModal()">+ Add First Member</button>
-                    </div>
+                <td colspan="7" style="text-align: center; padding: 2rem;">
+                    <h4>👥 No Family Members Added Yet</h4>
+                    <p>Start building your family financial profile by adding your first member.</p>
+                    <button class="btn btn-primary" onclick="openAddMemberModal()">+ Add First Member</button>
                 </td>
             </tr>
         `;
+        return;
     }
 
-    // Prepare data with calculated totals for sorting
-    const memberData = familyData.members.map(member => {
+    const rowsHTML = familyData.members.map(member => {
         const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+        
         let totalAssets = 0;
+        let totalLiabilities = 0;
         
         ['equity', 'mutualFunds', 'fixedDeposits', 'bankBalances'].forEach(type => {
             (investments[type] || []).forEach(item => {
-                totalAssets += parseFloat(item.current_value || item.invested_amount || item.current_balance || 0);
+                totalAssets += parseFloat(item.current_value || item.invested_amount || 0);
+            });
+        });
+        
+        ['homeLoan', 'personalLoan', 'creditCard', 'other'].forEach(type => {
+            (liabilities[type] || []).forEach(item => {
+                totalLiabilities += parseFloat(item.outstanding_amount || 0);
             });
         });
 
-        return { ...member, totalAssets };
-    });
-
-    // Apply sorting
-    const sortedData = currentSortTable === 'family' && currentSortColumn 
-        ? sortData(memberData, currentSortColumn, currentSortDirection)
-        : memberData;
-
-    return sortedData.map(member => {
         return `
             <tr>
-                <td>
+                <td style="text-align: center;">
                     <img src="${member.photo_url || PRESET_PHOTOS[0]}" 
                          alt="${member.name}" 
                          style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                 </td>
                 <td><strong>${member.name}</strong></td>
                 <td>${member.relationship}</td>
-                <td>₹${member.totalAssets.toLocaleString()}</td>
+                <td>₹${totalAssets.toLocaleString()}</td>
+                <td>₹${totalLiabilities.toLocaleString()}</td>
+                <td class="${totalAssets - totalLiabilities >= 0 ? 'positive' : 'negative'}">₹${(totalAssets - totalLiabilities).toLocaleString()}</td>
                 <td>
-                    <button class="btn btn--sm btn--secondary photo-edit-btn" data-member-id="${member.id}" title="Change Photo">📷</button>
-                    <button class="btn btn--sm btn--secondary edit-member-btn" data-member-id="${member.id}" title="Edit Member">✏️</button>
-                    <button class="btn btn--sm delete-member-btn" style="background: var(--color-error); color: white;" data-member-id="${member.id}" title="Delete Member">🗑️</button>
+                    <button class="btn btn-sm" onclick="openPhotoModal('${member.id}')" title="Change Photo">📷</button>
+                    <button class="btn btn-sm" onclick="editMember('${member.id}')" title="Edit Member">✏️</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteMember('${member.id}')" title="Delete Member">🗑️</button>
                 </td>
             </tr>
         `;
     }).join('');
+    
+    tbody.innerHTML = rowsHTML;
 }
 
-function renderAccountsTable() {
-    const tableBody = document.querySelector('#accounts-table tbody');
-    const tableHead = document.querySelector('#accounts-table thead tr');
+function renderInvestmentTabContent(tabName) {
+    let contentHTML = '';
     
-    if (!tableBody) return;
+    familyData.members.forEach(member => {
+        const investments = familyData.investments[member.id] || {};
+        const items = investments[tabName] || [];
+        
+        if (items.length > 0) {
+            contentHTML += `
+                <div class="data-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortInvestmentTable(0)">Member <span class="sort-indicator"></span></th>
+                                <th onclick="sortInvestmentTable(1)">Investment Name <span class="sort-indicator"></span></th>
+                                <th onclick="sortInvestmentTable(2)">Invested Amount <span class="sort-indicator"></span></th>
+                                <th onclick="sortInvestmentTable(3)">Current Value <span class="sort-indicator"></span></th>
+                                <th onclick="sortInvestmentTable(4)">P&L <span class="sort-indicator"></span></th>
+                                <th onclick="sortInvestmentTable(5)">Platform <span class="sort-indicator"></span></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${member.name}</td>
+                                    <td>${item.symbol_or_name || item.invested_in || 'N/A'}</td>
+                                    <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+                                    <td>₹${(item.current_value || item.invested_amount || 0).toLocaleString()}</td>
+                                    <td class="pnl-positive">₹${((item.current_value || item.invested_amount || 0) - (item.invested_amount || 0)).toLocaleString()}</td>
+                                    <td>${item.broker_platform || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn btn-sm" onclick="editInvestment('${item.id}', '${tabName}', '${member.id}')" title="Edit">✏️</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteInvestment('${item.id}', '${tabName}', '${member.id}')" title="Delete">🗑️</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    });
     
-    // Render sortable headers
-    if (tableHead) {
-        tableHead.innerHTML = `
-            ${createSortableHeader('Account Type', 'account_type', 'accounts')}
-            ${createSortableHeader('Institution', 'institution', 'accounts')}
-            ${createSortableHeader('Account Number', 'account_number', 'accounts')}
-            ${createSortableHeader('Holder Name', 'holder_name', 'accounts')}
-            ${createSortableHeader('Nominee', 'nominee', 'accounts')}
-            ${createSortableHeader('Status', 'status', 'accounts')}
-            <th>Comments</th>
-            <th>Actions</th>
+    if (!contentHTML) {
+        contentHTML = `
+            <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
+                <h4>No ${tabName} investments found</h4>
+                <p>Add your first ${tabName} investment to get started.</p>
+                <button class="btn btn-primary" onclick="openAddInvestmentModal()">+ Add ${tabName}</button>
+            </div>
         `;
     }
     
-    // Apply sorting
-    const sortedAccounts = currentSortTable === 'accounts' && currentSortColumn 
-        ? sortData(familyData.accounts, currentSortColumn, currentSortDirection)
-        : familyData.accounts;
+    const investmentTabsContent = document.getElementById('investment-tabs-content');
+    if (investmentTabsContent) {
+        investmentTabsContent.innerHTML = contentHTML;
+    }
+}
+
+function renderLiabilityTabContent(tabName) {
+    let contentHTML = '';
     
-    tableBody.innerHTML = sortedAccounts.map(account => `
+    familyData.members.forEach(member => {
+        const liabilities = familyData.liabilities[member.id] || {};
+        const items = liabilities[tabName] || [];
+        
+        if (items.length > 0) {
+            contentHTML += `
+                <div class="data-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortLiabilityTable(0)">Member <span class="sort-indicator"></span></th>
+                                <th onclick="sortLiabilityTable(1)">Lender <span class="sort-indicator"></span></th>
+                                <th onclick="sortLiabilityTable(2)">Outstanding Amount <span class="sort-indicator"></span></th>
+                                <th onclick="sortLiabilityTable(3)">EMI <span class="sort-indicator"></span></th>
+                                <th onclick="sortLiabilityTable(4)">Interest Rate <span class="sort-indicator"></span></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td>${member.name}</td>
+                                    <td>${item.lender || 'N/A'}</td>
+                                    <td>₹${(item.outstanding_amount || 0).toLocaleString()}</td>
+                                    <td>₹${(item.emi_amount || 0).toLocaleString()}</td>
+                                    <td>${item.interest_rate || 0}%</td>
+                                    <td>
+                                        <button class="btn btn-sm" onclick="editLiability('${item.id}', '${tabName}', '${member.id}')" title="Edit">✏️</button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteLiability('${item.id}', '${tabName}', '${member.id}')" title="Delete">🗑️</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    });
+    
+    if (!contentHTML) {
+        contentHTML = `
+            <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
+                <h4>No ${tabName} found</h4>
+                <p>Add your first ${tabName} to get started.</p>
+                <button class="btn btn-primary" onclick="openAddLiabilityModal()">+ Add ${tabName}</button>
+            </div>
+        `;
+    }
+    
+    const liabilityTabsContent = document.getElementById('liability-tabs-content');
+    if (liabilityTabsContent) {
+        liabilityTabsContent.innerHTML = contentHTML;
+    }
+}
+
+function renderAccountsTable() {
+    const tbody = document.querySelector('#accounts-table tbody');
+    if (!tbody) return;
+    
+    if (familyData.accounts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 2rem;">
+                    <h4>🏦 No Accounts Added Yet</h4>
+                    <p>Add your first account to track financial information and nominees.</p>
+                    <button class="btn btn-primary" onclick="openAddAccountModal()">+ Add First Account</button>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = familyData.accounts.map(account => `
         <tr>
             <td>${account.account_type}</td>
             <td>${account.institution}</td>
             <td>${account.account_number}</td>
             <td>${account.holder_name}</td>
             <td>${account.nominee || 'Not specified'}</td>
-            <td><span class="status status--success">${account.status}</span></td>
-            <td>${account.comments || 'No comments'}</td>
+            <td><span class="status status-success">${account.status || 'Active'}</span></td>
             <td>
-                <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${account.id}" data-item-type="account" title="Edit Account">✏️</button>
-                <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" 
-                        data-item-id="${account.id}" data-item-type="account" title="Delete Account">🗑️</button>
+                <button class="btn btn-sm" onclick="editAccount('${account.id}')" title="Edit Account">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteAccount('${account.id}')" title="Delete Account">🗑️</button>
             </td>
         </tr>
     `).join('');
-}
-
-function renderInvestmentTabContent(tabName) {
-    let allInvestments = [];
-    
-    // Collect all investments of this type from all members
-    familyData.members.forEach(member => {
-        const investments = familyData.investments[member.id] || {};
-        const items = investments[tabName] || [];
-        
-        items.forEach(item => {
-            allInvestments.push({
-                ...item,
-                memberName: member.name,
-                memberId: member.id
-            });
-        });
-    });
-    
-    if (allInvestments.length > 0) {
-        // Apply sorting
-        const sortedInvestments = currentSortTable === 'investment' && currentSortColumn 
-            ? sortData(allInvestments, currentSortColumn, currentSortDirection)
-            : allInvestments;
-        
-        const contentHTML = `
-            <div class="investment-table" style="margin-bottom: 2rem;">
-                <table>
-                    <thead>
-                        <tr>
-                            ${createSortableHeader('Member', 'memberName', 'investment')}
-                            ${createSortableHeader('Investment Name', 'symbol_or_name', 'investment')}
-                            ${createSortableHeader('Invested Amount', 'invested_amount', 'investment')}
-                            ${createSortableHeader('Current Value', 'current_value', 'investment')}
-                            ${createSortableHeader('P&L', 'pnl', 'investment')}
-                            ${createSortableHeader('Platform', 'broker_platform', 'investment')}
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedInvestments.map(item => {
-                            const pnl = (item.current_value || item.invested_amount || 0) - (item.invested_amount || 0);
-                            return `
-                                <tr>
-                                    <td>${item.memberName}</td>
-                                    <td>${item.symbol_or_name || item.invested_in || 'N/A'}</td>
-                                    <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
-                                    <td>₹${(item.current_value || item.invested_amount || 0).toLocaleString()}</td>
-                                    <td class="pnl-${pnl >= 0 ? 'positive' : 'negative'}">₹${pnl.toLocaleString()}</td>
-                                    <td>${item.broker_platform || 'N/A'}</td>
-                                    <td>
-                                        <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Edit">✏️</button>
-                                        <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Delete">🗑️</button>
-                                    </td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-        
-        document.getElementById('investment-tabs-content').innerHTML = contentHTML;
-    } else {
-        const contentHTML = `
-            <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
-                <h4>No ${tabName} investments found</h4>
-                <p>Add your first ${tabName} investment to get started.</p>
-                <button class="btn btn--primary" onclick="openAddInvestmentModal()">+ Add ${tabName}</button>
-            </div>
-        `;
-        
-        document.getElementById('investment-tabs-content').innerHTML = contentHTML;
-    }
-}
-
-function renderLiabilityTabContent(tabName) {
-    let allLiabilities = [];
-    
-    // Collect all liabilities of this type from all members
-    familyData.members.forEach(member => {
-        const liabilities = familyData.liabilities[member.id] || {};
-        const items = liabilities[tabName] || [];
-        
-        items.forEach(item => {
-            allLiabilities.push({
-                ...item,
-                memberName: member.name,
-                memberId: member.id
-            });
-        });
-    });
-    
-    if (allLiabilities.length > 0) {
-        // Apply sorting
-        const sortedLiabilities = currentSortTable === 'liability' && currentSortColumn 
-            ? sortData(allLiabilities, currentSortColumn, currentSortDirection)
-            : allLiabilities;
-        
-        const contentHTML = `
-            <div class="investment-table" style="margin-bottom: 2rem;">
-                <table>
-                    <thead>
-                        <tr>
-                            ${createSortableHeader('Member', 'memberName', 'liability')}
-                            ${createSortableHeader('Lender', 'lender', 'liability')}
-                            ${createSortableHeader('Outstanding Amount', 'outstanding_amount', 'liability')}
-                            ${createSortableHeader('EMI', 'emi_amount', 'liability')}
-                            ${createSortableHeader('Interest Rate', 'interest_rate', 'liability')}
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedLiabilities.map(item => `
-                            <tr>
-                                <td>${item.memberName}</td>
-                                <td>${item.lender || 'N/A'}</td>
-                                <td>₹${(item.outstanding_amount || 0).toLocaleString()}</td>
-                                <td>₹${(item.emi_amount || 0).toLocaleString()}</td>
-                                <td>${item.interest_rate || 0}%</td>
-                                <td>
-                                    <button class="btn btn--sm btn--secondary edit-item-btn" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Edit">✏️</button>
-                                    <button class="btn btn--sm delete-item-btn" style="background: var(--color-error); color: white;" data-item-id="${item.id}" data-item-type="${tabName}" data-member-id="${item.memberId}" title="Delete">🗑️</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-        
-        document.getElementById('liability-tabs-content').innerHTML = contentHTML;
-    } else {
-        const contentHTML = `
-            <div style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
-                <h4>No ${tabName} found</h4>
-                <p>Add your first ${tabName} to get started.</p>
-                <button class="btn btn--primary" onclick="openAddLiabilityModal()">+ Add ${tabName}</button>
-            </div>
-        `;
-        
-        document.getElementById('liability-tabs-content').innerHTML = contentHTML;
-    }
 }
 
 // ===== TAB FUNCTIONS =====
 function showInvestmentTab(tabName) {
     document.querySelectorAll('#investments-section .tab-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
-    // Reset sorting when changing tabs
-    currentSortColumn = null;
-    currentSortDirection = 'asc';
-    currentSortTable = null;
-    
     renderInvestmentTabContent(tabName);
 }
 
 function showLiabilityTab(tabName) {
     document.querySelectorAll('#liabilities-section .tab-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
-    // Reset sorting when changing tabs
-    currentSortColumn = null;
-    currentSortDirection = 'asc';
-    currentSortTable = null;
-    
     renderLiabilityTabContent(tabName);
 }
 
-// ===== EVENT DELEGATION SETUP =====
-function setupEventDelegation() {
-    document.addEventListener('click', function(e) {
-        const target = e.target;
-        
-        // Edit member button
-        if (target.matches('.edit-member-btn') || target.closest('.edit-member-btn')) {
-            const btn = target.closest('.edit-member-btn') || target;
-            const memberId = btn.getAttribute('data-member-id');
-            editMember(memberId);
-        }
-        
-        // Delete member button
-        if (target.matches('.delete-member-btn') || target.closest('.delete-member-btn')) {
-            const btn = target.closest('.delete-member-btn') || target;
-            const memberId = btn.getAttribute('data-member-id');
-            showDeleteMemberConfirm(memberId);
-        }
-        
-        // Photo edit button
-        if (target.matches('.photo-edit-btn') || target.closest('.photo-edit-btn')) {
-            const btn = target.closest('.photo-edit-btn') || target;
-            const memberId = btn.getAttribute('data-member-id');
-            openPhotoModal(memberId);
-        }
-        
-        // Edit investment/liability/account buttons
-        if (target.matches('.edit-item-btn') || target.closest('.edit-item-btn')) {
-            const btn = target.closest('.edit-item-btn') || target;
-            const itemId = btn.getAttribute('data-item-id');
-            const itemType = btn.getAttribute('data-item-type');
-            const memberId = btn.getAttribute('data-member-id');
-            editItem(itemId, itemType, memberId);
-        }
-        
-        // Delete investment/liability/account buttons
-        if (target.matches('.delete-item-btn') || target.closest('.delete-item-btn')) {
-            const btn = target.closest('.delete-item-btn') || target;
-            const itemId = btn.getAttribute('data-item-id');
-            const itemType = btn.getAttribute('data-item-type');
-            const memberId = btn.getAttribute('data-member-id');
-            deleteItem(itemId, itemType, memberId);
-        }
+// ===== NAVIGATION FUNCTIONS =====
+function showSection(sectionId) {
+    document.querySelectorAll('.dashboard-section').forEach(section => {
+        section.classList.remove('active');
     });
-}
-
-function deleteItem(itemId, itemType, memberId) {
-    if (confirm(`Are you sure you want to delete this ${itemType}?`)) {
-        if (itemType === 'account') {
-            familyData.accounts = familyData.accounts.filter(a => a.id !== itemId);
-            renderAccountsTable();
-        } else if (memberId && familyData.investments[memberId] && familyData.investments[memberId][itemType]) {
-            familyData.investments[memberId][itemType] = familyData.investments[memberId][itemType].filter(i => i.id !== itemId);
-            renderInvestmentTabContent(itemType);
-        } else if (memberId && familyData.liabilities[memberId] && familyData.liabilities[memberId][itemType]) {
-            familyData.liabilities[memberId][itemType] = familyData.liabilities[memberId][itemType].filter(i => i.id !== itemId);
-            renderLiabilityTabContent(itemType);
-        }
-        
-        saveDataToStorage();
-        renderEnhancedDashboard();
-        showMessage(`✅ ${itemType} deleted successfully`, 'success');
+    
+    document.getElementById(sectionId)?.classList.add('active');
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (event && event.target) {
+        event.target.classList.add('active');
     }
 }
 
-// ===== MODAL CLOSE FUNCTIONS =====
+function toggleFamilyView() {
+    const listView = document.getElementById('family-list-view');
+    const cardView = document.getElementById('family-card-view');
+    const toggleBtn = document.getElementById('view-toggle-btn');
+    
+    if (listView && cardView && toggleBtn) {
+        if (listView.style.display === 'none') {
+            listView.style.display = 'block';
+            cardView.style.display = 'none';
+            toggleBtn.textContent = '📋 Card View';
+        } else {
+            listView.style.display = 'none';
+            cardView.style.display = 'block';
+            toggleBtn.textContent = '📋 List View';
+        }
+    }
+}
+
+// ===== MODAL FUNCTIONS =====
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+    document.getElementById(modalId)?.classList.add('hidden');
     
     // Reset editing states
     if (modalId === 'member-modal') {
@@ -2147,13 +1727,11 @@ function closeModal(modalId) {
     } else if (modalId === 'investment-modal') {
         editingItemId = null;
         editingItemMemberId = null;
-        editingItemType = null;
     } else if (modalId === 'account-modal') {
         editingItemId = null;
     } else if (modalId === 'liability-modal') {
         editingItemId = null;
         editingItemMemberId = null;
-        editingItemType = null;
     } else if (modalId === 'photo-modal') {
         editingMemberId = null;
         selectedPresetPhoto = null;
@@ -2167,30 +1745,13 @@ function showMessage(message, type = 'info') {
     if (messageDiv) {
         messageDiv.textContent = message;
         messageDiv.className = `message ${type}`;
-        messageDiv.style.display = 'block';
+        messageDiv.classList.remove('hidden');
         
         setTimeout(() => {
-            messageDiv.style.display = 'none';
+            messageDiv.classList.add('hidden');
         }, 4000);
     }
     console.log(`${type.toUpperCase()}: ${message}`);
-}
-
-function setLoginLoading(loading) {
-    const loginBtn = document.querySelector('[onclick="handleLogin()"]');
-    const loginText = document.getElementById('login-text');
-    const loginSpinner = document.getElementById('login-spinner');
-    
-    if (loginBtn) loginBtn.disabled = loading;
-    if (loginText && loginSpinner) {
-        if (loading) {
-            loginText.classList.add('hidden');
-            loginSpinner.classList.remove('hidden');
-        } else {
-            loginText.classList.remove('hidden');
-            loginSpinner.classList.add('hidden');
-        }
-    }
 }
 
 function showDashboard() {
@@ -2199,59 +1760,57 @@ function showDashboard() {
 }
 
 function updateUserInfo(user) {
-    const userDisplay = document.getElementById('user-display');
-    if (userDisplay && user && user.email) {
-        userDisplay.textContent = user.email;
+    const userEmail = document.querySelector('.user-email');
+    if (userEmail && user && user.email) {
+        userEmail.textContent = user.email;
     }
 }
 
-function updateLastUpdated() {
-    const now = new Date();
-    const timeString = now.toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+// ===== DEBUG FUNCTIONS =====
+function refreshDebugData() {
+    console.log('🔍 Debug Data Sources:');
+    console.log('Members:', familyData.members.length);
+    console.log('Accounts:', familyData.accounts.length);
+    console.log('Current User:', currentUser ? currentUser.email : 'None');
+    console.log('Storage Type:', localStorage.getItem('famwealth_auth_type'));
     
-    const lastUpdatedElement = document.getElementById('last-updated');
-    if (lastUpdatedElement) {
-        lastUpdatedElement.textContent = `Last updated: ${timeString}`;
-    }
+    showMessage('🔍 Debug info logged to console', 'info');
 }
 
-function showSection(sectionId) {
-    document.querySelectorAll('.dashboard-section').forEach(section => {
-        section.classList.remove('active');
-    });
+function showDataSummary() {
+    const totalInvestments = Object.values(familyData.investments).reduce((sum, memberInv) => 
+        sum + Object.values(memberInv).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
     
-    document.getElementById(sectionId).classList.add('active');
+    const totalLiabilities = Object.values(familyData.liabilities).reduce((sum, memberLiab) => 
+        sum + Object.values(memberLiab).reduce((memberSum, arr) => memberSum + (Array.isArray(arr) ? arr.length : 0), 0), 0);
     
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    const summary = `
+📊 Complete Data Summary:
+• Family Members: ${familyData.members.length}
+• Total Investments: ${totalInvestments}
+• Total Liabilities: ${totalLiabilities}
+• Total Accounts: ${familyData.accounts.length}
+• Storage Type: ${localStorage.getItem('famwealth_auth_type') || 'None'}
+• Last Updated: ${new Date().toLocaleString()}
+    `;
     
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
-    
-    // Reset sorting when switching sections
-    currentSortColumn = null;
-    currentSortDirection = 'asc';
-    currentSortTable = null;
+    console.log(summary);
+    showMessage('📊 Data summary logged to console', 'info');
+}
+
+function syncDataSources() {
+    showMessage('🔄 Syncing data sources...', 'info');
+    saveDataToStorage();
+    renderDashboard();
+    showMessage('✅ Data sync completed', 'success');
 }
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Complete FamWealth Dashboard with ALL FIXES & SORTING initializing...');
+    console.log('🚀 FamWealth Dashboard initializing...');
     
     // Initialize Supabase
     await initializeSupabase();
-    
-    // Setup event delegation for dynamic buttons
-    setupEventDelegation();
     
     // Check for existing session
     const authType = localStorage.getItem('famwealth_auth_type');
@@ -2270,7 +1829,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         loadDashboardData();
     }
     
-    console.log('✅ Complete Dashboard with ALL FIXES, SORTING & FEATURES Ready! 🎉');
+    console.log('✅ FamWealth Dashboard Ready!');
 });
 
-console.log('📊 FamWealth Dashboard loaded with COMPLETE FUNCTIONALITY!');
+console.log('📊 FamWealth Dashboard loaded - All fixes applied!');
