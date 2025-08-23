@@ -227,8 +227,8 @@ function loadSampleData() {
         },
         {
             id: '2',
-            name: 'Smruthi Pradeep',
-            relationship: 'Spouse',
+            name: 'Smruthi Kumar',
+            relationship: 'Daughter',
             is_primary: false,
             photo_url: PRESET_PHOTOS[1]
         }
@@ -295,7 +295,7 @@ function loadSampleData() {
             institution: 'HDFC Bank',
             account_number: 'XXXX1234',
             holder_name: 'Pradeep Kumar',
-            nominee: 'Smruthi Pradeep',
+            nominee: 'Smruthi Kumar',
             status: 'Active',
             comments: 'Primary savings account'
         }
