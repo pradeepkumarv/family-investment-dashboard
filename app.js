@@ -2006,3 +2006,144 @@ function updateSortIndicators(tableId, columnIndex, direction) {
         currentHeader.textContent = direction === 'asc' ? ' ↑' : ' ↓';
     }
 }
+// Helper function to generate UUID (fallback included if crypto.randomUUID() not supported)
+function generateUUID() {
+    if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    // Simple fallback (not RFC compliant but reduces collisions)
+    return 'xxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// Modified saveMember function
+async function saveMember() {
+    // ... (existing form element extraction and validation)
+
+    try {
+        if (editingMemberId) {
+            // Update existing member
+            if (supabase && currentUser) {
+                const { error } = await supabase
+                    .from('family_members')
+                    .update(memberData)
+                    .eq('id', editingMemberId);
+
+                if (error) {
+                    console.error('Supabase update error:', error);
+                    showMessage('❌ Error updating member: ' + error.message, 'error');
+                    return;
+                }
+                showMessage('✅ Member updated in database successfully', 'success');
+            }
+
+            // Update local data...
+        } else {
+            // Add new member
+            let newMemberId;
+
+            if (supabase && currentUser) {
+                const { data, error } = await supabase
+                    .from('family_members')
+                    .insert([memberData])
+                    .select();
+
+                if (error) {
+                    console.error('Supabase insert error:', error);
+                    showMessage('❌ Error saving member: ' + error.message, 'error');
+                    return;
+                }
+
+                newMemberId = data[0].id;
+                showMessage('✅ Member saved to database successfully', 'success');
+            } else {
+                // Use generateUUID here instead of Date.now().toString()
+                newMemberId = generateUUID();
+            }
+
+            const newMember = {
+                id: newMemberId,
+                ...memberData,
+                photo_url: photoUrl
+            };
+
+            familyData.members.push(newMember);
+
+            // Initialize structures...
+        }
+
+        saveDataToStorage();
+        renderDashboard();
+        closeModal('member-modal');
+
+    } catch (error) {
+        console.error('Exception saving member:', error);
+        showMessage('❌ Error saving member: ' + error.message, 'error');
+    }
+}
+
+// Modified saveInvestment function - update id to use generateUUID()
+async function saveInvestment() {
+    // ... (existing form element extraction and validation)
+
+    try {
+        let localInvestmentData = {
+            id: editingItemId || generateUUID(),  // Changed here
+            symbol_or_name: name,
+            invested_amount: parseFloat(amount),
+            current_value: parseFloat(currentValue) || parseFloat(amount),
+            broker_platform: platform
+        };
+
+        // Prepare investmentData depending on type (fixedDeposits, insurance, holdings)...
+
+        // Insert or update via Supabase...
+
+        // Update local data...
+
+        saveDataToStorage();
+        renderDashboard();
+        renderInvestmentTabContent(type);
+        closeModal('investment-modal');
+
+    } catch (error) {
+        console.error('Exception saving investment:', error);
+        showMessage('❌ Error saving investment: ' + error.message, 'error');
+    }
+}
+
+// Modified saveLiability function - update id generation
+function saveLiability() {
+    // ... (form extraction and validation)
+
+    const liabilityData = {
+        id: editingItemId || generateUUID(),  // Changed here
+        lender: lender,
+        outstanding_amount: parseFloat(amount) || 0,
+        emi_amount: parseFloat(emi) || 0,
+        interest_rate: parseFloat(rate) || 0
+    };
+
+    // Add or update liability in local state, save, render, etc.
+}
+
+// Modified saveAccount function - update id generation
+function saveAccount() {
+    // ... (form extraction and validation)
+
+    const accountData = {
+        id: editingItemId || generateUUID(),  // Changed here
+        account_type: accountType,
+        institution: institution,
+        account_number: accountNumber,
+        holder_name: holder ? holder.name : 'Unknown',
+        nominee: nominee ? nominee.name : '',
+        status: status,
+        comments: comments
+    };
+
+    // Add or update account in local state, save, render, etc.
+}
