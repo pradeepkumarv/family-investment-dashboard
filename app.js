@@ -1463,6 +1463,7 @@ function renderDashboard() {
     renderLiabilityTabContent('homeLoan');
     renderAccountsTable();
     updateLastUpdated();
+    initializeSorting();
 }
 
 function renderStatsGrid() {
@@ -1760,7 +1761,14 @@ function renderAccountsTable() {
             </tr>
         `;
         return;
-    }
+        tbody.innerHTML = accountsHTML;
+    
+    // ADD THESE LINES AT THE END:
+    // Enable sorting for accounts table
+    setTimeout(() => {
+        renderAccountsTableWithSort();
+        }, 100);
+   }
 
     const accountsHTML = familyData.accounts.map(account => `
         <tr>
@@ -2096,3 +2104,740 @@ function updateSortIndicators(tableId, columnIndex, direction) {
         currentHeader.textContent = direction === 'asc' ? ' ↑' : ' ↓';
     }
 }
+// ===== ENHANCED SORTING FUNCTIONALITY - ADD TO YOUR EXISTING app.js =====
+// Insert these functions after your existing sorting functions (around line 2400)
+
+// ===== ENHANCED SORTING SYSTEM =====
+
+// Global sorting state for different data types
+let sortingState = {
+    familyMembers: { field: 'name', direction: 'asc' },
+    investments: { field: 'member', direction: 'asc' },
+    liabilities: { field: 'member', direction: 'asc' },
+    accounts: { field: 'account_type', direction: 'asc' }
+};
+
+// Generic sorting function for arrays of objects
+function sortArrayByField(array, field, direction = 'asc') {
+    return [...array].sort((a, b) => {
+        let aValue = getNestedValue(a, field);
+        let bValue = getNestedValue(b, field);
+        
+        // Handle different data types
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            aValue = aValue.toLowerCase();
+            bValue = bValue.toLowerCase();
+        }
+        
+        // Handle numbers (including currency)
+        if (typeof aValue === 'string' && aValue.includes('₹')) {
+            aValue = parseFloat(aValue.replace(/[₹,]/g, '')) || 0;
+        }
+        if (typeof bValue === 'string' && bValue.includes('₹')) {
+            bValue = parseFloat(bValue.replace(/[₹,]/g, '')) || 0;
+        }
+        
+        // Handle dates
+        if (isValidDate(aValue)) aValue = new Date(aValue);
+        if (isValidDate(bValue)) bValue = new Date(bValue);
+        
+        let result = 0;
+        if (aValue < bValue) result = -1;
+        else if (aValue > bValue) result = 1;
+        
+        return direction === 'desc' ? -result : result;
+    });
+}
+
+// Helper function to get nested object values
+function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key) => current?.[key], obj) || '';
+}
+
+// Helper function to check if string is a valid date
+function isValidDate(dateString) {
+    if (!dateString || typeof dateString !== 'string') return false;
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date);
+}
+
+// ===== FAMILY MEMBERS SORTING =====
+function createFamilyMemberSortControls() {
+    return `
+        <div class="sort-controls">
+            <label for="family-sort" class="sort-label">Sort by:</label>
+            <select id="family-sort" onchange="sortFamilyMembers()" class="sort-select">
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+                <option value="relationship-asc">Relationship (A-Z)</option>
+                <option value="relationship-desc">Relationship (Z-A)</option>
+                <option value="assets-desc">Assets (High to Low)</option>
+                <option value="assets-asc">Assets (Low to High)</option>
+                <option value="liabilities-desc">Liabilities (High to Low)</option>
+                <option value="liabilities-asc">Liabilities (Low to High)</option>
+                <option value="net_worth-desc">Net Worth (High to Low)</option>
+                <option value="net_worth-asc">Net Worth (Low to High)</option>
+                <option value="investment_count-desc">Most Investments</option>
+                <option value="liability_count-desc">Most Liabilities</option>
+            </select>
+        </div>
+    `;
+}
+
+function sortFamilyMembers() {
+    const sortValue = document.getElementById('family-sort').value;
+    const [field, direction] = sortValue.split('-');
+    
+    // Prepare data with calculated values for sorting
+    const membersWithCalculations = familyData.members.map(member => {
+        const memberTotals = calculateMemberTotals(member.id);
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        let totalInvestments = 0;
+        let totalLiabilities = 0;
+        
+        Object.values(investments).forEach(categoryItems => {
+            if (Array.isArray(categoryItems)) {
+                totalInvestments += categoryItems.length;
+            }
+        });
+        
+        Object.values(liabilities).forEach(categoryItems => {
+            if (Array.isArray(categoryItems)) {
+                totalLiabilities += categoryItems.length;
+            }
+        });
+        
+        return {
+            ...member,
+            assets: memberTotals.assets,
+            liabilities: memberTotals.liabilities,
+            net_worth: memberTotals.netWorth,
+            investment_count: totalInvestments,
+            liability_count: totalLiabilities
+        };
+    });
+    
+    // Sort the members
+    const sortedMembers = sortArrayByField(membersWithCalculations, field, direction);
+    
+    // Update the original familyData with sorted order
+    familyData.members = sortedMembers.map(({ assets, liabilities, net_worth, investment_count, liability_count, ...member }) => member);
+    
+    // Re-render the family members grid
+    renderFamilyMembersGrid();
+    
+    // Save sorting preference
+    sortingState.familyMembers = { field, direction };
+}
+
+// ===== ENHANCED TABLE SORTING =====
+function makeTableSortable(tableId, dataArray, renderFunction) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th');
+    headers.forEach((header, index) => {
+        if (header.textContent.trim() === 'Actions') return; // Skip Actions column
+        
+        header.style.cursor = 'pointer';
+        header.style.userSelect = 'none';
+        header.title = 'Click to sort';
+        
+        // Add sort indicator if not exists
+        if (!header.querySelector('.sort-indicator')) {
+            const indicator = document.createElement('span');
+            indicator.className = 'sort-indicator';
+            indicator.style.marginLeft = '5px';
+            indicator.style.opacity = '0.5';
+            header.appendChild(indicator);
+        }
+        
+        // Remove existing click listeners
+        header.replaceWith(header.cloneNode(true));
+        const newHeader = table.querySelectorAll('th')[index];
+        
+        newHeader.addEventListener('click', () => {
+            sortTableByColumn(tableId, index, dataArray, renderFunction);
+        });
+    });
+}
+
+function sortTableByColumn(tableId, columnIndex, dataArray, renderFunction) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th');
+    const fieldMap = createFieldMapping(tableId);
+    const field = fieldMap[columnIndex];
+    
+    if (!field) return;
+    
+    // Determine sort direction
+    let direction = 'asc';
+    if (currentSort.table === tableId && currentSort.column === columnIndex) {
+        direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    }
+    
+    // Update current sort state
+    currentSort = { table: tableId, column: columnIndex, direction };
+    
+    // Sort the data
+    const sortedData = sortArrayByField(dataArray, field, direction);
+    
+    // Re-render with sorted data
+    renderFunction(sortedData);
+    
+    // Update sort indicators
+    updateSortIndicators(tableId, columnIndex, direction);
+}
+
+function createFieldMapping(tableId) {
+    // Define field mappings for different table types
+    const mappings = {
+        'investment-table': {
+            0: 'memberName',
+            1: 'symbol_or_name', 
+            2: 'invested_amount',
+            3: 'current_value',
+            4: 'pnl',
+            5: 'broker_platform'
+        },
+        'liability-table': {
+            0: 'memberName',
+            1: 'lender',
+            2: 'outstanding_amount',
+            3: 'emi_amount', 
+            4: 'interest_rate'
+        },
+        'accounts-table': {
+            0: 'account_type',
+            1: 'institution',
+            2: 'account_number',
+            3: 'holder_name',
+            4: 'nominee',
+            5: 'status'
+        }
+    };
+    
+    return mappings[tableId] || {};
+}
+
+// ===== INVESTMENT SORTING ENHANCEMENT =====
+function createInvestmentSortControls(tabName) {
+    return `
+        <div class="sort-controls">
+            <label for="investment-sort-${tabName}" class="sort-label">Sort by:</label>
+            <select id="investment-sort-${tabName}" onchange="sortInvestmentTab('${tabName}')" class="sort-select">
+                <option value="memberName-asc">Member (A-Z)</option>
+                <option value="memberName-desc">Member (Z-A)</option>
+                <option value="symbol_or_name-asc">Investment Name (A-Z)</option>
+                <option value="symbol_or_name-desc">Investment Name (Z-A)</option>
+                <option value="invested_amount-desc">Invested Amount (High to Low)</option>
+                <option value="invested_amount-asc">Invested Amount (Low to High)</option>
+                <option value="current_value-desc">Current Value (High to Low)</option>
+                <option value="current_value-asc">Current Value (Low to High)</option>
+                <option value="pnl-desc">P&L (High to Low)</option>
+                <option value="pnl-asc">P&L (Low to High)</option>
+                <option value="broker_platform-asc">Platform (A-Z)</option>
+            </select>
+        </div>
+    `;
+}
+
+function sortInvestmentTab(tabName) {
+    const sortValue = document.getElementById(`investment-sort-${tabName}`).value;
+    const [field, direction] = sortValue.split('-');
+    
+    // Collect and prepare investment data
+    let investments = [];
+    familyData.members.forEach(member => {
+        const memberInvestments = familyData.investments[member.id]?.[tabName] || [];
+        memberInvestments.forEach(investment => {
+            const pnl = (investment.current_value || investment.invested_amount || 0) - (investment.invested_amount || 0);
+            investments.push({ 
+                ...investment, 
+                memberName: member.name, 
+                memberId: member.id,
+                pnl: pnl
+            });
+        });
+    });
+    
+    // Sort investments
+    const sortedInvestments = sortArrayByField(investments, field, direction);
+    
+    // Re-render with sorted data
+    renderInvestmentTabContentWithData(tabName, sortedInvestments);
+    
+    // Save sorting preference
+    sortingState.investments = { field, direction };
+}
+
+// ===== LIABILITY SORTING ENHANCEMENT =====
+function createLiabilitySortControls(tabName) {
+    return `
+        <div class="sort-controls">
+            <label for="liability-sort-${tabName}" class="sort-label">Sort by:</label>
+            <select id="liability-sort-${tabName}" onchange="sortLiabilityTab('${tabName}')" class="sort-select">
+                <option value="memberName-asc">Member (A-Z)</option>
+                <option value="memberName-desc">Member (Z-A)</option>
+                <option value="lender-asc">Lender (A-Z)</option>
+                <option value="lender-desc">Lender (Z-A)</option>
+                <option value="outstanding_amount-desc">Outstanding Amount (High to Low)</option>
+                <option value="outstanding_amount-asc">Outstanding Amount (Low to High)</option>
+                <option value="emi_amount-desc">EMI Amount (High to Low)</option>
+                <option value="emi_amount-asc">EMI Amount (Low to High)</option>
+                <option value="interest_rate-desc">Interest Rate (High to Low)</option>
+                <option value="interest_rate-asc">Interest Rate (Low to High)</option>
+            </select>
+        </div>
+    `;
+}
+
+function sortLiabilityTab(tabName) {
+    const sortValue = document.getElementById(`liability-sort-${tabName}`).value;
+    const [field, direction] = sortValue.split('-');
+    
+    // Collect liability data
+    let liabilities = [];
+    familyData.members.forEach(member => {
+        const memberLiabilities = familyData.liabilities[member.id]?.[tabName] || [];
+        memberLiabilities.forEach(liability => {
+            liabilities.push({ 
+                ...liability, 
+                memberName: member.name, 
+                memberId: member.id 
+            });
+        });
+    });
+    
+    // Sort liabilities
+    const sortedLiabilities = sortArrayByField(liabilities, field, direction);
+    
+    // Re-render with sorted data
+    renderLiabilityTabContentWithData(tabName, sortedLiabilities);
+    
+    // Save sorting preference
+    sortingState.liabilities = { field, direction };
+}
+
+// ===== ACCOUNT SORTING ENHANCEMENT =====
+function createAccountSortControls() {
+    return `
+        <div class="sort-controls">
+            <label for="account-sort" class="sort-label">Sort by:</label>
+            <select id="account-sort" onchange="sortAccounts()" class="sort-select">
+                <option value="account_type-asc">Account Type (A-Z)</option>
+                <option value="account_type-desc">Account Type (Z-A)</option>
+                <option value="institution-asc">Institution (A-Z)</option>
+                <option value="institution-desc">Institution (Z-A)</option>
+                <option value="account_number-asc">Account Number (A-Z)</option>
+                <option value="account_number-desc">Account Number (Z-A)</option>
+                <option value="holder_name-asc">Holder Name (A-Z)</option>
+                <option value="holder_name-desc">Holder Name (Z-A)</option>
+                <option value="status-asc">Status (A-Z)</option>
+                <option value="status-desc">Status (Z-A)</option>
+            </select>
+        </div>
+    `;
+}
+
+function sortAccounts() {
+    const sortValue = document.getElementById('account-sort').value;
+    const [field, direction] = sortValue.split('-');
+    
+    // Sort accounts
+    const sortedAccounts = sortArrayByField(familyData.accounts, field, direction);
+    
+    // Update familyData with sorted accounts
+    familyData.accounts = sortedAccounts;
+    
+    // Re-render accounts table
+    renderAccountsTable();
+    
+    // Save sorting preference
+    sortingState.accounts = { field, direction };
+}
+
+// ===== ENHANCED RENDERING FUNCTIONS WITH SORTING =====
+
+// Enhanced family members grid with sorting
+function renderFamilyMembersGridWithSort() {
+    const familyGrid = document.getElementById('family-members-grid');
+    
+    if (familyData.members.length === 0) {
+        familyGrid.innerHTML = `
+            <div class="empty-state">
+                <div class="emoji">👨‍👩‍👧‍👦</div>
+                <p>No family members added yet.</p>
+                <p>Click "Add Member" to get started!</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Add sort controls before the grid
+    const sortControls = createFamilyMemberSortControls();
+    
+    const membersHTML = familyData.members.map(member => {
+        const memberTotals = calculateMemberTotals(member.id);
+        
+        // Count investments and liabilities
+        const investments = familyData.investments[member.id] || {};
+        const liabilities = familyData.liabilities[member.id] || {};
+        
+        let totalInvestments = 0;
+        let totalLiabilities = 0;
+        
+        Object.values(investments).forEach(categoryItems => {
+            if (Array.isArray(categoryItems)) {
+                totalInvestments += categoryItems.length;
+            }
+        });
+        
+        Object.values(liabilities).forEach(categoryItems => {
+            if (Array.isArray(categoryItems)) {
+                totalLiabilities += categoryItems.length;
+            }
+        });
+
+        return `
+            <div class="family-card">
+                <img src="${member.photo_url || PRESET_PHOTOS[0]}" alt="${member.name}" class="member-photo">
+                <div class="member-name">
+                    ${member.name}
+                    ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
+                </div>
+                <div class="member-relationship">${member.relationship}</div>
+                
+                <!-- FINANCIAL SUMMARY -->
+                <div class="member-summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Assets:</span>
+                        <span class="summary-value assets">₹${memberTotals.assets.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Liabilities:</span>
+                        <span class="summary-value liabilities">₹${memberTotals.liabilities.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Net Worth:</span>
+                        <span class="summary-value net-worth">₹${memberTotals.netWorth.toLocaleString()}</span>
+                    </div>
+                    <div class="summary-counts">
+                        <span class="count-item">${totalInvestments} Investments</span>
+                        <span class="count-item">${totalLiabilities} Liabilities</span>
+                    </div>
+                </div>
+                
+                <div class="member-actions">
+                    <button onclick="editMember('${member.id}')" class="btn-sm btn-edit">Edit</button>
+                    <button onclick="openPhotoModal('${member.id}')" class="btn-sm btn-photo">Photo</button>
+                    <button onclick="deleteMember('${member.id}')" class="btn-sm btn-delete">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    familyGrid.innerHTML = sortControls + '<div class="family-members-container">' + membersHTML + '</div>';
+    
+    // Set the current sort selection
+    const currentSortValue = `${sortingState.familyMembers.field}-${sortingState.familyMembers.direction}`;
+    const sortSelect = document.getElementById('family-sort');
+    if (sortSelect) {
+        sortSelect.value = currentSortValue;
+    }
+}
+
+// Enhanced investment rendering with data parameter
+function renderInvestmentTabContentWithData(tabName, investmentsData = null) {
+    // Update active tab
+    document.querySelectorAll('.tabs .tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.textContent.toLowerCase().includes(tabName.toLowerCase()) || 
+            (tabName === 'mutualFunds' && tab.textContent.includes('Mutual Funds')) ||
+            (tabName === 'fixedDeposits' && tab.textContent.includes('Fixed Deposits'))) {
+            tab.classList.add('active');
+        }
+    });
+
+    const content = document.getElementById('investment-tab-content');
+    let investments = investmentsData;
+    
+    // If no data provided, collect from familyData
+    if (!investments) {
+        investments = [];
+        familyData.members.forEach(member => {
+            const memberInvestments = familyData.investments[member.id]?.[tabName] || [];
+            memberInvestments.forEach(investment => {
+                const pnl = (investment.current_value || investment.invested_amount || 0) - (investment.invested_amount || 0);
+                investments.push({ 
+                    ...investment, 
+                    memberName: member.name, 
+                    memberId: member.id,
+                    pnl: pnl
+                });
+            });
+        });
+    }
+
+    if (investments.length === 0) {
+        content.innerHTML = `
+            <div class="empty-state">
+                <div class="emoji">📈</div>
+                <p>No ${tabName} investments found.</p>
+                <p>Click "Add Investment" to start tracking your investments!</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Add sort controls
+    const sortControls = createInvestmentSortControls(tabName);
+
+    let tableHTML = `
+        ${sortControls}
+        <div class="table-responsive">
+            <table class="data-table" id="investment-table-${tabName}">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Investment Name</th>
+                        <th>Invested Amount</th>
+                        <th>Current Value</th>
+                        <th>P&L</th>
+                        <th>Platform</th>`;
+
+    // Add type-specific headers
+    if (tabName === 'fixedDeposits') {
+        tableHTML += `<th>Interest Rate</th><th>Maturity Date</th><th>Interest Payout</th><th>Nominee</th>`;
+    } else if (tabName === 'insurance') {
+        tableHTML += `<th>Policy Number</th><th>Sum Assured</th><th>Premium Frequency</th><th>Policy Status</th><th>Nominee</th>`;
+    }
+
+    tableHTML += `<th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    investments.forEach(item => {
+        const pnl = item.pnl || ((item.current_value || item.invested_amount || 0) - (item.invested_amount || 0));
+        const pnlClass = pnl >= 0 ? 'text-green' : 'text-red';
+
+        tableHTML += `
+            <tr>
+                <td>${item.memberName}</td>
+                <td>${item.symbol_or_name || 'N/A'}</td>
+                <td>₹${(item.invested_amount || 0).toLocaleString()}</td>
+                <td>₹${(item.current_value || item.invested_amount || 0).toLocaleString()}</td>
+                <td class="${pnlClass}">₹${pnl.toLocaleString()}</td>
+                <td>${item.broker_platform || 'N/A'}</td>`;
+
+        // Add type-specific data
+        if (tabName === 'fixedDeposits') {
+            tableHTML += `
+                <td>${item.interest_rate || 'N/A'}%</td>
+                <td>${item.maturity_date || 'N/A'}</td>
+                <td>${item.interest_payout || 'N/A'}</td>
+                <td>${item.nominee || 'N/A'}</td>`;
+        } else if (tabName === 'insurance') {
+            tableHTML += `
+                <td>${item.policy_number || 'N/A'}</td>
+                <td>₹${(item.sum_assured || 0).toLocaleString()}</td>
+                <td>${item.premium_frequency || 'N/A'}</td>
+                <td>${item.policy_status || 'N/A'}</td>
+                <td>${item.nominee || 'N/A'}</td>`;
+        }
+
+        tableHTML += `
+                <td>
+                    <button onclick="editInvestment('${item.id}', '${tabName}', '${item.memberId}')" class="btn-sm btn-edit">Edit</button>
+                    <button onclick="deleteInvestment('${item.id}', '${tabName}', '${item.memberId}')" class="btn-sm btn-delete">Delete</button>
+                </td>
+            </tr>`;
+    });
+
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    content.innerHTML = tableHTML;
+    
+    // Set the current sort selection
+    const currentSortValue = `${sortingState.investments.field}-${sortingState.investments.direction}`;
+    const sortSelect = document.getElementById(`investment-sort-${tabName}`);
+    if (sortSelect) {
+        sortSelect.value = currentSortValue;
+    }
+}
+
+// Enhanced liability rendering with data parameter
+function renderLiabilityTabContentWithData(tabName, liabilitiesData = null) {
+    // Update active tab
+    document.querySelectorAll('#liability-tab-content').parent?.querySelectorAll('.tabs .tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
+            (tabName === 'homeLoan' && tab.textContent.includes('Home Loan')) ||
+            (tabName === 'personalLoan' && tab.textContent.includes('Personal Loan')) ||
+            (tabName === 'creditCard' && tab.textContent.includes('Credit Card'))) {
+            tab.classList.add('active');
+        }
+    });
+
+    const content = document.getElementById('liability-tab-content');
+    let liabilities = liabilitiesData;
+    
+    // If no data provided, collect from familyData
+    if (!liabilities) {
+        liabilities = [];
+        familyData.members.forEach(member => {
+            const memberLiabilities = familyData.liabilities[member.id]?.[tabName] || [];
+            memberLiabilities.forEach(liability => {
+                liabilities.push({ 
+                    ...liability, 
+                    memberName: member.name, 
+                    memberId: member.id 
+                });
+            });
+        });
+    }
+
+    if (liabilities.length === 0) {
+        content.innerHTML = `
+            <div class="empty-state">
+                <div class="emoji">📉</div>
+                <p>No ${tabName} liabilities found.</p>
+                <p>Click "Add Liability" to start tracking your liabilities!</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Add sort controls
+    const sortControls = createLiabilitySortControls(tabName);
+
+    let tableHTML = `
+        ${sortControls}
+        <div class="table-responsive">
+            <table class="data-table" id="liability-table-${tabName}">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Lender</th>
+                        <th>Outstanding Amount</th>
+                        <th>EMI</th>
+                        <th>Interest Rate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+    liabilities.forEach(item => {
+        tableHTML += `
+            <tr>
+                <td>${item.memberName}</td>
+                <td>${item.lender || 'N/A'}</td>
+                <td>₹${(item.outstanding_amount || 0).toLocaleString()}</td>
+                <td>₹${(item.emi_amount || 0).toLocaleString()}</td>
+                <td>${item.interest_rate || 0}%</td>
+                <td>
+                    <button onclick="editLiability('${item.id}', '${tabName}', '${item.memberId}')" class="btn-sm btn-edit">Edit</button>
+                    <button onclick="deleteLiability('${item.id}', '${tabName}', '${item.memberId}')" class="btn-sm btn-delete">Delete</button>
+                </td>
+            </tr>`;
+    });
+
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    content.innerHTML = tableHTML;
+    
+    // Set the current sort selection
+    const currentSortValue = `${sortingState.liabilities.field}-${sortingState.liabilities.direction}`;
+    const sortSelect = document.getElementById(`liability-sort-${tabName}`);
+    if (sortSelect) {
+        sortSelect.value = currentSortValue;
+    }
+}
+
+// Enhanced accounts table rendering with sorting
+function renderAccountsTableWithSort() {
+    const accountsSection = document.getElementById('accounts-section');
+    if (!accountsSection) return;
+
+    // Find or create the container for sort controls
+    let sortContainer = document.getElementById('accounts-sort-container');
+    if (!sortContainer) {
+        sortContainer = document.createElement('div');
+        sortContainer.id = 'accounts-sort-container';
+        sortContainer.className = 'section-controls';
+        
+        // Insert before the table
+        const table = accountsSection.querySelector('.table-responsive');
+        if (table) {
+            accountsSection.insertBefore(sortContainer, table);
+        }
+    }
+    
+    // Add sort controls
+    sortContainer.innerHTML = createAccountSortControls();
+
+    // Render the table normally
+    renderAccountsTable();
+    
+    // Set the current sort selection
+    const currentSortValue = `${sortingState.accounts.field}-${sortingState.accounts.direction}`;
+    const sortSelect = document.getElementById('account-sort');
+    if (sortSelect) {
+        sortSelect.value = currentSortValue;
+    }
+}
+
+// ===== INTEGRATION WITH EXISTING RENDER FUNCTIONS =====
+
+// Override the existing renderFamilyMembersGrid function
+window.originalRenderFamilyMembersGrid = window.renderFamilyMembersGrid;
+window.renderFamilyMembersGrid = renderFamilyMembersGridWithSort;
+
+// Override the existing renderInvestmentTabContent function
+window.originalRenderInvestmentTabContent = window.renderInvestmentTabContent;
+window.renderInvestmentTabContent = function(tabName) {
+    renderInvestmentTabContentWithData(tabName);
+};
+
+// Override the existing renderLiabilityTabContent function
+window.originalRenderLiabilityTabContent = window.renderLiabilityTabContent;
+window.renderLiabilityTabContent = function(tabName) {
+    renderLiabilityTabContentWithData(tabName);
+};
+
+// ===== INITIALIZATION =====
+// Add this to your existing initialization code
+function initializeSorting() {
+    // Set up accounts table sorting when dashboard loads
+    if (document.getElementById('accounts-section')) {
+        renderAccountsTableWithSort();
+    }
+    
+    // Apply saved sorting preferences
+    setTimeout(() => {
+        // Apply family member sorting
+        const familySort = document.getElementById('family-sort');
+        if (familySort && sortingState.familyMembers) {
+            const value = `${sortingState.familyMembers.field}-${sortingState.familyMembers.direction}`;
+            familySort.value = value;
+        }
+    }, 100);
+}
+
+// Call this in your existing renderDashboard function
+// Add this line: initializeSorting();
+
+console.log('✅ Enhanced sorting functionality loaded successfully!');
