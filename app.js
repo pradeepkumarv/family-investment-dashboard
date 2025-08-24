@@ -676,6 +676,7 @@ async function saveMember() {
     }
 }
 
+
 async function deleteMember(memberId) {
     const member = familyData.members.find(m => m.id === memberId);
     if (!member) return;
