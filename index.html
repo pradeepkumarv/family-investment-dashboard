@@ -362,15 +362,16 @@
         </div>
     </div>
 
-    <!-- Investment Modal -->
+    <!-- Enhanced Investment Modal with FD and Insurance Fields -->
     <div id="investment-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content large-modal">
             <div class="modal-header">
                 <h3 id="investment-modal-title">Add Investment</h3>
                 <button class="modal-close" onclick="closeModal('investment-modal')">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="investment-form">
+                    <!-- Basic Investment Fields -->
                     <div class="form-group">
                         <label for="investment-member" class="form-label">Family Member *</label>
                         <select id="investment-member" class="form-control" required></select>
@@ -387,143 +388,167 @@
                         </select>
                     </div>
 
-                    <!-- Basic Investment Fields -->
-                    <div class="form-group basic-investment-fields">
-                        <label for="investment-name" class="form-label">Investment Name *</label>
-                        <input type="text" id="investment-name" class="form-control" required>
-                    </div>
-                    <div class="form-group basic-investment-fields">
-                        <label for="investment-amount" class="form-label">Invested Amount *</label>
-                        <input type="number" id="investment-amount" class="form-control" required>
-                    </div>
-                    <div class="form-group basic-investment-fields">
-                        <label for="investment-current-value" class="form-label">Current Value</label>
-                        <input type="number" id="investment-current-value" class="form-control">
-                    </div>
-                    <div class="form-group basic-investment-fields">
-                        <label for="investment-platform" class="form-label">Platform/Broker</label>
-                        <input type="text" id="investment-platform" class="form-control">
+                    <!-- Basic Investment Fields (shown for all types) -->
+                    <div class="basic-investment-fields">
+                        <div class="form-group">
+                            <label for="investment-name" class="form-label">Investment Name *</label>
+                            <input type="text" id="investment-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="investment-amount" class="form-label">Invested Amount *</label>
+                            <input type="number" id="investment-amount" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="investment-current-value" class="form-label">Current Value</label>
+                            <input type="number" id="investment-current-value" class="form-control" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="investment-platform" class="form-label">Platform/Broker</label>
+                            <input type="text" id="investment-platform" class="form-control">
+                        </div>
                     </div>
 
-                    <!-- Fixed Deposit Fields -->
+                    <!-- Fixed Deposit Specific Fields -->
                     <div class="fixed-deposit-fields" style="display: none;">
-                        <div class="form-group">
-                            <label for="fd-bank-name" class="form-label">Bank Name *</label>
-                            <input type="text" id="fd-bank-name" class="form-control">
+                        <h4 style="margin: 20px 0 15px 0; color: #2c3e50;">🏦 Fixed Deposit Details</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fd-bank-name" class="form-label">Bank Name *</label>
+                                <input type="text" id="fd-bank-name" class="form-control" placeholder="e.g., SBI, HDFC Bank">
+                            </div>
+                            <div class="form-group">
+                                <label for="fd-interest-rate" class="form-label">Interest Rate (%) *</label>
+                                <input type="number" step="0.01" id="fd-interest-rate" class="form-control" placeholder="e.g., 6.75">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="fd-interest-rate" class="form-label">Interest Rate (%) *</label>
-                            <input type="number" step="0.01" id="fd-interest-rate" class="form-control">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fd-start-date" class="form-label">Start Date *</label>
+                                <input type="date" id="fd-start-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="fd-maturity-date" class="form-label">Maturity Date *</label>
+                                <input type="date" id="fd-maturity-date" class="form-control">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="fd-start-date" class="form-label">Start Date *</label>
-                            <input type="date" id="fd-start-date" class="form-control">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fd-interest-payout" class="form-label">Interest Payout *</label>
+                                <select id="fd-interest-payout" class="form-control">
+                                    <option value="">Select Payout</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Half-Yearly">Half-Yearly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="On Maturity">On Maturity</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="fd-account-number" class="form-label">FD Account Number</label>
+                                <input type="text" id="fd-account-number" class="form-control" placeholder="FD Account Number">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="fd-maturity-date" class="form-label">Maturity Date *</label>
-                            <input type="date" id="fd-maturity-date" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="fd-interest-payout" class="form-label">Interest Payout *</label>
-                            <select id="fd-interest-payout" class="form-control">
-                                <option value="">Select Payout</option>
-                                <option value="Monthly">Monthly</option>
-                                <option value="Quarterly">Quarterly</option>
-                                <option value="Half-Yearly">Half-Yearly</option>
-                                <option value="Yearly">Yearly</option>
-                                <option value="On Maturity">On Maturity</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="fd-account-number" class="form-label">FD Account Number</label>
-                            <input type="text" id="fd-account-number" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="fd-nominee" class="form-label">Nominee</label>
-                            <input type="text" id="fd-nominee" class="form-control">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fd-nominee" class="form-label">Nominee</label>
+                                <input type="text" id="fd-nominee" class="form-control" placeholder="Nominee Name">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="fd-comments" class="form-label">Comments</label>
-                            <textarea id="fd-comments" class="form-control" rows="3"></textarea>
+                            <textarea id="fd-comments" class="form-control" rows="3" placeholder="Additional comments about this FD"></textarea>
                         </div>
                     </div>
 
-                    <!-- Insurance Fields -->
+                    <!-- Insurance Specific Fields -->
                     <div class="insurance-fields" style="display: none;">
-                        <div class="form-group">
-                            <label for="ins-policy-name" class="form-label">Policy Name *</label>
-                            <input type="text" id="ins-policy-name" class="form-control">
+                        <h4 style="margin: 20px 0 15px 0; color: #2c3e50;">🛡️ Insurance Policy Details</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-policy-name" class="form-label">Policy Name *</label>
+                                <input type="text" id="ins-policy-name" class="form-control" placeholder="e.g., Jeevan Anand, Max Life Insurance">
+                            </div>
+                            <div class="form-group">
+                                <label for="ins-policy-number" class="form-label">Policy Number *</label>
+                                <input type="text" id="ins-policy-number" class="form-control" placeholder="Policy Number">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="ins-policy-number" class="form-label">Policy Number *</label>
-                            <input type="text" id="ins-policy-number" class="form-control">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-company" class="form-label">Insurance Company *</label>
+                                <input type="text" id="ins-company" class="form-control" placeholder="e.g., LIC, HDFC Life">
+                            </div>
+                            <div class="form-group">
+                                <label for="ins-type" class="form-label">Insurance Type *</label>
+                                <select id="ins-type" class="form-control">
+                                    <option value="">Select Type</option>
+                                    <option value="Life Insurance">Life Insurance</option>
+                                    <option value="Health Insurance">Health Insurance</option>
+                                    <option value="Vehicle Insurance">Vehicle Insurance</option>
+                                    <option value="Home Insurance">Home Insurance</option>
+                                    <option value="Term Insurance">Term Insurance</option>
+                                    <option value="ULIP">ULIP (Unit Linked Insurance)</option>
+                                    <option value="Endowment">Endowment Policy</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="ins-company" class="form-label">Insurance Company *</label>
-                            <input type="text" id="ins-company" class="form-control">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-sum-assured" class="form-label">Sum Assured *</label>
+                                <input type="number" id="ins-sum-assured" class="form-control" step="0.01" placeholder="Sum Assured Amount">
+                            </div>
+                            <div class="form-group">
+                                <label for="ins-premium-amount" class="form-label">Premium Amount *</label>
+                                <input type="number" id="ins-premium-amount" class="form-control" step="0.01" placeholder="Premium Amount">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="ins-type" class="form-label">Insurance Type *</label>
-                            <select id="ins-type" class="form-control">
-                                <option value="">Select Type</option>
-                                <option value="Life Insurance">Life Insurance</option>
-                                <option value="Health Insurance">Health Insurance</option>
-                                <option value="Vehicle Insurance">Vehicle Insurance</option>
-                                <option value="Home Insurance">Home Insurance</option>
-                                <option value="Term Insurance">Term Insurance</option>
-                                <option value="ULIP">ULIP (Unit Linked Insurance)</option>
-                                <option value="Endowment">Endowment Policy</option>
-                                <option value="Other">Other</option>
-                            </select>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-premium-frequency" class="form-label">Premium Payment *</label>
+                                <select id="ins-premium-frequency" class="form-control">
+                                    <option value="">Select Frequency</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Half-Yearly">Half-Yearly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="Single Premium">Single Premium</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ins-policy-status" class="form-label">Policy Status</label>
+                                <select id="ins-policy-status" class="form-control">
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Lapsed">Lapsed</option>
+                                    <option value="Matured">Matured</option>
+                                    <option value="Claimed">Claimed</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="ins-sum-assured" class="form-label">Sum Assured *</label>
-                            <input type="number" id="ins-sum-assured" class="form-control">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-start-date" class="form-label">Policy Start Date *</label>
+                                <input type="date" id="ins-start-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ins-maturity-date" class="form-label">Maturity Date</label>
+                                <input type="date" id="ins-maturity-date" class="form-control">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="ins-premium-amount" class="form-label">Premium Amount *</label>
-                            <input type="number" id="ins-premium-amount" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="ins-premium-frequency" class="form-label">Premium Payment *</label>
-                            <select id="ins-premium-frequency" class="form-control">
-                                <option value="">Select Frequency</option>
-                                <option value="Monthly">Monthly</option>
-                                <option value="Quarterly">Quarterly</option>
-                                <option value="Half-Yearly">Half-Yearly</option>
-                                <option value="Yearly">Yearly</option>
-                                <option value="Single Premium">Single Premium</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="ins-start-date" class="form-label">Policy Start Date *</label>
-                            <input type="date" id="ins-start-date" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="ins-maturity-date" class="form-label">Maturity Date</label>
-                            <input type="date" id="ins-maturity-date" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="ins-next-premium-date" class="form-label">Next Premium Due Date</label>
-                            <input type="date" id="ins-next-premium-date" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="ins-nominee" class="form-label">Nominee</label>
-                            <input type="text" id="ins-nominee" class="form-control">
-                        </div>
-                        <div class="form-group">
-                            <label for="ins-policy-status" class="form-label">Policy Status</label>
-                            <select id="ins-policy-status" class="form-control">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Lapsed">Lapsed</option>
-                                <option value="Matured">Matured</option>
-                                <option value="Claimed">Claimed</option>
-                            </select>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-next-premium-date" class="form-label">Next Premium Due Date</label>
+                                <input type="date" id="ins-next-premium-date" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label for="ins-nominee" class="form-label">Nominee</label>
+                                <input type="text" id="ins-nominee" class="form-control" placeholder="Nominee Name">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="ins-comments" class="form-label">Comments</label>
-                            <textarea id="ins-comments" class="form-control" rows="3"></textarea>
+                            <textarea id="ins-comments" class="form-control" rows="3" placeholder="Additional comments about this policy"></textarea>
                         </div>
                     </div>
                 </form>
@@ -644,5 +669,57 @@
     <div id="message" class="message" style="display: none;"></div>
 
     <script src="app.js"></script>
+
+    <style>
+    /* Additional styles for enhanced forms */
+    .large-modal .modal-content {
+        max-width: 800px;
+        width: 90%;
+    }
+    
+    .form-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .form-row .form-group {
+        flex: 1;
+        margin-bottom: 0;
+    }
+    
+    .fixed-deposit-fields,
+    .insurance-fields {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .investment-table {
+        overflow-x: auto;
+    }
+    
+    .investment-table table {
+        min-width: 800px;
+    }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .form-row .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .large-modal .modal-content {
+            width: 95%;
+            margin: 10px;
+        }
+    }
+    </style>
 </body>
 </html>
