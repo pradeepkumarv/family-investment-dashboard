@@ -1458,12 +1458,11 @@ function calculateMemberTotals(memberId) {
 // ===== RENDERING FUNCTIONS =====
 function renderDashboard() {
     renderStatsGrid();
-    renderFamilyMembersGrid();
     renderInvestmentTabContent('equity');
     renderLiabilityTabContent('homeLoan');
     renderAccountsTable();
     updateLastUpdated();
-    initializeSorting();
+
 }
 
 function renderStatsGrid() {
@@ -2111,7 +2110,6 @@ function updateSortIndicators(tableId, columnIndex, direction) {
 
 // Global sorting state for different data types
 let sortingState = {
-    familyMembers: { field: 'name', direction: 'asc' },
     investments: { field: 'member', direction: 'asc' },
     liabilities: { field: 'member', direction: 'asc' },
     accounts: { field: 'account_type', direction: 'asc' }
@@ -2161,47 +2159,8 @@ function isValidDate(dateString) {
     return date instanceof Date && !isNaN(date);
 }
 
-// ===== FAMILY MEMBERS SORTING =====
-function createFamilyMemberSortControls() {
-    return `
-        <div class="sort-controls">
-            <label for="family-sort" class="sort-label">Sort by:</label>
-            <select id="family-sort" onchange="sortFamilyMembers()" class="sort-select">
-                <option value="name-asc">Name (A-Z)</option>
-                <option value="name-desc">Name (Z-A)</option>
-                <option value="relationship-asc">Relationship (A-Z)</option>
-                <option value="relationship-desc">Relationship (Z-A)</option>
-                <option value="assets-desc">Assets (High to Low)</option>
-                <option value="assets-asc">Assets (Low to High)</option>
-                <option value="liabilities-desc">Liabilities (High to Low)</option>
-                <option value="liabilities-asc">Liabilities (Low to High)</option>
-                <option value="net_worth-desc">Net Worth (High to Low)</option>
-                <option value="net_worth-asc">Net Worth (Low to High)</option>
-                <option value="investment_count-desc">Most Investments</option>
-                <option value="liability_count-desc">Most Liabilities</option>
-            </select>
-        </div>
-    `;
-}
 
-function sortFamilyMembers() {
-    const sortValue = document.getElementById('family-sort').value;
-    const [field, direction] = sortValue.split('-');
-    
-    // Prepare data with calculated values for sorting
-    const membersWithCalculations = familyData.members.map(member => {
-        const memberTotals = calculateMemberTotals(member.id);
-        const investments = familyData.investments[member.id] || {};
-        const liabilities = familyData.liabilities[member.id] || {};
-        
-        let totalInvestments = 0;
-        let totalLiabilities = 0;
-        
-        Object.values(investments).forEach(categoryItems => {
-            if (Array.isArray(categoryItems)) {
-                totalInvestments += categoryItems.length;
-            }
-        });
+
         
         Object.values(liabilities).forEach(categoryItems => {
             if (Array.isArray(categoryItems)) {
@@ -2225,12 +2184,8 @@ function sortFamilyMembers() {
     // Update the original familyData with sorted order
     familyData.members = sortedMembers.map(({ assets, liabilities, net_worth, investment_count, liability_count, ...member }) => member);
     
-    // Re-render the family members grid
-    renderFamilyMembersGrid();
     
-    // Save sorting preference
-    sortingState.familyMembers = { field, direction };
-}
+   
 
 // ===== ENHANCED TABLE SORTING =====
 function makeTableSortable(tableId, dataArray, renderFunction) {
