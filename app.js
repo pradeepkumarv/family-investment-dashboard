@@ -152,8 +152,10 @@ async function handleLogin() {
 
     showMessage('❌ Invalid credentials. Try demo@famwealth.com / demo123', 'error');
 }
-
 async function handleLogout() {
+    // Clear in-memory data so login starts fresh
+    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+    
     const authType = localStorage.getItem('famwealth_auth_type');
 
     if (authType === 'supabase' && supabase) {
@@ -163,6 +165,20 @@ async function handleLogout() {
             console.error('Logout error:', error);
         }
     }
+
+    currentUser = null;
+    localStorage.removeItem('famwealth_user');
+    localStorage.removeItem('famwealth_auth_type');
+    localStorage.removeItem('famwealth_data');
+
+    document.getElementById('main-dashboard').style.display = 'none';
+    document.getElementById('landing-page').style.display = 'block';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+
+    showMessage('✅ Logged out successfully', 'success');
+}
+
 
     currentUser = null;
     localStorage.removeItem('famwealth_user');
@@ -251,36 +267,41 @@ function updateLastUpdated() {
 
 // ===== DATA LOADING =====
 async function loadDashboardData() {
-    try {
-        showMessage('🔄 Loading dashboard data...', 'info');
-        let dataLoaded = false;
+  try {
+    showMessage('🔄 Loading dashboard data...', 'info');
+    let dataLoaded = false;
 
-        // Try to load from Supabase first
-        if (supabase && currentUser && currentUser.id) {
-            dataLoaded = await loadDataFromSupabase();
-        }
-
-        // Fallback to localStorage
-        if (!dataLoaded) {
-            dataLoaded = loadDataFromStorage();
-        }
-
-        // Load sample data if nothing exists
-        if (!dataLoaded || familyData.members.length === 0) {
-            loadSampleData();
-            saveDataToStorage();
-        }
-
-        renderDashboard();
-        showMessage('✅ Dashboard loaded successfully', 'success');
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        loadSampleData();
-        saveDataToStorage();
-        renderDashboard();
-        showMessage('✅ Dashboard loaded with sample data', 'success');
+    // Try to load from Supabase
+    if (supabase && currentUser && currentUser.id) {
+      dataLoaded = await loadDataFromSupabase();
     }
+
+    // Fallback to localStorage
+    if (!dataLoaded) {
+      dataLoaded = loadDataFromStorage();
+    }
+
+    // Only load sample data if nothing in storage AND nothing from Supabase
+    if (!dataLoaded) {
+      // Clear any leftover in-memory data first
+      familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+      loadSampleData();
+      saveDataToStorage();
+    }
+
+    renderDashboard();
+    showMessage('✅ Dashboard loaded successfully', 'success');
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    // On crash, clear memory and fallback once
+    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+    loadSampleData();
+    saveDataToStorage();
+    renderDashboard();
+    showMessage('✅ Dashboard loaded with sample data', 'success');
+  }
 }
+
 
 async function loadDataFromSupabase() {
     if (!supabase || !currentUser) return false;
