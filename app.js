@@ -609,8 +609,8 @@ function loadDataFromStorage() {
     try {
         const stored = localStorage.getItem('famwealth_data');
         if (stored) {
-            const loadedData = JSON.parse(stored);
-            familyData = { ...familyData, ...loadedData };
+            // Overwrite the in-memory familyData entirely with stored data
+            familyData = JSON.parse(stored);
             return true;
         }
     } catch (error) {
@@ -618,6 +618,7 @@ function loadDataFromStorage() {
     }
     return false;
 }
+
 
 // ===== FAMILY MEMBER MANAGEMENT =====
 function openAddMemberModal() {
