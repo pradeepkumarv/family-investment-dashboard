@@ -427,7 +427,6 @@ async function loadDataFromSupabase() {
 async function loadFullUserDataFromSupabase() {
   if (!supabase || !currentUser) return false;
   try {
-    // Load family members
     const { data: members, error: membersError } = await supabase
       .from('family_members')
       .select('*')
@@ -438,6 +437,12 @@ async function loadFullUserDataFromSupabase() {
       ...m,
       photo_url: m.avatar_url || PRESET_PHOTOS[0]
     }));
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
 
     // Initialize investments and liabilities containers per member
     members.forEach(member => {
@@ -591,8 +596,8 @@ function loadSampleData() {
         },
         {
             id: '2',
-            name: 'Smruthi Kumar',
-            relationship: 'Daughter',
+            name: 'Smruthi Pradeep',
+            relationship: 'Spouse',
             is_primary: false,
             photo_url: PRESET_PHOTOS[1]
         }
@@ -2825,8 +2830,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-			// Alias for possible casing variations if needed
+// Alias for possible casing variations if needed
 window.initializeSupabase = initializeSupabase;
 window.initializesupabase = initializeSupabase;
-
-
