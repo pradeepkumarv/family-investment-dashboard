@@ -8,6 +8,19 @@
     
     <!-- Supabase CDN -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  // After library loads
+  initializeSupabase().then(initialized => {
+    if (initialized) {
+      // Now that supabase and currentUser (if session exists) are set:
+      loadDashboardData();
+    } else {
+      // Fallback to sample data immediately
+      loadDashboardData();
+    }
+  });
+</script>
+
     
     <style>
         /* ===== GLOBAL STYLES ===== */
