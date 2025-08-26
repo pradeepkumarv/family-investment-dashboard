@@ -38,6 +38,7 @@ const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face'
 ];
 
+
 // ===== UTILITY FUNCTIONS =====
 function generateUUID() {
     if (window.crypto && crypto.randomUUID) {
