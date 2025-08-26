@@ -98,7 +98,6 @@ loadDashboardData();
     }
 }
 
-// ===== AUTHENTICATION =====
 async function handleLogin() {
     const email = document.getElementById('login-email')?.value;
     const password = document.getElementById('login-password')?.value;
@@ -138,11 +137,12 @@ async function handleLogin() {
                 return;
             }
 
-            if (data.user) {
+            if (data?.user) {
                 showMessage(`✅ Welcome back, ${data.user.email}!`, 'success');
                 currentUser = data.user;
-                localStorage.setItem('famwealth_user', JSON.stringify(data.user));
                 localStorage.setItem('famwealth_auth_type', 'supabase');
+                localStorage.setItem('famwealth_user', JSON.stringify(data.user));
+
                 setTimeout(() => {
                     showDashboard();
                     updateUserInfo(data.user);
@@ -150,15 +150,20 @@ async function handleLogin() {
                 }, 1500);
                 return;
             }
+
+            // Handle case if no error but no user returned - fallback
+            showMessage('❌ Login failed: Unknown error occurred.', 'error');
         } catch (error) {
-            console.error('❌ Login exception:', error);
+            console.error('❌ Supabase login exception:', error);
             showMessage(`❌ Login error: ${error.message}`, 'error');
-            return;
         }
+        return;
     }
 
-    showMessage('❌ Invalid credentials. Try demo@famwealth.com / demo123', 'error');
+    // Fallback if Supabase not initialized
+    showMessage('❌ Login failed: Backend service unavailable.', 'error');
 }
+
 async function handleLogout() {
     // Clear in-memory data so login starts fresh
     familyData = { 
@@ -274,7 +279,8 @@ async function loadDashboardData() {
   try {
     showMessage('🔄 Loading dashboard data...', 'info');
     let dataLoaded = false;
-
+	  
+	  
     // Try to load from Supabase
     if (supabase && currentUser && currentUser.id) {
       dataLoaded = await loadFullUserDataFromSupabase();
