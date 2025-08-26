@@ -44,12 +44,13 @@ function generateUUID() {
     if (window.crypto && crypto.randomUUID) {
         return crypto.randomUUID();
     }
-    return 'xxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
+
 
 // Date calculation utilities
 function getDaysUntil(dateStr) {
@@ -105,6 +106,7 @@ async function handleLogin() {
     showMessage('🔄 Authenticating...', 'info');
 
     // Demo login
+    
     if (email === 'demo@famwealth.com' && password === 'demo123') {
         showMessage('✅ Demo login successful!', 'success');
         currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
