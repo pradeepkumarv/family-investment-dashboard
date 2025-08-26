@@ -2827,4 +2827,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Optional alias in case HTML calls `initializesupabase()` (lowercase)
 window.initializesupabase = initializeSupabase;
+}
 
