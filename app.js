@@ -2,6 +2,7 @@
 // Author: Microsoft/Google Level Developer  
 // All functionality working: Navigation, Data Display, Modals, Exports
 // FIXES: Photo persistence, Investment duplication, Bank Balance, Sorting, Member Details, Reminders
+// FIXED: Data persistence, Supabase integration, login flow
 
 // ===== CONFIGURATION =====
 const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
@@ -27,7 +28,7 @@ let editingItemMemberId = null;
 let selectedPresetPhoto = null;
 let uploadedPhotoData = null;
 let currentSort = { table: null, column: -1, direction: 'asc' };
-let currentMemberDetailsId = null; // NEW: For member details view
+let currentMemberDetailsId = null;
 
 const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
@@ -37,7 +38,6 @@ const PRESET_PHOTOS = [
     'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
     'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face'
 ];
-
 
 // ===== UTILITY FUNCTIONS =====
 function generateUUID() {
@@ -50,7 +50,6 @@ function generateUUID() {
         return v.toString(16);
     });
 }
-
 
 // NEW: Date calculation utilities
 function getDaysUntil(dateStr) {
@@ -77,15 +76,12 @@ async function initializeSupabase() {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('✅ Supabase initialized successfully');
 
+            // FIXED: Check for existing session properly
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 currentUser = session.user;
                 console.log('✅ Found existing Supabase session:', currentUser.email);
-				// Auto-enter the app if we already have a session
-showDashboard();
-updateUserInfo(currentUser);
-loadDashboardData();
-
+                // Don't auto-load here, let the main initialization handle it
             }
             return true;
         } else {
@@ -98,6 +94,10 @@ loadDashboardData();
     }
 }
 
+// FIXED: Expose initializeSupabase globally
+window.initializeSupabase = initializeSupabase;
+
+// ===== AUTHENTICATION =====
 async function handleLogin() {
     const email = document.getElementById('login-email')?.value;
     const password = document.getElementById('login-password')?.value;
@@ -115,11 +115,10 @@ async function handleLogin() {
         currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
         localStorage.setItem('famwealth_auth_type', 'demo');
 
-        setTimeout(() => {
-            showDashboard();
-            updateUserInfo(currentUser);
-            loadDashboardData();
-        }, 1000);
+        // FIXED: Remove setTimeout, call immediately
+        showDashboard();
+        updateUserInfo(currentUser);
+        await loadDashboardData();
         return;
     }
 
@@ -143,11 +142,10 @@ async function handleLogin() {
                 localStorage.setItem('famwealth_auth_type', 'supabase');
                 localStorage.setItem('famwealth_user', JSON.stringify(data.user));
 
-                setTimeout(() => {
-                    showDashboard();
-                    updateUserInfo(data.user);
-                    loadDashboardData();
-                }, 1500);
+                // FIXED: Remove setTimeout, call immediately
+                showDashboard();
+                updateUserInfo(data.user);
+                await loadDashboardData();
                 return;
             }
 
@@ -165,20 +163,10 @@ async function handleLogin() {
 }
 
 async function handleLogout() {
-    // Clear in-memory data so login starts fresh
-    familyData = { 
-        members: [], 
-        investments: {}, 
-        liabilities: {}, 
-        accounts: [], 
-        totals: {} 
-    };
-   localStorage.removeItem('famwealth_data'); // clear all saved data
-   localStorage.removeItem('famwealth_user');
-   localStorage.removeItem('famwealth_auth_type');
-    
+    // FIXED: Clear authType check BEFORE clearing localStorage
     const authType = localStorage.getItem('famwealth_auth_type');
 
+    // Supabase logout first
     if (authType === 'supabase' && supabase) {
         try {
             await supabase.auth.signOut();
@@ -187,10 +175,21 @@ async function handleLogout() {
         }
     }
 
+    // FIXED: Clear in-memory data so login starts fresh
+    familyData = { 
+        members: [], 
+        investments: {}, 
+        liabilities: {}, 
+        accounts: [], 
+        totals: {} 
+    };
+    
     currentUser = null;
+    
+    // FIXED: Clear all localStorage data in correct order
+    localStorage.removeItem('famwealth_data');
     localStorage.removeItem('famwealth_user');
     localStorage.removeItem('famwealth_auth_type');
-    // Don't remove 'famwealth_data' anymore since we want to persist the cleared state
 
     document.getElementById('main-dashboard').style.display = 'none';
     document.getElementById('landing-page').style.display = 'block';
@@ -203,8 +202,6 @@ async function handleLogout() {
     showMessage('✅ Logged out successfully', 'success');
 }
 
-    
-    
 // ===== UI HELPER FUNCTIONS =====
 function showDashboard() {
     document.getElementById('landing-page').style.display = 'none';
@@ -276,208 +273,266 @@ function updateLastUpdated() {
 
 // ===== DATA LOADING =====
 async function loadDashboardData() {
-  try {
-    showMessage('🔄 Loading dashboard data...', 'info');
-    let dataLoaded = false;
-	  
-	  
-    // Try to load from Supabase
-    if (supabase && currentUser && currentUser.id) {
-      dataLoaded = await loadFullUserDataFromSupabase();
-    }
+    try {
+        showMessage('🔄 Loading dashboard data...', 'info');
+        let dataLoaded = false;
+        
+        console.log('🔍 Current user:', currentUser?.email);
+        console.log('🔍 Supabase status:', !!supabase);
+        
+        // FIXED: Try to load from Supabase with proper checks
+        if (supabase && currentUser && currentUser.id) {
+            console.log('📡 Attempting to load from Supabase...');
+            dataLoaded = await loadFullUserDataFromSupabase();
+            console.log('📡 Supabase load result:', dataLoaded);
+        }
 
-    // Fallback to localStorage
-    if (!dataLoaded) {
-      dataLoaded = loadDataFromStorage();
-    }
+        // Fallback to localStorage
+        if (!dataLoaded) {
+            console.log('💾 Loading from localStorage...');
+            dataLoaded = loadDataFromStorage();
+            console.log('💾 localStorage load result:', dataLoaded);
+        }
 
-    // Only load sample data if nothing in storage AND nothing from Supabase
-    if (!dataLoaded) {
-      // Clear any leftover in-memory data first
-      familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
-      loadSampleData();
-      saveDataToStorage();
-    }
+        // Only load sample data if nothing in storage AND nothing from Supabase
+        if (!dataLoaded) {
+            console.log('🎭 Loading sample data...');
+            // Clear any leftover in-memory data first
+            familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+            loadSampleData();
+            saveDataToStorage();
+        }
 
-    renderDashboard();
-    showMessage('✅ Dashboard loaded successfully', 'success');
-  } catch (error) {
-    console.error('Error loading dashboard data:', error);
-    // On crash, clear memory and fallback once
-    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
-    loadSampleData();
-    saveDataToStorage();
-    renderDashboard();
-    showMessage('✅ Dashboard loaded with sample data', 'success');
-  }
+        renderDashboard();
+        showMessage('✅ Dashboard loaded successfully', 'success');
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        // On crash, clear memory and fallback once
+        familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+        loadSampleData();
+        saveDataToStorage();
+        renderDashboard();
+        showMessage('✅ Dashboard loaded with sample data', 'success');
+    }
 }
 
-
+// FIXED: Complete loadFullUserDataFromSupabase function
 async function loadFullUserDataFromSupabase() {
-  if (!supabase || !currentUser) return false;
+    if (!supabase || !currentUser) {
+        console.log('❌ Supabase or currentUser not available');
+        return false;
+    }
 
-  try {
-    // Clear liabilities and accounts on every fresh load after login
-    familyData.liabilities = {};
-    familyData.accounts = [];
+    try {
+        console.log('🔄 Loading user data from Supabase for user:', currentUser.id);
+        
+        // FIXED: Clear liabilities and accounts on every fresh load after login
+        familyData.liabilities = {};
+        familyData.accounts = [];
 
-    // Load family members
-    const { data: members, error: membersError } = await supabase
-      .from('family_members')
-      .select('*')
-      .eq('user_id', currentUser.id);
+        // Load family members
+        const { data: members, error: membersError } = await supabase
+            .from('family_members')
+            .select('*')
+            .eq('user_id', currentUser.id);
 
-    if (membersError) throw membersError;
+        if (membersError) {
+            console.error('❌ Error loading family members:', membersError);
+            throw membersError;
+        }
 
-    familyData.members = members.map(m => ({
-      ...m,
-      photo_url: m.avatar_url || PRESET_PHOTOS[0]
-    }));
+        console.log('✅ Loaded family members:', members?.length || 0);
 
-    // Initialize investments and liabilities containers per member
-    members.forEach(member => {
-      if (!familyData.investments[member.id]) {
-        familyData.investments[member.id] = {
-          equity: [],
-          mutualFunds: [],
-          fixedDeposits: [],
-          insurance: [],
-          bankBalances: [],
-          others: []
-        };
-      }
+        familyData.members = (members || []).map(m => ({
+            ...m,
+            photo_url: m.avatar_url || PRESET_PHOTOS[0]
+        }));
 
-      familyData.liabilities[member.id] = {
-        homeLoan: [],
-        personalLoan: [],
-        creditCard: [],
-        other: []
-      };
-    });
+        // Initialize investments and liabilities containers per member
+        (members || []).forEach(member => {
+            if (!familyData.investments[member.id]) {
+                familyData.investments[member.id] = {
+                    equity: [],
+                    mutualFunds: [],
+                    fixedDeposits: [],
+                    insurance: [],
+                    bankBalances: [],
+                    others: []
+                };
+            }
 
-    // Load holdings (investments)
-    const { data: holdings, error: holdingsError } = await supabase
-      .from('holdings')
-      .select('*')
-      .in('member_id', members.map(m => m.id));
-    if (holdingsError) throw holdingsError;
-
-    holdings.forEach(h => {
-      const inv = {
-        id: h.id,
-        symbol_or_name: h.symbol_or_name,
-        invested_amount: h.invested_amount,
-        current_value: h.current_value,
-        broker_platform: h.broker_platform
-      };
-      const memberInv = familyData.investments[h.member_id];
-      if (!memberInv) return;
-      if (h.asset_type === 'equity') memberInv.equity.push(inv);
-      else if (h.asset_type === 'mutualFunds') memberInv.mutualFunds.push(inv);
-      else if (h.asset_type === 'bankBalances') {
-        memberInv.bankBalances.push({
-          ...inv,
-          bank_name: h.bank_name,
-          account_type: h.account_type,
-          balance_date: h.balance_date,
-          account_number: h.account_number,
-          comments: h.comments
+            familyData.liabilities[member.id] = {
+                homeLoan: [],
+                personalLoan: [],
+                creditCard: [],
+                other: []
+            };
         });
-      } else memberInv.others.push(inv);
-    });
 
-    // Load fixed deposits
-    const { data: fixedDeposits, error: fdError } = await supabase
-      .from('fixed_deposits')
-      .select('*')
-      .in('member_id', members.map(m => m.id));
-    if (fdError) throw fdError;
+        // Load holdings (investments)
+        const { data: holdings, error: holdingsError } = await supabase
+            .from('holdings')
+            .select('*')
+            .in('member_id', (members || []).map(m => m.id));
+            
+        if (holdingsError) {
+            console.error('❌ Error loading holdings:', holdingsError);
+            throw holdingsError;
+        }
 
-    fixedDeposits.forEach(fd => {
-      const memberInvestments = familyData.investments[fd.member_id];
-      if (memberInvestments) {
-        memberInvestments.fixedDeposits.push({
-          id: fd.id,
-          symbol_or_name: fd.bank_name || fd.invested_in,
-          invested_amount: fd.invested_amount,
-          current_value: fd.invested_amount,
-          broker_platform: 'Bank',
-          bank_name: fd.bank_name,
-          interest_rate: fd.interest_rate,
-          start_date: fd.start_date,
-          maturity_date: fd.maturity_date,
-          interest_payout: fd.interest_payout,
-          account_number: fd.account_number,
-          nominee: fd.nominee,
-          comments: fd.comments
+        console.log('✅ Loaded holdings:', holdings?.length || 0);
+
+        (holdings || []).forEach(h => {
+            const inv = {
+                id: h.id,
+                symbol_or_name: h.symbol_or_name,
+                invested_amount: h.invested_amount,
+                current_value: h.current_value,
+                broker_platform: h.broker_platform
+            };
+            const memberInv = familyData.investments[h.member_id];
+            if (!memberInv) return;
+            
+            if (h.asset_type === 'equity') memberInv.equity.push(inv);
+            else if (h.asset_type === 'mutualFunds') memberInv.mutualFunds.push(inv);
+            else if (h.asset_type === 'bankBalances') {
+                memberInv.bankBalances.push({
+                    ...inv,
+                    bank_name: h.bank_name,
+                    account_type: h.account_type,
+                    balance_date: h.balance_date,
+                    account_number: h.account_number,
+                    comments: h.comments
+                });
+            } else memberInv.others.push(inv);
         });
-      }
-    });
 
-    // Load insurance
-    const { data: insurance, error: insuranceError } = await supabase
-      .from('insurance')
-      .select('*')
-      .in('member_id', members.map(m => m.id));
-    if (insuranceError) throw insuranceError;
+        // Load fixed deposits
+        const { data: fixedDeposits, error: fdError } = await supabase
+            .from('fixed_deposits')
+            .select('*')
+            .in('member_id', (members || []).map(m => m.id));
+            
+        if (fdError) {
+            console.error('❌ Error loading fixed deposits:', fdError);
+            throw fdError;
+        }
 
-    insurance.forEach(ins => {
-      const memberInvestments = familyData.investments[ins.member_id];
-      if (memberInvestments) {
-        memberInvestments.insurance.push({
-          id: ins.id,
-          symbol_or_name: ins.policy_name,
-          invested_amount: ins.premium_amount,
-          current_value: ins.sum_assured,
-          broker_platform: ins.insurance_company,
-          policy_name: ins.policy_name,
-          policy_number: ins.policy_number,
-          insurance_company: ins.insurance_company,
-          insurance_type: ins.insurance_type,
-          sum_assured: ins.sum_assured,
-          premium_amount: ins.premium_amount,
-          premium_frequency: ins.premium_frequency,
-          start_date: ins.start_date,
-          maturity_date: ins.maturity_date,
-          next_premium_date: ins.next_premium_date,
-          nominee: ins.nominee,
-          policy_status: ins.policy_status,
-          comments: ins.comments
+        console.log('✅ Loaded fixed deposits:', fixedDeposits?.length || 0);
+
+        (fixedDeposits || []).forEach(fd => {
+            const memberInvestments = familyData.investments[fd.member_id];
+            if (memberInvestments) {
+                memberInvestments.fixedDeposits.push({
+                    id: fd.id,
+                    symbol_or_name: fd.bank_name || fd.invested_in,
+                    invested_amount: fd.invested_amount,
+                    current_value: fd.invested_amount,
+                    broker_platform: 'Bank',
+                    bank_name: fd.bank_name,
+                    interest_rate: fd.interest_rate,
+                    start_date: fd.start_date,
+                    maturity_date: fd.maturity_date,
+                    interest_payout: fd.interest_payout,
+                    account_number: fd.account_number,
+                    nominee: fd.nominee,
+                    comments: fd.comments
+                });
+            }
         });
-      }
-    });
 
-    // Load liabilities
-    const { data: liabilities, error: liabilitiesError } = await supabase
-      .from('liabilities')
-      .select('*')
-      .eq('user_id', currentUser.id);
-    if (liabilitiesError) throw liabilitiesError;
+        // Load insurance
+        const { data: insurance, error: insuranceError } = await supabase
+            .from('insurance')
+            .select('*')
+            .in('member_id', (members || []).map(m => m.id));
+            
+        if (insuranceError) {
+            console.error('❌ Error loading insurance:', insuranceError);
+            throw insuranceError;
+        }
 
-    liabilities.forEach(liab => {
-      if (!familyData.liabilities[liab.member_id]) {
-        familyData.liabilities[liab.member_id] = [];
-      }
-      familyData.liabilities[liab.member_id].push(liab);
-    });
+        console.log('✅ Loaded insurance:', insurance?.length || 0);
 
-    // Load accounts
-    const { data: accounts, error: accountsError } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('user_id', currentUser.id);
-    if (accountsError) throw accountsError;
+        (insurance || []).forEach(ins => {
+            const memberInvestments = familyData.investments[ins.member_id];
+            if (memberInvestments) {
+                memberInvestments.insurance.push({
+                    id: ins.id,
+                    symbol_or_name: ins.policy_name,
+                    invested_amount: ins.premium_amount,
+                    current_value: ins.sum_assured,
+                    broker_platform: ins.insurance_company,
+                    policy_name: ins.policy_name,
+                    policy_number: ins.policy_number,
+                    insurance_company: ins.insurance_company,
+                    insurance_type: ins.insurance_type,
+                    sum_assured: ins.sum_assured,
+                    premium_amount: ins.premium_amount,
+                    premium_frequency: ins.premium_frequency,
+                    start_date: ins.start_date,
+                    maturity_date: ins.maturity_date,
+                    next_premium_date: ins.next_premium_date,
+                    nominee: ins.nominee,
+                    policy_status: ins.policy_status,
+                    comments: ins.comments
+                });
+            }
+        });
 
-    familyData.accounts = accounts || [];
+        // Load liabilities
+        const { data: liabilities, error: liabilitiesError } = await supabase
+            .from('liabilities')
+            .select('*')
+            .eq('user_id', currentUser.id);
+            
+        if (liabilitiesError) {
+            console.error('❌ Error loading liabilities:', liabilitiesError);
+            throw liabilitiesError;
+        }
 
-    // Save all loaded data to localStorage
-    saveDataToStorage();
+        console.log('✅ Loaded liabilities:', liabilities?.length || 0);
 
-    return true;
-  } catch (error) {
-    console.error('Error loading full user data from Supabase:', error);
-    return false;
-  }
+        (liabilities || []).forEach(liab => {
+            if (!familyData.liabilities[liab.member_id]) {
+                familyData.liabilities[liab.member_id] = {
+                    homeLoan: [],
+                    personalLoan: [],
+                    creditCard: [],
+                    other: []
+                };
+            }
+            
+            // Add to correct liability type array
+            if (familyData.liabilities[liab.member_id][liab.liability_type]) {
+                familyData.liabilities[liab.member_id][liab.liability_type].push(liab);
+            }
+        });
+
+        // Load accounts
+        const { data: accounts, error: accountsError } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', currentUser.id);
+            
+        if (accountsError) {
+            console.error('❌ Error loading accounts:', accountsError);
+            throw accountsError;
+        }
+
+        console.log('✅ Loaded accounts:', accounts?.length || 0);
+
+        familyData.accounts = accounts || [];
+
+        // FIXED: Save all loaded data to localStorage
+        saveDataToStorage();
+
+        console.log('✅ Successfully loaded all data from Supabase');
+        return true;
+    } catch (error) {
+        console.error('❌ Error loading full user data from Supabase:', error);
+        return false;
+    }
 }
 
 function loadSampleData() {
@@ -631,7 +686,6 @@ function loadDataFromStorage() {
     return false;
 }
 
-
 // ===== FAMILY MEMBER MANAGEMENT =====
 function openAddMemberModal() {
     editingMemberId = null;
@@ -666,7 +720,6 @@ function editMember(memberId) {
     if (modal) modal.classList.remove('hidden');
 }
 
-// FIXED: Photo persistence issue
 async function saveMember() {
     const nameEl = document.getElementById('member-name');
     const relationshipEl = document.getElementById('member-relationship');
@@ -1207,7 +1260,6 @@ function updateInvestmentForm() {
     }
 }
 
-// FIXED: Investment duplication and bank balance support
 async function saveInvestment() {
     const memberEl = document.getElementById('investment-member');
     const typeEl = document.getElementById('investment-type');
@@ -1341,7 +1393,6 @@ async function saveInvestment() {
                 localInvestmentData.invested_amount = premiumAmount;
 
             } else if (type === 'bankBalances') {
-                // NEW: Bank Balance support
                 tableName = 'holdings'; // Use holdings table with asset_type
                 const bankName = document.getElementById('bb-bank-name')?.value || '';
                 const accountType = document.getElementById('bb-account-type')?.value || '';
@@ -2381,7 +2432,7 @@ function renderAccountsTable() {
     tbody.innerHTML = accountsHTML;
 }
 
-// ===== NEW: SORTING FUNCTIONS =====
+// ===== SORTING FUNCTIONS =====
 function sortTable(tableId, columnIndex) {
     const table = document.getElementById(tableId);
     if (!table) return;
@@ -2713,17 +2764,3 @@ function exportFamilyData(format = 'csv') {
         downloadJSON(familyExportData, filename);
     }
 }
-// --- Auto-initialize Supabase when the DOM is ready ---
-document.addEventListener('DOMContentLoaded', async () => {
-  const ok = await initializeSupabase();
-  if (ok && currentUser) {
-    // If a session exists, go straight to the dashboard
-    showMessage(`✅ Welcome back, ${currentUser.email}!`, 'success');
-    showDashboard();
-    updateUserInfo(currentUser);
-    loadDashboardData();
-  }
-});
-
-// Alias for possible casing variations if needed
-window.initializeSupabase = initializeSupabase;
