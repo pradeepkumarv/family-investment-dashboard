@@ -163,7 +163,9 @@ async function handleLogout() {
         accounts: [], 
         totals: {} 
     };
-    saveDataToStorage(); // This saves the cleared state
+   localStorage.removeItem('famwealth_data'); // clear all saved data
+localStorage.removeItem('famwealth_user');
+localStorage.removeItem('famwealth_auth_type')
     
     const authType = localStorage.getItem('famwealth_auth_type');
 
@@ -270,7 +272,7 @@ async function loadDashboardData() {
 
     // Try to load from Supabase
     if (supabase && currentUser && currentUser.id) {
-      dataLoaded = await loadDataFromSupabase();
+      dataLoaded = await loadFullUserDataFromSupabase();
     }
 
     // Fallback to localStorage
@@ -417,6 +419,104 @@ async function loadDataFromSupabase() {
                 });
                 console.log('✅ Loaded fixed deposits:', fixedDeposits.length);
             }
+async function loadFullUserDataFromSupabase() {
+  if (!supabase || !currentUser) return false;
+  try {
+    // Load members
+    const { data: members, error: membersError } = await supabase
+      .from('family_members')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    if (membersError) throw membersError;
+    familyData.members = members.map(m => ({ ...m, photo_url: m.avatar_url || PRESET_PHOTOS[0] }));
+
+    // Init containers
+    members.forEach(member => {
+      if (!familyData.investments[member.id]) {
+        familyData.investments[member.id] = { equity: [], mutualFunds: [], fixedDeposits: [], insurance: [], bankBalances: [], others: [] };
+      }
+      if (!familyData.liabilities[member.id]) {
+        familyData.liabilities[member.id] = { homeLoan: [], personalLoan: [], creditCard: [], other: [] };
+      }
+    });
+
+    // Load holdings (investments)
+    const { data: holdings, error: holdingsError } = await supabase
+      .from('holdings')
+      .select('*')
+      .in('member_id', members.map(m => m.id));
+    if (holdingsError) throw holdingsError;
+    holdings.forEach(h => {
+      const inv = { id: h.id, symbol_or_name: h.symbol_or_name, invested_amount: h.invested_amount, current_value: h.current_value, broker_platform: h.broker_platform };
+      const memberInv = familyData.investments[h.member_id];
+      if (!memberInv) return;
+      // Distribute by asset_type like equity, mutualFunds, etc.
+    });
+
+    // Load fixed deposits (similar)
+    // Load insurance (similar)
+
+    // --- Load liabilities
+    const { data: liabilities, error: liabilitiesError } = await supabase
+      .from('liabilities')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    if (liabilitiesError) throw liabilitiesError;
+    familyData.liabilities = {};
+    liabilities.forEach(liab => {
+      if (!familyData.liabilities[liab.member_id]) familyData.liabilities[liab.member_id] = [];
+      familyData.liabilities[liab.member_id].push(liab);
+    });
+
+    // --- Load accounts
+    const { data: accounts, error: accountsError } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    if (accountsError) throw accountsError;
+    familyData.accounts = accounts || [];
+
+    saveDataToStorage();
+    return true;
+  } catch (error) {
+    console.error('Error loading full user data:', error);
+    return false;
+  }
+}
+
+    // --- New: Load liabilities ---
+    const { data: liabilities, error: liabilitiesError } = await supabase
+      .from('liabilities')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    if (liabilitiesError) throw liabilitiesError;
+
+    // organize liabilities by member id or however your data structure requires
+    familyData.liabilities = {};
+    liabilities.forEach(l => {
+      if (!familyData.liabilities[l.member_id]) {
+        familyData.liabilities[l.member_id] = [];
+      }
+      familyData.liabilities[l.member_id].push(l);
+    });
+
+    // --- New: Load accounts ---
+    const { data: accounts, error: accountsError } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    if (accountsError) throw accountsError;
+
+    familyData.accounts = accounts || [];
+
+    saveDataToStorage();
+    return true;
+  } catch (e) {
+    console.error('Error loading full user data:', e);
+    return false;
+  }
+}
+
 
             // Load insurance
             const { data: insurance, error: insError } = await supabase
