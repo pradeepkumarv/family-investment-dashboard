@@ -1,14 +1,15 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FamWealth - Complete Family Financial Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
-    
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pradeep's Family Wealth - Complete Family Financial Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
+
     <!-- Supabase CDN -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
+
     <style>
         /* ===== GLOBAL STYLES ===== */
         * {
@@ -18,7 +19,8 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+                Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
@@ -37,7 +39,7 @@
         .auth-container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             padding: 40px;
             width: 100%;
             max-width: 480px;
@@ -195,7 +197,7 @@
         .dashboard-header {
             background: white;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             border-bottom: 1px solid #e2e8f0;
         }
 
@@ -239,16 +241,30 @@
             background: white;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             border-left: 4px solid;
             text-align: center;
         }
 
-        .stat-card.assets { border-left-color: #38a169; }
-        .stat-card.liabilities { border-left-color: #e53e3e; }
-        .stat-card.net-worth { border-left-color: #667eea; }
-        .stat-card.accounts { border-left-color: #ed8936; }
-        .stat-card.reminders { border-left-color: #9f7aea; }
+        .stat-card.assets {
+            border-left-color: #38a169;
+        }
+
+        .stat-card.liabilities {
+            border-left-color: #e53e3e;
+        }
+
+        .stat-card.net-worth {
+            border-left-color: #667eea;
+        }
+
+        .stat-card.accounts {
+            border-left-color: #ed8936;
+        }
+
+        .stat-card.reminders {
+            border-left-color: #9f7aea;
+        }
 
         .stat-label {
             font-size: 0.9rem;
@@ -271,7 +287,7 @@
             border-radius: 15px;
             padding: 0;
             margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             overflow: hidden;
         }
 
@@ -388,9 +404,17 @@
             font-weight: 600;
         }
 
-        .summary-value.assets { color: #38a169; }
-        .summary-value.liabilities { color: #e53e3e; }
-        .summary-value.net-worth { color: #667eea; }
+        .summary-value.assets {
+            color: #38a169;
+        }
+
+        .summary-value.liabilities {
+            color: #e53e3e;
+        }
+
+        .summary-value.net-worth {
+            color: #667eea;
+        }
 
         .summary-counts {
             margin-top: 10px;
@@ -539,7 +563,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -621,7 +645,7 @@
             margin-bottom: 20px;
         }
 
-        .checkbox-group input[type="checkbox"] {
+        .checkbox-group input[type='checkbox'] {
             width: auto;
         }
 
@@ -632,13 +656,6 @@
             background: #f7fafc;
             border-radius: 10px;
             border-left: 4px solid #667eea;
-        }
-
-        .conditional-fields h4 {
-            color: #2d3748;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e2e8f0;
         }
 
         .fixed-deposit-fields,
@@ -837,10 +854,21 @@
             transform: translateX(0);
         }
 
-        .message.success { background: #38a169; }
-        .message.error { background: #e53e3e; }
-        .message.info { background: #3182ce; }
-        .message.warning { background: #d69e2e; }
+        .message.success {
+            background: #38a169;
+        }
+
+        .message.error {
+            background: #e53e3e;
+        }
+
+        .message.info {
+            background: #3182ce;
+        }
+
+        .message.warning {
+            background: #d69e2e;
+        }
 
         /* ===== LAST UPDATED ===== */
         .last-updated {
@@ -945,7 +973,7 @@
         }
 
         .loading::after {
-            content: "";
+            content: '';
             position: absolute;
             top: 50%;
             left: 50%;
@@ -959,13 +987,21 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* ===== ANIMATIONS ===== */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .fade-in {
@@ -978,23 +1014,28 @@
     <div id="landing-page" class="landing-page">
         <div class="auth-container">
             <div class="logo">💰</div>
-            <h1 class="auth-title">FamWealth Dashboard</h1>
+            <h1 class="auth-title">Pradeep's Family Wealth Dashboard</h1>
             <p class="auth-subtitle">Complete Family Financial Management</p>
-            
+
             <form id="login-form">
                 <div class="form-group">
                     <label for="login-email" class="form-label">Email Address</label>
-                    <input type="email" id="login-email" class="form-input" placeholder="Enter your email" required>
+                    <input type="email" id="login-email" class="form-input" placeholder="Enter your email" required />
                 </div>
-                
+
                 <div class="form-group">
                     <label for="login-password" class="form-label">Password</label>
-                    <input type="password" id="login-password" class="form-input" placeholder="Enter your password" required>
+                    <input
+                        type="password"
+                        id="login-password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                    />
                 </div>
-                
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
             </form>
-                        
         </div>
     </div>
 
@@ -1004,7 +1045,7 @@
         <div class="dashboard-header">
             <div class="header-content">
                 <div>
-                    <h1 class="dashboard-title">💰 FamWealth Dashboard</h1>
+                    <h1 class="dashboard-title">💰 Pradeep's Family Wealth Dashboard</h1>
                 </div>
                 <div class="user-info">
                     <span>Welcome, <span id="user-email">Loading...</span></span>
@@ -1068,7 +1109,7 @@
                         <div class="tab" onclick="renderInvestmentTabContent('bankBalances')">Bank Balances</div>
                         <div class="tab" onclick="renderInvestmentTabContent('others')">Others</div>
                     </div>
-                    
+
                     <div id="investment-tab-content" class="tab-content">
                         <!-- Investment content will be populated by JavaScript -->
                     </div>
@@ -1092,7 +1133,7 @@
                         <div class="tab" onclick="renderLiabilityTabContent('creditCard')">Credit Card</div>
                         <div class="tab" onclick="renderLiabilityTabContent('other')">Other</div>
                     </div>
-                    
+
                     <div id="liability-tab-content" class="tab-content">
                         <!-- Liability content will be populated by JavaScript -->
                     </div>
@@ -1138,7 +1179,8 @@
                 </div>
                 <div class="section-content">
                     <p style="color: #718096; margin-bottom: 20px;">
-                        Export complete family financial data including all members, investments, liabilities, and accounts.
+                        Export complete family financial data including all members, investments, liabilities, and
+                        accounts.
                     </p>
                     <div class="export-buttons">
                         <button onclick="exportFamilyData('csv')" class="btn btn-export">📊 Export Family Data (CSV)</button>
@@ -1167,9 +1209,9 @@
                 <form id="member-form" onsubmit="event.preventDefault(); saveMember();">
                     <div class="form-group">
                         <label for="member-name" class="form-label">Full Name *</label>
-                        <input type="text" id="member-name" class="form-input" placeholder="Enter full name" required>
+                        <input type="text" id="member-name" class="form-input" placeholder="Enter full name" required />
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="member-relationship" class="form-label">Relationship *</label>
                         <select id="member-relationship" class="form-input" required>
@@ -1187,13 +1229,13 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    
+
                     <div class="checkbox-group">
-                        <input type="checkbox" id="member-is-primary">
+                        <input type="checkbox" id="member-is-primary" />
                         <label for="member-is-primary">Primary Account Holder</label>
                     </div>
                 </form>
-                
+
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('member-modal')" class="btn btn-secondary">Cancel</button>
                     <button type="button" onclick="saveMember()" class="btn btn-primary">Save Member</button>
@@ -1214,12 +1256,12 @@
                 <div id="preset-photos-grid" class="photo-grid">
                     <!-- Preset photos will be populated by JavaScript -->
                 </div>
-                
+
                 <div class="upload-area" onclick="document.getElementById('photo-upload').click()">
                     <p>📸 Or click here to upload your own photo</p>
-                    <input type="file" id="photo-upload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                    <input type="file" id="photo-upload" accept="image/*" style="display: none" onchange="handlePhotoUpload(event)" />
                 </div>
-                
+
                 <div class="modal-actions">
                     <button onclick="closeModal('photo-modal')" class="btn btn-secondary">Cancel</button>
                     <button onclick="savePhoto()" class="btn btn-primary">Save Photo</button>
@@ -1244,10 +1286,15 @@
                                 <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="investment-type" class="form-label">Investment Type *</label>
-                            <select id="investment-type" class="form-input" onchange="updateInvestmentForm()" required>
+                            <select
+                                id="investment-type"
+                                class="form-input"
+                                onchange="updateInvestmentForm()"
+                                required
+                            >
                                 <option value="">Select Type</option>
                                 <option value="equity">Equity</option>
                                 <option value="mutualFunds">Mutual Funds</option>
@@ -1258,27 +1305,46 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="investment-name" class="form-label">Investment Name *</label>
-                        <input type="text" id="investment-name" class="form-input" placeholder="e.g., HDFC Bank, SBI FD, LIC Policy" required>
+                        <input
+                            type="text"
+                            id="investment-name"
+                            class="form-input"
+                            placeholder="e.g., HDFC Bank, SBI FD, LIC Policy"
+                            required
+                        />
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="investment-amount" class="form-label">Invested Amount (₹) *</label>
-                            <input type="number" id="investment-amount" class="form-input" step="0.01" placeholder="Enter amount" required>
+                            <input
+                                type="number"
+                                id="investment-amount"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="Enter amount"
+                                required
+                            />
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="investment-current-value" class="form-label">Current Value (₹)</label>
-                            <input type="number" id="investment-current-value" class="form-input" step="0.01" placeholder="Current market value">
+                            <input
+                                type="number"
+                                id="investment-current-value"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="Current market value"
+                            />
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="investment-platform" class="form-label">Platform/Broker</label>
-                        <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct">
+                        <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct" />
                     </div>
 
                     <!-- Fixed Deposit Fields -->
@@ -1287,21 +1353,21 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="fd-bank-name" class="form-label">Bank Name</label>
-                                <input type="text" id="fd-bank-name" class="form-input" placeholder="e.g., SBI, HDFC">
+                                <input type="text" id="fd-bank-name" class="form-input" placeholder="e.g., SBI, HDFC" />
                             </div>
                             <div class="form-group">
                                 <label for="fd-interest-rate" class="form-label">Interest Rate (%)</label>
-                                <input type="number" id="fd-interest-rate" class="form-input" step="0.01" placeholder="e.g., 6.75">
+                                <input type="number" id="fd-interest-rate" class="form-input" step="0.01" placeholder="e.g., 6.75" />
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="fd-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="fd-start-date" class="form-input">
+                                <input type="date" id="fd-start-date" class="form-input" />
                             </div>
                             <div class="form-group">
                                 <label for="fd-maturity-date" class="form-label">Maturity Date</label>
-                                <input type="date" id="fd-maturity-date" class="form-input">
+                                <input type="date" id="fd-maturity-date" class="form-input" />
                             </div>
                         </div>
                         <div class="form-row">
@@ -1317,17 +1383,17 @@
                             </div>
                             <div class="form-group">
                                 <label for="fd-account-number" class="form-label">Account Number</label>
-                                <input type="text" id="fd-account-number" class="form-input" placeholder="FD Account Number">
+                                <input type="text" id="fd-account-number" class="form-input" placeholder="FD Account Number" />
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="fd-nominee" class="form-label">Nominee</label>
-                                <input type="text" id="fd-nominee" class="form-input" placeholder="Nominee name">
+                                <input type="text" id="fd-nominee" class="form-input" placeholder="Nominee name" />
                             </div>
                             <div class="form-group">
                                 <label for="fd-comments" class="form-label">Comments</label>
-                                <input type="text" id="fd-comments" class="form-input" placeholder="Additional notes">
+                                <input type="text" id="fd-comments" class="form-input" placeholder="Additional notes" />
                             </div>
                         </div>
                     </div>
@@ -1338,17 +1404,17 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ins-policy-name" class="form-label">Policy Name</label>
-                                <input type="text" id="ins-policy-name" class="form-input" placeholder="e.g., LIC Jeevan Anand">
+                                <input type="text" id="ins-policy-name" class="form-input" placeholder="e.g., LIC Jeevan Anand" />
                             </div>
                             <div class="form-group">
                                 <label for="ins-policy-number" class="form-label">Policy Number</label>
-                                <input type="text" id="ins-policy-number" class="form-input" placeholder="Policy Number">
+                                <input type="text" id="ins-policy-number" class="form-input" placeholder="Policy Number" />
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ins-company" class="form-label">Insurance Company</label>
-                                <input type="text" id="ins-company" class="form-input" placeholder="e.g., LIC, HDFC Life">
+                                <input type="text" id="ins-company" class="form-input" placeholder="e.g., LIC, HDFC Life" />
                             </div>
                             <div class="form-group">
                                 <label for="ins-type" class="form-label">Insurance Type</label>
@@ -1365,11 +1431,11 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ins-sum-assured" class="form-label">Sum Assured (₹)</label>
-                                <input type="number" id="ins-sum-assured" class="form-input" step="0.01" placeholder="Coverage amount">
+                                <input type="number" id="ins-sum-assured" class="form-input" step="0.01" placeholder="Coverage amount" />
                             </div>
                             <div class="form-group">
                                 <label for="ins-premium-amount" class="form-label">Premium Amount (₹)</label>
-                                <input type="number" id="ins-premium-amount" class="form-input" step="0.01" placeholder="Premium amount">
+                                <input type="number" id="ins-premium-amount" class="form-input" step="0.01" placeholder="Premium amount" />
                             </div>
                         </div>
                         <div class="form-row">
@@ -1395,26 +1461,26 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ins-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="ins-start-date" class="form-input">
+                                <input type="date" id="ins-start-date" class="form-input" />
                             </div>
                             <div class="form-group">
                                 <label for="ins-maturity-date" class="form-label">Maturity Date</label>
-                                <input type="date" id="ins-maturity-date" class="form-input">
+                                <input type="date" id="ins-maturity-date" class="form-input" />
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="ins-next-premium-date" class="form-label">Next Premium Date</label>
-                                <input type="date" id="ins-next-premium-date" class="form-input">
+                                <input type="date" id="ins-next-premium-date" class="form-input" />
                             </div>
                             <div class="form-group">
                                 <label for="ins-nominee" class="form-label">Nominee</label>
-                                <input type="text" id="ins-nominee" class="form-input" placeholder="Nominee name">
+                                <input type="text" id="ins-nominee" class="form-input" placeholder="Nominee name" />
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="ins-comments" class="form-label">Comments</label>
-                            <input type="text" id="ins-comments" class="form-input" placeholder="Additional notes">
+                            <input type="text" id="ins-comments" class="form-input" placeholder="Additional notes" />
                         </div>
                     </div>
 
@@ -1424,7 +1490,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="bb-bank-name" class="form-label">Bank Name</label>
-                                <input type="text" id="bb-bank-name" class="form-input" placeholder="e.g., HDFC Bank, SBI">
+                                <input type="text" id="bb-bank-name" class="form-input" placeholder="e.g., HDFC Bank, SBI" />
                             </div>
                             <div class="form-group">
                                 <label for="bb-account-type" class="form-label">Account Type</label>
@@ -1440,20 +1506,20 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="bb-balance-date" class="form-label">Balance Date</label>
-                                <input type="date" id="bb-balance-date" class="form-input">
+                                <input type="date" id="bb-balance-date" class="form-input" />
                             </div>
                             <div class="form-group">
                                 <label for="bb-account-number" class="form-label">Account Number</label>
-                                <input type="text" id="bb-account-number" class="form-input" placeholder="Last 4 digits">
+                                <input type="text" id="bb-account-number" class="form-input" placeholder="Last 4 digits" />
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="bb-comments" class="form-label">Comments</label>
-                            <input type="text" id="bb-comments" class="form-input" placeholder="Additional notes">
+                            <input type="text" id="bb-comments" class="form-input" placeholder="Additional notes" />
                         </div>
                     </div>
                 </form>
-                
+
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('investment-modal')" class="btn btn-secondary">Cancel</button>
                     <button type="button" onclick="saveInvestment()" class="btn btn-primary">Save Investment</button>
@@ -1478,7 +1544,7 @@
                                 <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="liability-type" class="form-label">Liability Type *</label>
                             <select id="liability-type" class="form-input" required>
@@ -1490,30 +1556,43 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="liability-lender" class="form-label">Lender/Bank *</label>
-                        <input type="text" id="liability-lender" class="form-input" placeholder="e.g., HDFC Bank, SBI" required>
+                        <input
+                            type="text"
+                            id="liability-lender"
+                            class="form-input"
+                            placeholder="e.g., HDFC Bank, SBI"
+                            required
+                        />
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="liability-amount" class="form-label">Outstanding Amount (₹) *</label>
-                            <input type="number" id="liability-amount" class="form-input" step="0.01" placeholder="Enter amount" required>
+                            <input
+                                type="number"
+                                id="liability-amount"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="Enter amount"
+                                required
+                            />
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="liability-emi" class="form-label">EMI Amount (₹)</label>
-                            <input type="number" id="liability-emi" class="form-input" step="0.01" placeholder="Monthly EMI">
+                            <input type="number" id="liability-emi" class="form-input" step="0.01" placeholder="Monthly EMI" />
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="liability-rate" class="form-label">Interest Rate (%)</label>
-                        <input type="number" id="liability-rate" class="form-input" step="0.01" placeholder="e.g., 8.5">
+                        <input type="number" id="liability-rate" class="form-input" step="0.01" placeholder="e.g., 8.5" />
                     </div>
                 </form>
-                
+
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('liability-modal')" class="btn btn-secondary">Cancel</button>
                     <button type="button" onclick="saveLiability()" class="btn btn-primary">Save Liability</button>
@@ -1548,19 +1627,19 @@
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="account-institution" class="form-label">Institution *</label>
-                            <input type="text" id="account-institution" class="form-input" placeholder="Bank/Institution name" required>
+                            <input type="text" id="account-institution" class="form-input" placeholder="Bank/Institution name" required />
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="account-number" class="form-label">Account Number *</label>
-                            <input type="text" id="account-number" class="form-input" placeholder="Account number" required>
+                            <input type="text" id="account-number" class="form-input" placeholder="Account number" required />
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="account-holder" class="form-label">Account Holder *</label>
                             <select id="account-holder" class="form-input" required>
@@ -1568,7 +1647,7 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="account-nominee" class="form-label">Nominee</label>
@@ -1576,7 +1655,7 @@
                                 <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="account-status" class="form-label">Status</label>
                             <select id="account-status" class="form-input">
@@ -1586,13 +1665,13 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="account-comments" class="form-label">Comments</label>
-                        <input type="text" id="account-comments" class="form-input" placeholder="Additional notes">
+                        <input type="text" id="account-comments" class="form-input" placeholder="Additional notes" />
                     </div>
                 </form>
-                
+
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('account-modal')" class="btn btn-secondary">Cancel</button>
                     <button type="button" onclick="saveAccount()" class="btn btn-primary">Save Account</button>
@@ -1603,12 +1682,12 @@
 
     <!-- FIXED: Load app.js first, THEN initialize -->
     <script src="app.js"></script>
-    
+
     <!-- FIXED: Initialize application AFTER app.js loads -->
     <script>
         // Initialize the application when the page loads
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Initializing FamWealth Dashboard...');
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log('🚀 Initializing Pradeep's Family Wealth Dashboard...');
 
             // FIXED: Initialize Supabase first and wait for it
             const supabaseInitialized = await initializeSupabase();
@@ -1621,7 +1700,7 @@
             // Wire up the login form submit handler
             const loginForm = document.getElementById('login-form');
             if (loginForm) {
-                loginForm.addEventListener('submit', function(evt) {
+                loginForm.addEventListener('submit', function (evt) {
                     evt.preventDefault();
                     handleLogin();
                 });
@@ -1630,18 +1709,19 @@
             // FIXED: Check for existing session AFTER Supabase initialization
             const authType = localStorage.getItem('famwealth_auth_type');
             const storedUser = localStorage.getItem('famwealth_user');
-            
+
             if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
                 try {
+                    let currentUser;
                     if (authType === 'demo') {
                         currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
                     } else {
                         currentUser = JSON.parse(storedUser);
                     }
-                    
+
                     showDashboard();
                     updateUserInfo(currentUser);
-                    
+
                     // FIXED: Load dashboard data AFTER everything is ready
                     await loadDashboardData();
                     console.log('✅ Auto-login successful');
@@ -1655,8 +1735,9 @@
                 }
             }
 
-            console.log('✅ FamWealth Dashboard initialized successfully');
+            console.log('✅ Pradeep's Family Wealth Dashboard initialized successfully');
         });
     </script>
 </body>
 </html>
+
