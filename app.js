@@ -2825,7 +2825,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-// Optional alias in case HTML calls `initializesupabase()` (lowercase)
+			// Alias for possible casing variations if needed
+window.initializeSupabase = initializeSupabase;
 window.initializesupabase = initializeSupabase;
-}
+
 
