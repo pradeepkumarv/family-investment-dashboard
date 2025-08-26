@@ -278,7 +278,6 @@ async function loadDashboardData() {
     // Try to load from Supabase
     if (supabase && currentUser && currentUser.id) {
       dataLoaded = await loadFullUserDataFromSupabase();
-      
     }
 
     // Fallback to localStorage
@@ -308,125 +307,9 @@ async function loadDashboardData() {
 }
 
 
-async function loadDataFromSupabase() {
-    if (!supabase || !currentUser) return false;
-
-    try {
-        console.log('📡 Loading data from Supabase for user:', currentUser.id);
-        
-        // Load family members
-        const { data: members, error: membersError } = await supabase
-            .from('family_members')
-            .select('*')
-            .eq('user_id', currentUser.id);
-
-        if (membersError) {
-            console.error('❌ Error loading family members:', membersError);
-            return false;
-        }
-
-        if (members && members.length > 0) {
-            // FIXED: Properly handle avatar_url to photo_url conversion
-            familyData.members = members.map(member => ({
-                ...member,
-                photo_url: member.avatar_url || PRESET_PHOTOS[0]
-            }));
-
-            console.log('✅ Loaded family members:', familyData.members.length);
-
-            // Initialize investment and liability objects for each member
-            members.forEach(member => {
-                if (!familyData.investments[member.id]) {
-                    familyData.investments[member.id] = {
-                        equity: [],
-                        mutualFunds: [],
-                        fixedDeposits: [],
-                        insurance: [],
-                        bankBalances: [], // FIXED: Include bankBalances
-                        others: []
-                    };
-                }
-                if (!familyData.liabilities[member.id]) {
-                    familyData.liabilities[member.id] = {
-                        homeLoan: [],
-                        personalLoan: [],
-                        creditCard: [],
-                        other: []
-                    };
-                }
-            });
-
-            // Load holdings (investments)
-            const { data: holdings, error: holdingsError } = await supabase
-                .from('holdings')
-                .select('*')
-                .in('member_id', members.map(m => m.id));
-
-            if (holdings && !holdingsError) {
-                holdings.forEach(holding => {
-                    const memberInvestments = familyData.investments[holding.member_id];
-                    if (memberInvestments) {
-                        const investment = {
-                            id: holding.id,
-                            symbol_or_name: holding.symbol_or_name,
-                            invested_amount: holding.invested_amount,
-                            current_value: holding.current_value,
-                            broker_platform: holding.broker_platform
-                        };
-
-                        if (holding.asset_type === 'equity') {
-                            memberInvestments.equity.push(investment);
-                        } else if (holding.asset_type === 'mutualFunds') {
-                            memberInvestments.mutualFunds.push(investment);
-                        } else if (holding.asset_type === 'bankBalances') { // FIXED: Handle bankBalances
-                            memberInvestments.bankBalances.push({
-                                ...investment,
-                                bank_name: holding.bank_name,
-                                account_type: holding.account_type,
-                                balance_date: holding.balance_date,
-                                account_number: holding.account_number,
-                                comments: holding.comments
-                            });
-                        } else {
-                            memberInvestments.others.push(investment);
-                        }
-                    }
-                });
-                console.log('✅ Loaded holdings:', holdings.length);
-            }
-
-            // Load fixed deposits
-            const { data: fixedDeposits, error: fdError } = await supabase
-                .from('fixed_deposits')
-                .select('*')
-                .in('member_id', members.map(m => m.id));
-
-            if (fixedDeposits && !fdError) {
-                fixedDeposits.forEach(fd => {
-                    const memberInvestments = familyData.investments[fd.member_id];
-                    if (memberInvestments) {
-                        memberInvestments.fixedDeposits.push({
-                            id: fd.id,
-                            symbol_or_name: fd.bank_name || fd.invested_in,
-                            invested_amount: fd.invested_amount,
-                            current_value: fd.invested_amount,
-                            broker_platform: 'Bank',
-                            // Additional FD fields
-                            bank_name: fd.bank_name,
-                            interest_rate: fd.interest_rate,
-                            start_date: fd.start_date,
-                            maturity_date: fd.maturity_date,
-                            interest_payout: fd.interest_payout,
-                            account_number: fd.account_number,
-                            nominee: fd.nominee,
-                            comments: fd.comments
-                        });
-                    }
-                });
-                console.log('✅ Loaded fixed deposits:', fixedDeposits.length);
-            }
 async function loadFullUserDataFromSupabase() {
   if (!supabase || !currentUser) return false;
+
   try {
     // Clear liabilities and accounts on every fresh load after login
     familyData.liabilities = {};
@@ -437,6 +320,7 @@ async function loadFullUserDataFromSupabase() {
       .from('family_members')
       .select('*')
       .eq('user_id', currentUser.id);
+
     if (membersError) throw membersError;
 
     familyData.members = members.map(m => ({
@@ -457,7 +341,6 @@ async function loadFullUserDataFromSupabase() {
         };
       }
 
-      // Initialize empty liability arrays per member
       familyData.liabilities[member.id] = {
         homeLoan: [],
         personalLoan: [],
@@ -466,68 +349,13 @@ async function loadFullUserDataFromSupabase() {
       };
     });
 
-    // Load Liabilities
-    const { data: liabilities, error: liabilitiesError } = await supabase
-      .from('liabilities')
-      .select('*')
-      .in('member_id', members.map(m => m.id));
-    if (liabilitiesError) throw liabilitiesError;
-
-    if (liabilities) {
-      liabilities.forEach(l => {
-        const memberLiabilities = familyData.liabilities[l.member_id];
-        if (memberLiabilities && l.liability_type in memberLiabilities) {
-          memberLiabilities[l.liability_type].push(l);
-        }
-      });
-    }
-
-    // Load Accounts
-    const { data: accounts, error: accountsError } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('user_id', currentUser.id);
-    if (accountsError) throw accountsError;
-
-    familyData.accounts = accounts || [];
-
-    return true;
-  } catch (error) {
-    console.error('Error loading user data from Supabase:', error);
-    return false;
-  }
-}
-
-
-    // Initialize investments and liabilities containers per member
-    members.forEach(member => {
-      if (!familyData.investments[member.id]) {
-        familyData.investments[member.id] = {
-          equity: [],
-          mutualFunds: [],
-          fixedDeposits: [],
-          insurance: [],
-          bankBalances: [],
-          others: []
-        };
-      }
-      if (!familyData.liabilities[member.id]) {
-        familyData.liabilities[member.id] = {
-          homeLoan: [],
-          personalLoan: [],
-          creditCard: [],
-          other: []
-        };
-      }
-    });
-
     // Load holdings (investments)
     const { data: holdings, error: holdingsError } = await supabase
       .from('holdings')
       .select('*')
       .in('member_id', members.map(m => m.id));
     if (holdingsError) throw holdingsError;
-    
+
     holdings.forEach(h => {
       const inv = {
         id: h.id,
@@ -538,11 +366,18 @@ async function loadFullUserDataFromSupabase() {
       };
       const memberInv = familyData.investments[h.member_id];
       if (!memberInv) return;
-
       if (h.asset_type === 'equity') memberInv.equity.push(inv);
       else if (h.asset_type === 'mutualFunds') memberInv.mutualFunds.push(inv);
-      else if (h.asset_type === 'bankBalances') memberInv.bankBalances.push({ ...inv, bank_name: h.bank_name, account_type: h.account_type, balance_date: h.balance_date, account_number: h.account_number, comments: h.comments });
-      else memberInv.others.push(inv);
+      else if (h.asset_type === 'bankBalances') {
+        memberInv.bankBalances.push({
+          ...inv,
+          bank_name: h.bank_name,
+          account_type: h.account_type,
+          balance_date: h.balance_date,
+          account_number: h.account_number,
+          comments: h.comments
+        });
+      } else memberInv.others.push(inv);
     });
 
     // Load fixed deposits
@@ -574,11 +409,11 @@ async function loadFullUserDataFromSupabase() {
     });
 
     // Load insurance
-    const { data: insurance, error: insError } = await supabase
+    const { data: insurance, error: insuranceError } = await supabase
       .from('insurance')
       .select('*')
       .in('member_id', members.map(m => m.id));
-    if (insError) throw insError;
+    if (insuranceError) throw insuranceError;
 
     insurance.forEach(ins => {
       const memberInvestments = familyData.investments[ins.member_id];
@@ -613,7 +448,6 @@ async function loadFullUserDataFromSupabase() {
       .eq('user_id', currentUser.id);
     if (liabilitiesError) throw liabilitiesError;
 
-    familyData.liabilities = {};
     liabilities.forEach(liab => {
       if (!familyData.liabilities[liab.member_id]) {
         familyData.liabilities[liab.member_id] = [];
@@ -630,12 +464,12 @@ async function loadFullUserDataFromSupabase() {
 
     familyData.accounts = accounts || [];
 
-    // Save everything to localStorage
+    // Save all loaded data to localStorage
     saveDataToStorage();
 
     return true;
   } catch (error) {
-    console.error('Error loading full user data:', error);
+    console.error('Error loading full user data from Supabase:', error);
     return false;
   }
 }
@@ -2887,4 +2721,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Alias for possible casing variations if needed
 window.initializeSupabase = initializeSupabase;
-}
