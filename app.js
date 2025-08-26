@@ -332,26 +332,23 @@ async function loadDashboardData() {
             console.log('💾 localStorage load result:', dataLoaded);
         }
 
-        // Only load sample data if nothing in storage AND nothing from Supabase
-        if (!dataLoaded) {
-            console.log('🎭 Loading sample data...');
-            // Clear any leftover in-memory data first
-            familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
-            loadSampleData();
-            saveDataToStorage();
-        }
+      // Only load data from Supabase or localStorage; no sample data fallback
+if (!dataLoaded) {
+    console.log('⚠️ No data loaded from Supabase or localStorage.');
+    // Clear any leftover in-memory data first
+    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+    saveDataToStorage();
+}
 
-        renderDashboard();
-        showMessage('✅ Dashboard loaded successfully', 'success');
-    } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        // On crash, clear memory and fallback once
-        familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
-        loadSampleData();
-        saveDataToStorage();
-        renderDashboard();
-        showMessage('✅ Dashboard loaded with sample data', 'success');
-    }
+renderDashboard();
+showMessage('✅ Dashboard loaded successfully', 'success');
+} catch (error) {
+    console.error('Error loading dashboard data:', error);
+    // On crash, clear memory and fallback safely without sample data
+    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+    saveDataToStorage();
+    renderDashboard();
+    showMessage('✅ Dashboard loaded with empty data due to error', 'success');
 }
 
 // FIXED: Complete loadFullUserDataFromSupabase function
