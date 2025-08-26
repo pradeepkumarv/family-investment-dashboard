@@ -81,6 +81,11 @@ async function initializeSupabase() {
             if (session) {
                 currentUser = session.user;
                 console.log('✅ Found existing Supabase session:', currentUser.email);
+				// Auto-enter the app if we already have a session
+showDashboard();
+updateUserInfo(currentUser);
+loadDashboardData();
+
             }
             return true;
         } else {
@@ -2808,3 +2813,18 @@ function exportFamilyData(format = 'csv') {
         downloadJSON(familyExportData, filename);
     }
 }
+// --- Auto-initialize Supabase when the DOM is ready ---
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await initializeSupabase();
+  if (ok && currentUser) {
+    // If a session exists, go straight to the dashboard
+    showMessage(`✅ Welcome back, ${currentUser.email}!`, 'success');
+    showDashboard();
+    updateUserInfo(currentUser);
+    loadDashboardData();
+  }
+});
+
+// Optional alias in case HTML calls `initializesupabase()` (lowercase)
+window.initializesupabase = initializeSupabase;
+
