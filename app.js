@@ -278,6 +278,7 @@ async function loadDashboardData() {
     // Try to load from Supabase
     if (supabase && currentUser && currentUser.id) {
       dataLoaded = await loadFullUserDataFromSupabase();
+      
     }
 
     // Fallback to localStorage
@@ -427,6 +428,11 @@ async function loadDataFromSupabase() {
 async function loadFullUserDataFromSupabase() {
   if (!supabase || !currentUser) return false;
   try {
+    // Clear liabilities and accounts on every fresh load after login
+    familyData.liabilities = {};
+    familyData.accounts = [];
+
+    // Load family members
     const { data: members, error: membersError } = await supabase
       .from('family_members')
       .select('*')
@@ -437,8 +443,57 @@ async function loadFullUserDataFromSupabase() {
       ...m,
       photo_url: m.avatar_url || PRESET_PHOTOS[0]
     }));
+
+    // Initialize investments and liabilities containers per member
+    members.forEach(member => {
+      if (!familyData.investments[member.id]) {
+        familyData.investments[member.id] = {
+          equity: [],
+          mutualFunds: [],
+          fixedDeposits: [],
+          insurance: [],
+          bankBalances: [],
+          others: []
+        };
+      }
+
+      // Initialize empty liability arrays per member
+      familyData.liabilities[member.id] = {
+        homeLoan: [],
+        personalLoan: [],
+        creditCard: [],
+        other: []
+      };
+    });
+
+    // Load Liabilities
+    const { data: liabilities, error: liabilitiesError } = await supabase
+      .from('liabilities')
+      .select('*')
+      .in('member_id', members.map(m => m.id));
+    if (liabilitiesError) throw liabilitiesError;
+
+    if (liabilities) {
+      liabilities.forEach(l => {
+        const memberLiabilities = familyData.liabilities[l.member_id];
+        if (memberLiabilities && l.liability_type in memberLiabilities) {
+          memberLiabilities[l.liability_type].push(l);
+        }
+      });
+    }
+
+    // Load Accounts
+    const { data: accounts, error: accountsError } = await supabase
+      .from('accounts')
+      .select('*')
+      .eq('user_id', currentUser.id);
+    if (accountsError) throw accountsError;
+
+    familyData.accounts = accounts || [];
+
+    return true;
   } catch (error) {
-    console.error(error);
+    console.error('Error loading user data from Supabase:', error);
     return false;
   }
 }
@@ -2832,4 +2887,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Alias for possible casing variations if needed
 window.initializeSupabase = initializeSupabase;
-window.initializesupabase = initializeSupabase;
+}
