@@ -156,7 +156,14 @@ async function handleLogin() {
 }
 async function handleLogout() {
     // Clear in-memory data so login starts fresh
-    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+    familyData = { 
+        members: [], 
+        investments: {}, 
+        liabilities: {}, 
+        accounts: [], 
+        totals: {} 
+    };
+    saveDataToStorage(); // This saves the cleared state
     
     const authType = localStorage.getItem('famwealth_auth_type');
 
@@ -167,6 +174,22 @@ async function handleLogout() {
             console.error('Logout error:', error);
         }
     }
+
+    currentUser = null;
+    localStorage.removeItem('famwealth_user');
+    localStorage.removeItem('famwealth_auth_type');
+    // Don't remove 'famwealth_data' anymore since we want to persist the cleared state
+
+    document.getElementById('main-dashboard').style.display = 'none';
+    document.getElementById('landing-page').style.display = 'block';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+
+    // Hide member details if visible
+    closeMemberDetails();
+
+    showMessage('✅ Logged out successfully', 'success');
+}
 
     currentUser = null;
     localStorage.removeItem('famwealth_user');
