@@ -155,7 +155,7 @@ async function handleLogin() {
 
 async function handleLogout() {
     // Clear in-memory data so login starts fresh
-    familyData = { members: [], investments: { equity: [], mutualFunds: [], fixedIncome: [] }, liabilities: [], accounts: [], totals: {} };
+    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
     
     const authType = localStorage.getItem('famwealth_auth_type');
 
@@ -178,8 +178,7 @@ async function handleLogout() {
     document.getElementById('login-password').value = '';
 
     // Hide member details if visible
-    const detailsSection = document.getElementById('member-details-section');
-    if (detailsSection) detailsSection.style.display = 'none';
+    closeMemberDetails();
 
     showMessage('✅ Logged out successfully', 'success');
 }
