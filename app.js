@@ -164,8 +164,8 @@ async function handleLogout() {
         totals: {} 
     };
    localStorage.removeItem('famwealth_data'); // clear all saved data
-localStorage.removeItem('famwealth_user');
-localStorage.removeItem('famwealth_auth_type')
+   localStorage.removeItem('famwealth_user');
+   localStorage.removeItem('famwealth_auth_type');
     
     const authType = localStorage.getItem('famwealth_auth_type');
 
@@ -422,21 +422,37 @@ async function loadDataFromSupabase() {
 async function loadFullUserDataFromSupabase() {
   if (!supabase || !currentUser) return false;
   try {
-    // Load members
+    // Load family members
     const { data: members, error: membersError } = await supabase
       .from('family_members')
       .select('*')
       .eq('user_id', currentUser.id);
     if (membersError) throw membersError;
-    familyData.members = members.map(m => ({ ...m, photo_url: m.avatar_url || PRESET_PHOTOS[0] }));
 
-    // Init containers
+    familyData.members = members.map(m => ({
+      ...m,
+      photo_url: m.avatar_url || PRESET_PHOTOS[0]
+    }));
+
+    // Initialize investments and liabilities containers per member
     members.forEach(member => {
       if (!familyData.investments[member.id]) {
-        familyData.investments[member.id] = { equity: [], mutualFunds: [], fixedDeposits: [], insurance: [], bankBalances: [], others: [] };
+        familyData.investments[member.id] = {
+          equity: [],
+          mutualFunds: [],
+          fixedDeposits: [],
+          insurance: [],
+          bankBalances: [],
+          others: []
+        };
       }
       if (!familyData.liabilities[member.id]) {
-        familyData.liabilities[member.id] = { homeLoan: [], personalLoan: [], creditCard: [], other: [] };
+        familyData.liabilities[member.id] = {
+          homeLoan: [],
+          personalLoan: [],
+          creditCard: [],
+          other: []
+        };
       }
     });
 
@@ -446,123 +462,117 @@ async function loadFullUserDataFromSupabase() {
       .select('*')
       .in('member_id', members.map(m => m.id));
     if (holdingsError) throw holdingsError;
+    
     holdings.forEach(h => {
-      const inv = { id: h.id, symbol_or_name: h.symbol_or_name, invested_amount: h.invested_amount, current_value: h.current_value, broker_platform: h.broker_platform };
+      const inv = {
+        id: h.id,
+        symbol_or_name: h.symbol_or_name,
+        invested_amount: h.invested_amount,
+        current_value: h.current_value,
+        broker_platform: h.broker_platform
+      };
       const memberInv = familyData.investments[h.member_id];
       if (!memberInv) return;
-      // Distribute by asset_type like equity, mutualFunds, etc.
+
+      if (h.asset_type === 'equity') memberInv.equity.push(inv);
+      else if (h.asset_type === 'mutualFunds') memberInv.mutualFunds.push(inv);
+      else if (h.asset_type === 'bankBalances') memberInv.bankBalances.push({ ...inv, bank_name: h.bank_name, account_type: h.account_type, balance_date: h.balance_date, account_number: h.account_number, comments: h.comments });
+      else memberInv.others.push(inv);
     });
 
-    // Load fixed deposits (similar)
-    // Load insurance (similar)
+    // Load fixed deposits
+    const { data: fixedDeposits, error: fdError } = await supabase
+      .from('fixed_deposits')
+      .select('*')
+      .in('member_id', members.map(m => m.id));
+    if (fdError) throw fdError;
 
-    // --- Load liabilities
+    fixedDeposits.forEach(fd => {
+      const memberInvestments = familyData.investments[fd.member_id];
+      if (memberInvestments) {
+        memberInvestments.fixedDeposits.push({
+          id: fd.id,
+          symbol_or_name: fd.bank_name || fd.invested_in,
+          invested_amount: fd.invested_amount,
+          current_value: fd.invested_amount,
+          broker_platform: 'Bank',
+          bank_name: fd.bank_name,
+          interest_rate: fd.interest_rate,
+          start_date: fd.start_date,
+          maturity_date: fd.maturity_date,
+          interest_payout: fd.interest_payout,
+          account_number: fd.account_number,
+          nominee: fd.nominee,
+          comments: fd.comments
+        });
+      }
+    });
+
+    // Load insurance
+    const { data: insurance, error: insError } = await supabase
+      .from('insurance')
+      .select('*')
+      .in('member_id', members.map(m => m.id));
+    if (insError) throw insError;
+
+    insurance.forEach(ins => {
+      const memberInvestments = familyData.investments[ins.member_id];
+      if (memberInvestments) {
+        memberInvestments.insurance.push({
+          id: ins.id,
+          symbol_or_name: ins.policy_name,
+          invested_amount: ins.premium_amount,
+          current_value: ins.sum_assured,
+          broker_platform: ins.insurance_company,
+          policy_name: ins.policy_name,
+          policy_number: ins.policy_number,
+          insurance_company: ins.insurance_company,
+          insurance_type: ins.insurance_type,
+          sum_assured: ins.sum_assured,
+          premium_amount: ins.premium_amount,
+          premium_frequency: ins.premium_frequency,
+          start_date: ins.start_date,
+          maturity_date: ins.maturity_date,
+          next_premium_date: ins.next_premium_date,
+          nominee: ins.nominee,
+          policy_status: ins.policy_status,
+          comments: ins.comments
+        });
+      }
+    });
+
+    // Load liabilities
     const { data: liabilities, error: liabilitiesError } = await supabase
       .from('liabilities')
       .select('*')
       .eq('user_id', currentUser.id);
     if (liabilitiesError) throw liabilitiesError;
+
     familyData.liabilities = {};
     liabilities.forEach(liab => {
-      if (!familyData.liabilities[liab.member_id]) familyData.liabilities[liab.member_id] = [];
+      if (!familyData.liabilities[liab.member_id]) {
+        familyData.liabilities[liab.member_id] = [];
+      }
       familyData.liabilities[liab.member_id].push(liab);
     });
 
-    // --- Load accounts
+    // Load accounts
     const { data: accounts, error: accountsError } = await supabase
       .from('accounts')
       .select('*')
       .eq('user_id', currentUser.id);
     if (accountsError) throw accountsError;
+
     familyData.accounts = accounts || [];
 
+    // Save everything to localStorage
     saveDataToStorage();
+
     return true;
   } catch (error) {
     console.error('Error loading full user data:', error);
     return false;
   }
-}
-
-    // --- New: Load liabilities ---
-    const { data: liabilities, error: liabilitiesError } = await supabase
-      .from('liabilities')
-      .select('*')
-      .eq('user_id', currentUser.id);
-    if (liabilitiesError) throw liabilitiesError;
-
-    // organize liabilities by member id or however your data structure requires
-    familyData.liabilities = {};
-    liabilities.forEach(l => {
-      if (!familyData.liabilities[l.member_id]) {
-        familyData.liabilities[l.member_id] = [];
-      }
-      familyData.liabilities[l.member_id].push(l);
-    });
-
-    // --- New: Load accounts ---
-    const { data: accounts, error: accountsError } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('user_id', currentUser.id);
-    if (accountsError) throw accountsError;
-
-    familyData.accounts = accounts || [];
-
-    saveDataToStorage();
-    return true;
-        }catch (e) {
-    console.error('Error loading full user data:', e);
-    return false;
-  }
-}
-
-
-            // Load insurance
-            const { data: insurance, error: insError } = await supabase
-                .from('insurance')
-                .select('*')
-                .in('member_id', members.map(m => m.id));
-
-            if (insurance && !insError) {
-                insurance.forEach(ins => {
-                    const memberInvestments = familyData.investments[ins.member_id];
-                    if (memberInvestments) {
-                        memberInvestments.insurance.push({
-                            id: ins.id,
-                            symbol_or_name: ins.policy_name,
-                            invested_amount: ins.premium_amount,
-                            current_value: ins.sum_assured,
-                            broker_platform: ins.insurance_company,
-                            // Additional Insurance fields
-                            policy_name: ins.policy_name,
-                            policy_number: ins.policy_number,
-                            insurance_company: ins.insurance_company,
-                            insurance_type: ins.insurance_type,
-                            sum_assured: ins.sum_assured,
-                            premium_amount: ins.premium_amount,
-                            premium_frequency: ins.premium_frequency,
-                            start_date: ins.start_date,
-                            maturity_date: ins.maturity_date,
-                            next_premium_date: ins.next_premium_date,
-                            nominee: ins.nominee,
-                            policy_status: ins.policy_status,
-                            comments: ins.comments
-                        });
-                    }
-                });
-                console.log('✅ Loaded insurance:', insurance.length);
-            }
-
-            return true;
-        }
-
-        console.log('ℹ️ No family members found in database');
-        return false;
-    } catch (error) {
-        console.error('❌ Exception loading data from Supabase:', error);
-        return false;
-    }
 }
 
 function loadSampleData() {
