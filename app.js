@@ -98,6 +98,7 @@ async function initializeSupabase() {
 window.initializeSupabase = initializeSupabase;
 
 // ===== AUTHENTICATION =====
+// ===== LOGIN HANDLER =====
 async function handleLogin() {
     const email = document.getElementById('login-email')?.value;
     const password = document.getElementById('login-password')?.value;
@@ -109,20 +110,8 @@ async function handleLogin() {
 
     showMessage('🔄 Authenticating...', 'info');
 
-    // Demo login
-    if (email === 'demo@famwealth.com' && password === 'demo123') {
-        showMessage('✅ Demo login successful!', 'success');
-        currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
-        localStorage.setItem('famwealth_auth_type', 'demo');
-
-        // FIXED: Remove setTimeout, call immediately
-        showDashboard();
-        updateUserInfo(currentUser);
-        await loadDashboardData();
-        return;
-    }
-
-    // Supabase login
+    // Removed demo login block completely
+    // Only Supabase login from now on
     if (supabase) {
         try {
             const { data, error } = await supabase.auth.signInWithPassword({
@@ -142,14 +131,14 @@ async function handleLogin() {
                 localStorage.setItem('famwealth_auth_type', 'supabase');
                 localStorage.setItem('famwealth_user', JSON.stringify(data.user));
 
-                // FIXED: Remove setTimeout, call immediately
-                showDashboard();
-                updateUserInfo(data.user);
-                await loadDashboardData();
+                setTimeout(() => {
+                    showDashboard();
+                    updateUserInfo(data.user);
+                    loadDashboardData();
+                }, 1500);
                 return;
             }
 
-            // Handle case if no error but no user returned - fallback
             showMessage('❌ Login failed: Unknown error occurred.', 'error');
         } catch (error) {
             console.error('❌ Supabase login exception:', error);
@@ -158,9 +147,58 @@ async function handleLogin() {
         return;
     }
 
-    // Fallback if Supabase not initialized
     showMessage('❌ Login failed: Backend service unavailable.', 'error');
 }
+
+// ===== LOAD DASHBOARD DATA =====
+async function loadDashboardData() {
+  try {
+    showMessage('🔄 Loading dashboard data...', 'info');
+    let dataLoaded = false;
+
+    // Try to load from Supabase
+    if (supabase && currentUser && currentUser.id) {
+      dataLoaded = await loadFullUserDataFromSupabase();
+    }
+
+    // Fallback to localStorage
+    if (!dataLoaded) {
+      dataLoaded = loadDataFromStorage();
+    }
+
+    // Removed fallback loading of sample data completely
+
+    renderDashboard();
+    showMessage('✅ Dashboard loaded successfully', 'success');
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    // Clear memory on error to avoid corrupted data
+    familyData = { members: [], investments: {}, liabilities: {}, accounts: [], totals: {} };
+    saveDataToStorage();
+    renderDashboard();
+    showMessage('✅ Dashboard loaded with empty data due to error', 'success');
+  }
+}
+
+// ===== LOAD SAMPLE DATA FUNCTION REMOVED =====
+// Comment out or remove the entire loadSampleData() function and calls
+
+// ===== DEMO USER RELATED CODE REMOVED =====
+// Remove all references to user id 'demo-user-id' or 'demo@famwealth.com'
+
+// ===== INITIALIZATION CHANGES =====
+document.addEventListener('DOMContentLoaded', async () => {
+  const ok = await initializeSupabase();
+  if (ok && currentUser) {
+    // If a session exists, go straight to the dashboard
+    showMessage(`✅ Welcome back, ${currentUser.email}!`, 'success');
+    showDashboard();
+    updateUserInfo(currentUser);
+    loadDashboardData();
+  } else {
+    // Do not load sample or demo data here
+  }
+});
 
 async function handleLogout() {
     // FIXED: Clear authType check BEFORE clearing localStorage
