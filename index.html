@@ -1613,43 +1613,49 @@
     <!-- Initialize the application -->
     <script>
         // Initialize the application when the page loads
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Initializing FamWealth Dashboard...');
-            
-            // Initialize Supabase
-            const supabaseInitialized = await initializeSupabase();
-            
-            if (supabaseInitialized) {
-                console.log('✅ Supabase connection established');
-            } else {
-                console.log('⚠️ Running in demo mode without Supabase');
-            }
-            
-            // Check for existing session
-            const authType = localStorage.getItem('famwealth_auth_type');
-            const storedUser = localStorage.getItem('famwealth_user');
-            
-            if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
-                try {
-                    if (authType === 'demo') {
-                        currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
-                    } else {
-                        currentUser = JSON.parse(storedUser);
-                    }
-                    
-                    showDashboard();
-                    updateUserInfo(currentUser);
-                    await loadDashboardData();
-                    
-                    console.log('✅ Auto-login successful');
-                } catch (error) {
-                    console.error('❌ Auto-login failed:', error);
-                    handleLogout();
-                }
-            }
-            
-            console.log('✅ FamWealth Dashboard initialized successfully');
-        });
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('🚀 Initializing FamWealth Dashboard…');
+
+  // Initialize Supabase
+  const supabaseInitialized = await initializeSupabase();
+  if (supabaseInitialized) {
+    console.log('✅ Supabase connection established');
+  } else {
+    console.log('⚠️ Running in demo mode without Supabase');
+  }
+
+  // Wire up the login form submit handler
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', function(evt) {
+      evt.preventDefault();
+      handleLogin();
+    });
+  }
+
+  // Check for existing session
+  const authType = localStorage.getItem('famwealth_auth_type');
+  const storedUser = localStorage.getItem('famwealth_user');
+  if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
+    try {
+      if (authType === 'demo') {
+        currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
+      } else {
+        currentUser = JSON.parse(storedUser);
+      }
+      showDashboard();
+      updateUserInfo(currentUser);
+      await loadDashboardData();
+      console.log('✅ Auto-login successful');
+    } catch (err) {
+      console.error('❌ Auto-login failed:', err);
+      handleLogout();
+    }
+  }
+
+  console.log('✅ FamWealth Dashboard initialized successfully');
+});
+       
     </script>
 </body>
 </html>
