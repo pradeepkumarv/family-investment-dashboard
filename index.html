@@ -8,19 +8,6 @@
     
     <!-- Supabase CDN -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>
-  // After library loads
-  initializeSupabase().then(initialized => {
-    if (initialized) {
-      // Now that supabase and currentUser (if session exists) are set:
-      loadDashboardData();
-    } else {
-      // Fallback to sample data immediately
-      loadDashboardData();
-    }
-  });
-</script>
-
     
     <style>
         /* ===== GLOBAL STYLES ===== */
@@ -1620,55 +1607,62 @@
         </div>
     </div>
 
-    <!-- Include the JavaScript file -->
+    <!-- FIXED: Load app.js first, THEN initialize -->
     <script src="app.js"></script>
     
-    <!-- Initialize the application -->
+    <!-- FIXED: Initialize application AFTER app.js loads -->
     <script>
         // Initialize the application when the page loads
-document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🚀 Initializing FamWealth Dashboard…');
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing FamWealth Dashboard...');
 
-  // Initialize Supabase
-  const supabaseInitialized = await initializeSupabase();
-  if (supabaseInitialized) {
-    console.log('✅ Supabase connection established');
-  } else {
-    console.log('⚠️ Running in demo mode without Supabase');
-  }
+            // FIXED: Initialize Supabase first and wait for it
+            const supabaseInitialized = await initializeSupabase();
+            if (supabaseInitialized) {
+                console.log('✅ Supabase connection established');
+            } else {
+                console.log('⚠️ Running in demo mode without Supabase');
+            }
 
-  // Wire up the login form submit handler
-  const loginForm = document.getElementById('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', function(evt) {
-      evt.preventDefault();
-      handleLogin();
-    });
-  }
+            // Wire up the login form submit handler
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(evt) {
+                    evt.preventDefault();
+                    handleLogin();
+                });
+            }
 
-  // Check for existing session
-  const authType = localStorage.getItem('famwealth_auth_type');
-  const storedUser = localStorage.getItem('famwealth_user');
-  if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
-    try {
-      if (authType === 'demo') {
-        currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
-      } else {
-        currentUser = JSON.parse(storedUser);
-      }
-      showDashboard();
-      updateUserInfo(currentUser);
-      await loadDashboardData();
-      console.log('✅ Auto-login successful');
-    } catch (err) {
-      console.error('❌ Auto-login failed:', err);
-      handleLogout();
-    }
-  }
+            // FIXED: Check for existing session AFTER Supabase initialization
+            const authType = localStorage.getItem('famwealth_auth_type');
+            const storedUser = localStorage.getItem('famwealth_user');
+            
+            if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
+                try {
+                    if (authType === 'demo') {
+                        currentUser = { email: 'demo@famwealth.com', id: 'demo-user-id' };
+                    } else {
+                        currentUser = JSON.parse(storedUser);
+                    }
+                    
+                    showDashboard();
+                    updateUserInfo(currentUser);
+                    
+                    // FIXED: Load dashboard data AFTER everything is ready
+                    await loadDashboardData();
+                    console.log('✅ Auto-login successful');
+                } catch (err) {
+                    console.error('❌ Auto-login failed:', err);
+                    // Clear corrupted data and start fresh
+                    localStorage.removeItem('famwealth_auth_type');
+                    localStorage.removeItem('famwealth_user');
+                    localStorage.removeItem('famwealth_data');
+                    handleLogout();
+                }
+            }
 
-  console.log('✅ FamWealth Dashboard initialized successfully');
-});
-       
+            console.log('✅ FamWealth Dashboard initialized successfully');
+        });
     </script>
 </body>
 </html>
