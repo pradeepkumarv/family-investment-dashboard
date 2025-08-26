@@ -511,7 +511,7 @@ async function loadFullUserDataFromSupabase() {
 
     saveDataToStorage();
     return true;
-  } catch (e) {
+  catch (e) {
     console.error('Error loading full user data:', e);
     return false;
   }
