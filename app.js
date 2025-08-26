@@ -184,23 +184,7 @@ async function handleLogout() {
     showMessage('✅ Logged out successfully', 'success');
 }
 
-
-    currentUser = null;
-    localStorage.removeItem('famwealth_user');
-    localStorage.removeItem('famwealth_auth_type');
-    localStorage.removeItem('famwealth_data');
-
-    document.getElementById('main-dashboard').style.display = 'none';
-    document.getElementById('landing-page').style.display = 'block';
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-password').value = '';
-
-    // Hide member details if visible
-    closeMemberDetails();
-
-    showMessage('✅ Logged out successfully', 'success');
-}
-
+    
 // ===== UI HELPER FUNCTIONS =====
 function showDashboard() {
     document.getElementById('landing-page').style.display = 'none';
