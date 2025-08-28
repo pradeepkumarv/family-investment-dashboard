@@ -274,7 +274,7 @@ async function loadDashboardData() {
         const { data: investmentsData, error: investmentsError } = await supabase
             .from('investments')
             .select('*')
-            .eq('user_id', currentUser.id)
+            .eq('member_id', currentUser.id)
             .order('created_at', { ascending: false });
 
         if (investmentsError) {
@@ -288,7 +288,7 @@ async function loadDashboardData() {
         const { data: liabilitiesData, error: liabilitiesError } = await supabase
             .from('liabilities')
             .select('*')
-            .eq('user_id', currentUser.id)
+            .eq('member_id', currentUser.id)
             .order('created_at', { ascending: false });
 
         if (liabilitiesError) {
