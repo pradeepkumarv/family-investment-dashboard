@@ -2252,12 +2252,12 @@ async function handlePhotoUpload(event) {
     const { error } = await supabase
       .from('family_members')
       .update({ photo: imageUrl })
-      .eq('id', currentPhotoId);
+      .eq('id', currentPhotoMemberId);
 
     if (error) throw error;
 
     // Update in local app data
-    const member = familyMembers.find(m => m.id === currentPhotoId);
+    const member = familyMembers.find(m => m.id === currentPhotoMemberId);
     if (member) member.photo = imageUrl;
 
     // Refresh UI
