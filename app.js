@@ -794,9 +794,8 @@ function showMemberDetails(memberId) {
     detailsContent.innerHTML = `
         <div class="member-details-overview">
             <div class="member-profile">
-                <img src="${member.photo_url || 'data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><text y=\\'.9em\\' font-size=\\'90\\'>👤</text></svg>'}" 
-                     alt="${member.name}" class="member-detail-photo"
-                     onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><text y=\\'.9em\\' font-size=\\'90\\'>👤</text></svg>'" />
+               <img src="${photoUrl}" alt="${member.name}" class="member-photo" 
+         onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><text y=\\'.9em\\' font-size=\\'90\\'>👤</text></svg>'" />
                 <div class="member-info">
                     <h3>${member.name} ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}</h3>
                     <div class="relationship">${member.relationship}</div>
