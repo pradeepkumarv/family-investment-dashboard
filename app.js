@@ -2168,3 +2168,40 @@ window.loadDashboardData = loadDashboardData;
 window.showDashboard = showDashboard;
 window.updateUserInfo = updateUserInfo;
 window.currentUser = currentUser;
+    // ===== APPLICATION INITIALIZATION =====
+window.addEventListener('load', async () => {
+  console.log('🚀 Initializing FamWealth Dashboard…');
+
+  const supabaseInitialized = await initializeSupabase();
+  console.log(supabaseInitialized
+    ? '✅ Supabase connection established'
+    : '⚠️ Running in demo mode without Supabase');
+
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', e => {
+      e.preventDefault();
+      handleLogin();
+    });
+  }
+
+  const authType = localStorage.getItem('famwealth_auth_type');
+  const storedUser = localStorage.getItem('famwealth_user');
+  if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
+    try {
+      const user = authType === 'demo'
+        ? { email: 'demo@famwealth.com', id: 'demo-user-id' }
+        : JSON.parse(storedUser);
+      currentUser = user;
+      showDashboard();
+      updateUserInfo(user);
+      await loadDashboardData();
+      console.log('✅ Auto-login successful');
+    } catch {
+      localStorage.removeItem('famwealth_auth_type');
+      localStorage.removeItem('famwealth_user');
+      handleLogout();
+    }
+  }
+});
+
