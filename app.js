@@ -260,7 +260,7 @@ async function loadDashboardData() {
         const { data: membersData, error: membersError } = await supabase
             .from('family_members')
             .select('*')
-            .eq('member_id', currentUser.id)
+            .eq('user_id', currentUser.id)
             .order('created_at', { ascending: true });
 
         if (membersError) {
@@ -274,7 +274,7 @@ async function loadDashboardData() {
         const { data: investmentsData, error: investmentsError } = await supabase
             .from('investments')
             .select('*')
-            .eq('member_id', currentUser.id)
+            .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
 
         if (investmentsError) {
@@ -288,7 +288,7 @@ async function loadDashboardData() {
         const { data: liabilitiesData, error: liabilitiesError } = await supabase
             .from('liabilities')
             .select('*')
-            .eq('member_id', currentUser.id)
+            .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
 
         if (liabilitiesError) {
@@ -302,7 +302,7 @@ async function loadDashboardData() {
         const { data: accountsData, error: accountsError } = await supabase
             .from('accounts')
             .select('*')
-            .eq('member_id', currentUser.id)
+            .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
 
         if (accountsError) {
@@ -316,7 +316,7 @@ async function loadDashboardData() {
         const { data: remindersData, error: remindersError } = await supabase
             .from('reminders')
             .select('*')
-            .eq('member_id', currentUser.id)
+            .eq('user_id', currentUser.id)
             .order('date', { ascending: true });
 
         if (remindersError) {
