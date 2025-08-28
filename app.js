@@ -182,7 +182,7 @@ function handleDemoLogin(email) {
     
     showDashboard();
     updateUserInfo(currentUser);
-    loadDemoData();
+    loadDashboardData();
     showMessage('Logged in with demo data!', 'info');
 }
 
@@ -244,15 +244,14 @@ async function loadDashboardData() {
     }
 
     const authType = localStorage.getItem('famwealth_auth_type');
-    if (authType === 'demo') {
+    if (authType === 'demo'|| !supabase) {
+        console.log('📊 Loading demo data...');
         loadDemoData();
         return;
     }
 
-    if (!supabase) {
-        loadDemoData();
-        return;
-    }
+   
+    if (authType === 'supabase' && supabase) {
 
     try {
         setLoadingState(true);
