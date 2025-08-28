@@ -242,118 +242,110 @@ async function loadDashboardData() {
         console.warn('No current user; cannot load data.');
         return;
     }
-
     const authType = localStorage.getItem('famwealth_auth_type');
-    if (authType === 'demo'|| !supabase) {
+    if (authType === 'demo' || !supabase) {
         console.log('📊 Loading demo data...');
         loadDemoData();
         return;
     }
-
-   
     if (authType === 'supabase' && supabase) {
+        try {
+            setLoadingState(true);
+            // Load family members
+            const { data: membersData, error: membersError } = await supabase
+                .from('family_members')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: true });
 
-    try {
-        setLoadingState(true);
+            if (membersError) {
+                console.error('Error fetching family members:', membersError);
+                showMessage('Failed to load family members.', 'error');
+                setLoadingState(false);
+                return;
+            }
 
-        // Load family members
-        const { data: membersData, error: membersError } = await supabase
-            .from('family_members')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: true });
+            familyMembers = membersData || [];
+            const memberIds = familyMembers.map(member => member.id);
 
-        if (membersError) {
-            const memberIds = (membersData || []).map(member => member.id);
+            // Load investments
             let investmentsData = [];
-if (memberIds.length > 0) {
-  // 2. Query for all investments belonging to any family member
-  const { data, error } = await supabase
-    .from('investments')
-    .select('*')
-    .in('member_id', memberIds)
-    .order('created_at', { ascending: false });
-  if (error) { /* handle error */ }
-  investmentsData = data || [];
-
-        }
-        familyMembers = membersData || [];
-
-        // Load investments
-        
-        if (investmentsError) {
-            console.error('Error fetching investments:', investmentsError);
-            showMessage('Failed to load investments.', 'error');
-            return;
-        }
-        investments = investmentsData || [];
-
-        // Load liabilities
-        const { data: liabilitiesData, error: liabilitiesError } = await supabase
-            .from('liabilities')
-            .select('*')
-            .eq('member_id', currentUser.id)
-            .order('created_at', { ascending: false });
-
-        if (liabilitiesError) {
-            console.error('Error fetching liabilities:', liabilitiesError);
-            showMessage('Failed to load liabilities.', 'error');
-            return;
-        }
-        let liabilities = liabilitiesData || [];
             if (memberIds.length > 0) {
-  const { data, error } = await supabase
-    .from('liabilities')
-    .select('*')
-    .in('member_id', memberIds)
-    .order('created_at', { ascending: false });
-  if (error) { /* handle error */ }
-  liabilitiesData = data || [];
-}
+                const { data, error } = await supabase
+                    .from('investments')
+                    .select('*')
+                    .in('member_id', memberIds)
+                    .order('created_at', { ascending: false });
+                if (error) {
+                    console.error('Error fetching investments:', error);
+                    showMessage('Failed to load investments.', 'error');
+                    setLoadingState(false);
+                    return;
+                }
+                investmentsData = data || [];
+            }
+            investments = investmentsData;
 
-        // Load accounts
-        const { data: accountsData, error: accountsError } = await supabase
-            .from('accounts')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false });
+            // Load liabilities
+            let liabilitiesData = [];
+            if (memberIds.length > 0) {
+                const { data, error } = await supabase
+                    .from('liabilities')
+                    .select('*')
+                    .in('member_id', memberIds)
+                    .order('created_at', { ascending: false });
+                if (error) {
+                    console.error('Error fetching liabilities:', error);
+                    showMessage('Failed to load liabilities.', 'error');
+                    setLoadingState(false);
+                    return;
+                }
+                liabilitiesData = data || [];
+            }
+            liabilities = liabilitiesData;
 
-        if (accountsError) {
-            console.error('Error fetching accounts:', accountsError);
-            showMessage('Failed to load accounts.', 'error');
-            return;
+            // Load accounts
+            const { data: accountsData, error: accountsError } = await supabase
+                .from('accounts')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false });
+            if (accountsError) {
+                console.error('Error fetching accounts:', accountsError);
+                showMessage('Failed to load accounts.', 'error');
+                setLoadingState(false);
+                return;
+            }
+            accounts = accountsData || [];
+
+            // Load reminders
+            const { data: remindersData, error: remindersError } = await supabase
+                .from('reminders')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('date', { ascending: true });
+            if (remindersError) {
+                console.error('Error fetching reminders:', remindersError);
+            }
+            reminders = remindersData || [];
+
+            // Render all data
+            renderFamilyMembers();
+            renderStatsOverview();
+            renderInvestmentTabContent('equity');
+            renderLiabilityTabContent('homeLoan');
+            renderAccounts();
+            renderReminders();
+            updateLastUpdated();
+            setLoadingState(false);
+
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
+            showMessage('Error loading dashboard data.', 'error');
+            setLoadingState(false);
         }
-        accounts = accountsData || [];
+    
 
-        // Load reminders
-        const { data: remindersData, error: remindersError } = await supabase
-            .from('reminders')
-            .select('*')
-            .eq('user_id', currentUser.id)
-            .order('date', { ascending: true });
-
-        if (remindersError) {
-            console.error('Error fetching reminders:', remindersError);
-        }
-        reminders = remindersData || [];
-
-        // Render all data
-        renderFamilyMembers();
-        renderStatsOverview();
-        renderInvestmentTabContent('equity');
-        renderLiabilityTabContent('homeLoan');
-        renderAccounts();
-        renderReminders();
-        updateLastUpdated();
-
-        setLoadingState(false);
-     catch (error) {
-        console.error('Error loading dashboard data:', error);
-        showMessage('Error loading dashboard data.', 'error');
-        setLoadingState(false);
-    }
-}
-}
     
 function setLoadingState(isLoading) {
     const dashboard = document.getElementById('main-dashboard');
