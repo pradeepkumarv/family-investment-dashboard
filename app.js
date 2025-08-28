@@ -264,9 +264,18 @@ async function loadDashboardData() {
             .order('created_at', { ascending: true });
 
         if (membersError) {
-            console.error('Error fetching family members:', membersError);
-            showMessage('Failed to load family members.', 'error');
-            return;
+            const memberIds = (membersData || []).map(member => member.id);
+            let investmentsData = [];
+if (memberIds.length > 0) {
+  // 2. Query for all investments belonging to any family member
+  const { data, error } = await supabase
+    .from('investments')
+    .select('*')
+    .in('member_id', memberIds)
+    .order('created_at', { ascending: false });
+  if (error) { /* handle error */ }
+  investmentsData = data || [];
+
         }
         familyMembers = membersData || [];
 
@@ -296,7 +305,16 @@ async function loadDashboardData() {
             showMessage('Failed to load liabilities.', 'error');
             return;
         }
-        liabilities = liabilitiesData || [];
+        let liabilities = liabilitiesData || [];
+            if (memberIds.length > 0) {
+  const { data, error } = await supabase
+    .from('liabilities')
+    .select('*')
+    .in('member_id', memberIds)
+    .order('created_at', { ascending: false });
+  if (error) { /* handle error */ }
+  liabilitiesData = data || [];
+}
 
         // Load accounts
         const { data: accountsData, error: accountsError } = await supabase
