@@ -344,9 +344,9 @@ async function loadDashboardData() {
             showMessage('Error loading dashboard data.', 'error');
             setLoadingState(false);
         }
-    
-
-    
+    }  
+}   
+   
 function setLoadingState(isLoading) {
     const dashboard = document.getElementById('main-dashboard');
     if (dashboard) {
