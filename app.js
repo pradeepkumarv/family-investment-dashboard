@@ -280,12 +280,7 @@ if (memberIds.length > 0) {
         familyMembers = membersData || [];
 
         // Load investments
-        const { data: investmentsData, error: investmentsError } = await supabase
-            .from('investments')
-            .select('*')
-            .eq('member_id', currentUser.id)
-            .order('created_at', { ascending: false });
-
+        
         if (investmentsError) {
             console.error('Error fetching investments:', investmentsError);
             showMessage('Failed to load investments.', 'error');
