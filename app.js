@@ -1756,8 +1756,8 @@ async function saveAccount() {
             account_type: accountType,
             institution: institution,
             account_number: accountNumber,
-            holder_id: holderId,
-            nominee_id: nomineeId || null,
+            holder_name: holderName,
+            nominee: nomineeName || null,
             status: status,
             comments: comments,
             created_at: new Date().toISOString()
