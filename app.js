@@ -2210,4 +2210,64 @@ window.addEventListener('load', async () => {
     }
   }
 });
+// Upload photo file to Supabase Storage and get public URL
+async function uploadPhoto(file) {
+  if (!file) return null;
+
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${generateId()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('avatars')   // Make sure you create 'avatars' bucket in Supabase Storage
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    const { data: { publicUrl }, error: urlError } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    if (urlError) throw urlError;
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Upload error:', error);
+    showMessage('Photo upload failed', 'error');
+    return null;
+  }
+}
+
+// Handler for file input change event
+async function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const imageUrl = await uploadPhoto(file);
+  if (!imageUrl) return;
+
+  try {
+    // Update photo URL in 'family_members' table for current member
+    const { error } = await supabase
+      .from('family_members')
+      .update({ photo: imageUrl })
+      .eq('id', currentPhotoId);
+
+    if (error) throw error;
+
+    // Update in local app data
+    const member = familyMembers.find(m => m.id === currentPhotoId);
+    if (member) member.photo = imageUrl;
+
+    // Refresh UI
+    renderFamilyMembers();
+    showMessage('Photo updated successfully', 'success');
+    closeModal('photo-upload-modal');
+  } catch (error) {
+    console.error('Error updating photo URL:', error);
+    showMessage('Failed to update photo', 'error');
+  }
+}
+
 
