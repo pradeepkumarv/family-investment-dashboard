@@ -347,13 +347,14 @@ if (memberIds.length > 0) {
         updateLastUpdated();
 
         setLoadingState(false);
-    } catch (error) {
+     catch (error) {
         console.error('Error loading dashboard data:', error);
         showMessage('Error loading dashboard data.', 'error');
         setLoadingState(false);
     }
 }
-
+}
+    
 function setLoadingState(isLoading) {
     const dashboard = document.getElementById('main-dashboard');
     if (dashboard) {
