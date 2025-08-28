@@ -353,7 +353,7 @@ if (memberIds.length > 0) {
         setLoadingState(false);
     }
 }
-}
+
 function setLoadingState(isLoading) {
     const dashboard = document.getElementById('main-dashboard');
     if (dashboard) {
