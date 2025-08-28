@@ -2164,3 +2164,7 @@ window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.initializeSupabase = initializeSupabase;
 window.loadDashboardData = loadDashboardData;
+// ===== MAKE ADDITIONAL FUNCTIONS GLOBALLY AVAILABLE =====
+window.showDashboard = showDashboard;
+window.updateUserInfo = updateUserInfo;
+window.currentUser = currentUser;
