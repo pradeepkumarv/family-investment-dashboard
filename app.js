@@ -237,6 +237,25 @@ function handleLogout() {
 }
 
 // ===== DATA LOADING FUNCTIONS =====
+   
+function setLoadingState(isLoading) {
+    const dashboard = document.getElementById('main-dashboard');
+    if (dashboard) {
+        if (isLoading) {
+            dashboard.classList.add('loading');
+        } else {
+            dashboard.classList.remove('loading');
+        }
+    }
+}
+
+function updateLastUpdated() {
+    const now = new Date();
+    const lastUpdatedSpan = document.getElementById('last-updated');
+    const lastUpdatedDisplay = document.getElementById('last-updated-display');
+    
+    const timeString = now.toLocaleString();
+    // 2. FIXED: loadDashboardData for shared data access
 async function loadDashboardData() {
     if (!currentUser) {
         console.warn('No current user; cannot load data.');
@@ -251,11 +270,14 @@ async function loadDashboardData() {
     if (authType === 'supabase' && supabase) {
         try {
             setLoadingState(true);
-            // Load family members
+
+            // SHARED DATA: Remove user_id filtering for all queries
+
+            // Load family members (SHARED)
             const { data: membersData, error: membersError } = await supabase
                 .from('family_members')
                 .select('*')
-                 // No user_id filtering = all users see all family data
+                // REMOVED: .eq('user_id', currentUser.id) for shared data
                 .order('created_at', { ascending: true });
 
             if (membersError) {
@@ -268,7 +290,7 @@ async function loadDashboardData() {
             familyMembers = membersData || [];
             const memberIds = familyMembers.map(member => member.id);
 
-            // Load investments
+            // Load investments (SHARED)
             let investmentsData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -286,7 +308,7 @@ async function loadDashboardData() {
             }
             investments = investmentsData;
 
-            // Load liabilities
+            // Load liabilities (SHARED)
             let liabilitiesData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -304,11 +326,11 @@ async function loadDashboardData() {
             }
             liabilities = liabilitiesData;
 
-            // Load accounts
+            // Load accounts (SHARED - no user_id filtering)
             const { data: accountsData, error: accountsError } = await supabase
                 .from('accounts')
                 .select('*')
-                .eq('user_id', currentUser.id)
+                // REMOVED: .eq('user_id', currentUser.id) for shared data
                 .order('created_at', { ascending: false });
             if (accountsError) {
                 console.error('Error fetching accounts:', accountsError);
@@ -318,11 +340,11 @@ async function loadDashboardData() {
             }
             accounts = accountsData || [];
 
-            // Load reminders
+            // Load reminders (SHARED)
             const { data: remindersData, error: remindersError } = await supabase
                 .from('reminders')
                 .select('*')
-                .eq('user_id', currentUser.id)
+                // REMOVED: .eq('user_id', currentUser.id) for shared data
                 .order('date', { ascending: true });
             if (remindersError) {
                 console.error('Error fetching reminders:', remindersError);
@@ -345,26 +367,8 @@ async function loadDashboardData() {
             setLoadingState(false);
         }
     }  
-}   
-   
-function setLoadingState(isLoading) {
-    const dashboard = document.getElementById('main-dashboard');
-    if (dashboard) {
-        if (isLoading) {
-            dashboard.classList.add('loading');
-        } else {
-            dashboard.classList.remove('loading');
-        }
-    }
 }
 
-function updateLastUpdated() {
-    const now = new Date();
-    const lastUpdatedSpan = document.getElementById('last-updated');
-    const lastUpdatedDisplay = document.getElementById('last-updated-display');
-    
-    const timeString = now.toLocaleString();
-    
     if (lastUpdatedSpan) {
         lastUpdatedSpan.textContent = timeString;
     }
@@ -1258,42 +1262,49 @@ function handlePhotoUpload(event) {
     
     // Reset file input
     event.target.value = '';
-}
-
+}// 3. FIXED: Photo upload functionality
 async function savePhoto() {
     if (!selectedPhoto) {
         showMessage('Please select a photo.', 'error');
         return;
     }
-    
+
     try {
         const authType = localStorage.getItem('famwealth_auth_type');
-        
+
         if (authType === 'demo' || !supabase) {
             // Demo mode - update local data
             const member = familyMembers.find(m => m.id === currentPhotoMemberId);
             if (member) {
                 member.photo = selectedPhoto;
-                member.photo_url = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`;
+                // Create a proper photo URL for the emoji
+                member.photo_url = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${getEmojiForPhoto(selectedPhoto)}</text></svg>`;
             }
         } else {
-            // Supabase mode
+            // Supabase mode - FIXED: Update both photo and photo_url
+            const photoUrl = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${getEmojiForPhoto(selectedPhoto)}</text></svg>`;
+
             const { error } = await supabase
                 .from('family_members')
-                .update({ photo: selectedPhoto })
+                .update({ 
+                    photo: selectedPhoto,
+                    photo_url: photoUrl  // FIXED: Also update photo_url
+                })
                 .eq('id', currentPhotoMemberId);
-                
+
             if (error) {
                 throw error;
             }
-            
-            // Update local data
+
+            // FIXED: Update local data with both fields
             const member = familyMembers.find(m => m.id === currentPhotoMemberId);
             if (member) {
                 member.photo = selectedPhoto;
+                member.photo_url = photoUrl;
             }
         }
-        
+
+        // Force re-render to show updated photo
         renderFamilyMembers();
         closeModal('photo-modal');
         showMessage('Photo updated successfully!', 'success');
@@ -1302,6 +1313,23 @@ async function savePhoto() {
         showMessage('Error updating photo.', 'error');
     }
 }
+
+// Helper function to get emoji for photo name
+function getEmojiForPhoto(photoName) {
+    const photoEmojiMap = {
+        'man1.png': '👨',
+        'man2.png': '🧑',
+        'woman1.png': '👩',
+        'woman2.png': '👩‍💼',
+        'boy1.png': '👦',
+        'girl1.png': '👧',
+        'elderly-man.png': '👴',
+        'elderly-woman.png': '👵',
+        'default.png': '👤'
+    };
+    return photoEmojiMap[photoName] || '👤';
+}
+
 
 // ===== INVESTMENT FUNCTIONS =====
 function openAddInvestmentModal() {
@@ -1780,6 +1808,7 @@ function openAddAccountModal() {
     openModal('account-modal');
 }
 
+// 1. FIXED: saveAccount function - provides holder_name and nominee_name
 async function saveAccount() {
     const accountType = document.getElementById('account-type').value;
     const institution = document.getElementById('account-institution').value.trim();
@@ -1788,8 +1817,6 @@ async function saveAccount() {
     const nomineeId = document.getElementById('account-nominee').value;
     const status = document.getElementById('account-status').value;
     const comments = document.getElementById('account-comments').value.trim();
-    const holderName = getMemberNameById(holderId);
-    const nominee = nomineeId ? getMemberNameById(nomineeId) : null;
 
     if (!accountType || !institution || !accountNumber || !holderId) {
         showMessage('Please fill in all required fields.', 'error');
@@ -1797,24 +1824,30 @@ async function saveAccount() {
     }
 
     try {
+        // FIXED: Include holder_name and nominee_name from member data
+        const holder = familyMembers.find(m => m.id === holderId);
+        const nominee = nomineeId ? familyMembers.find(m => m.id === nomineeId) : null;
+
         const accountData = {
             user_id: currentUser.id,
             account_type: accountType,
             institution: institution,
             account_number: accountNumber,
             holder_id: holderId,
+            holder_name: holder ? holder.name : '',     // FIXED: Provide holder_name
             nominee_id: nomineeId || null,
+            nominee_name: nominee ? nominee.name : '',  // FIXED: Provide nominee_name
             status: status,
             comments: comments,
             created_at: new Date().toISOString()
         };
 
+        console.log('✅ Account data with names:', accountData);
+
         if (editingAccountId) {
-            // Update existing account
             await updateAccountData(editingAccountId, accountData);
             showMessage('Account updated successfully!', 'success');
         } else {
-            // Add new account
             await addAccountData(accountData);
             showMessage('Account added successfully!', 'success');
         }
@@ -1824,7 +1857,7 @@ async function saveAccount() {
         closeModal('account-modal');
     } catch (error) {
         console.error('Error saving account:', error);
-        showMessage('Error saving account.', 'error');
+        showMessage('Error saving account: ' + error.message, 'error');
     }
 }
 
@@ -2310,4 +2343,63 @@ async function handlePhotoUpload(event) {
   }
 }
 
+.import-section {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
 
+.import-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.csv-template {
+    background: #f1f5f9;
+    padding: 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.csv-template pre {
+    background: #e2e8f0;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 12px;
+}
+
+.csv-template ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.csv-template code {
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+#import-preview .table-responsive {
+    max-height: 300px;
+    overflow: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.file-upload {
+    text-align: center;
+    padding: 20px;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.file-upload:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+}
