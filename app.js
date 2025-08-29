@@ -255,7 +255,7 @@ async function loadDashboardData() {
             const { data: membersData, error: membersError } = await supabase
                 .from('family_members')
                 .select('*')
-                .eq('user_id', currentUser.id)
+                 // No user_id filtering = all users see all family data
                 .order('created_at', { ascending: true });
 
             if (membersError) {
@@ -1498,45 +1498,65 @@ async function saveInvestment() {
     const type = document.getElementById('investment-type').value;
     const name = document.getElementById('investment-name').value.trim();
     const amount = parseFloat(document.getElementById('investment-amount').value);
+    const currentValue = parseFloat(document.getElementById('investment-current-value').value) || amount;
+    const platform = document.getElementById('investment-platform').value.trim() || 'Not Specified';
 
     if (!memberId || !type || !name || !amount) {
         showMessage('Please fill in all required fields.', 'error');
         return;
     }
 
+    if (amount <= 0) {
+        showMessage('Invested amount must be greater than 0.', 'error');
+        return;
+    }
+
     try {
-        // MINIMAL DATA - Only essential columns
-        const minimalData = {
+        // Clean data structure matching the new table
+        const investmentData = {
             member_id: memberId,
-            symbol_or_name: name,
+            investment_type: type,           // Now guaranteed to exist
+            symbol_or_name: name,           // Clean column name
             invested_amount: amount,
-            current_value: amount, // Default to invested amount
-            user_id: currentUser.id
+            current_value: currentValue,
+            broker_platform: platform,     // Clean column name
+            user_id: currentUser.id,
+            created_at: new Date().toISOString()
         };
 
-        console.log('Minimal investment data:', minimalData);
-
-        const { data, error } = await supabase
-            .from('investments')
-            .insert([minimalData])
-            .select();
-
-        if (error) {
-            throw error;
+        // Add conditional details for fixed deposits
+        if (type === 'fixedDeposits') {
+            investmentData.fd_details = {
+                bank_name: document.getElementById('fd-bank-name')?.value || '',
+                interest_rate: parseFloat(document.getElementById('fd-interest-rate')?.value) || 0,
+                start_date: document.getElementById('fd-start-date')?.value || '',
+                maturity_date: document.getElementById('fd-maturity-date')?.value || '',
+                interest_payout: document.getElementById('fd-interest-payout')?.value || '',
+                account_number: document.getElementById('fd-account-number')?.value || '',
+                nominee: document.getElementById('fd-nominee')?.value || '',
+                comments: document.getElementById('fd-comments')?.value || ''
+            };
         }
 
-        // Add to local array
-        investments.push(data[0]);
+        console.log('✅ Clean investment data:', investmentData);
 
-        showMessage('Investment added successfully!', 'success');
-        renderInvestmentTabContent('equity');
+        if (editingInvestmentId) {
+            await updateInvestmentData(editingInvestmentId, investmentData);
+            showMessage('Investment updated successfully! ✅', 'success');
+        } else {
+            await addInvestmentData(investmentData);
+            showMessage('Investment added successfully! ✅', 'success');
+        }
+
+        renderInvestmentTabContent(type);
+        renderStatsOverview();
         closeModal('investment-modal');
+        
     } catch (error) {
-        console.error('Error:', error);
-        showMessage('Error: ' + error.message, 'error');
+        console.error('❌ Investment save error:', error);
+        showMessage(`Error: ${error.message}`, 'error');
     }
 }
-
 
 async function saveLiability() {
     const memberId = document.getElementById('liability-member').value;
