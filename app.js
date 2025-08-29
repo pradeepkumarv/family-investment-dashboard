@@ -1824,7 +1824,7 @@ async function saveAccount() {
     }
 
     try {
-        // FIXED: Include holder_name and nominee_name from member data
+        // FIXED: Include holder_name and nominee_name
         const holder = familyMembers.find(m => m.id === holderId);
         const nominee = nomineeId ? familyMembers.find(m => m.id === nomineeId) : null;
 
@@ -1834,15 +1834,13 @@ async function saveAccount() {
             institution: institution,
             account_number: accountNumber,
             holder_id: holderId,
-            holder_name: holder ? holder.name : '',     // FIXED: Provide holder_name
+            holder_name: holder ? holder.name : '',     // FIXED
             nominee_id: nomineeId || null,
-            nominee_name: nominee ? nominee.name : '',  // FIXED: Provide nominee_name
+            nominee_name: nominee ? nominee.name : '',  // FIXED
             status: status,
             comments: comments,
             created_at: new Date().toISOString()
         };
-
-        console.log('✅ Account data with names:', accountData);
 
         if (editingAccountId) {
             await updateAccountData(editingAccountId, accountData);
@@ -2207,6 +2205,382 @@ document.addEventListener('DOMContentLoaded', function() {
 // ===== APPLICATION INITIALIZATION =====
 console.log('✅ FamWealth Dashboard app.js loaded successfully (2900+ lines)');
 console.log('🔧 Ready for initialization');
+// ===== IMPORT FUNCTIONALITY JAVASCRIPT FUNCTIONS =====
+// Add these functions to your app.js file (at the end, before the global window assignments)
+
+// Global import variables
+let currentImportType = null;
+let importData = null;
+
+// Open import modal
+function openImportModal(type) {
+    currentImportType = type;
+    document.getElementById('import-modal-title').textContent = `Import ${capitalizeFirst(type)}`;
+
+    // Show instructions based on type
+    const instructions = getImportInstructions(type);
+    document.getElementById('import-instructions').innerHTML = instructions;
+
+    // Reset file input and preview
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('import-btn').disabled = true;
+    document.getElementById('file-name').textContent = '';
+
+    openModal('import-modal');
+}
+
+// Get import instructions for each data type
+function getImportInstructions(type) {
+    const templates = {
+        investments: `
+            <h4>📊 Investment Import Instructions</h4>
+            <p>CSV should contain these columns (exact names required):</p>
+            <div class="csv-template">
+                <strong>Required columns:</strong>
+                <ul>
+                    <li><code>member_name</code> - Name of family member</li>
+                    <li><code>investment_type</code> - equity, mutualFunds, fixedDeposits, insurance, bankBalances, others</li>
+                    <li><code>name</code> - Investment/stock/fund name</li>
+                    <li><code>invested_amount</code> - Amount invested</li>
+                    <li><code>current_value</code> - Current value (optional, defaults to invested_amount)</li>
+                    <li><code>platform</code> - Broker/platform name (optional)</li>
+                </ul>
+                <strong>Example CSV content:</strong>
+                <pre>member_name,investment_type,name,invested_amount,current_value,platform
+John Doe,equity,HDFC Bank,50000,55000,Zerodha
+Jane Doe,mutualFunds,SBI Bluechip Fund,100000,110000,Groww
+John Doe,fixedDeposits,ICICI Bank FD,200000,210000,ICICI Bank</pre>
+            </div>
+        `,
+        liabilities: `
+            <h4>📉 Liability Import Instructions</h4>
+            <p>CSV should contain these columns (exact names required):</p>
+            <div class="csv-template">
+                <strong>Required columns:</strong>
+                <ul>
+                    <li><code>member_name</code> - Name of family member</li>
+                    <li><code>liability_type</code> - homeLoan, personalLoan, creditCard, other</li>
+                    <li><code>lender</code> - Name of lender/bank</li>
+                    <li><code>outstanding_amount</code> - Outstanding amount</li>
+                    <li><code>emi_amount</code> - Monthly EMI (optional)</li>
+                    <li><code>interest_rate</code> - Interest rate % (optional)</li>
+                </ul>
+                <strong>Example CSV content:</strong>
+                <pre>member_name,liability_type,lender,outstanding_amount,emi_amount,interest_rate
+John Doe,homeLoan,HDFC Bank,2500000,35000,8.5
+Jane Doe,personalLoan,SBI Bank,500000,15000,12.0
+John Doe,creditCard,ICICI Bank,50000,5000,18.0</pre>
+            </div>
+        `,
+        accounts: `
+            <h4>🏦 Account Import Instructions</h4>
+            <p>CSV should contain these columns (exact names required):</p>
+            <div class="csv-template">
+                <strong>Required columns:</strong>
+                <ul>
+                    <li><code>account_type</code> - Type of account</li>
+                    <li><code>institution</code> - Bank/institution name</li>
+                    <li><code>account_number</code> - Account number</li>
+                    <li><code>holder_name</code> - Name of account holder</li>
+                    <li><code>nominee_name</code> - Name of nominee (optional)</li>
+                    <li><code>status</code> - Active, Inactive (optional, defaults to Active)</li>
+                    <li><code>comments</code> - Additional comments (optional)</li>
+                </ul>
+                <strong>Example CSV content:</strong>
+                <pre>account_type,institution,account_number,holder_name,nominee_name,status,comments
+Savings Account,HDFC Bank,****1234,John Doe,Jane Doe,Active,Primary savings
+Current Account,ICICI Bank,****5678,Jane Doe,John Doe,Active,Business account
+Fixed Deposit,SBI Bank,****9012,John Doe,,Active,5 year FD</pre>
+            </div>
+        `
+    };
+    return templates[type] || '';
+}
+
+// Handle file selection
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Show selected file name
+    document.getElementById('file-name').textContent = file.name;
+
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        showMessage('Please select a CSV file.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csvText = e.target.result;
+            const parsedData = parseCSV(csvText);
+
+            if (parsedData.length === 0) {
+                showMessage('CSV file is empty or invalid.', 'error');
+                return;
+            }
+
+            importData = parsedData;
+            showImportPreview(parsedData);
+            document.getElementById('import-btn').disabled = false;
+
+        } catch (error) {
+            console.error('Error parsing CSV:', error);
+            showMessage('Error parsing CSV file: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Simple CSV parser
+function parseCSV(csvText) {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const data = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = [];
+        let currentValue = '';
+        let inQuotes = false;
+
+        for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                values.push(currentValue.trim().replace(/"/g, ''));
+                currentValue = '';
+            } else {
+                currentValue += char;
+            }
+        }
+        values.push(currentValue.trim().replace(/"/g, ''));
+
+        if (values.length === headers.length) {
+            const row = {};
+            headers.forEach((header, index) => {
+                row[header] = values[index];
+            });
+            data.push(row);
+        }
+    }
+
+    return data;
+}
+
+// Show preview of data to be imported
+function showImportPreview(data) {
+    const previewDiv = document.getElementById('import-preview');
+
+    if (data.length === 0) {
+        previewDiv.innerHTML = '<p>No valid data found in CSV.</p>';
+        previewDiv.style.display = 'block';
+        return;
+    }
+
+    const headers = Object.keys(data[0]);
+    let tableHTML = `
+        <h4>📋 Import Preview (${data.length} records)</h4>
+        <div class="table-responsive" style="max-height: 300px; overflow: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.slice(0, 10).map(row => 
+                        `<tr>${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    if (data.length > 10) {
+        tableHTML += `<p><em>Showing first 10 records. Total: ${data.length} records</em></p>`;
+    }
+
+    previewDiv.innerHTML = tableHTML;
+    previewDiv.style.display = 'block';
+}
+
+// Process the import
+async function processImport() {
+    if (!importData || !currentImportType) {
+        showMessage('No data to import.', 'error');
+        return;
+    }
+
+    try {
+        document.getElementById('import-btn').disabled = true;
+        document.getElementById('import-btn').textContent = 'Importing...';
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (let i = 0; i < importData.length; i++) {
+            try {
+                const row = importData[i];
+                await importSingleRecord(currentImportType, row, i + 2); // +2 for header and 0-based index
+                successCount++;
+            } catch (error) {
+                errorCount++;
+                errors.push(`Row ${i + 2}: ${error.message}`);
+                console.error(`Import error for row ${i + 2}:`, error);
+            }
+        }
+
+        // Show results
+        if (successCount > 0) {
+            showMessage(`Successfully imported ${successCount} records!`, 'success');
+
+            // Refresh the dashboard
+            await loadDashboardData();
+        }
+
+        if (errorCount > 0) {
+            showMessage(`${errorCount} records failed to import. Check console for details.`, 'warning');
+            console.warn('Import errors:', errors);
+        }
+
+        closeModal('import-modal');
+
+    } catch (error) {
+        console.error('Import process error:', error);
+        showMessage('Import failed: ' + error.message, 'error');
+    } finally {
+        document.getElementById('import-btn').disabled = false;
+        document.getElementById('import-btn').textContent = 'Import Data';
+    }
+}
+
+// Import a single record
+async function importSingleRecord(type, row, rowNumber) {
+    switch (type) {
+        case 'investments':
+            return await importInvestmentRecord(row, rowNumber);
+        case 'liabilities':
+            return await importLiabilityRecord(row, rowNumber);
+        case 'accounts':
+            return await importAccountRecord(row, rowNumber);
+        default:
+            throw new Error(`Unknown import type: ${type}`);
+    }
+}
+
+// Import single investment record
+async function importInvestmentRecord(row, rowNumber) {
+    const required = ['member_name', 'investment_type', 'name', 'invested_amount'];
+    for (const field of required) {
+        if (!row[field]) {
+            throw new Error(`Missing required field: ${field}`);
+        }
+    }
+
+    // Find member ID
+    const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
+    if (!member) {
+        throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
+    }
+
+    const investmentData = {
+        user_id: currentUser.id,
+        member_id: member.id,
+        investment_type: row.investment_type,
+        symbol_or_name: row.name,
+        invested_amount: parseFloat(row.invested_amount) || 0,
+        current_value: parseFloat(row.current_value) || parseFloat(row.invested_amount) || 0,
+        broker_platform: row.platform || '',
+        created_at: new Date().toISOString()
+    };
+
+    await addInvestmentData(investmentData);
+}
+
+// Import single liability record
+async function importLiabilityRecord(row, rowNumber) {
+    const required = ['member_name', 'liability_type', 'lender', 'outstanding_amount'];
+    for (const field of required) {
+        if (!row[field]) {
+            throw new Error(`Missing required field: ${field}`);
+        }
+    }
+
+    // Find member ID
+    const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
+    if (!member) {
+        throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
+    }
+
+    const liabilityData = {
+        user_id: currentUser.id,
+        member_id: member.id,
+        liability_type: row.liability_type,
+        type: row.liability_type, // For backward compatibility
+        lender: row.lender,
+        outstanding_amount: parseFloat(row.outstanding_amount) || 0,
+        emi_amount: parseFloat(row.emi_amount) || 0,
+        interest_rate: parseFloat(row.interest_rate) || 0,
+        created_at: new Date().toISOString()
+    };
+
+    await addLiabilityData(liabilityData);
+}
+
+// Import single account record
+async function importAccountRecord(row, rowNumber) {
+    const required = ['account_type', 'institution', 'account_number', 'holder_name'];
+    for (const field of required) {
+        if (!row[field]) {
+            throw new Error(`Missing required field: ${field}`);
+        }
+    }
+
+    // Find holder ID
+    const holder = familyMembers.find(m => m.name.toLowerCase() === row.holder_name.toLowerCase());
+    if (!holder) {
+        throw new Error(`Holder not found: ${row.holder_name}. Please add this member first.`);
+    }
+
+    // Find nominee ID (optional)
+    let nominee = null;
+    let nomineeId = null;
+    if (row.nominee_name) {
+        nominee = familyMembers.find(m => m.name.toLowerCase() === row.nominee_name.toLowerCase());
+        if (nominee) {
+            nomineeId = nominee.id;
+        }
+    }
+
+    const accountData = {
+        user_id: currentUser.id,
+        account_type: row.account_type,
+        institution: row.institution,
+        account_number: row.account_number,
+        holder_id: holder.id,
+        holder_name: holder.name,
+        nominee_id: nomineeId,
+        nominee_name: nominee ? nominee.name : '',
+        status: row.status || 'Active',
+        comments: row.comments || '',
+        created_at: new Date().toISOString()
+    };
+
+    await addAccountData(accountData);
+}
+
+// ===== ADD THESE TO YOUR GLOBAL FUNCTION EXPORTS =====
+// Add these lines to your existing window assignments at the end of app.js:
+window.openImportModal = openImportModal;
+window.handleImportFile = handleImportFile;
+window.processImport = processImport;
 
 // Make functions globally available
 window.openAddMemberModal = openAddMemberModal;
@@ -2242,7 +2616,11 @@ window.closeModal = closeModal;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.initializeSupabase = initializeSupabase;
+window.openImportModal = openImportModal;
+window.handleImportFile = handleImportFile;
+window.processImport = processImport;
 window.loadDashboardData = loadDashboardData;
+
 // ===== MAKE ADDITIONAL FUNCTIONS GLOBALLY AVAILABLE =====
 window.showDashboard = showDashboard;
 window.updateUserInfo = updateUserInfo;
@@ -2341,65 +2719,4 @@ async function handlePhotoUpload(event) {
     console.error('Error updating photo URL:', error);
     showMessage('Failed to update photo', 'error');
   }
-}
-
-.import-section {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 20px;
-    margin: 20px 0;
-}
-
-.import-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 15px;
-}
-
-.csv-template {
-    background: #f1f5f9;
-    padding: 15px;
-    border-radius: 6px;
-    margin: 10px 0;
-}
-
-.csv-template pre {
-    background: #e2e8f0;
-    padding: 10px;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-size: 12px;
-}
-
-.csv-template ul {
-    margin: 10px 0;
-    padding-left: 20px;
-}
-
-.csv-template code {
-    background: #e2e8f0;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: monospace;
-}
-
-#import-preview .table-responsive {
-    max-height: 300px;
-    overflow: auto;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-}
-
-.file-upload {
-    text-align: center;
-    padding: 20px;
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    margin: 20px 0;
-}
-
-.file-upload:hover {
-    border-color: #9ca3af;
-    background: #f9fafb;
 }
