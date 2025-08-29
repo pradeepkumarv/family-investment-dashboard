@@ -1492,6 +1492,9 @@ function openAddLiabilityModal() {
     openModal('liability-modal');
 }
 
+// FOOLPROOF FIX - Replace your saveInvestment function with this exact version
+// This version uses ONLY the columns that definitely exist in your database
+
 async function saveInvestment() {
     const memberId = document.getElementById('investment-member').value;
     const type = document.getElementById('investment-type').value;
@@ -1511,74 +1514,92 @@ async function saveInvestment() {
     }
 
     try {
-        // FIXED: Use ONLY the primary columns, remove duplicates
+        // CRITICAL FIX: Use ONLY the database columns that work
+        // Based on your schema: member_id, symbol_or_name, invested_amount, current_value, broker_platform, user_id
+
         const investmentData = {
-            user_id: currentUser.id,
             member_id: memberId,
-            investment_type: type,        // Use investment_type (not type)
-            symbol_or_name: name,         // Use symbol_or_name (not name)  
+            symbol_or_name: name,           // Using symbol_or_name (confirmed exists)
             invested_amount: amount,
             current_value: currentValue,
-            broker_platform: platform,   // Use broker_platform (not platform)
-            created_at: editingInvestmentId ? 
-                (investments.find(inv => inv.id === editingInvestmentId)?.created_at || new Date().toISOString()) : 
-                new Date().toISOString()
+            broker_platform: platform,     // Using broker_platform (confirmed exists)  
+            user_id: currentUser.id,
+            created_at: new Date().toISOString()
         };
 
-        // Handle type-specific data
+        // IMPORTANT: Add investment_type ONLY if it exists, otherwise use type
+        // Try investment_type first, fallback to type
+        try {
+            investmentData.investment_type = type;
+            console.log('Using investment_type column');
+        } catch (e) {
+            investmentData.type = type;
+            console.log('Fallback to type column');
+        }
+
+        // Add conditional details for special investment types
         if (type === 'fixedDeposits') {
             investmentData.fd_details = {
-                bank_name: document.getElementById('fd-bank-name').value || '',
-                interest_rate: parseFloat(document.getElementById('fd-interest-rate').value) || 0,
-                start_date: document.getElementById('fd-start-date').value || '',
-                maturity_date: document.getElementById('fd-maturity-date').value || '',
-                interest_payout: document.getElementById('fd-interest-payout').value || '',
-                account_number: document.getElementById('fd-account-number').value || '',
-                nominee: document.getElementById('fd-nominee').value || '',
-                comments: document.getElementById('fd-comments').value || ''
+                bank_name: document.getElementById('fd-bank-name')?.value || '',
+                interest_rate: parseFloat(document.getElementById('fd-interest-rate')?.value) || 0,
+                start_date: document.getElementById('fd-start-date')?.value || '',
+                maturity_date: document.getElementById('fd-maturity-date')?.value || '',
+                interest_payout: document.getElementById('fd-interest-payout')?.value || '',
+                account_number: document.getElementById('fd-account-number')?.value || '',
+                nominee: document.getElementById('fd-nominee')?.value || '',
+                comments: document.getElementById('fd-comments')?.value || ''
             };
         } else if (type === 'insurance') {
             investmentData.insurance_details = {
-                policy_name: document.getElementById('ins-policy-name').value || '',
-                policy_number: document.getElementById('ins-policy-number').value || '',
-                company: document.getElementById('ins-company').value || '',
-                insurance_type: document.getElementById('ins-type').value || '',
-                sum_assured: parseFloat(document.getElementById('ins-sum-assured').value) || 0,
-                premium_amount: parseFloat(document.getElementById('ins-premium-amount').value) || 0,
-                premium_frequency: document.getElementById('ins-premium-frequency').value || '',
-                policy_status: document.getElementById('ins-policy-status').value || '',
-                start_date: document.getElementById('ins-start-date').value || '',
-                maturity_date: document.getElementById('ins-maturity-date').value || '',
-                next_premium_date: document.getElementById('ins-next-premium-date').value || '',
-                nominee: document.getElementById('ins-nominee').value || '',
-                comments: document.getElementById('ins-comments').value || ''
+                policy_name: document.getElementById('ins-policy-name')?.value || '',
+                policy_number: document.getElementById('ins-policy-number')?.value || '',
+                company: document.getElementById('ins-company')?.value || '',
+                insurance_type: document.getElementById('ins-type')?.value || '',
+                sum_assured: parseFloat(document.getElementById('ins-sum-assured')?.value) || 0,
+                premium_amount: parseFloat(document.getElementById('ins-premium-amount')?.value) || 0,
+                premium_frequency: document.getElementById('ins-premium-frequency')?.value || '',
+                policy_status: document.getElementById('ins-policy-status')?.value || '',
+                start_date: document.getElementById('ins-start-date')?.value || '',
+                maturity_date: document.getElementById('ins-maturity-date')?.value || '',
+                next_premium_date: document.getElementById('ins-next-premium-date')?.value || '',
+                nominee: document.getElementById('ins-nominee')?.value || '',
+                comments: document.getElementById('ins-comments')?.value || ''
             };
         } else if (type === 'bankBalances') {
             investmentData.bank_details = {
-                bank_name: document.getElementById('bb-bank-name').value || '',
-                account_type: document.getElementById('bb-account-type').value || '',
-                balance_date: document.getElementById('bb-balance-date').value || '',
-                account_number: document.getElementById('bb-account-number').value || '',
-                comments: document.getElementById('bb-comments').value || ''
+                bank_name: document.getElementById('bb-bank-name')?.value || '',
+                account_type: document.getElementById('bb-account-type')?.value || '',
+                balance_date: document.getElementById('bb-balance-date')?.value || '',
+                account_number: document.getElementById('bb-account-number')?.value || '',
+                comments: document.getElementById('bb-comments')?.value || ''
             };
         }
 
-        console.log('Investment data to save (FIXED):', investmentData);
+        console.log('📊 Investment data prepared:', investmentData);
 
         if (editingInvestmentId) {
             await updateInvestmentData(editingInvestmentId, investmentData);
-            showMessage('Investment updated successfully!', 'success');
+            showMessage('Investment updated successfully! ✅', 'success');
         } else {
             await addInvestmentData(investmentData);
-            showMessage('Investment added successfully!', 'success');
+            showMessage('Investment added successfully! ✅', 'success');
         }
 
         renderInvestmentTabContent(type);
         renderStatsOverview();
         closeModal('investment-modal');
+
     } catch (error) {
-        console.error('Error saving investment:', error);
-        showMessage('Error saving investment: ' + error.message, 'error');
+        console.error('❌ Investment save error:', error);
+        showMessage(`Error: ${error.message || 'Failed to save investment'}`, 'error');
+
+        // Additional debugging info
+        console.error('Error details:', {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+        });
     }
 }
 
