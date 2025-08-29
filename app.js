@@ -520,6 +520,10 @@ function getMemberLiabilityCount(memberId) {
 function getMemberAccountCount(memberId) {
     return accounts.filter(acc => acc.holder_id === memberId).length;
 }
+function getMemberNameById(memberId) {
+    const member = familyMembers.find(m => m.id === memberId);
+    return member ? member.name : '';
+}
 
 function renderStatsOverview() {
     const statsGrid = document.getElementById('stats-grid');
@@ -1360,6 +1364,7 @@ async function saveInvestment() {
             user_id: currentUser.id,
             member_id: memberId,
             type: type,
+            investement_type: type,
             name: name,
             invested_amount: amount,
             current_value: currentValue,
@@ -1590,6 +1595,7 @@ async function saveLiability() {
             user_id: currentUser.id,
             member_id: memberId,
             type: type,
+            liability_type: type,
             lender: lender,
             outstanding_amount: amount,
             emi_amount: emi,
@@ -1750,6 +1756,8 @@ async function saveAccount() {
     const nomineeId = document.getElementById('account-nominee').value;
     const status = document.getElementById('account-status').value;
     const comments = document.getElementById('account-comments').value.trim();
+    const holderName = getMemberNameById(holderId);
+    const nominee = nomineeId ? getMemberNameById(nomineeId) : null;
 
     if (!accountType || !institution || !accountNumber || !holderId) {
         showMessage('Please fill in all required fields.', 'error');
