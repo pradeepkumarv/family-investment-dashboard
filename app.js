@@ -1340,14 +1340,13 @@ function updateInvestmentForm() {
         document.querySelector('.bank-balance-fields').style.display = 'block';
     }
 }
-
 async function saveInvestment() {
     const memberId = document.getElementById('investment-member').value;
     const type = document.getElementById('investment-type').value;
     const name = document.getElementById('investment-name').value.trim();
     const amount = parseFloat(document.getElementById('investment-amount').value);
     const currentValue = parseFloat(document.getElementById('investment-current-value').value) || amount;
-    const platform = document.getElementById('investment-platform').value.trim();
+    const platform = document.getElementById('investment-platform').value.trim() || 'Not Specified';
 
     if (!memberId || !type || !name || !amount) {
         showMessage('Please fill in all required fields.', 'error');
@@ -1360,63 +1359,68 @@ async function saveInvestment() {
     }
 
     try {
+        // CRITICAL: Always include ALL required fields for both insert AND update
         const investmentData = {
             user_id: currentUser.id,
             member_id: memberId,
             type: type,
-            investment_type: type,
+            investment_type: type,                    // Required alias
             name: name,
-            symbol_or_name: name,
+            symbol_or_name: name,                     // Required alias
             invested_amount: amount,
             current_value: currentValue,
             platform: platform,
-            created_at: new Date().toISOString()
+            broker_platform: platform,               // Required alias
+            created_at: editingInvestmentId ? 
+                (investments.find(inv => inv.id === editingInvestmentId)?.created_at || new Date().toISOString()) : 
+                new Date().toISOString()
         };
 
-        // Add type-specific data
+        // Your existing type-specific data code remains the same...
         if (type === 'fixedDeposits') {
             investmentData.fd_details = {
-                bank_name: document.getElementById('fd-bank-name').value,
+                bank_name: document.getElementById('fd-bank-name').value || '',
                 interest_rate: parseFloat(document.getElementById('fd-interest-rate').value) || 0,
-                start_date: document.getElementById('fd-start-date').value,
-                maturity_date: document.getElementById('fd-maturity-date').value,
-                interest_payout: document.getElementById('fd-interest-payout').value,
-                account_number: document.getElementById('fd-account-number').value,
-                nominee: document.getElementById('fd-nominee').value,
-                comments: document.getElementById('fd-comments').value
+                start_date: document.getElementById('fd-start-date').value || '',
+                maturity_date: document.getElementById('fd-maturity-date').value || '',
+                interest_payout: document.getElementById('fd-interest-payout').value || '',
+                account_number: document.getElementById('fd-account-number').value || '',
+                nominee: document.getElementById('fd-nominee').value || '',
+                comments: document.getElementById('fd-comments').value || ''
             };
         } else if (type === 'insurance') {
             investmentData.insurance_details = {
-                policy_name: document.getElementById('ins-policy-name').value,
-                policy_number: document.getElementById('ins-policy-number').value,
-                company: document.getElementById('ins-company').value,
-                insurance_type: document.getElementById('ins-type').value,
+                policy_name: document.getElementById('ins-policy-name').value || '',
+                policy_number: document.getElementById('ins-policy-number').value || '',
+                company: document.getElementById('ins-company').value || '',
+                insurance_type: document.getElementById('ins-type').value || '',
                 sum_assured: parseFloat(document.getElementById('ins-sum-assured').value) || 0,
                 premium_amount: parseFloat(document.getElementById('ins-premium-amount').value) || 0,
-                premium_frequency: document.getElementById('ins-premium-frequency').value,
-                policy_status: document.getElementById('ins-policy-status').value,
-                start_date: document.getElementById('ins-start-date').value,
-                maturity_date: document.getElementById('ins-maturity-date').value,
-                next_premium_date: document.getElementById('ins-next-premium-date').value,
-                nominee: document.getElementById('ins-nominee').value,
-                comments: document.getElementById('ins-comments').value
+                premium_frequency: document.getElementById('ins-premium-frequency').value || '',
+                policy_status: document.getElementById('ins-policy-status').value || '',
+                start_date: document.getElementById('ins-start-date').value || '',
+                maturity_date: document.getElementById('ins-maturity-date').value || '',
+                next_premium_date: document.getElementById('ins-next-premium-date').value || '',
+                nominee: document.getElementById('ins-nominee').value || '',
+                comments: document.getElementById('ins-comments').value || ''
             };
         } else if (type === 'bankBalances') {
             investmentData.bank_details = {
-                bank_name: document.getElementById('bb-bank-name').value,
-                account_type: document.getElementById('bb-account-type').value,
-                balance_date: document.getElementById('bb-balance-date').value,
-                account_number: document.getElementById('bb-account-number').value,
-                comments: document.getElementById('bb-comments').value
+                bank_name: document.getElementById('bb-bank-name').value || '',
+                account_type: document.getElementById('bb-account-type').value || '',
+                balance_date: document.getElementById('bb-balance-date').value || '',
+                account_number: document.getElementById('bb-account-number').value || '',
+                comments: document.getElementById('bb-comments').value || ''
             };
         }
 
+        // Debug: Log the complete data object
+        console.log('Investment data to save:', investmentData);
+
         if (editingInvestmentId) {
-            // Update existing investment
             await updateInvestmentData(editingInvestmentId, investmentData);
             showMessage('Investment updated successfully!', 'success');
         } else {
-            // Add new investment
             await addInvestmentData(investmentData);
             showMessage('Investment added successfully!', 'success');
         }
@@ -1429,6 +1433,7 @@ async function saveInvestment() {
         showMessage('Error saving investment.', 'error');
     }
 }
+
 
 async function addInvestmentData(investmentData) {
     const authType = localStorage.getItem('famwealth_auth_type');
