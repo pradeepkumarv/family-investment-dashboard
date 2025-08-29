@@ -1680,7 +1680,39 @@
             </div>
         </div>
     </div>
+<!-- Add this to your main dashboard HTML -->
+<div class="import-section" style="margin: 20px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    <h3>📥 Import Data</h3>
+    <p>Bulk import your financial data from CSV files</p>
+    <div class="import-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button onclick="openImportModal('investments')" class="btn btn-primary">📊 Import Investments</button>
+        <button onclick="openImportModal('liabilities')" class="btn btn-primary">📉 Import Liabilities</button>
+        <button onclick="openImportModal('accounts')" class="btn btn-primary">🏦 Import Accounts</button>
+    </div>
+</div>
 
+<!-- Import Modal -->
+<div id="import-modal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="import-modal-title">Import Data</h2>
+            <button class="btn-close" onclick="closeModal('import-modal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="import-instructions"></div>
+            <div class="file-upload" style="margin: 20px 0;">
+                <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" style="display: none;">
+                <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">📁 Choose CSV File</label>
+                <span id="file-name" style="margin-left: 10px; color: #666;"></span>
+            </div>
+            <div id="import-preview" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal('import-modal')" class="btn btn-secondary">Cancel</button>
+            <button onclick="processImport()" class="btn btn-primary" id="import-btn" disabled>Import Data</button>
+        </div>
+    </div>
+</div>
     <!-- FIXED: Load app.js first, THEN initialize -->
     <script src="app.js" defer></script>
 
