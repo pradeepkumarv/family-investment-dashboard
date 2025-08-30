@@ -463,6 +463,7 @@ function getMemberNameById(memberId) {
 }
 
 // ===== RENDERING FUNCTIONS =====
+// FIXED: Photo display issue - Better rendering
 function renderFamilyMembers() {
     const familyGrid = document.getElementById('family-members-grid');
     if (!familyGrid) return;
@@ -485,26 +486,36 @@ function renderFamilyMembers() {
         const memberLiabilities = calculateMemberLiabilities(member.id);
         const netWorth = memberAssets - memberLiabilities;
         
+        // FIXED: Better photo URL handling with debugging
+        let photoSrc;
+        console.log(`🖼️ Member ${member.name} photo:`, member.photo);
+        
+        if (member.photo && member.photo.startsWith('http')) {
+            // Real uploaded photo URL
+            photoSrc = member.photo;
+            console.log('✅ Using real photo URL:', photoSrc);
+        } else if (member.photo && member.photo.includes('.png')) {
+            // Preset photo - convert to emoji
+            photoSrc = getEmojiDataUrl(member.photo);
+            console.log('✅ Using preset emoji for:', member.photo);
+        } else {
+            // Default fallback
+            photoSrc = getEmojiDataUrl('default.png');
+            console.log('✅ Using default photo');
+        }
+
+        // FIXED: Create member card with proper photo display
         const memberCard = document.createElement('div');
         memberCard.className = 'family-card';
         memberCard.onclick = () => showMemberDetails(member.id);
 
-        // FIXED: Better photo handling - support both URLs and presets
-        let photoSrc;
-        if (member.photo && member.photo.startsWith('http')) {
-            // Real uploaded photo URL
-            photoSrc = member.photo;
-        } else if (member.photo && member.photo.includes('.png')) {
-            // Preset photo - convert to emoji
-            photoSrc = getEmojiDataUrl(member.photo);
-        } else {
-            // Default fallback
-            photoSrc = getEmojiDataUrl('default.png');
-        }
-
+        // FIXED: Inline styles to ensure photo displays correctly
         memberCard.innerHTML = `
-            <img src="${photoSrc}" alt="${member.name}" class="member-photo" 
-                 onerror="this.src='${getEmojiDataUrl('default.png')}'" />
+            <img src="${photoSrc}" 
+                 alt="${member.name}" 
+                 class="member-photo" 
+                 style="width: 80px !important; height: 80px !important; border-radius: 50% !important; object-fit: cover !important; margin: 0 auto 15px !important; border: 3px solid #667eea !important; display: block !important;"
+                 onerror="console.log('❌ Photo load error for ${member.name}'); this.src='${getEmojiDataUrl('default.png')}'" />
             <div class="member-name">
                 ${member.name}
                 ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
@@ -1216,28 +1227,26 @@ async function uploadPhoto(file) {
 }
 
 // FIXED: Handle both file uploads and preset photo selection
+// FIXED: Better photo upload handling
 async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     try {
-        // Show loading state
         showMessage('Uploading photo...', 'info');
         
-        // Upload to Supabase Storage
         const photoUrl = await uploadPhoto(file);
         
         if (!photoUrl) {
             throw new Error('Failed to get photo URL');
         }
 
-        // Set selectedPhoto to the URL for savePhoto function
-        selectedPhoto = photoUrl;
+        console.log('✅ Photo uploaded, URL:', photoUrl);
 
-        // Update member's photo immediately
+        // Update member's photo immediately with the URL
         await updateMemberPhoto(currentPhotoMemberId, photoUrl);
 
-        // Refresh UI
+        // Refresh UI to show new photo
         renderFamilyMembers();
         closeModal('photo-modal');
         showMessage('Photo uploaded successfully! 📸', 'success');
@@ -1248,7 +1257,6 @@ async function handlePhotoUpload(event) {
     } catch (error) {
         console.error('❌ Photo upload error:', error);
         showMessage(`Photo upload failed: ${error.message}`, 'error');
-        // Reset file input
         event.target.value = '';
     }
 }
