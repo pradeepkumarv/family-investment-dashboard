@@ -1,4 +1,4 @@
-// app.js - CORRECTED VERSION - Complete Family Wealth Dashboard Application
+// app.js - FINAL VERSION with SHARED DATA + REAL PHOTO UPLOADS
 
 // ===== GLOBAL VARIABLES =====
 let supabase = null;
@@ -260,7 +260,7 @@ function updateLastUpdated() {
     }
 }
 
-// FIXED: Single loadDashboardData function
+// FIXED: Shared family data - removed user_id filtering
 async function loadDashboardData() {
     if (!currentUser) {
         console.warn('No current user; cannot load data.');
@@ -276,12 +276,13 @@ async function loadDashboardData() {
         try {
             setLoadingState(true);
 
-            // SHARED DATA: Remove user_id filtering for all queries
+            // FIXED: SHARED DATA - NO user_id filtering
             
-            // Load family members (SHARED)
+            // Load family members (SHARED - All users see same data)
             const { data: membersData, error: membersError } = await supabase
                 .from('family_members')
                 .select('*')
+                // REMOVED: .eq('user_id', currentUser.id) - Now shared across all family members
                 .order('created_at', { ascending: true });
 
             if (membersError) {
@@ -294,7 +295,7 @@ async function loadDashboardData() {
             familyMembers = membersData || [];
             const memberIds = familyMembers.map(member => member.id);
 
-            // Load investments (SHARED)
+            // Load investments (SHARED - All users see same data)
             let investmentsData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -312,7 +313,7 @@ async function loadDashboardData() {
             }
             investments = investmentsData;
 
-            // Load liabilities (SHARED)
+            // Load liabilities (SHARED - All users see same data)
             let liabilitiesData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -330,10 +331,11 @@ async function loadDashboardData() {
             }
             liabilities = liabilitiesData;
 
-            // Load accounts (SHARED - no user_id filtering)
+            // Load accounts (SHARED - All users see same data)
             const { data: accountsData, error: accountsError } = await supabase
                 .from('accounts')
                 .select('*')
+                // REMOVED: .eq('user_id', currentUser.id) - Now shared across all family members
                 .order('created_at', { ascending: false });
             if (accountsError) {
                 console.error('Error fetching accounts:', accountsError);
@@ -343,10 +345,11 @@ async function loadDashboardData() {
             }
             accounts = accountsData || [];
 
-            // Load reminders (SHARED)
+            // Load reminders (SHARED - All users see same data)
             const { data: remindersData, error: remindersError } = await supabase
                 .from('reminders')
                 .select('*')
+                // REMOVED: .eq('user_id', currentUser.id) - Now shared across all family members
                 .order('date', { ascending: true });
             if (remindersError) {
                 console.error('Error fetching reminders:', remindersError);
@@ -489,7 +492,8 @@ function renderFamilyMembers() {
         memberCard.className = 'family-card';
         memberCard.onclick = () => showMemberDetails(member.id);
 
-        const photoUrl = member.photo_url || `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`;
+        // FIXED: Better photo URL handling for real uploaded images
+        const photoUrl = member.photo_url || (member.photo && member.photo.startsWith('http') ? member.photo : `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`);
 
         memberCard.innerHTML = `
             <img src="${photoUrl}" alt="${member.name}" class="member-photo" 
@@ -797,8 +801,8 @@ function showMemberDetails(memberId) {
     const detailsTitle = document.getElementById('member-details-title');
     detailsTitle.textContent = `${member.name} - Financial Details`;
 
-    // FIXED: Define photoUrl properly
-    const photoUrl = member.photo_url || `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`;
+    // FIXED: Define photoUrl properly for real uploaded images
+    const photoUrl = member.photo_url || (member.photo && member.photo.startsWith('http') ? member.photo : `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`);
 
     // Calculate member's financial data
     const memberAssets = calculateMemberAssets(member.id);
@@ -930,8 +934,9 @@ async function saveMember() {
     }
 
     try {
+        // FIXED: SHARED DATA - Removed user_id to make data shared across all family members
         const memberData = {
-            user_id: currentUser.id,
+            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             name: name,
             relationship: relationship,
             is_primary: isPrimary,
@@ -1071,7 +1076,7 @@ async function deleteMember(memberId) {
     }
 }
 
-// ===== PHOTO FUNCTIONS =====
+// ===== PHOTO FUNCTIONS - FIXED FOR REAL UPLOADS =====
 function openPhotoModal(memberId) {
     currentPhotoMemberId = memberId;
     selectedPhoto = null;
@@ -1127,15 +1132,119 @@ function selectPhoto(photoName, element) {
     selectedPhoto = photoName;
 }
 
-function handlePhotoUpload(event) {
+// FIXED: Real photo upload to Supabase Storage
+async function uploadPhoto(file) {
+    if (!file) return null;
+
+    try {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            throw new Error('Please select an image file.');
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error('File size must be less than 5MB.');
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${generateId()}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        console.log('📁 Uploading photo to:', filePath);
+
+        // Upload file to Supabase Storage
+        const { data, error } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (error) {
+            console.error('❌ Upload error:', error);
+            throw error;
+        }
+
+        console.log('✅ Upload successful:', data);
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+        console.log('🔗 Public URL:', publicUrl);
+        return publicUrl;
+
+    } catch (error) {
+        console.error('❌ Photo upload failed:', error);
+        throw error;
+    }
+}
+
+// FIXED: Handle both file uploads and preset photo selection
+async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
-    // For demo purposes, show info message
-    showMessage('Photo upload feature would be implemented with actual file storage service.', 'info');
-    
-    // Reset file input
-    event.target.value = '';
+
+    try {
+        // Show loading state
+        showMessage('Uploading photo...', 'info');
+        
+        // Upload to Supabase Storage
+        const photoUrl = await uploadPhoto(file);
+        
+        if (!photoUrl) {
+            throw new Error('Failed to get photo URL');
+        }
+
+        // Update member's photo in database
+        const authType = localStorage.getItem('famwealth_auth_type');
+
+        if (authType === 'demo' || !supabase) {
+            // Demo mode - update local data
+            const member = familyMembers.find(m => m.id === currentPhotoMemberId);
+            if (member) {
+                member.photo_url = photoUrl;
+                member.photo = photoUrl; // Store URL in photo field too
+            }
+        } else {
+            // Supabase mode - update database
+            const { error } = await supabase
+                .from('family_members')
+                .update({ 
+                    photo_url: photoUrl,
+                    photo: photoUrl
+                })
+                .eq('id', currentPhotoMemberId);
+
+            if (error) {
+                console.error('❌ Database update error:', error);
+                throw error;
+            }
+
+            // Update local data
+            const member = familyMembers.find(m => m.id === currentPhotoMemberId);
+            if (member) {
+                member.photo_url = photoUrl;
+                member.photo = photoUrl;
+            }
+        }
+
+        // Refresh UI
+        renderFamilyMembers();
+        closeModal('photo-modal');
+        showMessage('Photo uploaded successfully! 📸', 'success');
+
+        // Reset file input
+        event.target.value = '';
+
+    } catch (error) {
+        console.error('❌ Photo upload error:', error);
+        showMessage(`Photo upload failed: ${error.message}`, 'error');
+        // Reset file input
+        event.target.value = '';
+    }
 }
 
 // Helper function to get emoji for photo name
@@ -1154,33 +1263,40 @@ function getEmojiForPhoto(photoName) {
     return photoEmojiMap[photoName] || '👤';
 }
 
-// FIXED: Photo upload functionality
+// FIXED: Updated savePhoto to handle both presets and uploads
 async function savePhoto() {
     if (!selectedPhoto) {
-        showMessage('Please select a photo.', 'error');
+        showMessage('Please select a photo or upload one.', 'error');
         return;
     }
 
     try {
         const authType = localStorage.getItem('famwealth_auth_type');
+        let photoUrl;
+
+        // Check if selectedPhoto is a preset emoji or URL
+        if (selectedPhoto.includes('.png')) {
+            // Preset emoji - convert to SVG
+            photoUrl = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${getEmojiForPhoto(selectedPhoto)}</text></svg>`;
+        } else {
+            // It's already a URL from file upload
+            photoUrl = selectedPhoto;
+        }
 
         if (authType === 'demo' || !supabase) {
             // Demo mode - update local data
             const member = familyMembers.find(m => m.id === currentPhotoMemberId);
             if (member) {
                 member.photo = selectedPhoto;
-                // Create a proper photo URL for the emoji
-                member.photo_url = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${getEmojiForPhoto(selectedPhoto)}</text></svg>`;
+                member.photo_url = photoUrl;
             }
         } else {
-            // Supabase mode - FIXED: Update both photo and photo_url
-            const photoUrl = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${getEmojiForPhoto(selectedPhoto)}</text></svg>`;
-
+            // Supabase mode - update database
             const { error } = await supabase
                 .from('family_members')
                 .update({ 
                     photo: selectedPhoto,
-                    photo_url: photoUrl  // FIXED: Also update photo_url
+                    photo_url: photoUrl
                 })
                 .eq('id', currentPhotoMemberId);
 
@@ -1188,7 +1304,7 @@ async function savePhoto() {
                 throw error;
             }
 
-            // FIXED: Update local data with both fields
+            // Update local data
             const member = familyMembers.find(m => m.id === currentPhotoMemberId);
             if (member) {
                 member.photo = selectedPhoto;
@@ -1199,10 +1315,10 @@ async function savePhoto() {
         // Force re-render to show updated photo
         renderFamilyMembers();
         closeModal('photo-modal');
-        showMessage('Photo updated successfully!', 'success');
+        showMessage('Photo updated successfully! ✅', 'success');
     } catch (error) {
-        console.error('Error updating photo:', error);
-        showMessage('Error updating photo.', 'error');
+        console.error('❌ Error updating photo:', error);
+        showMessage('Error updating photo: ' + error.message, 'error');
     }
 }
 
@@ -1268,33 +1384,17 @@ async function saveInvestment() {
     }
 
     try {
-        // Clean data structure matching the new table
+        // FIXED: SHARED DATA - Removed user_id to make investments shared
         const investmentData = {
             member_id: memberId,
-            investment_type: type,           // Now guaranteed to exist
-            symbol_or_name: name,           // Clean column name
+            investment_type: type,
+            symbol_or_name: name,
             invested_amount: amount,
             current_value: currentValue,
-            broker_platform: platform,     // Clean column name
-            user_id: currentUser.id,
+            broker_platform: platform,
+            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             created_at: new Date().toISOString()
         };
-
-        // Add conditional details for fixed deposits
-        if (type === 'fixedDeposits') {
-            investmentData.fd_details = {
-                bank_name: document.getElementById('fd-bank-name')?.value || '',
-                interest_rate: parseFloat(document.getElementById('fd-interest-rate')?.value) || 0,
-                start_date: document.getElementById('fd-start-date')?.value || '',
-                maturity_date: document.getElementById('fd-maturity-date')?.value || '',
-                interest_payout: document.getElementById('fd-interest-payout')?.value || '',
-                account_number: document.getElementById('fd-account-number')?.value || '',
-                nominee: document.getElementById('fd-nominee')?.value || '',
-                comments: document.getElementById('fd-comments')?.value || ''
-            };
-        }
-
-        console.log('✅ Clean investment data:', investmentData);
 
         if (editingInvestmentId) {
             await updateInvestmentData(editingInvestmentId, investmentData);
@@ -1373,7 +1473,6 @@ function editInvestment(investmentId) {
     editingInvestmentId = investmentId;
     document.getElementById('investment-modal-title').textContent = 'Edit Investment';
 
-    // FIXED: Use correct column names from database
     document.getElementById('investment-member').value = investment.member_id;
     document.getElementById('investment-type').value = investment.investment_type || investment.type;
     document.getElementById('investment-name').value = investment.symbol_or_name || investment.name || '';
@@ -1381,9 +1480,7 @@ function editInvestment(investmentId) {
     document.getElementById('investment-current-value').value = investment.current_value;
     document.getElementById('investment-platform').value = investment.broker_platform || investment.platform || '';
 
-    // Show appropriate conditional fields
     updateInvestmentForm();
-
     populateMemberOptions('investment-member');
     openModal('investment-modal');
 }
@@ -1463,12 +1560,12 @@ async function saveLiability() {
     }
 
     try {
-        // FIXED: Use liability_type instead of type for consistency
+        // FIXED: SHARED DATA - Removed user_id to make liabilities shared
         const liabilityData = {
-            user_id: currentUser.id,
+            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             member_id: memberId,
-            liability_type: type,   // Use liability_type column
-            type: type,             // Keep type for backward compatibility if it exists
+            liability_type: type,
+            type: type,
             lender: lender,
             outstanding_amount: amount,
             emi_amount: emi,
@@ -1619,7 +1716,6 @@ function openAddAccountModal() {
     openModal('account-modal');
 }
 
-// FIXED: saveAccount function - provides holder_name and nominee_name
 async function saveAccount() {
     const accountType = document.getElementById('account-type').value;
     const institution = document.getElementById('account-institution').value.trim();
@@ -1635,19 +1731,19 @@ async function saveAccount() {
     }
 
     try {
-        // FIXED: Include holder_name and nominee_name
         const holder = familyMembers.find(m => m.id === holderId);
         const nominee = nomineeId ? familyMembers.find(m => m.id === nomineeId) : null;
 
+        // FIXED: SHARED DATA - Removed user_id to make accounts shared
         const accountData = {
-            user_id: currentUser.id,
+            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             account_type: accountType,
             institution: institution,
             account_number: accountNumber,
             holder_id: holderId,
-            holder_name: holder ? holder.name : '',     // FIXED
+            holder_name: holder ? holder.name : '',
             nominee_id: nomineeId || null,
-            nominee_name: nominee ? nominee.name : '',  // FIXED
+            nominee_name: nominee ? nominee.name : '',
             status: status,
             comments: comments,
             created_at: new Date().toISOString()
@@ -1838,7 +1934,6 @@ function exportFamilyData(format) {
     familyData.net_worth = familyData.total_assets - familyData.total_liabilities;
 
     if (format === 'csv') {
-        // For CSV, create separate sections for each data type
         let csvContent = '';
         
         csvContent += '# FAMILY DATA EXPORT\n';
@@ -1879,7 +1974,6 @@ function convertToCSV(data) {
         const values = headers.map(header => {
             let value = row[header];
             
-            // Handle different data types
             if (value === null || value === undefined) {
                 value = '';
             } else if (typeof value === 'object') {
@@ -1957,16 +2051,13 @@ function sortTable(tableId, columnIndex) {
 }
 
 // ===== IMPORT FUNCTIONALITY =====
-// Open import modal
 function openImportModal(type) {
     currentImportType = type;
     document.getElementById('import-modal-title').textContent = `Import ${capitalizeFirst(type)}`;
 
-    // Show instructions based on type
     const instructions = getImportInstructions(type);
     document.getElementById('import-instructions').innerHTML = instructions;
 
-    // Reset file input and preview
     document.getElementById('import-file').value = '';
     document.getElementById('import-preview').style.display = 'none';
     document.getElementById('import-btn').disabled = true;
@@ -1975,7 +2066,6 @@ function openImportModal(type) {
     openModal('import-modal');
 }
 
-// Get import instructions for each data type
 function getImportInstructions(type) {
     const templates = {
         investments: `
@@ -1991,11 +2081,6 @@ function getImportInstructions(type) {
                     <li><code>current_value</code> - Current value (optional, defaults to invested_amount)</li>
                     <li><code>platform</code> - Broker/platform name (optional)</li>
                 </ul>
-                <strong>Example CSV content:</strong>
-                <pre>member_name,investment_type,name,invested_amount,current_value,platform
-John Doe,equity,HDFC Bank,50000,55000,Zerodha
-Jane Doe,mutualFunds,SBI Bluechip Fund,100000,110000,Groww
-John Doe,fixedDeposits,ICICI Bank FD,200000,210000,ICICI Bank</pre>
             </div>
         `,
         liabilities: `
@@ -2011,11 +2096,6 @@ John Doe,fixedDeposits,ICICI Bank FD,200000,210000,ICICI Bank</pre>
                     <li><code>emi_amount</code> - Monthly EMI (optional)</li>
                     <li><code>interest_rate</code> - Interest rate % (optional)</li>
                 </ul>
-                <strong>Example CSV content:</strong>
-                <pre>member_name,liability_type,lender,outstanding_amount,emi_amount,interest_rate
-John Doe,homeLoan,HDFC Bank,2500000,35000,8.5
-Jane Doe,personalLoan,SBI Bank,500000,15000,12.0
-John Doe,creditCard,ICICI Bank,50000,5000,18.0</pre>
             </div>
         `,
         accounts: `
@@ -2032,23 +2112,16 @@ John Doe,creditCard,ICICI Bank,50000,5000,18.0</pre>
                     <li><code>status</code> - Active, Inactive (optional, defaults to Active)</li>
                     <li><code>comments</code> - Additional comments (optional)</li>
                 </ul>
-                <strong>Example CSV content:</strong>
-                <pre>account_type,institution,account_number,holder_name,nominee_name,status,comments
-Savings Account,HDFC Bank,****1234,John Doe,Jane Doe,Active,Primary savings
-Current Account,ICICI Bank,****5678,Jane Doe,John Doe,Active,Business account
-Fixed Deposit,SBI Bank,****9012,John Doe,,Active,5 year FD</pre>
             </div>
         `
     };
     return templates[type] || '';
 }
 
-// Handle file selection
 function handleImportFile(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Show selected file name
     document.getElementById('file-name').textContent = file.name;
 
     if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
@@ -2079,7 +2152,6 @@ function handleImportFile(event) {
     reader.readAsText(file);
 }
 
-// Simple CSV parser
 function parseCSV(csvText) {
     const lines = csvText.split('\n').filter(line => line.trim());
     if (lines.length === 0) return [];
@@ -2120,7 +2192,6 @@ function parseCSV(csvText) {
     return data;
 }
 
-// Show preview of data to be imported
 function showImportPreview(data) {
     const previewDiv = document.getElementById('import-preview');
 
@@ -2155,7 +2226,6 @@ function showImportPreview(data) {
     previewDiv.style.display = 'block';
 }
 
-// Process the import
 async function processImport() {
     if (!importData || !currentImportType) {
         showMessage('No data to import.', 'error');
@@ -2168,31 +2238,25 @@ async function processImport() {
 
         let successCount = 0;
         let errorCount = 0;
-        const errors = [];
 
         for (let i = 0; i < importData.length; i++) {
             try {
                 const row = importData[i];
-                await importSingleRecord(currentImportType, row, i + 2); // +2 for header and 0-based index
+                await importSingleRecord(currentImportType, row, i + 2);
                 successCount++;
             } catch (error) {
                 errorCount++;
-                errors.push(`Row ${i + 2}: ${error.message}`);
                 console.error(`Import error for row ${i + 2}:`, error);
             }
         }
 
-        // Show results
         if (successCount > 0) {
             showMessage(`Successfully imported ${successCount} records!`, 'success');
-
-            // Refresh the dashboard
             await loadDashboardData();
         }
 
         if (errorCount > 0) {
-            showMessage(`${errorCount} records failed to import. Check console for details.`, 'warning');
-            console.warn('Import errors:', errors);
+            showMessage(`${errorCount} records failed to import.`, 'warning');
         }
 
         closeModal('import-modal');
@@ -2206,7 +2270,6 @@ async function processImport() {
     }
 }
 
-// Import a single record
 async function importSingleRecord(type, row, rowNumber) {
     switch (type) {
         case 'investments':
@@ -2220,7 +2283,6 @@ async function importSingleRecord(type, row, rowNumber) {
     }
 }
 
-// Import single investment record
 async function importInvestmentRecord(row, rowNumber) {
     const required = ['member_name', 'investment_type', 'name', 'invested_amount'];
     for (const field of required) {
@@ -2229,14 +2291,14 @@ async function importInvestmentRecord(row, rowNumber) {
         }
     }
 
-    // Find member ID
     const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
     if (!member) {
         throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
     }
 
+    // FIXED: SHARED DATA - Removed user_id
     const investmentData = {
-        user_id: currentUser.id,
+        // user_id: currentUser.id,  // REMOVED: No longer user-specific
         member_id: member.id,
         investment_type: row.investment_type,
         symbol_or_name: row.name,
@@ -2249,7 +2311,6 @@ async function importInvestmentRecord(row, rowNumber) {
     await addInvestmentData(investmentData);
 }
 
-// Import single liability record
 async function importLiabilityRecord(row, rowNumber) {
     const required = ['member_name', 'liability_type', 'lender', 'outstanding_amount'];
     for (const field of required) {
@@ -2258,17 +2319,17 @@ async function importLiabilityRecord(row, rowNumber) {
         }
     }
 
-    // Find member ID
     const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
     if (!member) {
         throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
     }
 
+    // FIXED: SHARED DATA - Removed user_id
     const liabilityData = {
-        user_id: currentUser.id,
+        // user_id: currentUser.id,  // REMOVED: No longer user-specific
         member_id: member.id,
         liability_type: row.liability_type,
-        type: row.liability_type, // For backward compatibility
+        type: row.liability_type,
         lender: row.lender,
         outstanding_amount: parseFloat(row.outstanding_amount) || 0,
         emi_amount: parseFloat(row.emi_amount) || 0,
@@ -2279,7 +2340,6 @@ async function importLiabilityRecord(row, rowNumber) {
     await addLiabilityData(liabilityData);
 }
 
-// Import single account record
 async function importAccountRecord(row, rowNumber) {
     const required = ['account_type', 'institution', 'account_number', 'holder_name'];
     for (const field of required) {
@@ -2288,13 +2348,11 @@ async function importAccountRecord(row, rowNumber) {
         }
     }
 
-    // Find holder ID
     const holder = familyMembers.find(m => m.name.toLowerCase() === row.holder_name.toLowerCase());
     if (!holder) {
         throw new Error(`Holder not found: ${row.holder_name}. Please add this member first.`);
     }
 
-    // Find nominee ID (optional)
     let nominee = null;
     let nomineeId = null;
     if (row.nominee_name) {
@@ -2304,8 +2362,9 @@ async function importAccountRecord(row, rowNumber) {
         }
     }
 
+    // FIXED: SHARED DATA - Removed user_id
     const accountData = {
-        user_id: currentUser.id,
+        // user_id: currentUser.id,  // REMOVED: No longer user-specific
         account_type: row.account_type,
         institution: row.institution,
         account_number: row.account_number,
@@ -2448,7 +2507,7 @@ window.addEventListener('load', async () => {
             currentUser = user;
             showDashboard();
             updateUserInfo(user);
-            await loadDashboardData(); // FIXED: This now works properly
+            await loadDashboardData();
             console.log('✅ Auto-login successful');
         } catch (error) {
             console.error('Auto-login error:', error);
@@ -2458,5 +2517,5 @@ window.addEventListener('load', async () => {
     }
 });
 
-console.log('✅ FamWealth Dashboard app.js loaded successfully - CORRECTED VERSION');
+console.log('✅ FamWealth Dashboard app.js loaded - SHARED DATA + REAL PHOTOS VERSION');
 console.log('🔧 Ready for initialization');
