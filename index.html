@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title> Pradeep's Family Wealth - Complete Family Financial Dashboard</title>
+    <title>Pradeep's Family Wealth - Complete Family Financial Dashboard</title>
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
 
     <!-- Supabase CDN -->
@@ -555,7 +555,7 @@
             background: white;
             border-radius: 15px;
             width: 90%;
-            max-width: 600px;
+            max-width: 700px;
             max-height: 90vh;
             overflow-y: auto;
         }
@@ -1417,13 +1417,51 @@
                     <!-- Insurance Fields -->
                     <div class="insurance-fields conditional-fields">
                         <h4>Insurance Policy Details</h4>
-                        <!-- Add insurance fields here if needed -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-sum-insured" class="form-label">Sum Insured (₹)</label>
+                                <input type="number" id="insurance-sum-insured" class="form-input" step="0.01" placeholder="Coverage amount" />
+                            </div>
+                            <div class="form-group">
+                                <label for="insurance-maturity-amount" class="form-label">Maturity Amount (₹)</label>
+                                <input type="number" id="insurance-maturity-amount" class="form-input" step="0.01" placeholder="Maturity value" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-premium" class="form-label">Premium Amount (₹)</label>
+                                <input type="number" id="insurance-premium" class="form-input" step="0.01" placeholder="Annual/Monthly premium" />
+                            </div>
+                            <div class="form-group">
+                                <label for="insurance-start-date" class="form-label">Start Date</label>
+                                <input type="date" id="insurance-start-date" class="form-input" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-maturity-date" class="form-label">Maturity Date</label>
+                                <input type="date" id="insurance-maturity-date" class="form-input" />
+                            </div>
+                            <div class="form-group">
+                                <label for="insurance-next-premium" class="form-label">Next Premium Due</label>
+                                <input type="date" id="insurance-next-premium" class="form-input" />
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Bank Balance Fields -->
                     <div class="bank-balance-fields conditional-fields">
                         <h4>Bank Balance Details</h4>
-                        <!-- Add bank balance fields here if needed -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="bank-current-balance" class="form-label">Current Balance (₹)</label>
+                                <input type="number" id="bank-current-balance" class="form-input" step="0.01" placeholder="Current account balance" />
+                            </div>
+                            <div class="form-group">
+                                <label for="bank-as-of-date" class="form-label">As of Date</label>
+                                <input type="date" id="bank-as-of-date" class="form-input" />
+                            </div>
+                        </div>
                     </div>
                 </form>
 
