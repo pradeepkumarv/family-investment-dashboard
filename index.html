@@ -620,6 +620,7 @@
             padding: 30px;
         }
 
+        /* FIXED: Using modal-actions instead of modal-footer for consistency */
         .modal-actions {
             display: flex;
             gap: 15px;
@@ -689,6 +690,7 @@
             border-color: #667eea;
         }
 
+        /* FIXED: Better upload area styling */
         .upload-area {
             border: 2px dashed #cbd5e0;
             border-radius: 10px;
@@ -697,10 +699,72 @@
             margin: 15px 0;
             cursor: pointer;
             transition: border-color 0.3s ease;
+            background: #f8fafc;
         }
 
         .upload-area:hover {
             border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        /* ===== IMPORT SECTION STYLES ===== */
+        .import-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f7fafc;
+        }
+
+        .import-section h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .import-section p {
+            color: #718096;
+            margin-bottom: 15px;
+        }
+
+        .import-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .csv-template {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin: 10px 0;
+        }
+
+        .csv-template ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .csv-template code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #e53e3e;
+        }
+
+        .file-upload {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f7fafc;
+        }
+
+        .file-upload label {
+            cursor: pointer;
+            display: inline-block;
         }
 
         /* ===== MEMBER DETAILS VIEW ===== */
@@ -834,68 +898,6 @@
             margin-top: 20px;
         }
 
-        /* ===== IMPORT FUNCTIONALITY CSS ===== */
-        .import-section {
-            background: #f8fafc;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .import-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-
-        .csv-template {
-            background: #f1f5f9;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 10px 0;
-        }
-
-        .csv-template pre {
-            background: #e2e8f0;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 12px;
-        }
-
-        .csv-template ul {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-
-        .csv-template code {
-            background: #e2e8f0;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-
-        #import-preview .table-responsive {
-            max-height: 300px;
-            overflow: auto;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-        }
-
-        .file-upload {
-            text-align: center;
-            padding: 20px;
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .file-upload:hover {
-            border-color: #9ca3af;
-            background: #f9fafb;
-        }
-
         /* ===== MESSAGES ===== */
         .message {
             position: fixed;
@@ -997,6 +999,10 @@
             .export-buttons {
                 justify-content: center;
             }
+
+            .import-buttons {
+                justify-content: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1086,7 +1092,6 @@
 
                 <div class="form-group">
                     <label for="login-password" class="form-label">Password</label>
-                    <!-- FIXED: autocomplete spelling -->
                     <input
                         type="password"
                         id="login-password"
@@ -1235,19 +1240,20 @@
                 </div>
             </div>
 
-            <!-- FIXED: Import Data Section - MOVED INSIDE dashboard-content -->
+            <!-- FIXED: Import Section - Properly placed within dashboard -->
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">📥 Import Data</h2>
                 </div>
                 <div class="section-content">
-                    <p style="color: #718096; margin-bottom: 20px;">
-                        Bulk import your financial data from CSV files. Make sure your family members are added first.
-                    </p>
-                    <div class="import-buttons">
-                        <button onclick="openImportModal('investments')" class="btn btn-primary">📊 Import Investments</button>
-                        <button onclick="openImportModal('liabilities')" class="btn btn-primary">📉 Import Liabilities</button>
-                        <button onclick="openImportModal('accounts')" class="btn btn-primary">🏦 Import Accounts</button>
+                    <div class="import-section">
+                        <h3>📥 Bulk Import Financial Data</h3>
+                        <p>Import your financial data from CSV files to quickly populate your dashboard</p>
+                        <div class="import-buttons">
+                            <button onclick="openImportModal('investments')" class="btn btn-primary">📊 Import Investments</button>
+                            <button onclick="openImportModal('liabilities')" class="btn btn-primary">📉 Import Liabilities</button>
+                            <button onclick="openImportModal('accounts')" class="btn btn-primary">🏦 Import Accounts</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1337,8 +1343,13 @@
                     <!-- Preset photos will be populated by JavaScript -->
                 </div>
 
+                <!-- FIXED: Better upload area styling and functionality -->
                 <div class="upload-area" onclick="document.getElementById('photo-upload').click()">
-                    <p>📸 Or click here to upload your own photo</p>
+                    <div style="margin-bottom: 10px;">📸 Upload Custom Photo</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        Click to select image file (JPG, PNG, GIF)<br>
+                        Max size: 5MB
+                    </div>
                     <input type="file" id="photo-upload" accept="image/*" style="display: none" onchange="handlePhotoUpload(event)" />
                 </div>
 
@@ -1481,13 +1492,13 @@
                     <!-- Insurance Fields -->
                     <div class="insurance-fields conditional-fields">
                         <h4>Insurance Policy Details</h4>
-                        <!-- Insurance fields content would go here -->
+                        <!-- Add insurance fields here if needed -->
                     </div>
 
                     <!-- Bank Balance Fields -->
                     <div class="bank-balance-fields conditional-fields">
                         <h4>Bank Balance Details</h4>
-                        <!-- Bank balance fields content would go here -->
+                        <!-- Add bank balance fields here if needed -->
                     </div>
                 </form>
 
@@ -1651,7 +1662,7 @@
         </div>
     </div>
 
-    <!-- FIXED: Import Modal with correct modal-actions class -->
+    <!-- Import Modal -->
     <div id="import-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -1660,14 +1671,13 @@
             </div>
             <div class="modal-body">
                 <div id="import-instructions"></div>
-                <div class="file-upload" style="margin: 20px 0;">
+                <div class="file-upload">
                     <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" style="display: none;">
                     <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">📁 Choose CSV File</label>
                     <span id="file-name" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="import-preview" style="display: none;"></div>
             </div>
-            <!-- FIXED: Changed from modal-footer to modal-actions -->
             <div class="modal-actions">
                 <button onclick="closeModal('import-modal')" class="btn btn-secondary">Cancel</button>
                 <button onclick="processImport()" class="btn btn-primary" id="import-btn" disabled>Import Data</button>
@@ -1675,7 +1685,7 @@
         </div>
     </div>
 
-    <!-- FIXED: Load app.js with defer -->
-    <script src="app.js" defer></script>
+    <!-- FIXED: Load app.js with corrected fixes -->
+    <script src="app-final-fixed.js" defer></script>
 </body>
 </html>
