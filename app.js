@@ -1,4 +1,4 @@
-// app.js - FINAL VERSION with SHARED DATA + REAL PHOTO UPLOADS
+// app.js - FIXED VERSION: Shared Data + Working Real Photo Uploads
 
 // ===== GLOBAL VARIABLES =====
 let supabase = null;
@@ -260,7 +260,7 @@ function updateLastUpdated() {
     }
 }
 
-// FIXED: Shared family data - removed user_id filtering
+// SHARED FAMILY DATA - removed user_id filtering
 async function loadDashboardData() {
     if (!currentUser) {
         console.warn('No current user; cannot load data.');
@@ -276,13 +276,12 @@ async function loadDashboardData() {
         try {
             setLoadingState(true);
 
-            // FIXED: SHARED DATA - NO user_id filtering
+            // SHARED DATA - NO user_id filtering
             
             // Load family members (SHARED - All users see same data)
             const { data: membersData, error: membersError } = await supabase
                 .from('family_members')
                 .select('*')
-                // REMOVED: .eq('user_id', currentUser.id) - Now shared across all family members
                 .order('created_at', { ascending: true });
 
             if (membersError) {
@@ -335,7 +334,6 @@ async function loadDashboardData() {
             const { data: accountsData, error: accountsError } = await supabase
                 .from('accounts')
                 .select('*')
-                // REMOVED: .eq('user_id', currentUser.id) - Now shared across all family members
                 .order('created_at', { ascending: false });
             if (accountsError) {
                 console.error('Error fetching accounts:', accountsError);
@@ -349,7 +347,6 @@ async function loadDashboardData() {
             const { data: remindersData, error: remindersError } = await supabase
                 .from('reminders')
                 .select('*')
-                // REMOVED: .eq('user_id', currentUser.id) - Now shared across all family members
                 .order('date', { ascending: true });
             if (remindersError) {
                 console.error('Error fetching reminders:', remindersError);
@@ -492,12 +489,22 @@ function renderFamilyMembers() {
         memberCard.className = 'family-card';
         memberCard.onclick = () => showMemberDetails(member.id);
 
-        // FIXED: Better photo URL handling for real uploaded images
-        const photoUrl = member.photo_url || (member.photo && member.photo.startsWith('http') ? member.photo : `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`);
+        // FIXED: Better photo handling - support both URLs and presets
+        let photoSrc;
+        if (member.photo && member.photo.startsWith('http')) {
+            // Real uploaded photo URL
+            photoSrc = member.photo;
+        } else if (member.photo && member.photo.includes('.png')) {
+            // Preset photo - convert to emoji
+            photoSrc = getEmojiDataUrl(member.photo);
+        } else {
+            // Default fallback
+            photoSrc = getEmojiDataUrl('default.png');
+        }
 
         memberCard.innerHTML = `
-            <img src="${photoUrl}" alt="${member.name}" class="member-photo" 
-                 onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><text y=\\'.9em\\' font-size=\\'90\\'>👤</text></svg>'" />
+            <img src="${photoSrc}" alt="${member.name}" class="member-photo" 
+                 onerror="this.src='${getEmojiDataUrl('default.png')}'" />
             <div class="member-name">
                 ${member.name}
                 ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
@@ -531,6 +538,23 @@ function renderFamilyMembers() {
 
         familyGrid.appendChild(memberCard);
     });
+}
+
+// Helper function to convert photo name to emoji SVG data URL
+function getEmojiDataUrl(photoName) {
+    const photoEmojiMap = {
+        'man1.png': '👨',
+        'man2.png': '🧑',
+        'woman1.png': '👩',
+        'woman2.png': '👩‍💼',
+        'boy1.png': '👦',
+        'girl1.png': '👧',
+        'elderly-man.png': '👴',
+        'elderly-woman.png': '👵',
+        'default.png': '👤'
+    };
+    const emoji = photoEmojiMap[photoName] || '👤';
+    return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${emoji}</text></svg>`;
 }
 
 function renderStatsOverview() {
@@ -785,7 +809,6 @@ function renderReminders() {
 }
 
 // ===== MEMBER DETAILS FUNCTIONS =====
-// FIXED: showMemberDetails function with proper photoUrl definition
 function showMemberDetails(memberId) {
     const member = familyMembers.find(m => m.id === memberId);
     if (!member) return;
@@ -801,8 +824,15 @@ function showMemberDetails(memberId) {
     const detailsTitle = document.getElementById('member-details-title');
     detailsTitle.textContent = `${member.name} - Financial Details`;
 
-    // FIXED: Define photoUrl properly for real uploaded images
-    const photoUrl = member.photo_url || (member.photo && member.photo.startsWith('http') ? member.photo : `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👤</text></svg>`);
+    // FIXED: Better photo handling
+    let photoSrc;
+    if (member.photo && member.photo.startsWith('http')) {
+        photoSrc = member.photo;
+    } else if (member.photo && member.photo.includes('.png')) {
+        photoSrc = getEmojiDataUrl(member.photo);
+    } else {
+        photoSrc = getEmojiDataUrl('default.png');
+    }
 
     // Calculate member's financial data
     const memberAssets = calculateMemberAssets(member.id);
@@ -811,15 +841,14 @@ function showMemberDetails(memberId) {
     const memberInvestments = investments.filter(inv => inv.member_id === memberId);
     const memberLiabilityRecords = liabilities.filter(lib => lib.member_id === memberId);
     const memberAccounts = accounts.filter(acc => acc.holder_id === memberId);
-    const memberReminders = reminders.filter(rem => rem.member_id === memberId);
 
     // Render member details content
     const detailsContent = document.getElementById('member-details-content');
     detailsContent.innerHTML = `
         <div class="member-details-overview">
             <div class="member-profile">
-                <img src="${photoUrl}" alt="${member.name}" class="member-photo" 
-                     onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'><text y=\\'.9em\\' font-size=\\'90\\'>👤</text></svg>'" />
+                <img src="${photoSrc}" alt="${member.name}" class="member-photo" 
+                     onerror="this.src='${getEmojiDataUrl('default.png')}'" />
                 <div class="member-info">
                     <h3>${member.name} ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}</h3>
                     <div class="relationship">${member.relationship}</div>
@@ -934,9 +963,8 @@ async function saveMember() {
     }
 
     try {
-        // FIXED: SHARED DATA - Removed user_id to make data shared across all family members
+        // SHARED DATA - Removed user_id to make data shared across all family members
         const memberData = {
-            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             name: name,
             relationship: relationship,
             is_primary: isPrimary,
@@ -1132,7 +1160,7 @@ function selectPhoto(photoName, element) {
     selectedPhoto = photoName;
 }
 
-// FIXED: Real photo upload to Supabase Storage
+// FIXED: Real photo upload to Supabase Storage with proper error handling
 async function uploadPhoto(file) {
     if (!file) return null;
 
@@ -1145,6 +1173,11 @@ async function uploadPhoto(file) {
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             throw new Error('File size must be less than 5MB.');
+        }
+
+        // Check if Supabase is available
+        if (!supabase) {
+            throw new Error('Photo upload requires database connection.');
         }
 
         const fileExt = file.name.split('.').pop();
@@ -1163,7 +1196,7 @@ async function uploadPhoto(file) {
 
         if (error) {
             console.error('❌ Upload error:', error);
-            throw error;
+            throw new Error('Upload failed: ' + error.message);
         }
 
         console.log('✅ Upload successful:', data);
@@ -1198,38 +1231,11 @@ async function handlePhotoUpload(event) {
             throw new Error('Failed to get photo URL');
         }
 
-        // Update member's photo in database
-        const authType = localStorage.getItem('famwealth_auth_type');
+        // Set selectedPhoto to the URL for savePhoto function
+        selectedPhoto = photoUrl;
 
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - update local data
-            const member = familyMembers.find(m => m.id === currentPhotoMemberId);
-            if (member) {
-                member.photo_url = photoUrl;
-                member.photo = photoUrl; // Store URL in photo field too
-            }
-        } else {
-            // Supabase mode - update database
-            const { error } = await supabase
-                .from('family_members')
-                .update({ 
-                    photo_url: photoUrl,
-                    photo: photoUrl
-                })
-                .eq('id', currentPhotoMemberId);
-
-            if (error) {
-                console.error('❌ Database update error:', error);
-                throw error;
-            }
-
-            // Update local data
-            const member = familyMembers.find(m => m.id === currentPhotoMemberId);
-            if (member) {
-                member.photo_url = photoUrl;
-                member.photo = photoUrl;
-            }
-        }
+        // Update member's photo immediately
+        await updateMemberPhoto(currentPhotoMemberId, photoUrl);
 
         // Refresh UI
         renderFamilyMembers();
@@ -1247,20 +1253,36 @@ async function handlePhotoUpload(event) {
     }
 }
 
-// Helper function to get emoji for photo name
-function getEmojiForPhoto(photoName) {
-    const photoEmojiMap = {
-        'man1.png': '👨',
-        'man2.png': '🧑',
-        'woman1.png': '👩',
-        'woman2.png': '👩‍💼',
-        'boy1.png': '👦',
-        'girl1.png': '👧',
-        'elderly-man.png': '👴',
-        'elderly-woman.png': '👵',
-        'default.png': '👤'
-    };
-    return photoEmojiMap[photoName] || '👤';
+// FIXED: Helper function to update member photo (only uses photo field, not photo_url)
+async function updateMemberPhoto(memberId, photoValue) {
+    const authType = localStorage.getItem('famwealth_auth_type');
+
+    if (authType === 'demo' || !supabase) {
+        // Demo mode - update local data
+        const member = familyMembers.find(m => m.id === memberId);
+        if (member) {
+            member.photo = photoValue;
+        }
+    } else {
+        // Supabase mode - update database (FIXED: only update photo field)
+        const { error } = await supabase
+            .from('family_members')
+            .update({ 
+                photo: photoValue  // FIXED: Only update photo, not photo_url
+            })
+            .eq('id', memberId);
+
+        if (error) {
+            console.error('❌ Database update error:', error);
+            throw error;
+        }
+
+        // Update local data
+        const member = familyMembers.find(m => m.id === memberId);
+        if (member) {
+            member.photo = photoValue;
+        }
+    }
 }
 
 // FIXED: Updated savePhoto to handle both presets and uploads
@@ -1271,46 +1293,8 @@ async function savePhoto() {
     }
 
     try {
-        const authType = localStorage.getItem('famwealth_auth_type');
-        let photoUrl;
-
-        // Check if selectedPhoto is a preset emoji or URL
-        if (selectedPhoto.includes('.png')) {
-            // Preset emoji - convert to SVG
-            photoUrl = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${getEmojiForPhoto(selectedPhoto)}</text></svg>`;
-        } else {
-            // It's already a URL from file upload
-            photoUrl = selectedPhoto;
-        }
-
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - update local data
-            const member = familyMembers.find(m => m.id === currentPhotoMemberId);
-            if (member) {
-                member.photo = selectedPhoto;
-                member.photo_url = photoUrl;
-            }
-        } else {
-            // Supabase mode - update database
-            const { error } = await supabase
-                .from('family_members')
-                .update({ 
-                    photo: selectedPhoto,
-                    photo_url: photoUrl
-                })
-                .eq('id', currentPhotoMemberId);
-
-            if (error) {
-                throw error;
-            }
-
-            // Update local data
-            const member = familyMembers.find(m => m.id === currentPhotoMemberId);
-            if (member) {
-                member.photo = selectedPhoto;
-                member.photo_url = photoUrl;
-            }
-        }
+        // Update member's photo in database
+        await updateMemberPhoto(currentPhotoMemberId, selectedPhoto);
 
         // Force re-render to show updated photo
         renderFamilyMembers();
@@ -1384,7 +1368,7 @@ async function saveInvestment() {
     }
 
     try {
-        // FIXED: SHARED DATA - Removed user_id to make investments shared
+        // SHARED DATA - Removed user_id to make investments shared
         const investmentData = {
             member_id: memberId,
             investment_type: type,
@@ -1392,7 +1376,6 @@ async function saveInvestment() {
             invested_amount: amount,
             current_value: currentValue,
             broker_platform: platform,
-            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             created_at: new Date().toISOString()
         };
 
@@ -1560,9 +1543,8 @@ async function saveLiability() {
     }
 
     try {
-        // FIXED: SHARED DATA - Removed user_id to make liabilities shared
+        // SHARED DATA - Removed user_id to make liabilities shared
         const liabilityData = {
-            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             member_id: memberId,
             liability_type: type,
             type: type,
@@ -1734,9 +1716,8 @@ async function saveAccount() {
         const holder = familyMembers.find(m => m.id === holderId);
         const nominee = nomineeId ? familyMembers.find(m => m.id === nomineeId) : null;
 
-        // FIXED: SHARED DATA - Removed user_id to make accounts shared
+        // SHARED DATA - Removed user_id to make accounts shared
         const accountData = {
-            // user_id: currentUser.id,  // REMOVED: No longer user-specific
             account_type: accountType,
             institution: institution,
             account_number: accountNumber,
@@ -2296,9 +2277,8 @@ async function importInvestmentRecord(row, rowNumber) {
         throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
     }
 
-    // FIXED: SHARED DATA - Removed user_id
+    // SHARED DATA - Removed user_id
     const investmentData = {
-        // user_id: currentUser.id,  // REMOVED: No longer user-specific
         member_id: member.id,
         investment_type: row.investment_type,
         symbol_or_name: row.name,
@@ -2324,9 +2304,8 @@ async function importLiabilityRecord(row, rowNumber) {
         throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
     }
 
-    // FIXED: SHARED DATA - Removed user_id
+    // SHARED DATA - Removed user_id
     const liabilityData = {
-        // user_id: currentUser.id,  // REMOVED: No longer user-specific
         member_id: member.id,
         liability_type: row.liability_type,
         type: row.liability_type,
@@ -2362,9 +2341,8 @@ async function importAccountRecord(row, rowNumber) {
         }
     }
 
-    // FIXED: SHARED DATA - Removed user_id
+    // SHARED DATA - Removed user_id
     const accountData = {
-        // user_id: currentUser.id,  // REMOVED: No longer user-specific
         account_type: row.account_type,
         institution: row.institution,
         account_number: row.account_number,
@@ -2471,7 +2449,7 @@ window.closeModal = closeModal;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.initializeSupabase = initializeSupabase;
-window.loadDashboardData = loadDashboardData; // FIXED: Added this
+window.loadDashboardData = loadDashboardData;
 // Import functions
 window.openImportModal = openImportModal;
 window.handleImportFile = handleImportFile;
@@ -2517,5 +2495,5 @@ window.addEventListener('load', async () => {
     }
 });
 
-console.log('✅ FamWealth Dashboard app.js loaded - SHARED DATA + REAL PHOTOS VERSION');
+console.log('✅ FamWealth Dashboard app.js loaded - SHARED DATA + WORKING REAL PHOTOS VERSION');
 console.log('🔧 Ready for initialization');
