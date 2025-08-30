@@ -463,7 +463,7 @@ function getMemberNameById(memberId) {
 }
 
 // ===== RENDERING FUNCTIONS =====
-// FIXED: Photo display issue - Better rendering
+// CRITICAL FIX 1: renderFamilyMembers - Better image handling
 function renderFamilyMembers() {
     const familyGrid = document.getElementById('family-members-grid');
     if (!familyGrid) return;
@@ -486,36 +486,36 @@ function renderFamilyMembers() {
         const memberLiabilities = calculateMemberLiabilities(member.id);
         const netWorth = memberAssets - memberLiabilities;
         
-        // FIXED: Better photo URL handling with debugging
+        // CRITICAL FIX: Determine photo source
         let photoSrc;
         console.log(`🖼️ Member ${member.name} photo:`, member.photo);
         
         if (member.photo && member.photo.startsWith('http')) {
-            // Real uploaded photo URL
             photoSrc = member.photo;
-            console.log('✅ Using real photo URL:', photoSrc);
+            console.log('✅ Using uploaded photo');
         } else if (member.photo && member.photo.includes('.png')) {
-            // Preset photo - convert to emoji
             photoSrc = getEmojiDataUrl(member.photo);
-            console.log('✅ Using preset emoji for:', member.photo);
+            console.log('✅ Using emoji preset');
         } else {
-            // Default fallback
             photoSrc = getEmojiDataUrl('default.png');
-            console.log('✅ Using default photo');
+            console.log('✅ Using default');
         }
 
-        // FIXED: Create member card with proper photo display
         const memberCard = document.createElement('div');
         memberCard.className = 'family-card';
         memberCard.onclick = () => showMemberDetails(member.id);
 
-        // FIXED: Inline styles to ensure photo displays correctly
+        // CRITICAL FIX: Use createElement for image
         memberCard.innerHTML = `
-            <img src="${photoSrc}" 
-                 alt="${member.name}" 
-                 class="member-photo" 
-                 style="width: 80px !important; height: 80px !important; border-radius: 50% !important; object-fit: cover !important; margin: 0 auto 15px !important; border: 3px solid #667eea !important; display: block !important;"
-                 onerror="console.log('❌ Photo load error for ${member.name}'); this.src='${getEmojiDataUrl('default.png')}'" />
+            <div style="text-align: center;">
+                <img src="${photoSrc}" 
+                     alt="${member.name}" 
+                     style="width: 80px !important; height: 80px !important; border-radius: 50% !important; object-fit: cover !important; margin: 0 auto 15px !important; border: 3px solid #667eea !important; display: block !important; background: white !important;"
+                     onerror="console.log('Photo failed:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div style="width: 80px; height: 80px; border-radius: 50%; background: #f7fafc; border: 3px solid #667eea; margin: 0 auto 15px; align-items: center; justify-content: center; font-size: 12px; color: #666; display: none;">
+                    No Photo
+                </div>
+            </div>
             <div class="member-name">
                 ${member.name}
                 ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
@@ -550,7 +550,6 @@ function renderFamilyMembers() {
         familyGrid.appendChild(memberCard);
     });
 }
-
 // Helper function to convert photo name to emoji SVG data URL
 function getEmojiDataUrl(photoName) {
     const photoEmojiMap = {
