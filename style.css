@@ -3015,3 +3015,14 @@ body {
 .mt-2 { 
     margin-top: var(--space-16); 
 }
+.member-photo {
+    width: 80px !important;
+    height: 80px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: block !important;
+    margin: 0 auto 15px !important;
+    border: 3px solid #667eea !important;
+    background: white !important;
+    z-index: 10 !important;
+}
