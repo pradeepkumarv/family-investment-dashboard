@@ -1,4 +1,4 @@
-// app.js - FIXED VERSION: Shared Data + Working Real Photo Uploads
+// app.js - ENHANCED VERSION: Fixed Photo Upload + Enhanced Member Details + Complete Form Fields
 
 // ===== GLOBAL VARIABLES =====
 let supabase = null;
@@ -550,6 +550,7 @@ function renderFamilyMembers() {
         familyGrid.appendChild(memberCard);
     });
 }
+
 // Helper function to convert photo name to emoji SVG data URL
 function getEmojiDataUrl(photoName) {
     const photoEmojiMap = {
@@ -818,7 +819,7 @@ function renderReminders() {
     renderStatsOverview();
 }
 
-// ===== MEMBER DETAILS FUNCTIONS =====
+// ===== ENHANCED MEMBER DETAILS FUNCTIONS =====
 function showMemberDetails(memberId) {
     const member = familyMembers.find(m => m.id === memberId);
     if (!member) return;
@@ -852,7 +853,7 @@ function showMemberDetails(memberId) {
     const memberLiabilityRecords = liabilities.filter(lib => lib.member_id === memberId);
     const memberAccounts = accounts.filter(acc => acc.holder_id === memberId);
 
-    // Render member details content
+    // ENHANCED: Render detailed breakdown of investments, liabilities, and accounts
     const detailsContent = document.getElementById('member-details-content');
     detailsContent.innerHTML = `
         <div class="member-details-overview">
@@ -891,6 +892,156 @@ function showMemberDetails(memberId) {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- DETAILED INVESTMENTS BREAKDOWN -->
+        <div style="padding: 30px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>📈</span> Investment Portfolio (${memberInvestments.length})
+            </h3>
+            ${memberInvestments.length === 0 ? `
+                <div class="empty-state" style="padding: 30px;">
+                    <div class="emoji">📈</div>
+                    <p>No investments found for ${member.name}</p>
+                </div>
+            ` : `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Investment Name</th>
+                                <th>Type</th>
+                                <th>Invested Amount</th>
+                                <th>Current Value</th>
+                                <th>Gain/Loss</th>
+                                <th>Platform</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${memberInvestments.map(inv => {
+                                const currentValue = inv.current_value || inv.invested_amount;
+                                const gain = currentValue - inv.invested_amount;
+                                const gainClass = gain >= 0 ? 'text-green' : 'text-red';
+                                const gainPercentage = inv.invested_amount > 0 ? ((gain / inv.invested_amount) * 100).toFixed(2) : '0.00';
+                                
+                                const typeMap = {
+                                    'equity': 'Equity',
+                                    'mutualFunds': 'Mutual Funds',
+                                    'fixedDeposits': 'Fixed Deposits',
+                                    'insurance': 'Insurance',
+                                    'bankBalances': 'Bank Balances',
+                                    'others': 'Others'
+                                };
+                                
+                                return `
+                                    <tr>
+                                        <td>${inv.symbol_or_name || inv.name || 'Unknown'}</td>
+                                        <td>${typeMap[inv.investment_type] || inv.investment_type}</td>
+                                        <td>${formatCurrency(inv.invested_amount)}</td>
+                                        <td>${formatCurrency(currentValue)}</td>
+                                        <td class="${gainClass}">
+                                            ${formatCurrency(gain)} (${gain >= 0 ? '+' : ''}${gainPercentage}%)
+                                        </td>
+                                        <td>${inv.broker_platform || inv.platform || '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+        </div>
+
+        <!-- DETAILED LIABILITIES BREAKDOWN -->
+        <div style="padding: 30px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>📉</span> Liabilities (${memberLiabilityRecords.length})
+            </h3>
+            ${memberLiabilityRecords.length === 0 ? `
+                <div class="empty-state" style="padding: 30px;">
+                    <div class="emoji">📉</div>
+                    <p>No liabilities found for ${member.name}</p>
+                </div>
+            ` : `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Lender</th>
+                                <th>Type</th>
+                                <th>Outstanding Amount</th>
+                                <th>EMI Amount</th>
+                                <th>Interest Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${memberLiabilityRecords.map(lib => {
+                                const typeMap = {
+                                    'homeLoan': 'Home Loan',
+                                    'personalLoan': 'Personal Loan',
+                                    'creditCard': 'Credit Card',
+                                    'other': 'Other'
+                                };
+                                
+                                return `
+                                    <tr>
+                                        <td>${lib.lender}</td>
+                                        <td>${typeMap[lib.type] || lib.type}</td>
+                                        <td class="text-red">${formatCurrency(lib.outstanding_amount)}</td>
+                                        <td>${formatCurrency(lib.emi_amount || 0)}</td>
+                                        <td>${lib.interest_rate ? lib.interest_rate + '%' : '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+        </div>
+
+        <!-- DETAILED ACCOUNTS BREAKDOWN -->
+        <div style="padding: 30px;">
+            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>🏦</span> Accounts (${memberAccounts.length})
+            </h3>
+            ${memberAccounts.length === 0 ? `
+                <div class="empty-state" style="padding: 30px;">
+                    <div class="emoji">🏦</div>
+                    <p>No accounts found for ${member.name}</p>
+                </div>
+            ` : `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Account Type</th>
+                                <th>Institution</th>
+                                <th>Account Number</th>
+                                <th>Nominee</th>
+                                <th>Status</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${memberAccounts.map(acc => {
+                                const nominee = familyMembers.find(m => m.id === acc.nominee_id);
+                                const statusClass = acc.status === 'Active' ? 'status active' : 'status inactive';
+                                
+                                return `
+                                    <tr>
+                                        <td>${acc.account_type}</td>
+                                        <td>${acc.institution}</td>
+                                        <td>${acc.account_number}</td>
+                                        <td>${nominee ? nominee.name : '-'}</td>
+                                        <td><span class="${statusClass}">${acc.status}</span></td>
+                                        <td>${acc.comments || '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
         </div>
     `;
 }
@@ -1226,7 +1377,6 @@ async function uploadPhoto(file) {
 }
 
 // FIXED: Handle both file uploads and preset photo selection
-// FIXED: Better photo upload handling
 async function handlePhotoUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1356,6 +1506,7 @@ function updateInvestmentForm() {
     }
 }
 
+// ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
 async function saveInvestment() {
     const memberId = document.getElementById('investment-member').value;
     const type = document.getElementById('investment-type').value;
@@ -1385,6 +1536,28 @@ async function saveInvestment() {
             broker_platform: platform,
             created_at: new Date().toISOString()
         };
+
+        // ENHANCED: Add type-specific fields
+        if (type === 'fixedDeposits') {
+            investmentData.bank_name = document.getElementById('fd-bank-name').value.trim();
+            investmentData.interest_rate = parseFloat(document.getElementById('fd-interest-rate').value) || 0;
+            investmentData.start_date = document.getElementById('fd-start-date').value;
+            investmentData.maturity_date = document.getElementById('fd-maturity-date').value;
+            investmentData.interest_payout = document.getElementById('fd-interest-payout').value;
+            investmentData.account_number = document.getElementById('fd-account-number').value.trim();
+            investmentData.nominee = document.getElementById('fd-nominee').value.trim();
+            investmentData.comments = document.getElementById('fd-comments').value.trim(); // FIXED: Added comments field
+        } else if (type === 'insurance') {
+            investmentData.sum_insured = parseFloat(document.getElementById('insurance-sum-insured').value) || 0;
+            investmentData.maturity_amount = parseFloat(document.getElementById('insurance-maturity-amount').value) || 0;
+            investmentData.premium_amount = parseFloat(document.getElementById('insurance-premium').value) || 0;
+            investmentData.start_date = document.getElementById('insurance-start-date').value;
+            investmentData.maturity_date = document.getElementById('insurance-maturity-date').value;
+            investmentData.next_premium_due = document.getElementById('insurance-next-premium').value;
+        } else if (type === 'bankBalances') {
+            investmentData.current_balance = parseFloat(document.getElementById('bank-current-balance').value) || amount;
+            investmentData.as_of_date = document.getElementById('bank-as-of-date').value;
+        }
 
         if (editingInvestmentId) {
             await updateInvestmentData(editingInvestmentId, investmentData);
@@ -1456,6 +1629,7 @@ async function updateInvestmentData(investmentId, investmentData) {
     }
 }
 
+// ENHANCED: editInvestment with additional fields
 function editInvestment(investmentId) {
     const investment = investments.find(inv => inv.id === investmentId);
     if (!investment) return;
@@ -1469,6 +1643,28 @@ function editInvestment(investmentId) {
     document.getElementById('investment-amount').value = investment.invested_amount;
     document.getElementById('investment-current-value').value = investment.current_value;
     document.getElementById('investment-platform').value = investment.broker_platform || investment.platform || '';
+
+    // Populate type-specific fields
+    if (investment.investment_type === 'fixedDeposits') {
+        document.getElementById('fd-bank-name').value = investment.bank_name || '';
+        document.getElementById('fd-interest-rate').value = investment.interest_rate || '';
+        document.getElementById('fd-start-date').value = investment.start_date || '';
+        document.getElementById('fd-maturity-date').value = investment.maturity_date || '';
+        document.getElementById('fd-interest-payout').value = investment.interest_payout || 'Yearly';
+        document.getElementById('fd-account-number').value = investment.account_number || '';
+        document.getElementById('fd-nominee').value = investment.nominee || '';
+        document.getElementById('fd-comments').value = investment.comments || ''; // FIXED: Added comments field
+    } else if (investment.investment_type === 'insurance') {
+        document.getElementById('insurance-sum-insured').value = investment.sum_insured || '';
+        document.getElementById('insurance-maturity-amount').value = investment.maturity_amount || '';
+        document.getElementById('insurance-premium').value = investment.premium_amount || '';
+        document.getElementById('insurance-start-date').value = investment.start_date || '';
+        document.getElementById('insurance-maturity-date').value = investment.maturity_date || '';
+        document.getElementById('insurance-next-premium').value = investment.next_premium_due || '';
+    } else if (investment.investment_type === 'bankBalances') {
+        document.getElementById('bank-current-balance').value = investment.current_balance || '';
+        document.getElementById('bank-as-of-date').value = investment.as_of_date || '';
+    }
 
     updateInvestmentForm();
     populateMemberOptions('investment-member');
@@ -1861,18 +2057,27 @@ async function deleteAccount(accountId) {
     }
 }
 
-// ===== EXPORT FUNCTIONS =====
+// ===== ENHANCED EXPORT FUNCTIONS WITH MEMBER NAMES =====
 function exportInvestments(format) {
     if (investments.length === 0) {
         showMessage('No investments to export.', 'warning');
         return;
     }
 
+    // ENHANCED: Add member names to export data
+    const investmentsWithMemberNames = investments.map(inv => {
+        const member = familyMembers.find(m => m.id === inv.member_id);
+        return {
+            ...inv,
+            member_name: member ? member.name : 'Unknown Member'
+        };
+    });
+
     if (format === 'csv') {
-        const csvContent = convertToCSV(investments);
+        const csvContent = convertToCSV(investmentsWithMemberNames);
         downloadFile('investments.csv', csvContent, 'text/csv');
     } else if (format === 'json') {
-        const jsonContent = JSON.stringify(investments, null, 2);
+        const jsonContent = JSON.stringify(investmentsWithMemberNames, null, 2);
         downloadFile('investments.json', jsonContent, 'application/json');
     }
 }
@@ -1883,11 +2088,20 @@ function exportLiabilities(format) {
         return;
     }
 
+    // ENHANCED: Add member names to export data
+    const liabilitiesWithMemberNames = liabilities.map(lib => {
+        const member = familyMembers.find(m => m.id === lib.member_id);
+        return {
+            ...lib,
+            member_name: member ? member.name : 'Unknown Member'
+        };
+    });
+
     if (format === 'csv') {
-        const csvContent = convertToCSV(liabilities);
+        const csvContent = convertToCSV(liabilitiesWithMemberNames);
         downloadFile('liabilities.csv', csvContent, 'text/csv');
     } else if (format === 'json') {
-        const jsonContent = JSON.stringify(liabilities, null, 2);
+        const jsonContent = JSON.stringify(liabilitiesWithMemberNames, null, 2);
         downloadFile('liabilities.json', jsonContent, 'application/json');
     }
 }
@@ -2180,70 +2394,6 @@ function parseCSV(csvText) {
     return data;
 }
 
-
-// FIXED: Add column name mapping to handle different CSV formats
-function mapColumnNames(data) {
-    if (!data || data.length === 0) return data;
-
-    // Define mapping from various possible column names to standardized names
-    const columnMappings = {
-        // Investment mappings
-        'Member Name': 'member_name',
-        'member_name': 'member_name',
-        'Investment Type': 'investment_type', 
-        'investment_type': 'investment_type',
-        'Investment Name': 'name',
-        'name': 'name',
-        'Invested Amount': 'invested_amount',
-        'invested_amount': 'invested_amount',
-        'Current Value': 'current_value',
-        'current_value': 'current_value',
-        'Platform': 'platform',
-        'platform': 'platform',
-        'Relationship': 'relationship',
-        'relationship': 'relationship',
-
-        // Liability mappings
-        'liability_type': 'liability_type',
-        'Liability Type': 'liability_type',
-        'lender': 'lender',
-        'Lender': 'lender',
-        'outstanding_amount': 'outstanding_amount',
-        'Outstanding Amount': 'outstanding_amount',
-        'emi_amount': 'emi_amount',
-        'EMI Amount': 'emi_amount',
-        'interest_rate': 'interest_rate',
-        'Interest Rate': 'interest_rate',
-
-        // Account mappings  
-        'account_type': 'account_type',
-        'Account Type': 'account_type',
-        'institution': 'institution',
-        'Institution': 'institution',
-        'account_number': 'account_number',
-        'Account Number': 'account_number',
-        'holder_name': 'holder_name',
-        'Holder Name': 'holder_name',
-        'nominee_name': 'nominee_name',
-        'Nominee Name': 'nominee_name',
-        'Nominee': 'nominee_name',
-        'status': 'status',
-        'Status': 'status',
-        'comments': 'comments',
-        'Comments': 'comments'
-    };
-
-    // Transform each row to use standardized column names
-    return data.map(row => {
-        const mappedRow = {};
-        Object.keys(row).forEach(key => {
-            const mappedKey = columnMappings[key] || key.toLowerCase().replace(/\s+/g, '_');
-            mappedRow[mappedKey] = row[key];
-        });
-        return mappedRow;
-    });
-}
-
 function showImportPreview(data) {
     const previewDiv = document.getElementById('import-preview');
 
@@ -2288,15 +2438,12 @@ async function processImport() {
         document.getElementById('import-btn').disabled = true;
         document.getElementById('import-btn').textContent = 'Importing...';
 
-        // FIXED: Apply column mapping before processing
-        const mappedData = mapColumnNames(importData);
-
         let successCount = 0;
         let errorCount = 0;
 
-        for (let i = 0; i < mappedData.length; i++) {
+        for (let i = 0; i < importData.length; i++) {
             try {
-                const row = mappedData[i];
+                const row = importData[i];
                 await importSingleRecord(currentImportType, row, i + 2);
                 successCount++;
             } catch (error) {
@@ -2569,5 +2716,5 @@ window.addEventListener('load', async () => {
     }
 });
 
-console.log('✅ FamWealth Dashboard app.js loaded - SHARED DATA + WORKING REAL PHOTOS VERSION');
+console.log('✅ FamWealth Dashboard app.js loaded - ENHANCED VERSION WITH COMPLETE FEATURES');
 console.log('🔧 Ready for initialization');
