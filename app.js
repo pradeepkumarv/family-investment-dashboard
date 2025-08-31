@@ -1,6 +1,12 @@
-// app.js - ENHANCED VERSION: Fixed Photo Upload + Enhanced Member Details + Complete Form Fields
+// Enhanced Family Investment Dashboard - Complete JavaScript Implementation
+// Version 2.0 with Enhanced FD, Insurance, and Secure Credentials Management
+// Full 2800+ Lines Implementation
 
-// ===== GLOBAL VARIABLES =====
+// ===== GLOBAL CONFIGURATION AND STATE =====
+const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';
+
+// Enhanced Global Variables
 let supabase = null;
 let currentUser = null;
 let familyMembers = [];
@@ -12,2579 +18,191 @@ let editingMemberId = null;
 let editingInvestmentId = null;
 let editingLiabilityId = null;
 let editingAccountId = null;
+let editingReminderId = null;
 let currentPhotoMemberId = null;
 let selectedPhoto = null;
+let currentInvestmentType = 'equity';
+let currentLiabilityType = 'homeLoan';
+let currentReminderType = 'pending';
+let currentAnalyticsTab = 'overview';
+let isEditMode = false;
+let sortColumn = null;
+let sortDirection = 'asc';
 
-// Global import variables
+// Enhanced Authentication and Access Control
+const AUTHORIZED_EMAIL = 'pradeepkumar.v@hotmail.com';
+let hasPasswordAccess = false;
+let userAccessLevel = 'standard';
+
+// Enhanced Import/Export Variables
 let currentImportType = null;
 let importData = null;
-
-// ===== SUPABASE CONFIGURATION =====
-const SUPABASE_URL = 'https://tqjwhbwcteuvmreldgae.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw';
-
-// Demo data for offline mode
-const DEMO_DATA = {
-    familyMembers: [
-        {
-            id: 'demo-1',
-            name: 'John Doe',
-            relationship: 'Self',
-            is_primary: true,
-            photo: 'man1.png',
-            assets: 1500000,
-            liabilities: 800000,
-            created_at: '2024-01-01T00:00:00Z'
-        },
-        {
-            id: 'demo-2', 
-            name: 'Jane Doe',
-            relationship: 'Spouse',
-            is_primary: false,
-            photo: 'woman1.png',
-            assets: 750000,
-            liabilities: 200000,
-            created_at: '2024-01-02T00:00:00Z'
-        }
-    ],
-    investments: [
-        {
-            id: 'inv-1',
-            member_id: 'demo-1',
-            investment_type: 'equity',
-            symbol_or_name: 'HDFC Bank',
-            invested_amount: 100000,
-            current_value: 125000,
-            broker_platform: 'Zerodha',
-            created_at: '2024-01-01T00:00:00Z'
-        }
-    ],
-    liabilities: [
-        {
-            id: 'lib-1',
-            member_id: 'demo-1',
-            type: 'homeLoan',
-            lender: 'HDFC Bank',
-            outstanding_amount: 2500000,
-            emi_amount: 35000,
-            interest_rate: 8.5,
-            created_at: '2024-01-01T00:00:00Z'
-        }
-    ],
-    accounts: [
-        {
-            id: 'acc-1',
-            account_type: 'Savings Account',
-            institution: 'HDFC Bank',
-            account_number: '****1234',
-            holder_id: 'demo-1',
-            holder_name: 'John Doe',
-            nominee_id: 'demo-2',
-            nominee_name: 'Jane Doe',
-            status: 'Active',
-            comments: 'Primary savings account',
-            created_at: '2024-01-01T00:00:00Z'
-        }
-    ],
-    reminders: [
-        {
-            id: 'rem-1',
-            member_id: 'demo-1',
-            title: 'Insurance Premium Due',
-            date: '2024-12-31',
-            type: 'insurance',
-            created_at: '2024-01-01T00:00:00Z'
-        }
-    ]
+let importProgress = 0;
+let exportSettings = {
+    includeCredentials: false,
+    dateFormat: 'DD/MM/YYYY',
+    currencyFormat: 'INR',
+    includeComments: true
 };
+
+// Enhanced Data Type Constants
+const INVESTMENT_TYPES = {
+    equity: '📊 Equity',
+    mutualFunds: '📈 Mutual Funds',
+    fixedDeposits: '🏦 Fixed Deposits',
+    insurance: '🛡️ Insurance',
+    bankBalances: '💰 Bank Balances',
+    others: '📦 Others'
+};
+
+const LIABILITY_TYPES = {
+    homeLoan: '🏠 Home Loan',
+    personalLoan: '👤 Personal Loan',
+    creditCard: '💳 Credit Card',
+    carLoan: '🚗 Car Loan',
+    educationLoan: '🎓 Education Loan',
+    businessLoan: '🏢 Business Loan',
+    other: '📦 Other'
+};
+
+const ACCOUNT_TYPES = [
+    'Bank Account', 'Demat Account', 'Mutual Fund Account',
+    'Insurance Account', 'Trading Account', 'PPF Account',
+    'Savings Account', 'Current Account', 'Fixed Deposit',
+    'Recurring Deposit', 'EPF', 'NPS', 'Crypto Account', 'Other'
+];
+
+const REMINDER_TYPES = {
+    insurance: '🛡️ Insurance Premium',
+    fd_maturity: '🏦 FD Maturity',
+    loan_payment: '💳 Loan Payment',
+    tax_filing: '📊 Tax Filing',
+    investment_review: '📈 Investment Review',
+    policy_renewal: '🔄 Policy Renewal',
+    other: '📦 Other'
+};
+
+// Enhanced Fixed Deposit Specific Constants
+const FD_INTEREST_PAYOUT_OPTIONS = [
+    'Monthly', 'Quarterly', 'Half-yearly', 'Yearly', 'On Maturity'
+];
+
+// Enhanced Insurance Specific Constants
+const INSURANCE_TYPES = [
+    'Life Insurance', 'Health Insurance', 'Term Insurance',
+    'ULIP', 'Endowment', 'Money Back', 'Child Plan',
+    'Pension Plan', 'Other'
+];
+
+const INSURANCE_PAYMENT_FREQUENCIES = [
+    'Monthly', 'Quarterly', 'Half-yearly', 'Annual'
+];
+
+// ===== APPLICATION INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Enhanced Family Wealth Dashboard - Initializing...');
+    
+    try {
+        // Initialize Supabase
+        await initializeSupabase();
+        
+        // Setup comprehensive event listeners
+        setupEventListeners();
+        
+        // Initialize default form values
+        initializeDefaultValues();
+        
+        // Check for existing session
+        await checkExistingSession();
+        
+        // Initialize UI components
+        initializeUIComponents();
+        
+        console.log('✅ Enhanced Family Dashboard initialized successfully');
+        
+    } catch (error) {
+        console.error('❌ Error initializing application:', error);
+        showToast('Error initializing application: ' + error.message, 'error');
+    }
+});
 
 // ===== SUPABASE INITIALIZATION =====
 async function initializeSupabase() {
     try {
         if (typeof window.supabase === 'undefined') {
-            console.warn('⚠️ Supabase not loaded, running in demo mode');
-            return false;
+            throw new Error('Supabase library not loaded');
         }
         
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // Test connection
-        const { data, error } = await supabase.from('users').select('*').limit(1);
+        const { data, error } = await supabase.from('family_members').select('id').limit(1);
+        
         if (error && error.code !== 'PGRST116') {
-            console.warn('⚠️ Supabase connection failed, running in demo mode');
-            return false;
+            console.warn('Supabase connection test failed:', error);
         }
         
         console.log('✅ Supabase initialized successfully');
         return true;
-    } catch (error) {
-        console.warn('⚠️ Supabase initialization error, running in demo mode:', error);
-        return false;
-    }
-}
-
-// ===== AUTHENTICATION FUNCTIONS =====
-async function handleLogin() {
-    const emailInput = document.getElementById('login-email');
-    const passwordInput = document.getElementById('login-password');
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-
-    if (!email || !password) {
-        showMessage('Please enter both email and password.', 'error');
-        return;
-    }
-
-    try {
-        if (supabase) {
-            // Attempt Supabase authentication
-            const { data, error } = await supabase.auth.signInWithPassword({ 
-                email, 
-                password 
-            });
-
-            if (error) {
-                // Fall back to demo mode
-                handleDemoLogin(email);
-                return;
-            }
-
-            currentUser = data.user;
-            localStorage.setItem('famwealth_auth_type', 'supabase');
-            localStorage.setItem('famwealth_user', JSON.stringify(currentUser));
-        } else {
-            // Demo mode login
-            handleDemoLogin(email);
-            return;
-        }
-
-        showDashboard();
-        updateUserInfo(currentUser);
-        await loadDashboardData();
-        showMessage('Login successful!', 'success');
-    } catch (err) {
-        console.error('Login error:', err);
-        handleDemoLogin(email);
-    }
-}
-
-function handleDemoLogin(email) {
-    currentUser = { 
-        email: email || 'demo@famwealth.com', 
-        id: 'demo-user-id' 
-    };
-    localStorage.setItem('famwealth_auth_type', 'demo');
-    localStorage.setItem('famwealth_user', JSON.stringify(currentUser));
-    
-    showDashboard();
-    updateUserInfo(currentUser);
-    loadDashboardData();
-    showMessage('Logged in with demo data!', 'info');
-}
-
-function loadDemoData() {
-    familyMembers = [...DEMO_DATA.familyMembers];
-    investments = [...DEMO_DATA.investments];
-    liabilities = [...DEMO_DATA.liabilities];
-    accounts = [...DEMO_DATA.accounts];
-    reminders = [...DEMO_DATA.reminders];
-    
-    renderFamilyMembers();
-    renderStatsOverview();
-    renderInvestmentTabContent('equity');
-    renderLiabilityTabContent('homeLoan');
-    renderAccounts();
-    renderReminders();
-    updateLastUpdated();
-}
-
-function showDashboard() {
-    document.getElementById('landing-page').style.display = 'none';
-    document.getElementById('main-dashboard').style.display = 'block';
-}
-
-function updateUserInfo(user) {
-    const userEmailSpan = document.getElementById('user-email');
-    if (userEmailSpan) {
-        userEmailSpan.textContent = user.email || 'Unknown User';
-    }
-}
-
-function handleLogout() {
-    localStorage.removeItem('famwealth_auth_type');
-    localStorage.removeItem('famwealth_user');
-    localStorage.removeItem('famwealth_data');
-    
-    currentUser = null;
-    familyMembers = [];
-    investments = [];
-    liabilities = [];
-    accounts = [];
-    reminders = [];
-    
-    document.getElementById('main-dashboard').style.display = 'none';
-    document.getElementById('landing-page').style.display = 'flex';
-    
-    if (supabase) {
-        supabase.auth.signOut();
-    }
-    
-    showMessage('Logged out successfully.', 'info');
-}
-
-// ===== DATA LOADING FUNCTIONS =====
-function setLoadingState(isLoading) {
-    const dashboard = document.getElementById('main-dashboard');
-    if (dashboard) {
-        if (isLoading) {
-            dashboard.classList.add('loading');
-        } else {
-            dashboard.classList.remove('loading');
-        }
-    }
-}
-
-function updateLastUpdated() {
-    const now = new Date();
-    const lastUpdatedSpan = document.getElementById('last-updated');
-    const lastUpdatedDisplay = document.getElementById('last-updated-display');
-    
-    const timeString = now.toLocaleString();
-    
-    if (lastUpdatedSpan) {
-        lastUpdatedSpan.textContent = timeString;
-    }
-    
-    if (lastUpdatedDisplay) {
-        lastUpdatedDisplay.textContent = timeString;
-    }
-}
-
-// SHARED FAMILY DATA - removed user_id filtering
-async function loadDashboardData() {
-    if (!currentUser) {
-        console.warn('No current user; cannot load data.');
-        return;
-    }
-    const authType = localStorage.getItem('famwealth_auth_type');
-    if (authType === 'demo' || !supabase) {
-        console.log('📊 Loading demo data...');
-        loadDemoData();
-        return;
-    }
-    if (authType === 'supabase' && supabase) {
-        try {
-            setLoadingState(true);
-
-            // SHARED DATA - NO user_id filtering
-            
-            // Load family members (SHARED - All users see same data)
-            const { data: membersData, error: membersError } = await supabase
-                .from('family_members')
-                .select('*')
-                .order('created_at', { ascending: true });
-
-            if (membersError) {
-                console.error('Error fetching family members:', membersError);
-                showMessage('Failed to load family members.', 'error');
-                setLoadingState(false);
-                return;
-            }
-
-            familyMembers = membersData || [];
-            const memberIds = familyMembers.map(member => member.id);
-
-            // Load investments (SHARED - All users see same data)
-            let investmentsData = [];
-            if (memberIds.length > 0) {
-                const { data, error } = await supabase
-                    .from('investments')
-                    .select('*')
-                    .in('member_id', memberIds)
-                    .order('created_at', { ascending: false });
-                if (error) {
-                    console.error('Error fetching investments:', error);
-                    showMessage('Failed to load investments.', 'error');
-                    setLoadingState(false);
-                    return;
-                }
-                investmentsData = data || [];
-            }
-            investments = investmentsData;
-
-            // Load liabilities (SHARED - All users see same data)
-            let liabilitiesData = [];
-            if (memberIds.length > 0) {
-                const { data, error } = await supabase
-                    .from('liabilities')
-                    .select('*')
-                    .in('member_id', memberIds)
-                    .order('created_at', { ascending: false });
-                if (error) {
-                    console.error('Error fetching liabilities:', error);
-                    showMessage('Failed to load liabilities.', 'error');
-                    setLoadingState(false);
-                    return;
-                }
-                liabilitiesData = data || [];
-            }
-            liabilities = liabilitiesData;
-
-            // Load accounts (SHARED - All users see same data)
-            const { data: accountsData, error: accountsError } = await supabase
-                .from('accounts')
-                .select('*')
-                .order('created_at', { ascending: false });
-            if (accountsError) {
-                console.error('Error fetching accounts:', accountsError);
-                showMessage('Failed to load accounts.', 'error');
-                setLoadingState(false);
-                return;
-            }
-            accounts = accountsData || [];
-
-            // Load reminders (SHARED - All users see same data)
-            const { data: remindersData, error: remindersError } = await supabase
-                .from('reminders')
-                .select('*')
-                .order('date', { ascending: true });
-            if (remindersError) {
-                console.error('Error fetching reminders:', remindersError);
-            }
-            reminders = remindersData || [];
-
-            // Render all data
-            renderFamilyMembers();
-            renderStatsOverview();
-            renderInvestmentTabContent('equity');
-            renderLiabilityTabContent('homeLoan');
-            renderAccounts();
-            renderReminders();
-            updateLastUpdated();
-            setLoadingState(false);
-
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            showMessage('Error loading dashboard data.', 'error');
-            setLoadingState(false);
-        }
-    }  
-}
-
-// ===== UTILITY FUNCTIONS =====
-function showMessage(message, type = 'info') {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}`;
-    messageDiv.textContent = message;
-    
-    document.body.appendChild(messageDiv);
-    
-    setTimeout(() => {
-        messageDiv.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-        messageDiv.classList.remove('show');
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.remove();
-            }
-        }, 300);
-    }, 3500);
-}
-
-function formatNumber(num) {
-    if (num === null || num === undefined) return '0.00';
-    return Number(num).toLocaleString('en-IN', { 
-        minimumFractionDigits: 2, 
-        maximumFractionDigits: 2 
-    });
-}
-
-function formatCurrency(amount) {
-    return `₹${formatNumber(amount)}`;
-}
-
-function generateId() {
-    return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-}
-
-function parseDate(dateString) {
-    if (!dateString) return null;
-    return new Date(dateString);
-}
-
-function formatDate(date) {
-    if (!date) return '';
-    if (typeof date === 'string') date = new Date(date);
-    return date.toLocaleDateString('en-IN');
-}
-
-function capitalizeFirst(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-function calculateDaysDifference(date1, date2) {
-    const oneDay = 24 * 60 * 60 * 1000;
-    const firstDate = new Date(date1);
-    const secondDate = new Date(date2);
-    return Math.round((secondDate - firstDate) / oneDay);
-}
-
-// ===== CALCULATION FUNCTIONS =====
-function calculateMemberAssets(memberId) {
-    return investments
-        .filter(inv => inv.member_id === memberId)
-        .reduce((total, inv) => total + (inv.current_value || inv.invested_amount || 0), 0);
-} 
-
-function calculateMemberLiabilities(memberId) {
-    return liabilities
-        .filter(lib => lib.member_id === memberId)
-        .reduce((total, lib) => total + (lib.outstanding_amount || 0), 0);
-}
-
-function getMemberInvestmentCount(memberId) {
-    return investments.filter(inv => inv.member_id === memberId).length;
-}
-
-function getMemberLiabilityCount(memberId) {
-    return liabilities.filter(lib => lib.member_id === memberId).length;
-}
-
-function getMemberAccountCount(memberId) {
-    return accounts.filter(acc => acc.holder_id === memberId).length;
-}
-
-function getMemberNameById(memberId) {
-    const member = familyMembers.find(m => m.id === memberId);
-    return member ? member.name : '';
-}
-
-// ===== RENDERING FUNCTIONS =====
-// CRITICAL FIX 1: renderFamilyMembers - Better image handling
-function renderFamilyMembers() {
-    const familyGrid = document.getElementById('family-members-grid');
-    if (!familyGrid) return;
-
-    familyGrid.innerHTML = '';
-
-    if (familyMembers.length === 0) {
-        familyGrid.innerHTML = `
-            <div class="empty-state">
-                <div class="emoji">👪</div>
-                <p>No family members added yet.</p>
-                <p>Add your first family member to get started!</p>
-            </div>
-        `;
-        return;
-    }
-
-    familyMembers.forEach(member => {
-        const memberAssets = calculateMemberAssets(member.id);
-        const memberLiabilities = calculateMemberLiabilities(member.id);
-        const netWorth = memberAssets - memberLiabilities;
         
-        // CRITICAL FIX: Determine photo source
-        let photoSrc;
-        console.log(`🖼️ Member ${member.name} photo:`, member.photo);
-        
-        if (member.photo && member.photo.startsWith('http')) {
-            photoSrc = member.photo;
-            console.log('✅ Using uploaded photo');
-        } else if (member.photo && member.photo.includes('.png')) {
-            photoSrc = getEmojiDataUrl(member.photo);
-            console.log('✅ Using emoji preset');
-        } else {
-            photoSrc = getEmojiDataUrl('default.png');
-            console.log('✅ Using default');
-        }
-
-        const memberCard = document.createElement('div');
-        memberCard.className = 'family-card';
-        memberCard.onclick = () => showMemberDetails(member.id);
-
-        // CRITICAL FIX: Use createElement for image
-        memberCard.innerHTML = `
-            <div style="text-align: center;">
-                <img src="${photoSrc}" 
-                     alt="${member.name}" 
-                     style="width: 80px !important; height: 80px !important; border-radius: 50% !important; object-fit: cover !important; margin: 0 auto 15px !important; border: 3px solid #667eea !important; display: block !important; background: white !important;"
-                     onerror="console.log('Photo failed:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                <div style="width: 80px; height: 80px; border-radius: 50%; background: #f7fafc; border: 3px solid #667eea; margin: 0 auto 15px; align-items: center; justify-content: center; font-size: 12px; color: #666; display: none;">
-                    No Photo
-                </div>
-            </div>
-            <div class="member-name">
-                ${member.name}
-                ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
-            </div>
-            <div class="member-relationship">${member.relationship}</div>
-            <div class="member-summary">
-                <div class="summary-row">
-                    <span class="summary-label">Assets</span>
-                    <span class="summary-value assets">${formatCurrency(memberAssets)}</span>
-                </div>
-                <div class="summary-row">
-                    <span class="summary-label">Liabilities</span>
-                    <span class="summary-value liabilities">${formatCurrency(memberLiabilities)}</span>
-                </div>
-                <div class="summary-row">
-                    <span class="summary-label">Net Worth</span>
-                    <span class="summary-value net-worth">${formatCurrency(netWorth)}</span>
-                </div>
-                <div class="summary-counts">
-                    <span class="count-item">${getMemberInvestmentCount(member.id)} Investments</span>
-                    <span class="count-item">${getMemberLiabilityCount(member.id)} Liabilities</span>
-                    <span class="count-item">${getMemberAccountCount(member.id)} Accounts</span>
-                </div>
-            </div>
-            <div class="member-actions">
-                <button onclick="event.stopPropagation(); editMember('${member.id}')" class="btn btn-sm btn-edit">Edit</button>
-                <button onclick="event.stopPropagation(); openPhotoModal('${member.id}')" class="btn btn-sm btn-photo">📷</button>
-                <button onclick="event.stopPropagation(); deleteMember('${member.id}')" class="btn btn-sm btn-delete">Delete</button>
-            </div>
-        `;
-
-        familyGrid.appendChild(memberCard);
-    });
-}
-
-// Helper function to convert photo name to emoji SVG data URL
-function getEmojiDataUrl(photoName) {
-    const photoEmojiMap = {
-        'man1.png': '👨',
-        'man2.png': '🧑',
-        'woman1.png': '👩',
-        'woman2.png': '👩‍💼',
-        'boy1.png': '👦',
-        'girl1.png': '👧',
-        'elderly-man.png': '👴',
-        'elderly-woman.png': '👵',
-        'default.png': '👤'
-    };
-    const emoji = photoEmojiMap[photoName] || '👤';
-    return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${emoji}</text></svg>`;
-}
-
-function renderStatsOverview() {
-    const statsGrid = document.getElementById('stats-grid');
-    if (!statsGrid) return;
-
-    const totalAssets = familyMembers.reduce((acc, member) => 
-        acc + calculateMemberAssets(member.id), 0);
-    const totalLiabilities = familyMembers.reduce((acc, member) => 
-        acc + calculateMemberLiabilities(member.id), 0);
-    const netWorth = totalAssets - totalLiabilities;
-    const totalAccounts = accounts.length;
-    const urgentReminders = reminders.filter(r => {
-        const daysUntil = calculateDaysDifference(new Date(), new Date(r.date));
-        return daysUntil <= 7 && daysUntil >= 0;
-    }).length;
-
-    const statsHTML = `
-        <div class="stat-card assets">
-            <div class="stat-label">Total Assets</div>
-            <div class="stat-value">${formatCurrency(totalAssets)}</div>
-        </div>
-        <div class="stat-card liabilities">
-            <div class="stat-label">Total Liabilities</div>
-            <div class="stat-value">${formatCurrency(totalLiabilities)}</div>
-        </div>
-        <div class="stat-card net-worth">
-            <div class="stat-label">Net Worth</div>
-            <div class="stat-value">${formatCurrency(netWorth)}</div>
-        </div>
-        <div class="stat-card accounts">
-            <div class="stat-label">Total Accounts</div>
-            <div class="stat-value">${totalAccounts}</div>
-        </div>
-        <div class="stat-card reminders">
-            <div class="stat-label">Urgent Reminders</div>
-            <div class="stat-value">${urgentReminders}</div>
-        </div>
-    `;
-
-    statsGrid.innerHTML = statsHTML;
-}
-
-function renderInvestmentTabContent(type) {
-    // Update active tab
-    const parentTabs = document.querySelector('#investment-tab-content').parentElement.querySelectorAll('.tab');
-    parentTabs.forEach(tab => tab.classList.remove('active'));
-
-    // Find and activate the clicked tab
-    const typeMap = {
-        'equity': 'Equity',
-        'mutualFunds': 'Mutual Funds', 
-        'fixedDeposits': 'Fixed Deposits',
-        'insurance': 'Insurance',
-        'bankBalances': 'Bank Balances',
-        'others': 'Others'
-    };
-
-    parentTabs.forEach(tab => {
-        if (tab.textContent.trim() === typeMap[type]) {
-            tab.classList.add('active');
-        }
-    });
-
-    const tabContent = document.getElementById('investment-tab-content');
-    const filteredInvestments = investments.filter(inv => inv.investment_type === type || inv.type === type);
-
-    if (filteredInvestments.length === 0) {
-        tabContent.innerHTML = `
-            <div class="empty-state">
-                <div class="emoji">📈</div>
-                <p>No ${typeMap[type]} investments added yet.</p>
-                <p>Click "Add Investment" to start tracking your ${typeMap[type].toLowerCase()}.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const tableHTML = `
-        <div class="table-responsive">
-            <table class="data-table" id="investments-table">
-                <thead>
-                    <tr>
-                        <th onclick="sortTable('investments-table', 0)">Name <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('investments-table', 1)">Member <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('investments-table', 2)">Invested Amount <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('investments-table', 3)">Current Value <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('investments-table', 4)">Gain/Loss <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('investments-table', 5)">Platform <span class="sort-indicator"></span></th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredInvestments.map(inv => {
-                        const member = familyMembers.find(m => m.id === inv.member_id);
-                        const currentValue = inv.current_value || inv.invested_amount;
-                        const gain = currentValue - inv.invested_amount;
-                        const gainClass = gain >= 0 ? 'text-green' : 'text-red';
-                        const gainPercentage = inv.invested_amount > 0 ? ((gain / inv.invested_amount) * 100).toFixed(2) : '0.00';
-
-                        const invName = inv.symbol_or_name || inv.name || 'Unknown';
-                        const invPlatform = inv.broker_platform || inv.platform || '-';
-
-                        return `
-                            <tr>
-                                <td>${invName}</td>
-                                <td>${member ? member.name : 'Unknown'}</td>
-                                <td>${formatCurrency(inv.invested_amount)}</td>
-                                <td>${formatCurrency(currentValue)}</td>
-                                <td class="${gainClass}">
-                                    ${formatCurrency(gain)} (${gain >= 0 ? '+' : ''}${gainPercentage}%)
-                                </td>
-                                <td>${invPlatform}</td>
-                                <td>
-                                    <button onclick="editInvestment('${inv.id}')" class="btn btn-sm btn-edit">Edit</button>
-                                    <button onclick="deleteInvestment('${inv.id}')" class="btn btn-sm btn-delete">Delete</button>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    tabContent.innerHTML = tableHTML;
-}
-
-function renderLiabilityTabContent(type) {
-    // Update active tab
-    const parentTabs = document.querySelector('#liability-tab-content').parentElement.querySelectorAll('.tab');
-    parentTabs.forEach(tab => tab.classList.remove('active'));
-    
-    // Find and activate the clicked tab
-    const typeMap = {
-        'homeLoan': 'Home Loan',
-        'personalLoan': 'Personal Loan',
-        'creditCard': 'Credit Card',
-        'other': 'Other'
-    };
-    
-    parentTabs.forEach(tab => {
-        if (tab.textContent.trim() === typeMap[type]) {
-            tab.classList.add('active');
-        }
-    });
-
-    const tabContent = document.getElementById('liability-tab-content');
-    const filteredLiabilities = liabilities.filter(lib => lib.type === type);
-
-    if (filteredLiabilities.length === 0) {
-        tabContent.innerHTML = `
-            <div class="empty-state">
-                <div class="emoji">📉</div>
-                <p>No ${typeMap[type]} liabilities added yet.</p>
-                <p>Click "Add Liability" to start tracking your ${typeMap[type].toLowerCase()}.</p>
-            </div>
-        `;
-        return;
-    }
-
-    const tableHTML = `
-        <div class="table-responsive">
-            <table class="data-table" id="liabilities-table">
-                <thead>
-                    <tr>
-                        <th onclick="sortTable('liabilities-table', 0)">Lender <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('liabilities-table', 1)">Member <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('liabilities-table', 2)">Outstanding Amount <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('liabilities-table', 3)">EMI <span class="sort-indicator"></span></th>
-                        <th onclick="sortTable('liabilities-table', 4)">Interest Rate <span class="sort-indicator"></span></th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredLiabilities.map(lib => {
-                        const member = familyMembers.find(m => m.id === lib.member_id);
-                        return `
-                            <tr>
-                                <td>${lib.lender}</td>
-                                <td>${member ? member.name : 'Unknown'}</td>
-                                <td class="text-red">${formatCurrency(lib.outstanding_amount)}</td>
-                                <td>${formatCurrency(lib.emi_amount || 0)}</td>
-                                <td>${lib.interest_rate ? lib.interest_rate + '%' : '-'}</td>
-                                <td>
-                                    <button onclick="editLiability('${lib.id}')" class="btn btn-sm btn-edit">Edit</button>
-                                    <button onclick="deleteLiability('${lib.id}')" class="btn btn-sm btn-delete">Delete</button>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    tabContent.innerHTML = tableHTML;
-}
-
-function renderAccounts() {
-    const tableBody = document.getElementById('accounts-table-body');
-    if (!tableBody) return;
-
-    if (accounts.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="empty-state">
-                    <div class="emoji">🏦</div>
-                    <p>No accounts added yet.</p>
-                    <p>Click "Add Account" to start managing your accounts.</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tableBody.innerHTML = accounts.map(account => {
-        const holder = familyMembers.find(m => m.id === account.holder_id);
-        const nominee = familyMembers.find(m => m.id === account.nominee_id);
-        const statusClass = account.status === 'Active' ? 'status active' : 'status inactive';
-
-        return `
-            <tr>
-                <td>${account.account_type}</td>
-                <td>${account.institution}</td>
-                <td>${account.account_number}</td>
-                <td>${holder ? holder.name : 'Unknown'}</td>
-                <td>${nominee ? nominee.name : '-'}</td>
-                <td><span class="${statusClass}">${account.status}</span></td>
-                <td>
-                    <button onclick="editAccount('${account.id}')" class="btn btn-sm btn-edit">Edit</button>
-                    <button onclick="deleteAccount('${account.id}')" class="btn btn-sm btn-delete">Delete</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function renderReminders() {
-    // This function can be expanded to render reminders in a dedicated section
-    const today = new Date();
-    const urgentReminders = reminders.filter(reminder => {
-        const reminderDate = new Date(reminder.date);
-        const daysDiff = calculateDaysDifference(today, reminderDate);
-        return daysDiff >= 0 && daysDiff <= 7;
-    });
-
-    console.log(`${urgentReminders.length} urgent reminders found`);
-    
-    // Update reminders count in stats
-    renderStatsOverview();
-}
-
-// ===== ENHANCED MEMBER DETAILS FUNCTIONS =====
-function showMemberDetails(memberId) {
-    const member = familyMembers.find(m => m.id === memberId);
-    if (!member) return;
-
-    // Hide main sections and show member details
-    const mainSections = document.querySelectorAll('.section:not(.member-details-section)');
-    mainSections.forEach(section => section.style.display = 'none');
-    
-    const memberDetailsSection = document.getElementById('member-details-section');
-    memberDetailsSection.style.display = 'block';
-
-    // Update title
-    const detailsTitle = document.getElementById('member-details-title');
-    detailsTitle.textContent = `${member.name} - Financial Details`;
-
-    // FIXED: Better photo handling
-    let photoSrc;
-    if (member.photo && member.photo.startsWith('http')) {
-        photoSrc = member.photo;
-    } else if (member.photo && member.photo.includes('.png')) {
-        photoSrc = getEmojiDataUrl(member.photo);
-    } else {
-        photoSrc = getEmojiDataUrl('default.png');
-    }
-
-    // Calculate member's financial data
-    const memberAssets = calculateMemberAssets(member.id);
-    const memberLiabilities = calculateMemberLiabilities(member.id);
-    const netWorth = memberAssets - memberLiabilities;
-    const memberInvestments = investments.filter(inv => inv.member_id === memberId);
-    const memberLiabilityRecords = liabilities.filter(lib => lib.member_id === memberId);
-    const memberAccounts = accounts.filter(acc => acc.holder_id === memberId);
-
-    // ENHANCED: Render detailed breakdown of investments, liabilities, and accounts
-    const detailsContent = document.getElementById('member-details-content');
-    detailsContent.innerHTML = `
-        <div class="member-details-overview">
-            <div class="member-profile">
-                <img src="${photoSrc}" alt="${member.name}" class="member-photo" 
-                     onerror="this.src='${getEmojiDataUrl('default.png')}'" />
-                <div class="member-info">
-                    <h3>${member.name} ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}</h3>
-                    <div class="relationship">${member.relationship}</div>
-                    <div style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
-                        Member since: ${formatDate(member.created_at)}
-                    </div>
-                </div>
-            </div>
-
-            <div class="financial-summary-grid">
-                <div class="summary-card assets">
-                    <div class="summary-value assets">${formatCurrency(memberAssets)}</div>
-                    <div class="summary-label">Total Assets</div>
-                    <div style="font-size: 0.8rem; color: #718096; margin-top: 5px;">
-                        From ${memberInvestments.length} investment(s)
-                    </div>
-                </div>
-                <div class="summary-card liabilities">
-                    <div class="summary-value liabilities">${formatCurrency(memberLiabilities)}</div>
-                    <div class="summary-label">Total Liabilities</div>
-                    <div style="font-size: 0.8rem; color: #718096; margin-top: 5px;">
-                        From ${memberLiabilityRecords.length} liability(ies)
-                    </div>
-                </div>
-                <div class="summary-card net-worth">
-                    <div class="summary-value net-worth">${formatCurrency(netWorth)}</div>
-                    <div class="summary-label">Net Worth</div>
-                    <div style="font-size: 0.8rem; color: #718096; margin-top: 5px;">
-                        ${memberAccounts.length} account(s)
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- DETAILED INVESTMENTS BREAKDOWN -->
-        <div style="padding: 30px; border-bottom: 1px solid #e2e8f0;">
-            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span>📈</span> Investment Portfolio (${memberInvestments.length})
-            </h3>
-            ${memberInvestments.length === 0 ? `
-                <div class="empty-state" style="padding: 30px;">
-                    <div class="emoji">📈</div>
-                    <p>No investments found for ${member.name}</p>
-                </div>
-            ` : `
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Investment Name</th>
-                                <th>Type</th>
-                                <th>Invested Amount</th>
-                                <th>Current Value</th>
-                                <th>Gain/Loss</th>
-                                <th>Platform</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${memberInvestments.map(inv => {
-                                const currentValue = inv.current_value || inv.invested_amount;
-                                const gain = currentValue - inv.invested_amount;
-                                const gainClass = gain >= 0 ? 'text-green' : 'text-red';
-                                const gainPercentage = inv.invested_amount > 0 ? ((gain / inv.invested_amount) * 100).toFixed(2) : '0.00';
-                                
-                                const typeMap = {
-                                    'equity': 'Equity',
-                                    'mutualFunds': 'Mutual Funds',
-                                    'fixedDeposits': 'Fixed Deposits',
-                                    'insurance': 'Insurance',
-                                    'bankBalances': 'Bank Balances',
-                                    'others': 'Others'
-                                };
-                                
-                                return `
-                                    <tr>
-                                        <td>${inv.symbol_or_name || inv.name || 'Unknown'}</td>
-                                        <td>${typeMap[inv.investment_type] || inv.investment_type}</td>
-                                        <td>${formatCurrency(inv.invested_amount)}</td>
-                                        <td>${formatCurrency(currentValue)}</td>
-                                        <td class="${gainClass}">
-                                            ${formatCurrency(gain)} (${gain >= 0 ? '+' : ''}${gainPercentage}%)
-                                        </td>
-                                        <td>${inv.broker_platform || inv.platform || '-'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `}
-        </div>
-
-        <!-- DETAILED LIABILITIES BREAKDOWN -->
-        <div style="padding: 30px; border-bottom: 1px solid #e2e8f0;">
-            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span>📉</span> Liabilities (${memberLiabilityRecords.length})
-            </h3>
-            ${memberLiabilityRecords.length === 0 ? `
-                <div class="empty-state" style="padding: 30px;">
-                    <div class="emoji">📉</div>
-                    <p>No liabilities found for ${member.name}</p>
-                </div>
-            ` : `
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Lender</th>
-                                <th>Type</th>
-                                <th>Outstanding Amount</th>
-                                <th>EMI Amount</th>
-                                <th>Interest Rate</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${memberLiabilityRecords.map(lib => {
-                                const typeMap = {
-                                    'homeLoan': 'Home Loan',
-                                    'personalLoan': 'Personal Loan',
-                                    'creditCard': 'Credit Card',
-                                    'other': 'Other'
-                                };
-                                
-                                return `
-                                    <tr>
-                                        <td>${lib.lender}</td>
-                                        <td>${typeMap[lib.type] || lib.type}</td>
-                                        <td class="text-red">${formatCurrency(lib.outstanding_amount)}</td>
-                                        <td>${formatCurrency(lib.emi_amount || 0)}</td>
-                                        <td>${lib.interest_rate ? lib.interest_rate + '%' : '-'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `}
-        </div>
-
-        <!-- DETAILED ACCOUNTS BREAKDOWN -->
-        <div style="padding: 30px;">
-            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <span>🏦</span> Accounts (${memberAccounts.length})
-            </h3>
-            ${memberAccounts.length === 0 ? `
-                <div class="empty-state" style="padding: 30px;">
-                    <div class="emoji">🏦</div>
-                    <p>No accounts found for ${member.name}</p>
-                </div>
-            ` : `
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Account Type</th>
-                                <th>Institution</th>
-                                <th>Account Number</th>
-                                <th>Nominee</th>
-                                <th>Status</th>
-                                <th>Comments</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${memberAccounts.map(acc => {
-                                const nominee = familyMembers.find(m => m.id === acc.nominee_id);
-                                const statusClass = acc.status === 'Active' ? 'status active' : 'status inactive';
-                                
-                                return `
-                                    <tr>
-                                        <td>${acc.account_type}</td>
-                                        <td>${acc.institution}</td>
-                                        <td>${acc.account_number}</td>
-                                        <td>${nominee ? nominee.name : '-'}</td>
-                                        <td><span class="${statusClass}">${acc.status}</span></td>
-                                        <td>${acc.comments || '-'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `}
-        </div>
-    `;
-}
-
-function closeMemberDetails() {
-    // Hide member details section
-    const memberDetailsSection = document.getElementById('member-details-section');
-    memberDetailsSection.style.display = 'none';
-    
-    // Show main sections
-    const mainSections = document.querySelectorAll('.section:not(.member-details-section)');
-    mainSections.forEach(section => section.style.display = 'block');
-}
-
-// ===== MODAL FUNCTIONS =====
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    }
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = ''; // Restore scrolling
-        resetModalForm(modalId);
-    }
-}
-
-function resetModalForm(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-    
-    const form = modal.querySelector('form');
-    if (form) {
-        form.reset();
-    }
-    
-    // Reset conditional fields
-    const conditionalFields = modal.querySelectorAll('.conditional-fields');
-    conditionalFields.forEach(field => {
-        field.style.display = 'none';
-    });
-    
-    // Reset editing state
-    if (modalId === 'member-modal') {
-        editingMemberId = null;
-        document.getElementById('member-modal-title').textContent = 'Add Family Member';
-    } else if (modalId === 'investment-modal') {
-        editingInvestmentId = null;
-        document.getElementById('investment-modal-title').textContent = 'Add Investment';
-    } else if (modalId === 'liability-modal') {
-        editingLiabilityId = null;
-        document.getElementById('liability-modal-title').textContent = 'Add Liability';
-    } else if (modalId === 'account-modal') {
-        editingAccountId = null;
-        document.getElementById('account-modal-title').textContent = 'Add Account';
-    }
-}
-
-// ===== FAMILY MEMBER FUNCTIONS =====
-function openAddMemberModal() {
-    editingMemberId = null;
-    document.getElementById('member-modal-title').textContent = 'Add Family Member';
-    document.getElementById('member-form').reset();
-    openModal('member-modal');
-}
-
-async function saveMember() {
-    const name = document.getElementById('member-name').value.trim();
-    const relationship = document.getElementById('member-relationship').value;
-    const isPrimary = document.getElementById('member-is-primary').checked;
-
-    if (!name || !relationship) {
-        showMessage('Please fill in all required fields.', 'error');
-        return;
-    }
-
-    try {
-        // SHARED DATA - Removed user_id to make data shared across all family members
-        const memberData = {
-            name: name,
-            relationship: relationship,
-            is_primary: isPrimary,
-            photo: 'default.png',
-            created_at: new Date().toISOString()
-        };
-
-        if (editingMemberId) {
-            // Update existing member
-            await updateMemberData(editingMemberId, memberData);
-            showMessage('Family member updated successfully!', 'success');
-        } else {
-            // Add new member
-            await addMemberData(memberData);
-            showMessage('Family member added successfully!', 'success');
-        }
-
-        renderFamilyMembers();
-        renderStatsOverview();
-        closeModal('member-modal');
     } catch (error) {
-        console.error('Error saving member:', error);
-        showMessage('Error saving family member.', 'error');
-    }
-}
-
-async function addMemberData(memberData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
-    
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - add to local data
-        memberData.id = generateId();
-        familyMembers.push(memberData);
-        return;
-    }
-
-    // Supabase mode
-    const { data, error } = await supabase
-        .from('family_members')
-        .insert([memberData])
-        .select();
-
-    if (error) {
-        throw error;
-    }
-
-    familyMembers.push(data[0]);
-}
-
-async function updateMemberData(memberId, memberData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
-    
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - update local data
-        const memberIndex = familyMembers.findIndex(m => m.id === memberId);
-        if (memberIndex !== -1) {
-            familyMembers[memberIndex] = { ...familyMembers[memberIndex], ...memberData };
-        }
-        return;
-    }
-
-    // Supabase mode
-    const { error } = await supabase
-        .from('family_members')
-        .update(memberData)
-        .eq('id', memberId);
-
-    if (error) {
-        throw error;
-    }
-
-    // Update local data
-    const memberIndex = familyMembers.findIndex(m => m.id === memberId);
-    if (memberIndex !== -1) {
-        familyMembers[memberIndex] = { ...familyMembers[memberIndex], ...memberData };
-    }
-}
-
-function editMember(memberId) {
-    const member = familyMembers.find(m => m.id === memberId);
-    if (!member) return;
-
-    editingMemberId = memberId;
-    document.getElementById('member-modal-title').textContent = 'Edit Family Member';
-    
-    // Populate form
-    document.getElementById('member-name').value = member.name;
-    document.getElementById('member-relationship').value = member.relationship;
-    document.getElementById('member-is-primary').checked = member.is_primary;
-    
-    openModal('member-modal');
-}
-
-async function deleteMember(memberId) {
-    if (!confirm('Are you sure you want to delete this family member? This will also delete all associated investments, liabilities, and accounts.')) {
-        return;
-    }
-
-    try {
-        const authType = localStorage.getItem('famwealth_auth_type');
-        
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - delete from local data
-            familyMembers = familyMembers.filter(m => m.id !== memberId);
-            investments = investments.filter(inv => inv.member_id !== memberId);
-            liabilities = liabilities.filter(lib => lib.member_id !== memberId);
-            accounts = accounts.filter(acc => acc.holder_id !== memberId && acc.nominee_id !== memberId);
-            reminders = reminders.filter(rem => rem.member_id !== memberId);
-        } else {
-            // Supabase mode - delete from database
-            const { error } = await supabase
-                .from('family_members')
-                .delete()
-                .eq('id', memberId);
-
-            if (error) {
-                throw error;
-            }
-
-            // Update local data
-            familyMembers = familyMembers.filter(m => m.id !== memberId);
-            investments = investments.filter(inv => inv.member_id !== memberId);
-            liabilities = liabilities.filter(lib => lib.member_id !== memberId);
-            accounts = accounts.filter(acc => acc.holder_id !== memberId && acc.nominee_id !== memberId);
-            reminders = reminders.filter(rem => rem.member_id !== memberId);
-        }
-
-        renderFamilyMembers();
-        renderStatsOverview();
-        renderInvestmentTabContent('equity');
-        renderLiabilityTabContent('homeLoan');
-        renderAccounts();
-        showMessage('Family member deleted successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting member:', error);
-        showMessage('Error deleting family member.', 'error');
-    }
-}
-
-// ===== PHOTO FUNCTIONS - FIXED FOR REAL UPLOADS =====
-function openPhotoModal(memberId) {
-    currentPhotoMemberId = memberId;
-    selectedPhoto = null;
-    renderPresetPhotos();
-    openModal('photo-modal');
-}
-
-function renderPresetPhotos() {
-    const photosGrid = document.getElementById('preset-photos-grid');
-    const presetPhotos = [
-        { name: 'man1.png', emoji: '👨' },
-        { name: 'man2.png', emoji: '🧑' },
-        { name: 'woman1.png', emoji: '👩' },
-        { name: 'woman2.png', emoji: '👩‍💼' },
-        { name: 'boy1.png', emoji: '👦' },
-        { name: 'girl1.png', emoji: '👧' },
-        { name: 'elderly-man.png', emoji: '👴' },
-        { name: 'elderly-woman.png', emoji: '👵' },
-        { name: 'default.png', emoji: '👤' }
-    ];
-    
-    photosGrid.innerHTML = '';
-    presetPhotos.forEach(photo => {
-        const photoDiv = document.createElement('div');
-        photoDiv.className = 'photo-option';
-        photoDiv.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 80px;
-            border-radius: 10px;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: all 0.3s ease;
-            font-size: 2rem;
-            background: #f7fafc;
-        `;
-        photoDiv.textContent = photo.emoji;
-        photoDiv.onclick = () => selectPhoto(photo.name, photoDiv);
-        photosGrid.appendChild(photoDiv);
-    });
-}
-
-function selectPhoto(photoName, element) {
-    // Remove previous selection
-    document.querySelectorAll('.photo-option').forEach(div => {
-        div.style.borderColor = 'transparent';
-    });
-    
-    // Add selection to clicked photo
-    element.style.borderColor = '#667eea';
-    selectedPhoto = photoName;
-}
-
-// FIXED: Real photo upload to Supabase Storage with proper error handling
-async function uploadPhoto(file) {
-    if (!file) return null;
-
-    try {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            throw new Error('Please select an image file.');
-        }
-
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            throw new Error('File size must be less than 5MB.');
-        }
-
-        // Check if Supabase is available
-        if (!supabase) {
-            throw new Error('Photo upload requires database connection.');
-        }
-
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${generateId()}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
-
-        console.log('📁 Uploading photo to:', filePath);
-
-        // Upload file to Supabase Storage
-        const { data, error } = await supabase.storage
-            .from('avatars')
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
-
-        if (error) {
-            console.error('❌ Upload error:', error);
-            throw new Error('Upload failed: ' + error.message);
-        }
-
-        console.log('✅ Upload successful:', data);
-
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-
-        console.log('🔗 Public URL:', publicUrl);
-        return publicUrl;
-
-    } catch (error) {
-        console.error('❌ Photo upload failed:', error);
+        console.error('❌ Supabase initialization failed:', error);
         throw error;
     }
 }
 
-// FIXED: Handle both file uploads and preset photo selection
-async function handlePhotoUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    try {
-        showMessage('Uploading photo...', 'info');
-        
-        const photoUrl = await uploadPhoto(file);
-        
-        if (!photoUrl) {
-            throw new Error('Failed to get photo URL');
-        }
-
-        console.log('✅ Photo uploaded, URL:', photoUrl);
-
-        // Update member's photo immediately with the URL
-        await updateMemberPhoto(currentPhotoMemberId, photoUrl);
-
-        // Refresh UI to show new photo
-        renderFamilyMembers();
-        closeModal('photo-modal');
-        showMessage('Photo uploaded successfully! 📸', 'success');
-
-        // Reset file input
-        event.target.value = '';
-
-    } catch (error) {
-        console.error('❌ Photo upload error:', error);
-        showMessage(`Photo upload failed: ${error.message}`, 'error');
-        event.target.value = '';
-    }
-}
-
-// FIXED: Helper function to update member photo (only uses photo field, not photo_url)
-async function updateMemberPhoto(memberId, photoValue) {
-    const authType = localStorage.getItem('famwealth_auth_type');
-
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - update local data
-        const member = familyMembers.find(m => m.id === memberId);
-        if (member) {
-            member.photo = photoValue;
-        }
-    } else {
-        // Supabase mode - update database (FIXED: only update photo field)
-        const { error } = await supabase
-            .from('family_members')
-            .update({ 
-                photo: photoValue  // FIXED: Only update photo, not photo_url
-            })
-            .eq('id', memberId);
-
-        if (error) {
-            console.error('❌ Database update error:', error);
-            throw error;
-        }
-
-        // Update local data
-        const member = familyMembers.find(m => m.id === memberId);
-        if (member) {
-            member.photo = photoValue;
-        }
-    }
-}
-
-// FIXED: Updated savePhoto to handle both presets and uploads
-async function savePhoto() {
-    if (!selectedPhoto) {
-        showMessage('Please select a photo or upload one.', 'error');
-        return;
-    }
-
-    try {
-        // Update member's photo in database
-        await updateMemberPhoto(currentPhotoMemberId, selectedPhoto);
-
-        // Force re-render to show updated photo
-        renderFamilyMembers();
-        closeModal('photo-modal');
-        showMessage('Photo updated successfully! ✅', 'success');
-    } catch (error) {
-        console.error('❌ Error updating photo:', error);
-        showMessage('Error updating photo: ' + error.message, 'error');
-    }
-}
-
-// ===== INVESTMENT FUNCTIONS =====
-function openAddInvestmentModal() {
-    editingInvestmentId = null;
-    document.getElementById('investment-modal-title').textContent = 'Add Investment';
-    document.getElementById('investment-form').reset();
-    populateMemberOptions('investment-member');
-    hideAllConditionalFields();
-    openModal('investment-modal');
-}
-
-function populateMemberOptions(selectId) {
-    const select = document.getElementById(selectId);
-    if (!select) return;
-
-    select.innerHTML = '<option value="">Select Member</option>';
-    familyMembers.forEach(member => {
-        const option = document.createElement('option');
-        option.value = member.id;
-        option.textContent = member.name;
-        select.appendChild(option);
-    });
-}
-
-function hideAllConditionalFields() {
-    document.querySelector('.fixed-deposit-fields').style.display = 'none';
-    document.querySelector('.insurance-fields').style.display = 'none';
-    document.querySelector('.bank-balance-fields').style.display = 'none';
-}
-
-function updateInvestmentForm() {
-    const investmentType = document.getElementById('investment-type').value;
+// ===== COMPREHENSIVE EVENT LISTENERS SETUP =====
+function setupEventListeners() {
+    // Authentication form listeners
+    setupAuthenticationListeners();
     
-    hideAllConditionalFields();
+    // Modal management listeners
+    setupModalListeners();
     
-    if (investmentType === 'fixedDeposits') {
-        document.querySelector('.fixed-deposit-fields').style.display = 'block';
-    } else if (investmentType === 'insurance') {
-        document.querySelector('.insurance-fields').style.display = 'block';
-    } else if (investmentType === 'bankBalances') {
-        document.querySelector('.bank-balance-fields').style.display = 'block';
-    }
-}
-
-// ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
-async function saveInvestment() {
-    const memberId = document.getElementById('investment-member').value;
-    const type = document.getElementById('investment-type').value;
-    const name = document.getElementById('investment-name').value.trim();
-    const amount = parseFloat(document.getElementById('investment-amount').value);
-    const currentValue = parseFloat(document.getElementById('investment-current-value').value) || amount;
-    const platform = document.getElementById('investment-platform').value.trim() || 'Not Specified';
-
-    if (!memberId || !type || !name || !amount) {
-        showMessage('Please fill in all required fields.', 'error');
-        return;
-    }
-
-    if (amount <= 0) {
-        showMessage('Invested amount must be greater than 0.', 'error');
-        return;
-    }
-
-    try {
-        // SHARED DATA - Removed user_id to make investments shared
-        const investmentData = {
-            member_id: memberId,
-            investment_type: type,
-            symbol_or_name: name,
-            invested_amount: amount,
-            current_value: currentValue,
-            broker_platform: platform,
-            created_at: new Date().toISOString()
-        };
-
-        // ENHANCED: Add type-specific fields
-        if (type === 'fixedDeposits') {
-            investmentData.bank_name = document.getElementById('fd-bank-name').value.trim();
-            investmentData.interest_rate = parseFloat(document.getElementById('fd-interest-rate').value) || 0;
-            investmentData.start_date = document.getElementById('fd-start-date').value;
-            investmentData.maturity_date = document.getElementById('fd-maturity-date').value;
-            investmentData.interest_payout = document.getElementById('fd-interest-payout').value;
-            investmentData.account_number = document.getElementById('fd-account-number').value.trim();
-            investmentData.nominee = document.getElementById('fd-nominee').value.trim();
-            investmentData.comments = document.getElementById('fd-comments').value.trim(); // FIXED: Added comments field
-        } else if (type === 'insurance') {
-            investmentData.sum_insured = parseFloat(document.getElementById('insurance-sum-insured').value) || 0;
-            investmentData.maturity_amount = parseFloat(document.getElementById('insurance-maturity-amount').value) || 0;
-            investmentData.premium_amount = parseFloat(document.getElementById('insurance-premium').value) || 0;
-            investmentData.start_date = document.getElementById('insurance-start-date').value;
-            investmentData.maturity_date = document.getElementById('insurance-maturity-date').value;
-            investmentData.next_premium_due = document.getElementById('insurance-next-premium').value;
-        } else if (type === 'bankBalances') {
-            investmentData.current_balance = parseFloat(document.getElementById('bank-current-balance').value) || amount;
-            investmentData.as_of_date = document.getElementById('bank-as-of-date').value;
-        }
-
-        if (editingInvestmentId) {
-            await updateInvestmentData(editingInvestmentId, investmentData);
-            showMessage('Investment updated successfully! ✅', 'success');
-        } else {
-            await addInvestmentData(investmentData);
-            showMessage('Investment added successfully! ✅', 'success');
-        }
-
-        renderInvestmentTabContent(type);
-        renderStatsOverview();
-        closeModal('investment-modal');
-        
-    } catch (error) {
-        console.error('❌ Investment save error:', error);
-        showMessage(`Error: ${error.message}`, 'error');
-    }
-}
-
-async function addInvestmentData(investmentData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
+    // Form submission listeners
+    setupFormListeners();
     
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - add to local data
-        investmentData.id = generateId();
-        investments.push(investmentData);
-        return;
-    }
-
-    // Supabase mode
-    const { data, error } = await supabase
-        .from('investments')
-        .insert([investmentData])
-        .select();
-
-    if (error) {
-        throw error;
-    }
-
-    investments.push(data[0]);
-}
-
-async function updateInvestmentData(investmentId, investmentData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
+    // Navigation listeners
+    setupNavigationListeners();
     
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - update local data
-        const investmentIndex = investments.findIndex(inv => inv.id === investmentId);
-        if (investmentIndex !== -1) {
-            investments[investmentIndex] = { ...investments[investmentIndex], ...investmentData };
-        }
-        return;
-    }
-
-    // Supabase mode
-    const { error } = await supabase
-        .from('investments')
-        .update(investmentData)
-        .eq('id', investmentId);
-
-    if (error) {
-        throw error;
-    }
-
-    // Update local data
-    const investmentIndex = investments.findIndex(inv => inv.id === investmentId);
-    if (investmentIndex !== -1) {
-        investments[investmentIndex] = { ...investments[investmentIndex], ...investmentData };
-    }
-}
-
-// ENHANCED: editInvestment with additional fields
-function editInvestment(investmentId) {
-    const investment = investments.find(inv => inv.id === investmentId);
-    if (!investment) return;
-
-    editingInvestmentId = investmentId;
-    document.getElementById('investment-modal-title').textContent = 'Edit Investment';
-
-    document.getElementById('investment-member').value = investment.member_id;
-    document.getElementById('investment-type').value = investment.investment_type || investment.type;
-    document.getElementById('investment-name').value = investment.symbol_or_name || investment.name || '';
-    document.getElementById('investment-amount').value = investment.invested_amount;
-    document.getElementById('investment-current-value').value = investment.current_value;
-    document.getElementById('investment-platform').value = investment.broker_platform || investment.platform || '';
-
-    // Populate type-specific fields
-    if (investment.investment_type === 'fixedDeposits') {
-        document.getElementById('fd-bank-name').value = investment.bank_name || '';
-        document.getElementById('fd-interest-rate').value = investment.interest_rate || '';
-        document.getElementById('fd-start-date').value = investment.start_date || '';
-        document.getElementById('fd-maturity-date').value = investment.maturity_date || '';
-        document.getElementById('fd-interest-payout').value = investment.interest_payout || 'Yearly';
-        document.getElementById('fd-account-number').value = investment.account_number || '';
-        document.getElementById('fd-nominee').value = investment.nominee || '';
-        document.getElementById('fd-comments').value = investment.comments || ''; // FIXED: Added comments field
-    } else if (investment.investment_type === 'insurance') {
-        document.getElementById('insurance-sum-insured').value = investment.sum_insured || '';
-        document.getElementById('insurance-maturity-amount').value = investment.maturity_amount || '';
-        document.getElementById('insurance-premium').value = investment.premium_amount || '';
-        document.getElementById('insurance-start-date').value = investment.start_date || '';
-        document.getElementById('insurance-maturity-date').value = investment.maturity_date || '';
-        document.getElementById('insurance-next-premium').value = investment.next_premium_due || '';
-    } else if (investment.investment_type === 'bankBalances') {
-        document.getElementById('bank-current-balance').value = investment.current_balance || '';
-        document.getElementById('bank-as-of-date').value = investment.as_of_date || '';
-    }
-
-    updateInvestmentForm();
-    populateMemberOptions('investment-member');
-    openModal('investment-modal');
-}
-
-async function deleteInvestment(investmentId) {
-    if (!confirm('Are you sure you want to delete this investment?')) {
-        return;
-    }
-
-    try {
-        const authType = localStorage.getItem('famwealth_auth_type');
-        
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - delete from local data
-            investments = investments.filter(inv => inv.id !== investmentId);
-        } else {
-            // Supabase mode
-            const { error } = await supabase
-                .from('investments')
-                .delete()
-                .eq('id', investmentId);
-
-            if (error) {
-                throw error;
-            }
-
-            investments = investments.filter(inv => inv.id !== investmentId);
-        }
-
-        // Re-render current tab
-        const activeTab = document.querySelector('#investment-tab-content').parentElement.querySelector('.tab.active');
-        if (activeTab) {
-            const typeMap = {
-                'Equity': 'equity',
-                'Mutual Funds': 'mutualFunds',
-                'Fixed Deposits': 'fixedDeposits',
-                'Insurance': 'insurance',
-                'Bank Balances': 'bankBalances',
-                'Others': 'others'
-            };
-            renderInvestmentTabContent(typeMap[activeTab.textContent.trim()]);
-        }
-        
-        renderStatsOverview();
-        showMessage('Investment deleted successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting investment:', error);
-        showMessage('Error deleting investment.', 'error');
-    }
-}
-
-// ===== LIABILITY FUNCTIONS =====
-function openAddLiabilityModal() {
-    editingLiabilityId = null;
-    document.getElementById('liability-modal-title').textContent = 'Add Liability';
-    document.getElementById('liability-form').reset();
-    populateMemberOptions('liability-member');
-    openModal('liability-modal');
-}
-
-async function saveLiability() {
-    const memberId = document.getElementById('liability-member').value;
-    const type = document.getElementById('liability-type').value;
-    const lender = document.getElementById('liability-lender').value.trim();
-    const amount = parseFloat(document.getElementById('liability-amount').value);
-    const emi = parseFloat(document.getElementById('liability-emi').value) || 0;
-    const rate = parseFloat(document.getElementById('liability-rate').value) || 0;
-
-    if (!memberId || !type || !lender || !amount) {
-        showMessage('Please fill in all required fields.', 'error');
-        return;
-    }
-
-    if (amount <= 0) {
-        showMessage('Outstanding amount must be greater than 0.', 'error');
-        return;
-    }
-
-    try {
-        // SHARED DATA - Removed user_id to make liabilities shared
-        const liabilityData = {
-            member_id: memberId,
-            liability_type: type,
-            type: type,
-            lender: lender,
-            outstanding_amount: amount,
-            emi_amount: emi,
-            interest_rate: rate,
-            created_at: new Date().toISOString()
-        };
-
-        if (editingLiabilityId) {
-            await updateLiabilityData(editingLiabilityId, liabilityData);
-            showMessage('Liability updated successfully!', 'success');
-        } else {
-            await addLiabilityData(liabilityData);
-            showMessage('Liability added successfully!', 'success');
-        }
-
-        renderLiabilityTabContent(type);
-        renderStatsOverview();
-        closeModal('liability-modal');
-    } catch (error) {
-        console.error('Error saving liability:', error);
-        showMessage('Error saving liability: ' + error.message, 'error');
-    }
-}
-
-async function addLiabilityData(liabilityData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
+    // Enhanced input field listeners
+    setupEnhancedFieldListeners();
     
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - add to local data
-        liabilityData.id = generateId();
-        liabilities.push(liabilityData);
-        return;
-    }
-
-    // Supabase mode
-    const { data, error } = await supabase
-        .from('liabilities')
-        .insert([liabilityData])
-        .select();
-
-    if (error) {
-        throw error;
-    }
-
-    liabilities.push(data[0]);
-}
-
-async function updateLiabilityData(liabilityId, liabilityData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
+    // Table sorting and filtering listeners
+    setupTableListeners();
     
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - update local data
-        const liabilityIndex = liabilities.findIndex(lib => lib.id === liabilityId);
-        if (liabilityIndex !== -1) {
-            liabilities[liabilityIndex] = { ...liabilities[liabilityIndex], ...liabilityData };
-        }
-        return;
-    }
-
-    // Supabase mode
-    const { error } = await supabase
-        .from('liabilities')
-        .update(liabilityData)
-        .eq('id', liabilityId);
-
-    if (error) {
-        throw error;
-    }
-
-    // Update local data
-    const liabilityIndex = liabilities.findIndex(lib => lib.id === liabilityId);
-    if (liabilityIndex !== -1) {
-        liabilities[liabilityIndex] = { ...liabilities[liabilityIndex], ...liabilityData };
-    }
-}
-
-function editLiability(liabilityId) {
-    const liability = liabilities.find(lib => lib.id === liabilityId);
-    if (!liability) return;
-
-    editingLiabilityId = liabilityId;
-    document.getElementById('liability-modal-title').textContent = 'Edit Liability';
+    // Import/Export listeners
+    setupImportExportListeners();
     
-    // Populate form
-    document.getElementById('liability-member').value = liability.member_id;
-    document.getElementById('liability-type').value = liability.type;
-    document.getElementById('liability-lender').value = liability.lender;
-    document.getElementById('liability-amount').value = liability.outstanding_amount;
-    document.getElementById('liability-emi').value = liability.emi_amount || '';
-    document.getElementById('liability-rate').value = liability.interest_rate || '';
+    // Enhanced photo upload listeners
+    setupPhotoListeners();
     
-    populateMemberOptions('liability-member');
-    openModal('liability-modal');
-}
-
-async function deleteLiability(liabilityId) {
-    if (!confirm('Are you sure you want to delete this liability?')) {
-        return;
-    }
-
-    try {
-        const authType = localStorage.getItem('famwealth_auth_type');
-        
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - delete from local data
-            liabilities = liabilities.filter(lib => lib.id !== liabilityId);
-        } else {
-            // Supabase mode
-            const { error } = await supabase
-                .from('liabilities')
-                .delete()
-                .eq('id', liabilityId);
-
-            if (error) {
-                throw error;
-            }
-
-            liabilities = liabilities.filter(lib => lib.id !== liabilityId);
-        }
-
-        // Re-render current tab
-        const activeTab = document.querySelector('#liability-tab-content').parentElement.querySelector('.tab.active');
-        if (activeTab) {
-            const typeMap = {
-                'Home Loan': 'homeLoan',
-                'Personal Loan': 'personalLoan',
-                'Credit Card': 'creditCard',
-                'Other': 'other'
-            };
-            renderLiabilityTabContent(typeMap[activeTab.textContent.trim()]);
-        }
-        
-        renderStatsOverview();
-        showMessage('Liability deleted successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting liability:', error);
-        showMessage('Error deleting liability.', 'error');
-    }
-}
-
-// ===== ACCOUNT FUNCTIONS =====
-function openAddAccountModal() {
-    editingAccountId = null;
-    document.getElementById('account-modal-title').textContent = 'Add Account';
-    document.getElementById('account-form').reset();
-    populateMemberOptions('account-holder');
-    populateMemberOptions('account-nominee');
-    openModal('account-modal');
-}
-
-async function saveAccount() {
-    const accountType = document.getElementById('account-type').value;
-    const institution = document.getElementById('account-institution').value.trim();
-    const accountNumber = document.getElementById('account-number').value.trim();
-    const holderId = document.getElementById('account-holder').value;
-    const nomineeId = document.getElementById('account-nominee').value;
-    const status = document.getElementById('account-status').value;
-    const comments = document.getElementById('account-comments').value.trim();
-
-    if (!accountType || !institution || !accountNumber || !holderId) {
-        showMessage('Please fill in all required fields.', 'error');
-        return;
-    }
-
-    try {
-        const holder = familyMembers.find(m => m.id === holderId);
-        const nominee = nomineeId ? familyMembers.find(m => m.id === nomineeId) : null;
-
-        // SHARED DATA - Removed user_id to make accounts shared
-        const accountData = {
-            account_type: accountType,
-            institution: institution,
-            account_number: accountNumber,
-            holder_id: holderId,
-            holder_name: holder ? holder.name : '',
-            nominee_id: nomineeId || null,
-            nominee_name: nominee ? nominee.name : '',
-            status: status,
-            comments: comments,
-            created_at: new Date().toISOString()
-        };
-
-        if (editingAccountId) {
-            await updateAccountData(editingAccountId, accountData);
-            showMessage('Account updated successfully!', 'success');
-        } else {
-            await addAccountData(accountData);
-            showMessage('Account added successfully!', 'success');
-        }
-
-        renderAccounts();
-        renderStatsOverview();
-        closeModal('account-modal');
-    } catch (error) {
-        console.error('Error saving account:', error);
-        showMessage('Error saving account: ' + error.message, 'error');
-    }
-}
-
-async function addAccountData(accountData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
+    // Keyboard shortcut listeners
+    setupKeyboardShortcuts();
     
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - add to local data
-        accountData.id = generateId();
-        accounts.push(accountData);
-        return;
-    }
-
-    // Supabase mode
-    const { data, error } = await supabase
-        .from('accounts')
-        .insert([accountData])
-        .select();
-
-    if (error) {
-        throw error;
-    }
-
-    accounts.push(data[0]);
-}
-
-async function updateAccountData(accountId, accountData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
+    // Window event listeners
+    setupWindowListeners();
     
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - update local data
-        const accountIndex = accounts.findIndex(acc => acc.id === accountId);
-        if (accountIndex !== -1) {
-            accounts[accountIndex] = { ...accounts[accountIndex], ...accountData };
-        }
-        return;
-    }
-
-    // Supabase mode
-    const { error } = await supabase
-        .from('accounts')
-        .update(accountData)
-        .eq('id', accountId);
-
-    if (error) {
-        throw error;
-    }
-
-    // Update local data
-    const accountIndex = accounts.findIndex(acc => acc.id === accountId);
-    if (accountIndex !== -1) {
-        accounts[accountIndex] = { ...accounts[accountIndex], ...accountData };
-    }
+    console.log('✅ Comprehensive event listeners setup completed');
 }
 
-function editAccount(accountId) {
-    const account = accounts.find(acc => acc.id === accountId);
-    if (!account) return;
-
-    editingAccountId = accountId;
-    document.getElementById('account-modal-title').textContent = 'Edit Account';
+// ===== AUTHENTICATION EVENT LISTENERS =====
+function setupAuthenticationListeners() {
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
     
-    // Populate form
-    document.getElementById('account-type').value = account.account_type;
-    document.getElementById('account-institution').value = account.institution;
-    document.getElementById('account-number').value = account.account_number;
-    document.getElementById('account-holder').value = account.holder_id;
-    document.getElementById('account-nominee').value = account.nominee_id || '';
-    document.getElementById('account-status').value = account.status;
-    document.getElementById('account-comments').value = account.comments || '';
-    
-    populateMemberOptions('account-holder');
-    populateMemberOptions('account-nominee');
-    openModal('account-modal');
-}
-
-async function deleteAccount(accountId) {
-    if (!confirm('Are you sure you want to delete this account?')) {
-        return;
-    }
-
-    try {
-        const authType = localStorage.getItem('famwealth_auth_type');
-        
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - delete from local data
-            accounts = accounts.filter(acc => acc.id !== accountId);
-        } else {
-            // Supabase mode
-            const { error } = await supabase
-                .from('accounts')
-                .delete()
-                .eq('id', accountId);
-
-            if (error) {
-                throw error;
-            }
-
-            accounts = accounts.filter(acc => acc.id !== accountId);
-        }
-
-        renderAccounts();
-        renderStatsOverview();
-        showMessage('Account deleted successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting account:', error);
-        showMessage('Error deleting account.', 'error');
+    const logoutBtn = document.querySelector('.logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
     }
 }
 
-// ===== ENHANCED EXPORT FUNCTIONS WITH MEMBER NAMES =====
-function exportInvestments(format) {
-    if (investments.length === 0) {
-        showMessage('No investments to export.', 'warning');
-        return;
-    }
-
-    // ENHANCED: Add member names to export data
-    const investmentsWithMemberNames = investments.map(inv => {
-        const member = familyMembers.find(m => m.id === inv.member_id);
-        return {
-            ...inv,
-            member_name: member ? member.name : 'Unknown Member'
-        };
-    });
-
-    if (format === 'csv') {
-        const csvContent = convertToCSV(investmentsWithMemberNames);
-        downloadFile('investments.csv', csvContent, 'text/csv');
-    } else if (format === 'json') {
-        const jsonContent = JSON.stringify(investmentsWithMemberNames, null, 2);
-        downloadFile('investments.json', jsonContent, 'application/json');
-    }
-}
-
-function exportLiabilities(format) {
-    if (liabilities.length === 0) {
-        showMessage('No liabilities to export.', 'warning');
-        return;
-    }
-
-    // ENHANCED: Add member names to export data
-    const liabilitiesWithMemberNames = liabilities.map(lib => {
-        const member = familyMembers.find(m => m.id === lib.member_id);
-        return {
-            ...lib,
-            member_name: member ? member.name : 'Unknown Member'
-        };
-    });
-
-    if (format === 'csv') {
-        const csvContent = convertToCSV(liabilitiesWithMemberNames);
-        downloadFile('liabilities.csv', csvContent, 'text/csv');
-    } else if (format === 'json') {
-        const jsonContent = JSON.stringify(liabilitiesWithMemberNames, null, 2);
-        downloadFile('liabilities.json', jsonContent, 'application/json');
-    }
-}
-
-function exportAccounts(format) {
-    if (accounts.length === 0) {
-        showMessage('No accounts to export.', 'warning');
-        return;
-    }
-
-    if (format === 'csv') {
-        const csvContent = convertToCSV(accounts);
-        downloadFile('accounts.csv', csvContent, 'text/csv');
-    } else if (format === 'json') {
-        const jsonContent = JSON.stringify(accounts, null, 2);
-        downloadFile('accounts.json', jsonContent, 'application/json');
-    }
-}
-
-function exportFamilyData(format) {
-    const familyData = {
-        members: familyMembers,
-        investments: investments,
-        liabilities: liabilities,
-        accounts: accounts,
-        reminders: reminders,
-        exported_at: new Date().toISOString(),
-        total_assets: familyMembers.reduce((acc, member) => acc + calculateMemberAssets(member.id), 0),
-        total_liabilities: familyMembers.reduce((acc, member) => acc + calculateMemberLiabilities(member.id), 0)
-    };
-
-    familyData.net_worth = familyData.total_assets - familyData.total_liabilities;
-
-    if (format === 'csv') {
-        let csvContent = '';
-        
-        csvContent += '# FAMILY DATA EXPORT\n';
-        csvContent += `# Generated on: ${new Date().toLocaleString()}\n`;
-        csvContent += `# Total Assets: ${formatCurrency(familyData.total_assets)}\n`;
-        csvContent += `# Total Liabilities: ${formatCurrency(familyData.total_liabilities)}\n`;
-        csvContent += `# Net Worth: ${formatCurrency(familyData.net_worth)}\n\n`;
-        
-        csvContent += '# FAMILY MEMBERS\n';
-        csvContent += convertToCSV(familyMembers) + '\n\n';
-        
-        csvContent += '# INVESTMENTS\n';
-        csvContent += convertToCSV(investments) + '\n\n';
-        
-        csvContent += '# LIABILITIES\n';
-        csvContent += convertToCSV(liabilities) + '\n\n';
-        
-        csvContent += '# ACCOUNTS\n';
-        csvContent += convertToCSV(accounts) + '\n\n';
-        
-        csvContent += '# REMINDERS\n';
-        csvContent += convertToCSV(reminders);
-        
-        downloadFile('family_financial_data.csv', csvContent, 'text/csv');
-    } else if (format === 'json') {
-        const jsonContent = JSON.stringify(familyData, null, 2);
-        downloadFile('family_financial_data.json', jsonContent, 'application/json');
-    }
-}
-
-function convertToCSV(data) {
-    if (!data || data.length === 0) return 'No data available';
-
-    const headers = Object.keys(data[0]);
-    const csvRows = [headers.join(',')];
-
-    data.forEach(row => {
-        const values = headers.map(header => {
-            let value = row[header];
-            
-            if (value === null || value === undefined) {
-                value = '';
-            } else if (typeof value === 'object') {
-                value = JSON.stringify(value);
-            } else if (typeof value === 'string' && value.includes(',')) {
-                value = `"${value}"`;
-            }
-            
-            return value;
-        });
-        csvRows.push(values.join(','));
-    });
-
-    return csvRows.join('\n');
-}
-
-function downloadFile(filename, content, mimeType) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showMessage(`${filename} downloaded successfully!`, 'success');
-}
-
-// ===== TABLE SORTING FUNCTIONS =====
-function sortTable(tableId, columnIndex) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    
-    if (rows.length === 0) return;
-    
-    // Determine sort direction
-    const header = table.querySelectorAll('th')[columnIndex];
-    const indicator = header.querySelector('.sort-indicator');
-    const isAscending = indicator.textContent !== '↑';
-    
-    // Clear all indicators
-    table.querySelectorAll('.sort-indicator').forEach(ind => ind.textContent = '');
-    
-    // Set current indicator
-    indicator.textContent = isAscending ? '↑' : '↓';
-    
-    // Sort rows
-    rows.sort((a, b) => {
-        const aCell = a.cells[columnIndex];
-        const bCell = b.cells[columnIndex];
-        
-        if (!aCell || !bCell) return 0;
-        
-        let aVal = aCell.textContent.trim();
-        let bVal = bCell.textContent.trim();
-        
-        // Remove currency symbols and commas for numeric sorting
-        const aNum = parseFloat(aVal.replace(/[₹,]/g, ''));
-        const bNum = parseFloat(bVal.replace(/[₹,]/g, ''));
-        
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-            return isAscending ? aNum - bNum : bNum - aNum;
-        } else {
-            return isAscending ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        }
-    });
-    
-    // Re-append sorted rows
-    rows.forEach(row => tbody.appendChild(row));
-}
-
-// ===== IMPORT FUNCTIONALITY =====
-function openImportModal(type) {
-    currentImportType = type;
-    document.getElementById('import-modal-title').textContent = `Import ${capitalizeFirst(type)}`;
-
-    const instructions = getImportInstructions(type);
-    document.getElementById('import-instructions').innerHTML = instructions;
-
-    document.getElementById('import-file').value = '';
-    document.getElementById('import-preview').style.display = 'none';
-    document.getElementById('import-btn').disabled = true;
-    document.getElementById('file-name').textContent = '';
-
-    openModal('import-modal');
-}
-
-function getImportInstructions(type) {
-    const templates = {
-        investments: `
-            <h4>📊 Investment Import Instructions</h4>
-            <p>CSV should contain these columns (exact names required):</p>
-            <div class="csv-template">
-                <strong>Required columns:</strong>
-                <ul>
-                    <li><code>member_name</code> - Name of family member</li>
-                    <li><code>investment_type</code> - equity, mutualFunds, fixedDeposits, insurance, bankBalances, others</li>
-                    <li><code>name</code> - Investment/stock/fund name</li>
-                    <li><code>invested_amount</code> - Amount invested</li>
-                    <li><code>current_value</code> - Current value (optional, defaults to invested_amount)</li>
-                    <li><code>platform</code> - Broker/platform name (optional)</li>
-                </ul>
-            </div>
-        `,
-        liabilities: `
-            <h4>📉 Liability Import Instructions</h4>
-            <p>CSV should contain these columns (exact names required):</p>
-            <div class="csv-template">
-                <strong>Required columns:</strong>
-                <ul>
-                    <li><code>member_name</code> - Name of family member</li>
-                    <li><code>liability_type</code> - homeLoan, personalLoan, creditCard, other</li>
-                    <li><code>lender</code> - Name of lender/bank</li>
-                    <li><code>outstanding_amount</code> - Outstanding amount</li>
-                    <li><code>emi_amount</code> - Monthly EMI (optional)</li>
-                    <li><code>interest_rate</code> - Interest rate % (optional)</li>
-                </ul>
-            </div>
-        `,
-        accounts: `
-            <h4>🏦 Account Import Instructions</h4>
-            <p>CSV should contain these columns (exact names required):</p>
-            <div class="csv-template">
-                <strong>Required columns:</strong>
-                <ul>
-                    <li><code>account_type</code> - Type of account</li>
-                    <li><code>institution</code> - Bank/institution name</li>
-                    <li><code>account_number</code> - Account number</li>
-                    <li><code>holder_name</code> - Name of account holder</li>
-                    <li><code>nominee_name</code> - Name of nominee (optional)</li>
-                    <li><code>status</code> - Active, Inactive (optional, defaults to Active)</li>
-                    <li><code>comments</code> - Additional comments (optional)</li>
-                </ul>
-            </div>
-        `
-    };
-    return templates[type] || '';
-}
-
-function handleImportFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    document.getElementById('file-name').textContent = file.name;
-
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-        showMessage('Please select a CSV file.', 'error');
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const csvText = e.target.result;
-            const parsedData = parseCSV(csvText);
-
-            if (parsedData.length === 0) {
-                showMessage('CSV file is empty or invalid.', 'error');
-                return;
-            }
-
-            importData = parsedData;
-            showImportPreview(parsedData);
-            document.getElementById('import-btn').disabled = false;
-
-        } catch (error) {
-            console.error('Error parsing CSV:', error);
-            showMessage('Error parsing CSV file: ' + error.message, 'error');
-        }
-    };
-    reader.readAsText(file);
-}
-
-function parseCSV(csvText) {
-    const lines = csvText.split('\n').filter(line => line.trim());
-    if (lines.length === 0) return [];
-
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    const data = [];
-
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-
-        const values = [];
-        let currentValue = '';
-        let inQuotes = false;
-
-        for (let j = 0; j < line.length; j++) {
-            const char = line[j];
-            if (char === '"') {
-                inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-                values.push(currentValue.trim().replace(/"/g, ''));
-                currentValue = '';
-            } else {
-                currentValue += char;
-            }
-        }
-        values.push(currentValue.trim().replace(/"/g, ''));
-
-        if (values.length === headers.length) {
-            const row = {};
-            headers.forEach((header, index) => {
-                row[header] = values[index];
-            });
-            data.push(row);
-        }
-    }
-
-    return data;
-}
-
-function showImportPreview(data) {
-    const previewDiv = document.getElementById('import-preview');
-
-    if (data.length === 0) {
-        previewDiv.innerHTML = '<p>No valid data found in CSV.</p>';
-        previewDiv.style.display = 'block';
-        return;
-    }
-
-    const headers = Object.keys(data[0]);
-    let tableHTML = `
-        <h4>📋 Import Preview (${data.length} records)</h4>
-        <div class="table-responsive" style="max-height: 300px; overflow: auto;">
-            <table class="data-table">
-                <thead>
-                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-                </thead>
-                <tbody>
-                    ${data.slice(0, 10).map(row => 
-                        `<tr>${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}</tr>`
-                    ).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    if (data.length > 10) {
-        tableHTML += `<p><em>Showing first 10 records. Total: ${data.length} records</em></p>`;
-    }
-
-    previewDiv.innerHTML = tableHTML;
-    previewDiv.style.display = 'block';
-}
-
-async function processImport() {
-    if (!importData || !currentImportType) {
-        showMessage('No data to import.', 'error');
-        return;
-    }
-
-    try {
-        document.getElementById('import-btn').disabled = true;
-        document.getElementById('import-btn').textContent = 'Importing...';
-
-        let successCount = 0;
-        let errorCount = 0;
-
-        for (let i = 0; i < importData.length; i++) {
-            try {
-                const row = importData[i];
-                await importSingleRecord(currentImportType, row, i + 2);
-                successCount++;
-            } catch (error) {
-                errorCount++;
-                console.error(`Import error for row ${i + 2}:`, error);
-            }
-        }
-
-        if (successCount > 0) {
-            showMessage(`Successfully imported ${successCount} records!`, 'success');
-            await loadDashboardData();
-        }
-
-        if (errorCount > 0) {
-            showMessage(`${errorCount} records failed to import.`, 'warning');
-        }
-
-        closeModal('import-modal');
-
-    } catch (error) {
-        console.error('Import process error:', error);
-        showMessage('Import failed: ' + error.message, 'error');
-    } finally {
-        document.getElementById('import-btn').disabled = false;
-        document.getElementById('import-btn').textContent = 'Import Data';
-    }
-}
-
-async function importSingleRecord(type, row, rowNumber) {
-    switch (type) {
-        case 'investments':
-            return await importInvestmentRecord(row, rowNumber);
-        case 'liabilities':
-            return await importLiabilityRecord(row, rowNumber);
-        case 'accounts':
-            return await importAccountRecord(row, rowNumber);
-        default:
-            throw new Error(`Unknown import type: ${type}`);
-    }
-}
-
-async function importInvestmentRecord(row, rowNumber) {
-    const required = ['member_name', 'investment_type', 'name', 'invested_amount'];
-    for (const field of required) {
-        if (!row[field]) {
-            throw new Error(`Missing required field: ${field}`);
-        }
-    }
-
-    const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
-    if (!member) {
-        throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
-    }
-
-    // SHARED DATA - Removed user_id
-    const investmentData = {
-        member_id: member.id,
-        investment_type: row.investment_type,
-        symbol_or_name: row.name,
-        invested_amount: parseFloat(row.invested_amount) || 0,
-        current_value: parseFloat(row.current_value) || parseFloat(row.invested_amount) || 0,
-        broker_platform: row.platform || '',
-        created_at: new Date().toISOString()
-    };
-
-    await addInvestmentData(investmentData);
-}
-
-async function importLiabilityRecord(row, rowNumber) {
-    const required = ['member_name', 'liability_type', 'lender', 'outstanding_amount'];
-    for (const field of required) {
-        if (!row[field]) {
-            throw new Error(`Missing required field: ${field}`);
-        }
-    }
-
-    const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
-    if (!member) {
-        throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
-    }
-
-    // SHARED DATA - Removed user_id
-    const liabilityData = {
-        member_id: member.id,
-        liability_type: row.liability_type,
-        type: row.liability_type,
-        lender: row.lender,
-        outstanding_amount: parseFloat(row.outstanding_amount) || 0,
-        emi_amount: parseFloat(row.emi_amount) || 0,
-        interest_rate: parseFloat(row.interest_rate) || 0,
-        created_at: new Date().toISOString()
-    };
-
-    await addLiabilityData(liabilityData);
-}
-
-async function importAccountRecord(row, rowNumber) {
-    const required = ['account_type', 'institution', 'account_number', 'holder_name'];
-    for (const field of required) {
-        if (!row[field]) {
-            throw new Error(`Missing required field: ${field}`);
-        }
-    }
-
-    const holder = familyMembers.find(m => m.name.toLowerCase() === row.holder_name.toLowerCase());
-    if (!holder) {
-        throw new Error(`Holder not found: ${row.holder_name}. Please add this member first.`);
-    }
-
-    let nominee = null;
-    let nomineeId = null;
-    if (row.nominee_name) {
-        nominee = familyMembers.find(m => m.name.toLowerCase() === row.nominee_name.toLowerCase());
-        if (nominee) {
-            nomineeId = nominee.id;
-        }
-    }
-
-    // SHARED DATA - Removed user_id
-    const accountData = {
-        account_type: row.account_type,
-        institution: row.institution,
-        account_number: row.account_number,
-        holder_id: holder.id,
-        holder_name: holder.name,
-        nominee_id: nomineeId,
-        nominee_name: nominee ? nominee.name : '',
-        status: row.status || 'Active',
-        comments: row.comments || '',
-        created_at: new Date().toISOString()
-    };
-
-    await addAccountData(accountData);
-}
-
-// ===== EVENT LISTENERS =====
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 FamWealth Dashboard DOM loaded');
-    
-    // Add click handlers for modal close buttons
-    document.querySelectorAll('.btn-close').forEach(button => {
+// ===== MODAL MANAGEMENT LISTENERS =====
+function setupModalListeners() {
+    // Close button listeners for all modals
+    document.querySelectorAll('.btn-close, .modal-close').forEach(button => {
         button.addEventListener('click', function() {
             const modal = this.closest('.modal');
             if (modal) {
@@ -2593,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add click handlers for modal backgrounds
+    // Background click to close modals
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
@@ -2602,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add escape key handler for modals
+    // Escape key to close modals
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             const openModal = document.querySelector('.modal:not(.hidden)');
@@ -2611,110 +229,2818 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+}
+
+// ===== FORM SUBMISSION LISTENERS =====
+function setupFormListeners() {
+    const forms = [
+        { id: 'member-form', handler: saveMember },
+        { id: 'investment-form', handler: saveInvestment },
+        { id: 'liability-form', handler: saveLiability },
+        { id: 'account-form', handler: saveAccount },
+        { id: 'reminder-form', handler: saveReminder }
+    ];
     
-    // Add form submission handlers
-    const forms = ['member-form', 'investment-form', 'liability-form', 'account-form'];
-    forms.forEach(formId => {
-        const form = document.getElementById(formId);
+    forms.forEach(({ id, handler }) => {
+        const form = document.getElementById(id);
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                
-                if (formId === 'member-form') {
-                    saveMember();
-                } else if (formId === 'investment-form') {
-                    saveInvestment();
-                } else if (formId === 'liability-form') {
-                    saveLiability();
-                } else if (formId === 'account-form') {
-                    saveAccount();
-                }
+                handler();
             });
         }
     });
+}
+
+// ===== NAVIGATION LISTENERS =====
+function setupNavigationListeners() {
+    // Section navigation
+    document.querySelectorAll('.nav-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const section = this.getAttribute('data-section');
+            if (section) {
+                showSection(section);
+                updateActiveNavigation(this);
+            }
+        });
+    });
+}
+
+// ===== ENHANCED FIELD LISTENERS =====
+function setupEnhancedFieldListeners() {
+    // Investment type change listener for conditional fields
+    const investmentTypeSelect = document.getElementById('investment-type');
+    if (investmentTypeSelect) {
+        investmentTypeSelect.addEventListener('change', updateInvestmentForm);
+    }
     
-    console.log('✅ Event listeners registered');
+    // Recurring reminder checkbox
+    const recurringCheckbox = document.getElementById('reminder-recurring');
+    if (recurringCheckbox) {
+        recurringCheckbox.addEventListener('change', function() {
+            const options = document.getElementById('recurring-options');
+            if (options) {
+                options.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Enhanced form validation listeners
+    setupFormValidationListeners();
+    
+    // Auto-calculation listeners
+    setupAutoCalculationListeners();
+}
+
+// ===== TABLE MANAGEMENT LISTENERS =====
+function setupTableListeners() {
+    // Search functionality
+    const searchInputs = ['investment-search', 'account-search', 'family-search'];
+    searchInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('keyup', debounce(function() {
+                filterTable(inputId.replace('-search', ''));
+            }, 300));
+        }
+    });
+}
+
+// ===== IMPORT/EXPORT LISTENERS =====
+function setupImportExportListeners() {
+    const importFile = document.getElementById('import-file');
+    if (importFile) {
+        importFile.addEventListener('change', handleImportFile);
+    }
+    
+    const bulkImportFile = document.getElementById('bulk-import-file');
+    if (bulkImportFile) {
+        bulkImportFile.addEventListener('change', handleBulkImportFile);
+    }
+}
+
+// ===== PHOTO UPLOAD LISTENERS =====
+function setupPhotoListeners() {
+    const photoUpload = document.getElementById('photo-upload');
+    if (photoUpload) {
+        photoUpload.addEventListener('change', handlePhotoUpload);
+    }
+}
+
+// ===== KEYBOARD SHORTCUT LISTENERS =====
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+S to save current form
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            saveCurrentForm();
+        }
+        
+        // Ctrl+N for new item shortcuts
+        if (e.ctrlKey && e.key === 'n') {
+            e.preventDefault();
+            showNewItemMenu();
+        }
+        
+        // Ctrl+E for export
+        if (e.ctrlKey && e.key === 'e') {
+            e.preventDefault();
+            showExportMenu();
+        }
+        
+        // F5 to refresh dashboard
+        if (e.key === 'F5' && !e.ctrlKey) {
+            e.preventDefault();
+            refreshDashboard();
+        }
+    });
+}
+
+// ===== WINDOW EVENT LISTENERS =====
+function setupWindowListeners() {
+    // Before unload warning for unsaved changes
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges()) {
+            e.preventDefault();
+            e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        }
+    });
+    
+    // Window resize handler for responsive behavior
+    window.addEventListener('resize', debounce(handleWindowResize, 250));
+    
+    // Online/offline status
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOfflineStatus);
+}
+
+// ===== ENHANCED AUTHENTICATION FUNCTIONS =====
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    
+    if (!email || !password) {
+        showToast('Please enter both email and password', 'error');
+        return;
+    }
+
+    try {
+        showLoading(true);
+        updateLoginButtonState(true);
+        
+        // Enhanced authentication with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        // Set current user and determine access level
+        currentUser = data.user;
+        hasPasswordAccess = (email === AUTHORIZED_EMAIL);
+        userAccessLevel = hasPasswordAccess ? 'admin' : 'standard';
+        
+        // Store session information
+        localStorage.setItem('user_session', JSON.stringify({
+            user: currentUser,
+            hasPasswordAccess: hasPasswordAccess,
+            userAccessLevel: userAccessLevel,
+            loginTime: new Date().toISOString()
+        }));
+        
+        // Update UI based on access level
+        updatePasswordAccessUI();
+        updateUserInterfaceForAccessLevel();
+        
+        // Load dashboard data
+        await loadCompleteDashboard();
+        
+        // Show main dashboard
+        document.getElementById('landing-page').style.display = 'none';
+        document.getElementById('main-dashboard').style.display = 'block';
+        
+        // Update user information in navbar
+        updateUserInformation(email);
+        
+        // Show success message with access level
+        const accessMessage = hasPasswordAccess ? 
+            'Welcome! You have full administrative access.' : 
+            'Welcome! You have standard user access.';
+        showToast(accessMessage, 'success');
+        
+        // Log successful login
+        console.log(`✅ Login successful for ${email} with ${userAccessLevel} access`);
+        
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        showToast('Login failed: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+        updateLoginButtonState(false);
+    }
+}
+
+async function handleLogout() {
+    try {
+        showLoading(true);
+        
+        // Sign out from Supabase
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Logout error:', error);
+        }
+        
+        // Clear local storage and reset state
+        localStorage.removeItem('user_session');
+        resetApplicationState();
+        
+        // Show landing page
+        document.getElementById('main-dashboard').style.display = 'none';
+        document.getElementById('landing-page').style.display = 'block';
+        
+        showToast('Logged out successfully', 'success');
+        console.log('✅ Logout successful');
+        
+    } catch (error) {
+        console.error('❌ Logout error:', error);
+        showToast('Error during logout', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function resetApplicationState() {
+    currentUser = null;
+    hasPasswordAccess = false;
+    userAccessLevel = 'standard';
+    familyMembers = [];
+    investments = [];
+    liabilities = [];
+    accounts = [];
+    reminders = [];
+    editingMemberId = null;
+    editingInvestmentId = null;
+    editingLiabilityId = null;
+    editingAccountId = null;
+    editingReminderId = null;
+    isEditMode = false;
+}
+
+async function checkExistingSession() {
+    const storedSession = localStorage.getItem('user_session');
+    if (storedSession) {
+        try {
+            const session = JSON.parse(storedSession);
+            const loginTime = new Date(session.loginTime);
+            const now = new Date();
+            const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
+            
+            // Auto-logout after 24 hours
+            if (hoursSinceLogin > 24) {
+                localStorage.removeItem('user_session');
+                return;
+            }
+            
+            // Verify session with Supabase
+            const { data: { user }, error } = await supabase.auth.getUser();
+            
+            if (user && !error) {
+                currentUser = user;
+                hasPasswordAccess = session.hasPasswordAccess;
+                userAccessLevel = session.userAccessLevel;
+                
+                updatePasswordAccessUI();
+                updateUserInterfaceForAccessLevel();
+                await loadCompleteDashboard();
+                
+                document.getElementById('landing-page').style.display = 'none';
+                document.getElementById('main-dashboard').style.display = 'block';
+                
+                updateUserInformation(user.email);
+                console.log('✅ Session restored successfully');
+            }
+        } catch (error) {
+            console.error('Session restore error:', error);
+            localStorage.removeItem('user_session');
+        }
+    }
+}
+
+// ===== ENHANCED PASSWORD ACCESS MANAGEMENT =====
+function updatePasswordAccessUI() {
+    const credentialsSection = document.querySelector('.credentials-section');
+    const passwordWarning = document.querySelector('.password-warning');
+    const credentialExportBtn = document.getElementById('credential-export-btn');
+    const securityLevel = document.getElementById('security-level-display');
+    const credentialAccess = document.getElementById('credential-access-display');
+    const userAccessLevelSpan = document.getElementById('user-access-level');
+    
+    if (hasPasswordAccess) {
+        // Show credential sections
+        if (credentialsSection) {
+            credentialsSection.style.display = 'block';
+        }
+        if (passwordWarning) {
+            passwordWarning.style.display = 'none';
+        }
+        if (credentialExportBtn) {
+            credentialExportBtn.style.display = 'inline-block';
+        }
+        
+        // Update status displays
+        if (securityLevel) {
+            securityLevel.textContent = 'Administrator';
+            securityLevel.className = 'status status--success';
+        }
+        if (credentialAccess) {
+            credentialAccess.textContent = 'Full Access';
+            credentialAccess.className = 'status status--success';
+        }
+        if (userAccessLevelSpan) {
+            userAccessLevelSpan.textContent = '(Admin)';
+            userAccessLevelSpan.className = 'user-access-level admin';
+        }
+        
+    } else {
+        // Hide credential sections
+        if (credentialsSection) {
+            credentialsSection.style.display = 'none';
+        }
+        if (passwordWarning) {
+            passwordWarning.style.display = 'block';
+        }
+        if (credentialExportBtn) {
+            credentialExportBtn.style.display = 'none';
+        }
+        
+        // Update status displays
+        if (securityLevel) {
+            securityLevel.textContent = 'Standard User';
+            securityLevel.className = 'status status--warning';
+        }
+        if (credentialAccess) {
+            credentialAccess.textContent = 'Limited Access';
+            credentialAccess.className = 'status status--warning';
+        }
+        if (userAccessLevelSpan) {
+            userAccessLevelSpan.textContent = '(Standard)';
+            userAccessLevelSpan.className = 'user-access-level standard';
+        }
+    }
+    
+    // Update credential access status message
+    const credentialStatus = document.getElementById('credential-access-status');
+    if (credentialStatus) {
+        if (hasPasswordAccess) {
+            credentialStatus.innerHTML = `
+                <span style="color: var(--color-success);">
+                    ✅ Full access granted - You can view and manage all password fields and sensitive data
+                </span>
+            `;
+        } else {
+            credentialStatus.innerHTML = `
+                <span style="color: var(--color-error);">
+                    🔒 Limited access - Password fields are restricted to pradeepkumar.v@hotmail.com
+                </span>
+            `;
+        }
+    }
+}
+
+function updateUserInterfaceForAccessLevel() {
+    // Hide/show admin-only features based on access level
+    const adminOnlyElements = document.querySelectorAll('.admin-only');
+    adminOnlyElements.forEach(element => {
+        element.style.display = hasPasswordAccess ? 'block' : 'none';
+    });
+    
+    // Update menu items based on access level
+    updateMenuItemsForAccessLevel();
+    
+    // Update button text and availability
+    updateButtonsForAccessLevel();
+}
+
+function updateMenuItemsForAccessLevel() {
+    // Enable/disable certain menu items based on access level
+    const restrictedMenuItems = [
+        'bulk-import-btn',
+        'admin-settings-btn',
+        'user-management-btn'
+    ];
+    
+    restrictedMenuItems.forEach(itemId => {
+        const item = document.getElementById(itemId);
+        if (item) {
+            if (hasPasswordAccess) {
+                item.disabled = false;
+                item.title = '';
+            } else {
+                item.disabled = true;
+                item.title = 'This feature requires administrator access';
+            }
+        }
+    });
+}
+
+function updateButtonsForAccessLevel() {
+    // Update export buttons to show access level
+    const exportButtons = document.querySelectorAll('[onclick*="export"]');
+    exportButtons.forEach(button => {
+        if (button.textContent.includes('Credentials') || button.textContent.includes('Password')) {
+            if (!hasPasswordAccess) {
+                button.disabled = true;
+                button.title = 'Password export requires administrator access';
+            }
+        }
+    });
+}
+
+// ===== COMPREHENSIVE DASHBOARD LOADING =====
+async function loadCompleteDashboard() {
+    try {
+        showLoading(true);
+        console.log('📊 Loading complete dashboard...');
+        
+        // Load all data types concurrently for better performance
+        const loadPromises = [
+            loadFamilyMembers(),
+            loadInvestments(),
+            loadLiabilities(),
+            loadAccounts(),
+            loadReminders()
+        ];
+        
+        await Promise.all(loadPromises);
+        
+        // Render all dashboard sections
+        await renderAllSections();
+        
+        // Update statistics and summaries
+        updateAllStatistics();
+        
+        // Setup real-time subscriptions if supported
+        setupRealTimeSubscriptions();
+        
+        // Update last updated time
+        updateLastUpdatedTime();
+        
+        console.log('✅ Complete dashboard loaded successfully');
+        
+    } catch (error) {
+        console.error('❌ Error loading dashboard:', error);
+        showToast('Error loading dashboard data: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ===== ENHANCED DATA LOADING FUNCTIONS =====
+async function loadFamilyMembers() {
+    try {
+        console.log('👥 Loading family members...');
+        
+        const { data, error } = await supabase
+            .from('family_members')
+            .select('*')
+            .order('is_primary', { ascending: false })
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        
+        familyMembers = data || [];
+        
+        // Populate member selects in forms
+        populateAllMemberSelects();
+        
+        console.log(`✅ Loaded ${familyMembers.length} family members`);
+        
+    } catch (error) {
+        console.error('❌ Error loading family members:', error);
+        throw new Error(`Failed to load family members: ${error.message}`);
+    }
+}
+
+async function loadInvestments() {
+    try {
+        console.log('📈 Loading investments...');
+        
+        const { data, error } = await supabase
+            .from('investments')
+            .select(`
+                *,
+                family_members!inner(
+                    id,
+                    name,
+                    relationship
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        investments = data || [];
+        
+        // Update investment type tabs with counts
+        updateInvestmentTypeCounts();
+        
+        console.log(`✅ Loaded ${investments.length} investments`);
+        
+    } catch (error) {
+        console.error('❌ Error loading investments:', error);
+        throw new Error(`Failed to load investments: ${error.message}`);
+    }
+}
+
+async function loadLiabilities() {
+    try {
+        console.log('📉 Loading liabilities...');
+        
+        const { data, error } = await supabase
+            .from('liabilities')
+            .select(`
+                *,
+                family_members!inner(
+                    id,
+                    name,
+                    relationship
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        liabilities = data || [];
+        
+        // Update liability type tabs with counts
+        updateLiabilityTypeCounts();
+        
+        console.log(`✅ Loaded ${liabilities.length} liabilities`);
+        
+    } catch (error) {
+        console.error('❌ Error loading liabilities:', error);
+        throw new Error(`Failed to load liabilities: ${error.message}`);
+    }
+}
+
+async function loadAccounts() {
+    try {
+        console.log('🏦 Loading accounts...');
+        
+        const { data, error } = await supabase
+            .from('accounts')
+            .select(`
+                *,
+                holder:family_members!accounts_holder_id_fkey(
+                    id,
+                    name,
+                    relationship
+                ),
+                nominee:family_members!accounts_nominee_id_fkey(
+                    id,
+                    name,
+                    relationship
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        accounts = data || [];
+        
+        // Filter sensitive data for non-admin users
+        if (!hasPasswordAccess) {
+            accounts = accounts.map(account => {
+                const { username, password, website_url, pin, ...publicData } = account;
+                return publicData;
+            });
+        }
+        
+        console.log(`✅ Loaded ${accounts.length} accounts`);
+        
+    } catch (error) {
+        console.error('❌ Error loading accounts:', error);
+        throw new Error(`Failed to load accounts: ${error.message}`);
+    }
+}
+
+async function loadReminders() {
+    try {
+        console.log('🔔 Loading reminders...');
+        
+        const { data, error } = await supabase
+            .from('reminders')
+            .select(`
+                *,
+                family_members(
+                    id,
+                    name,
+                    relationship
+                )
+            `)
+            .order('reminder_date', { ascending: true });
+
+        if (error) throw error;
+        
+        reminders = data || [];
+        
+        // Update reminder counts
+        updateReminderCounts();
+        
+        console.log(`✅ Loaded ${reminders.length} reminders`);
+        
+    } catch (error) {
+        console.error('❌ Error loading reminders:', error);
+        throw new Error(`Failed to load reminders: ${error.message}`);
+    }
+}
+
+// ===== ENHANCED FORM MANAGEMENT =====
+function updateInvestmentForm() {
+    const type = document.getElementById('investment-type').value;
+    console.log(`🔄 Updating investment form for type: ${type}`);
+    
+    // Hide all conditional fields first
+    const conditionalFields = document.querySelectorAll('.conditional-fields');
+    conditionalFields.forEach(field => {
+        field.style.display = 'none';
+    });
+    
+    // Set default invested date for enhanced forms
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Show relevant fields based on investment type
+    switch(type) {
+        case 'fixedDeposits':
+            showFixedDepositFields(today);
+            break;
+        case 'insurance':
+            showInsuranceFields(today);
+            break;
+        case 'bankBalances':
+            showBankBalanceFields(today);
+            break;
+        case 'equity':
+            showEquityFields();
+            break;
+        case 'mutualFunds':
+            showMutualFundsFields();
+            break;
+        default:
+            break;
+    }
+}
+
+function showFixedDepositFields(today) {
+    const fdFields = document.querySelector('.fixed-deposit-fields');
+    if (fdFields) {
+        fdFields.style.display = 'block';
+        
+        // Set default values for FD fields
+        const fdInvestedDate = document.getElementById('fd-invested-date');
+        const fdStartDate = document.getElementById('fd-start-date');
+        
+        if (fdInvestedDate && !fdInvestedDate.value) {
+            fdInvestedDate.value = today;
+        }
+        if (fdStartDate && !fdStartDate.value) {
+            fdStartDate.value = today;
+        }
+        
+        // Setup FD-specific event listeners
+        setupFDFieldListeners();
+    }
+}
+
+function showInsuranceFields(today) {
+    const insuranceFields = document.querySelector('.insurance-fields');
+    if (insuranceFields) {
+        insuranceFields.style.display = 'block';
+        
+        // Set default values for insurance fields
+        const insuranceInvestedDate = document.getElementById('insurance-invested-date');
+        const insuranceStartDate = document.getElementById('insurance-start-date');
+        
+        if (insuranceInvestedDate && !insuranceInvestedDate.value) {
+            insuranceInvestedDate.value = today;
+        }
+        if (insuranceStartDate && !insuranceStartDate.value) {
+            insuranceStartDate.value = today;
+        }
+        
+        // Setup insurance-specific event listeners
+        setupInsuranceFieldListeners();
+    }
+}
+
+function showBankBalanceFields(today) {
+    const bankFields = document.querySelector('.bank-balance-fields');
+    if (bankFields) {
+        bankFields.style.display = 'block';
+        
+        // Set default as of date
+        const asOfDate = document.getElementById('bank-as-of-date');
+        if (asOfDate && !asOfDate.value) {
+            asOfDate.value = today;
+        }
+    }
+}
+
+function showEquityFields() {
+    const equityFields = document.querySelector('.equity-fields');
+    if (equityFields) {
+        equityFields.style.display = 'block';
+        setupEquityFieldListeners();
+    }
+}
+
+function showMutualFundsFields() {
+    const mfFields = document.querySelector('.mutual-funds-fields');
+    if (mfFields) {
+        mfFields.style.display = 'block';
+        setupMFFieldListeners();
+    }
+}
+
+// ===== ENHANCED FIELD LISTENERS SETUP =====
+function setupFDFieldListeners() {
+    // Auto-calculate maturity date based on tenure
+    const tenureField = document.getElementById('fd-tenure-months');
+    const startDateField = document.getElementById('fd-start-date');
+    const maturityDateField = document.getElementById('fd-maturity-date');
+    
+    if (tenureField && startDateField && maturityDateField) {
+        const calculateMaturityDate = () => {
+            const tenure = parseInt(tenureField.value);
+            const startDate = new Date(startDateField.value);
+            
+            if (tenure && startDate) {
+                const maturityDate = new Date(startDate);
+                maturityDate.setMonth(maturityDate.getMonth() + tenure);
+                maturityDateField.value = maturityDate.toISOString().split('T')[0];
+            }
+        };
+        
+        tenureField.addEventListener('change', calculateMaturityDate);
+        startDateField.addEventListener('change', calculateMaturityDate);
+    }
+    
+    // Auto-calculate maturity amount
+    const principalField = document.getElementById('investment-amount');
+    const interestRateField = document.getElementById('fd-interest-rate');
+    
+    if (principalField && interestRateField && tenureField) {
+        const calculateMaturityAmount = () => {
+            const principal = parseFloat(principalField.value) || 0;
+            const rate = parseFloat(interestRateField.value) || 0;
+            const tenure = parseInt(tenureField.value) || 0;
+            
+            if (principal && rate && tenure) {
+                // Simple interest calculation for FD
+                const maturityAmount = principal + (principal * rate * tenure / 12 / 100);
+                const currentValueField = document.getElementById('investment-current-value');
+                if (currentValueField) {
+                    currentValueField.value = maturityAmount.toFixed(2);
+                }
+            }
+        };
+        
+        principalField.addEventListener('change', calculateMaturityAmount);
+        interestRateField.addEventListener('change', calculateMaturityAmount);
+        tenureField.addEventListener('change', calculateMaturityAmount);
+    }
+}
+
+function setupInsuranceFieldListeners() {
+    // Auto-calculate total premiums paid
+    const premiumField = document.getElementById('insurance-premium');
+    const frequencyField = document.getElementById('insurance-payment-frequency');
+    const startDateField = document.getElementById('insurance-start-date');
+    
+    if (premiumField && frequencyField && startDateField) {
+        const calculateTotalPremiums = () => {
+            const premium = parseFloat(premiumField.value) || 0;
+            const frequency = frequencyField.value;
+            const startDate = new Date(startDateField.value);
+            const currentDate = new Date();
+            
+            if (premium && frequency && startDate && currentDate > startDate) {
+                const monthsDiff = (currentDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                                 (currentDate.getMonth() - startDate.getMonth());
+                
+                let paymentsPerYear = 1;
+                switch(frequency) {
+                    case 'Monthly': paymentsPerYear = 12; break;
+                    case 'Quarterly': paymentsPerYear = 4; break;
+                    case 'Half-yearly': paymentsPerYear = 2; break;
+                    case 'Annual': paymentsPerYear = 1; break;
+                }
+                
+                const totalPayments = Math.floor(monthsDiff / (12 / paymentsPerYear));
+                const totalPremiumsPaid = premium * totalPayments;
+                
+                const currentValueField = document.getElementById('investment-current-value');
+                if (currentValueField && totalPremiumsPaid > 0) {
+                    currentValueField.value = totalPremiumsPaid.toFixed(2);
+                }
+            }
+        };
+        
+        premiumField.addEventListener('change', calculateTotalPremiums);
+        frequencyField.addEventListener('change', calculateTotalPremiums);
+        startDateField.addEventListener('change', calculateTotalPremiums);
+    }
+}
+
+function setupEquityFieldListeners() {
+    // Auto-calculate invested amount from quantity and average price
+    const quantityField = document.getElementById('equity-quantity');
+    const avgPriceField = document.getElementById('equity-avg-price');
+    const investedAmountField = document.getElementById('investment-amount');
+    
+    if (quantityField && avgPriceField && investedAmountField) {
+        const calculateInvestedAmount = () => {
+            const quantity = parseInt(quantityField.value) || 0;
+            const avgPrice = parseFloat(avgPriceField.value) || 0;
+            
+            if (quantity && avgPrice) {
+                const investedAmount = quantity * avgPrice;
+                investedAmountField.value = investedAmount.toFixed(2);
+            }
+        };
+        
+        quantityField.addEventListener('change', calculateInvestedAmount);
+        avgPriceField.addEventListener('change', calculateInvestedAmount);
+    }
+}
+
+function setupMFFieldListeners() {
+    // Setup mutual fund specific calculations
+    const sipAmountField = document.getElementById('mf-sip-amount');
+    const installmentsField = document.getElementById('mf-installments');
+    
+    if (sipAmountField && installmentsField) {
+        const calculateTotalInvestment = () => {
+            const sipAmount = parseFloat(sipAmountField.value) || 0;
+            const installments = parseInt(installmentsField.value) || 0;
+            
+            if (sipAmount && installments) {
+                const totalInvestment = sipAmount * installments;
+                const investedAmountField = document.getElementById('investment-amount');
+                if (investedAmountField) {
+                    investedAmountField.value = totalInvestment.toFixed(2);
+                }
+            }
+        };
+        
+        sipAmountField.addEventListener('change', calculateTotalInvestment);
+        installmentsField.addEventListener('change', calculateTotalInvestment);
+    }
+}
+
+// ===== ENHANCED INVESTMENT SAVING =====
+async function saveInvestment() {
+    try {
+        console.log('💾 Saving investment...');
+        showLoading(true);
+        
+        // Get basic investment data
+        const investmentData = {
+            member_id: document.getElementById('investment-member').value,
+            type: document.getElementById('investment-type').value,
+            name: document.getElementById('investment-name').value,
+            invested_amount: parseFloat(document.getElementById('investment-amount').value) || 0,
+            current_value: parseFloat(document.getElementById('investment-current-value').value) || 0,
+            platform: document.getElementById('investment-platform').value || null
+        };
+        
+        // Validate required fields
+        if (!investmentData.member_id || !investmentData.type || !investmentData.name) {
+            throw new Error('Please fill in all required fields');
+        }
+        
+        // Add type-specific enhanced fields
+        await addEnhancedInvestmentFields(investmentData);
+        
+        let result;
+        if (isEditMode && editingInvestmentId) {
+            // Update existing investment
+            result = await supabase
+                .from('investments')
+                .update(investmentData)
+                .eq('id', editingInvestmentId);
+                
+            console.log('✅ Investment updated successfully');
+        } else {
+            // Insert new investment
+            result = await supabase
+                .from('investments')
+                .insert([investmentData]);
+                
+            console.log('✅ Investment created successfully');
+        }
+
+        if (result.error) throw result.error;
+
+        // Reload investments and refresh UI
+        await loadInvestments();
+        renderInvestmentTabContent(currentInvestmentType);
+        updateAllStatistics();
+        
+        // Close modal and reset form
+        closeModal('investment-modal');
+        resetInvestmentForm();
+        
+        showToast(
+            `Investment ${isEditMode ? 'updated' : 'added'} successfully!`,
+            'success'
+        );
+
+    } catch (error) {
+        console.error('❌ Error saving investment:', error);
+        showToast('Error saving investment: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function addEnhancedInvestmentFields(investmentData) {
+    const type = investmentData.type;
+    
+    // Enhanced Fixed Deposit fields
+    if (type === 'fixedDeposits') {
+        investmentData.fd_invested_date = document.getElementById('fd-invested-date')?.value || null;
+        investmentData.fd_bank_name = document.getElementById('fd-bank-name')?.value || null;
+        investmentData.fd_interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
+        investmentData.fd_interest_payout = document.getElementById('fd-interest-payout')?.value || null;
+        investmentData.fd_start_date = document.getElementById('fd-start-date')?.value || null;
+        investmentData.fd_maturity_date = document.getElementById('fd-maturity-date')?.value || null;
+        investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
+        investmentData.fd_nominee = document.getElementById('fd-nominee')?.value || null;
+        investmentData.fd_comments = document.getElementById('fd-comments')?.value || null;
+        
+        console.log('📊 Added enhanced FD fields to investment data');
+    }
+    
+    // Enhanced Insurance fields
+    if (type === 'insurance') {
+        investmentData.insurance_invested_date = document.getElementById('insurance-invested-date')?.value || null;
+        investmentData.insurance_type = document.getElementById('insurance-type')?.value || null;
+        investmentData.insurance_premium = parseFloat(document.getElementById('insurance-premium')?.value) || null;
+        investmentData.insurance_sum_assured = parseFloat(document.getElementById('insurance-sum-assured')?.value) || null;
+        investmentData.insurance_payment_frequency = document.getElementById('insurance-payment-frequency')?.value || null;
+        investmentData.insurance_start_date = document.getElementById('insurance-start-date')?.value || null;
+        investmentData.insurance_maturity_date = document.getElementById('insurance-maturity-date')?.value || null;
+        investmentData.insurance_policy_number = document.getElementById('insurance-policy-number')?.value || null;
+        investmentData.insurance_comments = document.getElementById('insurance-comments')?.value || null;
+        
+        console.log('🛡️ Added enhanced Insurance fields to investment data');
+    }
+    
+    // Bank Balance fields
+    if (type === 'bankBalances') {
+        investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
+        investmentData.bank_as_of_date = document.getElementById('bank-as-of-date')?.value || null;
+        investmentData.bank_account_type = document.getElementById('bank-account-type')?.value || null;
+        
+        console.log('💰 Added Bank Balance fields to investment data');
+    }
+    
+    // Equity fields
+    if (type === 'equity') {
+        investmentData.equity_quantity = parseInt(document.getElementById('equity-quantity')?.value) || null;
+        investmentData.equity_avg_price = parseFloat(document.getElementById('equity-avg-price')?.value) || null;
+        investmentData.equity_symbol = document.getElementById('equity-symbol')?.value || null;
+        investmentData.equity_sector = document.getElementById('equity-sector')?.value || null;
+        
+        console.log('📈 Added Equity fields to investment data');
+    }
+    
+    // Mutual Fund fields
+    if (type === 'mutualFunds') {
+        investmentData.mf_fund_house = document.getElementById('mf-fund-house')?.value || null;
+        investmentData.mf_scheme_code = document.getElementById('mf-scheme-code')?.value || null;
+        investmentData.mf_sip_amount = parseFloat(document.getElementById('mf-sip-amount')?.value) || null;
+        investmentData.mf_installments = parseInt(document.getElementById('mf-installments')?.value) || null;
+        
+        console.log('📊 Added Mutual Fund fields to investment data');
+    }
+}
+
+// ===== ENHANCED ACCOUNT MANAGEMENT =====
+async function saveAccount() {
+    try {
+        console.log('🏦 Saving account...');
+        showLoading(true);
+        
+        // Get basic account data
+        const accountData = {
+            account_type: document.getElementById('account-type').value,
+            institution: document.getElementById('account-institution').value,
+            account_number: document.getElementById('account-number').value,
+            holder_id: document.getElementById('account-holder').value,
+            nominee_id: document.getElementById('account-nominee').value || null,
+            status: document.getElementById('account-status').value || 'Active',
+            comments: document.getElementById('account-comments').value || null
+        };
+        
+        // Validate required fields
+        if (!accountData.account_type || !accountData.institution || !accountData.account_number || !accountData.holder_id) {
+            throw new Error('Please fill in all required fields');
+        }
+        
+        // Enhanced Credentials (only for authorized users)
+        if (hasPasswordAccess) {
+            accountData.username = document.getElementById('account-username')?.value || null;
+            accountData.password = document.getElementById('account-password')?.value || null;
+            accountData.website_url = document.getElementById('account-url')?.value || null;
+            accountData.pin = document.getElementById('account-pin')?.value || null;
+            
+            console.log('🔐 Added credential fields (authorized user)');
+        } else {
+            console.log('⚠️ Credential fields skipped (unauthorized user)');
+        }
+        
+        // Add holder and nominee names for easier querying
+        const holder = familyMembers.find(m => m.id === accountData.holder_id);
+        const nominee = familyMembers.find(m => m.id === accountData.nominee_id);
+        
+        accountData.holder_name = holder ? holder.name : null;
+        accountData.nominee_name = nominee ? nominee.name : null;
+
+        let result;
+        if (isEditMode && editingAccountId) {
+            // Update existing account
+            result = await supabase
+                .from('accounts')
+                .update(accountData)
+                .eq('id', editingAccountId);
+                
+            console.log('✅ Account updated successfully');
+        } else {
+            // Insert new account
+            result = await supabase
+                .from('accounts')
+                .insert([accountData]);
+                
+            console.log('✅ Account created successfully');
+        }
+
+        if (result.error) throw result.error;
+
+        // Reload accounts and refresh UI
+        await loadAccounts();
+        renderAccounts();
+        updateAllStatistics();
+        
+        // Close modal and reset form
+        closeModal('account-modal');
+        resetAccountForm();
+        
+        showToast(
+            `Account ${isEditMode ? 'updated' : 'added'} successfully!`,
+            'success'
+        );
+
+    } catch (error) {
+        console.error('❌ Error saving account:', error);
+        showToast('Error saving account: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ===== ENHANCED RENDERING FUNCTIONS =====
+function renderInvestmentTabContent(type) {
+    currentInvestmentType = type;
+    console.log(`📊 Rendering investment tab: ${type}`);
+    
+    // Update active tab
+    document.querySelectorAll('.investment-tabs .tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-type="${type}"]`).classList.add('active');
+
+    // Filter investments by type
+    const filteredInvestments = investments.filter(inv => inv.type === type);
+    
+    // Update type-specific summary
+    renderInvestmentTypeSummary(filteredInvestments, type);
+    
+    // Render investment table
+    renderInvestmentTable(filteredInvestments, type);
+    
+    // Update type-specific insights
+    renderInvestmentTypeInsights(filteredInvestments, type);
+}
+
+function renderInvestmentTable(filteredInvestments, type) {
+    const tableBody = document.getElementById('investment-table-body');
+    if (!tableBody) return;
+
+    if (filteredInvestments.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align: center; padding: var(--space-32);">
+                    <div style="color: var(--color-text-secondary);">
+                        <div style="font-size: var(--font-size-2xl); margin-bottom: var(--space-16);">
+                            ${getInvestmentTypeIcon(type)}
+                        </div>
+                        <h4>No ${INVESTMENT_TYPES[type]} Found</h4>
+                        <p style="margin: var(--space-16) 0;">Start tracking your ${INVESTMENT_TYPES[type].toLowerCase()} to build your portfolio.</p>
+                        <button onclick="openAddInvestmentModal('${type}')" class="btn btn--primary">
+                            Add First ${INVESTMENT_TYPES[type]}
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = filteredInvestments.map(investment => {
+        const gain = (investment.current_value || 0) - (investment.invested_amount || 0);
+        const gainPercentage = investment.invested_amount > 0 ? 
+            ((gain / investment.invested_amount) * 100).toFixed(2) : '0.00';
+        
+        const memberName = investment.family_members?.name || 'Unknown';
+        
+        // Enhanced display with type-specific details and comments
+        let nameDisplay = `<strong>${investment.name}</strong>`;
+        let enhancedDetails = '';
+        
+        // Enhanced FD details
+        if (type === 'fixedDeposits') {
+            enhancedDetails += investment.fd_bank_name ? `<br><small>🏦 ${investment.fd_bank_name}</small>` : '';
+            enhancedDetails += investment.fd_interest_rate ? `<br><small>📊 ${investment.fd_interest_rate}% interest</small>` : '';
+            enhancedDetails += investment.fd_maturity_date ? `<br><small>📅 Matures: ${formatDate(investment.fd_maturity_date)}</small>` : '';
+            if (investment.fd_comments) {
+                nameDisplay += `<br><small class="comments">💬 ${truncateText(investment.fd_comments, 50)}</small>`;
+            }
+        }
+        
+        // Enhanced Insurance details
+        if (type === 'insurance') {
+            enhancedDetails += investment.insurance_type ? `<br><small>🛡️ ${investment.insurance_type}</small>` : '';
+            enhancedDetails += investment.insurance_sum_assured ? `<br><small>💰 Sum Assured: ${formatCurrency(investment.insurance_sum_assured)}</small>` : '';
+            enhancedDetails += investment.insurance_premium ? `<br><small>💳 Premium: ${formatCurrency(investment.insurance_premium)}</small>` : '';
+            if (investment.insurance_comments) {
+                nameDisplay += `<br><small class="comments">💬 ${truncateText(investment.insurance_comments, 50)}</small>`;
+            }
+        }
+        
+        // Enhanced Equity details
+        if (type === 'equity') {
+            enhancedDetails += investment.equity_symbol ? `<br><small>📊 ${investment.equity_symbol}</small>` : '';
+            enhancedDetails += investment.equity_sector ? `<br><small>🏢 ${investment.equity_sector}</small>` : '';
+            enhancedDetails += investment.equity_quantity ? `<br><small>📦 Qty: ${investment.equity_quantity}</small>` : '';
+        }
+        
+        // Enhanced Bank Balance details
+        if (type === 'bankBalances') {
+            enhancedDetails += investment.bank_account_type ? `<br><small>🏦 ${investment.bank_account_type}</small>` : '';
+            enhancedDetails += investment.bank_as_of_date ? `<br><small>📅 As of: ${formatDate(investment.bank_as_of_date)}</small>` : '';
+        }
+        
+        const investedDate = getInvestmentInvestedDate(investment, type);
+        
+        return `
+            <tr>
+                <td>${nameDisplay}</td>
+                <td>
+                    <div class="member-info">
+                        <strong>${memberName}</strong>
+                        <small>${investment.family_members?.relationship || ''}</small>
+                    </div>
+                </td>
+                <td>₹${formatNumber(investment.invested_amount)}</td>
+                <td>₹${formatNumber(investment.current_value || investment.invested_amount)}</td>
+                <td>
+                    <div class="gain-loss ${gain >= 0 ? 'positive' : 'negative'}">
+                        <strong>₹${formatNumber(Math.abs(gain))}</strong>
+                        <small>(${gain >= 0 ? '+' : '-'}${Math.abs(gainPercentage)}%)</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="platform-info">
+                        <strong>${investment.platform || 'N/A'}</strong>
+                        ${investment.platform ? '<small>Platform</small>' : ''}
+                    </div>
+                </td>
+                <td>
+                    <div class="date-info">
+                        ${investedDate ? `<small>📅 ${formatDate(investedDate)}</small><br>` : ''}
+                        <small>Added: ${formatDate(investment.created_at)}</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="enhanced-details">
+                        ${enhancedDetails || '<small>Basic investment</small>'}
+                        <button onclick="showInvestmentDetails('${investment.id}')" class="btn btn--info btn--sm" style="margin-top: var(--space-4);">
+                            📋 View Details
+                        </button>
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button onclick="editInvestment('${investment.id}')" class="btn btn--warning btn--sm" title="Edit Investment">
+                            ✏️
+                        </button>
+                        <button onclick="deleteInvestment('${investment.id}')" class="btn btn--danger btn--sm" title="Delete Investment">
+                            🗑️
+                        </button>
+                        <button onclick="duplicateInvestment('${investment.id}')" class="btn btn--secondary btn--sm" title="Duplicate Investment">
+                            📋
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderInvestmentTypeSummary(investments, type) {
+    const totalCount = investments.length;
+    const totalInvested = investments.reduce((sum, inv) => sum + (inv.invested_amount || 0), 0);
+    const totalCurrentValue = investments.reduce((sum, inv) => sum + (inv.current_value || inv.invested_amount || 0), 0);
+    const totalGain = totalCurrentValue - totalInvested;
+    const totalReturn = totalInvested > 0 ? ((totalGain / totalInvested) * 100).toFixed(2) : '0.00';
+    
+    // Update summary display
+    document.getElementById('current-type-count').textContent = totalCount;
+    document.getElementById('current-type-invested').textContent = `₹${formatNumber(totalInvested)}`;
+    document.getElementById('current-type-value').textContent = `₹${formatNumber(totalCurrentValue)}`;
+    
+    const gainElement = document.getElementById('current-type-gain');
+    if (gainElement) {
+        gainElement.textContent = `₹${formatNumber(Math.abs(totalGain))}`;
+        gainElement.className = `summary-value ${totalGain >= 0 ? 'positive' : 'negative'}`;
+    }
+    
+    const returnElement = document.getElementById('current-type-return');
+    if (returnElement) {
+        returnElement.textContent = `${totalGain >= 0 ? '+' : '-'}${Math.abs(totalReturn)}%`;
+        returnElement.className = `summary-value ${totalGain >= 0 ? 'positive' : 'negative'}`;
+    }
+}
+
+function renderInvestmentTypeInsights(investments, type) {
+    const insightsContainer = document.getElementById('type-specific-insights');
+    if (!insightsContainer) return;
+    
+    let insightsHTML = '';
+    
+    switch(type) {
+        case 'fixedDeposits':
+            insightsHTML = renderFDInsights(investments);
+            break;
+        case 'insurance':
+            insightsHTML = renderInsuranceInsights(investments);
+            break;
+        case 'equity':
+            insightsHTML = renderEquityInsights(investments);
+            break;
+        case 'mutualFunds':
+            insightsHTML = renderMFInsights(investments);
+            break;
+        case 'bankBalances':
+            insightsHTML = renderBankInsights(investments);
+            break;
+        default:
+            insightsHTML = '<p>General investment insights will be displayed here.</p>';
+    }
+    
+    insightsContainer.innerHTML = insightsHTML;
+}
+
+function renderFDInsights(fdInvestments) {
+    const totalFDs = fdInvestments.length;
+    const avgInterestRate = fdInvestments
+        .filter(fd => fd.fd_interest_rate)
+        .reduce((sum, fd, _, arr) => sum + fd.fd_interest_rate / arr.length, 0);
+    
+    const upcomingMaturityCount = fdInvestments.filter(fd => {
+        if (!fd.fd_maturity_date) return false;
+        const maturityDate = new Date(fd.fd_maturity_date);
+        const threeMonthsFromNow = new Date();
+        threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+        return maturityDate <= threeMonthsFromNow;
+    }).length;
+    
+    return `
+        <div class="fd-insights">
+            <h4>🏦 Fixed Deposit Insights</h4>
+            <div class="insights-grid">
+                <div class="insight-item">
+                    <strong>${avgInterestRate.toFixed(2)}%</strong>
+                    <small>Average Interest Rate</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${upcomingMaturityCount}</strong>
+                    <small>Maturing in 3 months</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${totalFDs}</strong>
+                    <small>Total FD Accounts</small>
+                </div>
+            </div>
+            ${upcomingMaturityCount > 0 ? `
+                <div class="alert alert--warning">
+                    ⚠️ You have ${upcomingMaturityCount} FDs maturing soon. Consider renewal options.
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function renderInsuranceInsights(insuranceInvestments) {
+    const totalPolicies = insuranceInvestments.length;
+    const totalSumAssured = insuranceInvestments
+        .reduce((sum, policy) => sum + (policy.insurance_sum_assured || 0), 0);
+    const totalPremiums = insuranceInvestments
+        .reduce((sum, policy) => sum + (policy.insurance_premium || 0), 0);
+    
+    const policyTypes = [...new Set(insuranceInvestments
+        .filter(policy => policy.insurance_type)
+        .map(policy => policy.insurance_type))];
+    
+    return `
+        <div class="insurance-insights">
+            <h4>🛡️ Insurance Portfolio Insights</h4>
+            <div class="insights-grid">
+                <div class="insight-item">
+                    <strong>₹${formatNumber(totalSumAssured)}</strong>
+                    <small>Total Coverage</small>
+                </div>
+                <div class="insight-item">
+                    <strong>₹${formatNumber(totalPremiums)}</strong>
+                    <small>Annual Premiums</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${policyTypes.length}</strong>
+                    <small>Policy Types</small>
+                </div>
+            </div>
+            <div class="policy-types">
+                <small>Coverage Types: ${policyTypes.join(', ')}</small>
+            </div>
+        </div>
+    `;
+}
+
+function renderEquityInsights(equityInvestments) {
+    const totalStocks = equityInvestments.length;
+    const sectors = [...new Set(equityInvestments
+        .filter(stock => stock.equity_sector)
+        .map(stock => stock.equity_sector))];
+    
+    const totalQuantity = equityInvestments
+        .reduce((sum, stock) => sum + (stock.equity_quantity || 0), 0);
+    
+    return `
+        <div class="equity-insights">
+            <h4>📊 Equity Portfolio Insights</h4>
+            <div class="insights-grid">
+                <div class="insight-item">
+                    <strong>${totalStocks}</strong>
+                    <small>Total Stocks</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${sectors.length}</strong>
+                    <small>Sectors</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${totalQuantity}</strong>
+                    <small>Total Shares</small>
+                </div>
+            </div>
+            <div class="sector-distribution">
+                <small>Sectors: ${sectors.join(', ')}</small>
+            </div>
+        </div>
+    `;
+}
+
+function renderMFInsights(mfInvestments) {
+    const totalFunds = mfInvestments.length;
+    const fundHouses = [...new Set(mfInvestments
+        .filter(fund => fund.mf_fund_house)
+        .map(fund => fund.mf_fund_house))];
+    
+    const totalSIPAmount = mfInvestments
+        .reduce((sum, fund) => sum + (fund.mf_sip_amount || 0), 0);
+    
+    return `
+        <div class="mf-insights">
+            <h4>📈 Mutual Fund Insights</h4>
+            <div class="insights-grid">
+                <div class="insight-item">
+                    <strong>${totalFunds}</strong>
+                    <small>Total Funds</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${fundHouses.length}</strong>
+                    <small>Fund Houses</small>
+                </div>
+                <div class="insight-item">
+                    <strong>₹${formatNumber(totalSIPAmount)}</strong>
+                    <small>Monthly SIP</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderBankInsights(bankInvestments) {
+    const totalAccounts = bankInvestments.length;
+    const accountTypes = [...new Set(bankInvestments
+        .filter(acc => acc.bank_account_type)
+        .map(acc => acc.bank_account_type))];
+    
+    return `
+        <div class="bank-insights">
+            <h4>💰 Bank Balance Insights</h4>
+            <div class="insights-grid">
+                <div class="insight-item">
+                    <strong>${totalAccounts}</strong>
+                    <small>Bank Accounts</small>
+                </div>
+                <div class="insight-item">
+                    <strong>${accountTypes.length}</strong>
+                    <small>Account Types</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ===== ENHANCED ACCOUNT RENDERING WITH CREDENTIAL PROTECTION =====
+function renderAccounts() {
+    console.log('🏦 Rendering accounts with credential protection...');
+    
+    const tableBody = document.getElementById('accounts-table-body');
+    if (!tableBody) return;
+
+    if (accounts.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align: center; padding: var(--space-32);">
+                    <div style="color: var(--color-text-secondary);">
+                        <div style="font-size: var(--font-size-2xl); margin-bottom: var(--space-16);">🏦</div>
+                        <h4>No Accounts Found</h4>
+                        <p style="margin: var(--space-16) 0;">Add your first account to start managing your financial accounts securely.</p>
+                        <button onclick="openAddAccountModal()" class="btn btn--primary">
+                            Add First Account
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // Update account statistics
+    updateAccountStatistics();
+
+    tableBody.innerHTML = accounts.map(account => {
+        const holderName = account.holder?.name || account.holder_name || 'Unknown';
+        const nomineeName = account.nominee?.name || account.nominee_name || 'N/A';
+        
+        // Enhanced credential display with strict access control
+        let credentialsDisplay = '';
+        if (hasPasswordAccess) {
+            // Full access user - show credentials with proper formatting
+            const hasCredentials = account.username || account.password || account.website_url || account.pin;
+            
+            if (hasCredentials) {
+                credentialsDisplay = `
+                    <div class="credential-info secure-access">
+                        ${account.username ? `<div class="credential-item">👤 <span class="credential-value">${account.username}</span></div>` : ''}
+                        ${account.password ? `<div class="credential-item">🔑 <span class="credential-value">${maskPassword(account.password)}</span></div>` : ''}
+                        ${account.website_url ? `<div class="credential-item">🌐 <a href="${account.website_url}" target="_blank" rel="noopener">Portal</a></div>` : ''}
+                        ${account.pin ? `<div class="credential-item">📱 <span class="credential-value">PIN Set</span></div>` : ''}
+                        <button onclick="togglePasswordVisibility('${account.id}')" class="btn btn--info btn--xs">
+                            👁️ Toggle
+                        </button>
+                    </div>
+                `;
+            } else {
+                credentialsDisplay = `
+                    <div class="credential-info no-credentials">
+                        <small>No credentials stored</small>
+                        <button onclick="addAccountCredentials('${account.id}')" class="btn btn--secondary btn--xs">
+                            🔐 Add Credentials
+                        </button>
+                    </div>
+                `;
+            }
+        } else {
+            // Restricted access user - show access denied message
+            credentialsDisplay = `
+                <div class="credential-info restricted-access">
+                    <div class="access-denied">
+                        🔒 <strong>Access Restricted</strong><br>
+                        <small>Administrator access required</small>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Enhanced comments display
+        const commentsDisplay = account.comments ? 
+            truncateText(account.comments, 50) : 
+            '<small class="no-comments">No comments</small>';
+        
+        return `
+            <tr>
+                <td>
+                    <div class="account-type-info">
+                        <strong>${account.account_type}</strong>
+                        <small class="account-category">${getAccountCategory(account.account_type)}</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="institution-info">
+                        <strong>${account.institution}</strong>
+                        <small>Banking Partner</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="account-number-info">
+                        <strong>${maskAccountNumber(account.account_number)}</strong>
+                        <button onclick="copyAccountNumber('${account.account_number}')" class="btn btn--info btn--xs" title="Copy Account Number">
+                            📋
+                        </button>
+                    </div>
+                </td>
+                <td>
+                    <div class="holder-info">
+                        <strong>${holderName}</strong>
+                        <small>${account.holder?.relationship || 'Account Holder'}</small>
+                    </div>
+                </td>
+                <td>
+                    <div class="nominee-info">
+                        <strong>${nomineeName}</strong>
+                        ${nomineeName !== 'N/A' ? `<small>${account.nominee?.relationship || 'Nominee'}</small>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <span class="status ${getAccountStatusClass(account.status)}">
+                        ${getAccountStatusIcon(account.status)} ${account.status || 'Active'}
+                    </span>
+                </td>
+                <td class="credentials-cell">
+                    ${credentialsDisplay}
+                </td>
+                <td>
+                    <div class="comments-info">
+                        ${commentsDisplay}
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button onclick="editAccount('${account.id}')" class="btn btn--warning btn--sm" title="Edit Account">
+                            ✏️
+                        </button>
+                        <button onclick="deleteAccount('${account.id}')" class="btn btn--danger btn--sm" title="Delete Account">
+                            🗑️
+                        </button>
+                        <button onclick="viewAccountDetails('${account.id}')" class="btn btn--info btn--sm" title="View Details">
+                            👁️
+                        </button>
+                        ${hasPasswordAccess ? `
+                            <button onclick="testAccountConnection('${account.id}')" class="btn btn--secondary btn--sm" title="Test Connection">
+                                🔗
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// ===== ENHANCED EXPORT FUNCTIONS WITH CREDENTIAL PROTECTION =====
+async function exportFamilyData() {
+    try {
+        console.log('📤 Starting complete family data export...');
+        showLoading(true);
+        
+        const exportData = {
+            metadata: {
+                export_date: new Date().toISOString(),
+                exported_by: currentUser?.email || 'Unknown',
+                export_version: '2.0',
+                has_full_access: hasPasswordAccess,
+                total_records: familyMembers.length + investments.length + liabilities.length + accounts.length + reminders.length,
+                export_settings: exportSettings
+            },
+            family_members: familyMembers.map(member => ({
+                ...member,
+                // Include all family member data
+            })),
+            investments: investments.map(investment => ({
+                ...investment,
+                // Include all investment data with enhanced fields
+                member_name: investment.family_members?.name || 'Unknown'
+            })),
+            liabilities: liabilities.map(liability => ({
+                ...liability,
+                // Include all liability data
+                member_name: liability.family_members?.name || 'Unknown'
+            })),
+            accounts: hasPasswordAccess ? 
+                // Full access: include all account data
+                accounts.map(account => ({
+                    ...account,
+                    holder_name: account.holder?.name || account.holder_name || 'Unknown',
+                    nominee_name: account.nominee?.name || account.nominee_name || null
+                })) :
+                // Limited access: exclude credentials
+                accounts.map(account => {
+                    const { username, password, website_url, pin, ...publicData } = account;
+                    return {
+                        ...publicData,
+                        holder_name: account.holder?.name || account.holder_name || 'Unknown',
+                        nominee_name: account.nominee?.name || account.nominee_name || null,
+                        credentials_note: 'Credentials excluded - requires administrator access'
+                    };
+                }),
+            reminders: reminders.map(reminder => ({
+                ...reminder,
+                // Include all reminder data
+                member_name: reminder.family_members?.name || null
+            }))
+        };
+
+        // Create and download the export file
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+            type: 'application/json' 
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `family-wealth-data-${new Date().toISOString().split('T')[0]}-${hasPasswordAccess ? 'full' : 'limited'}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Log export activity
+        console.log('✅ Family data export completed successfully');
+        console.log(`📊 Export summary:
+            - Family Members: ${familyMembers.length}
+            - Investments: ${investments.length}
+            - Liabilities: ${liabilities.length}
+            - Accounts: ${accounts.length}
+            - Reminders: ${reminders.length}
+            - Access Level: ${hasPasswordAccess ? 'Full' : 'Limited'}
+        `);
+        
+        showToast(
+            `Family data exported successfully! ${hasPasswordAccess ? 'Full access' : 'Limited access'} export completed.`,
+            'success'
+        );
+        
+    } catch (error) {
+        console.error('❌ Error exporting family data:', error);
+        showToast('Error exporting family data: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function exportInvestments() {
+    try {
+        console.log('📈 Starting enhanced investments export...');
+        showLoading(true);
+        
+        const csvData = investments.map(inv => {
+            const baseData = {
+                'Member Name': inv.family_members?.name || 'Unknown',
+                'Member Relationship': inv.family_members?.relationship || 'Unknown',
+                'Investment Type': INVESTMENT_TYPES[inv.type] || inv.type,
+                'Investment Name': inv.name,
+                'Platform/Broker': inv.platform || '',
+                'Invested Amount': inv.invested_amount || 0,
+                'Current Value': inv.current_value || inv.invested_amount || 0,
+                'Gain/Loss': (inv.current_value || inv.invested_amount || 0) - (inv.invested_amount || 0),
+                'Return %': inv.invested_amount > 0 ? 
+                    (((inv.current_value || inv.invested_amount) - inv.invested_amount) / inv.invested_amount * 100).toFixed(2) : 0,
+                'Created Date': formatDate(inv.created_at)
+            };
+            
+            // Enhanced FD export fields
+            if (inv.type === 'fixedDeposits') {
+                return {
+                    ...baseData,
+                    'FD Invested Date': inv.fd_invested_date ? formatDate(inv.fd_invested_date) : '',
+                    'Bank Name': inv.fd_bank_name || '',
+                    'Interest Rate (%)': inv.fd_interest_rate || '',
+                    'Interest Payout Frequency': inv.fd_interest_payout || '',
+                    'FD Start Date': inv.fd_start_date ? formatDate(inv.fd_start_date) : '',
+                    'FD Maturity Date': inv.fd_maturity_date ? formatDate(inv.fd_maturity_date) : '',
+                    'FD Account Number': inv.fd_account_number || '',
+                    'FD Nominee': inv.fd_nominee || '',
+                    'FD Comments': inv.fd_comments || ''
+                };
+            }
+            
+            // Enhanced Insurance export fields
+            if (inv.type === 'insurance') {
+                return {
+                    ...baseData,
+                    'Insurance Invested Date': inv.insurance_invested_date ? formatDate(inv.insurance_invested_date) : '',
+                    'Insurance Type': inv.insurance_type || '',
+                    'Premium Amount': inv.insurance_premium || '',
+                    'Sum Assured': inv.insurance_sum_assured || '',
+                    'Payment Frequency': inv.insurance_payment_frequency || '',
+                    'Policy Start Date': inv.insurance_start_date ? formatDate(inv.insurance_start_date) : '',
+                    'Policy Maturity Date': inv.insurance_maturity_date ? formatDate(inv.insurance_maturity_date) : '',
+                    'Policy Number': inv.insurance_policy_number || '',
+                    'Insurance Comments': inv.insurance_comments || ''
+                };
+            }
+            
+            // Enhanced Equity export fields
+            if (inv.type === 'equity') {
+                return {
+                    ...baseData,
+                    'Stock Symbol': inv.equity_symbol || '',
+                    'Sector': inv.equity_sector || '',
+                    'Quantity': inv.equity_quantity || '',
+                    'Average Price': inv.equity_avg_price || ''
+                };
+            }
+            
+            // Enhanced Bank Balance export fields
+            if (inv.type === 'bankBalances') {
+                return {
+                    ...baseData,
+                    'Account Type': inv.bank_account_type || '',
+                    'As of Date': inv.bank_as_of_date ? formatDate(inv.bank_as_of_date) : '',
+                    'Current Balance': inv.bank_current_balance || ''
+                };
+            }
+            
+            return baseData;
+        });
+        
+        downloadCSV(csvData, 'investments-enhanced');
+        
+        console.log(`✅ Enhanced investments export completed - ${investments.length} records`);
+        showToast('Enhanced investments exported successfully!', 'success');
+        
+    } catch (error) {
+        console.error('❌ Error exporting investments:', error);
+        showToast('Error exporting investments: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function exportAccounts() {
+    try {
+        console.log('🏦 Starting secure accounts export...');
+        showLoading(true);
+        
+        const csvData = accounts.map(acc => {
+            const baseData = {
+                'Account Type': acc.account_type,
+                'Institution': acc.institution,
+                'Account Number': acc.account_number,
+                'Account Holder': acc.holder?.name || acc.holder_name || 'Unknown',
+                'Account Holder Relationship': acc.holder?.relationship || 'Unknown',
+                'Nominee': acc.nominee?.name || acc.nominee_name || '',
+                'Nominee Relationship': acc.nominee?.relationship || '',
+                'Status': acc.status || 'Active',
+                'Comments': acc.comments || '',
+                'Created Date': formatDate(acc.created_at)
+            };
+            
+            // Enhanced credential export (only for authorized users)
+            if (hasPasswordAccess) {
+                return {
+                    ...baseData,
+                    'Username': acc.username || '',
+                    'Password': acc.password || '',
+                    'Website URL': acc.website_url || '',
+                    'PIN/MPIN': acc.pin || '',
+                    'Credential Status': 'Full access export'
+                };
+            } else {
+                return {
+                    ...baseData,
+                    'Credential Status': 'Limited access - credentials excluded'
+                };
+            }
+        });
+        
+        const filename = `accounts-${hasPasswordAccess ? 'full' : 'limited'}-access`;
+        downloadCSV(csvData, filename);
+        
+        console.log(`✅ Secure accounts export completed - ${accounts.length} records with ${hasPasswordAccess ? 'full' : 'limited'} access`);
+        showToast(
+            `Accounts exported successfully! ${hasPasswordAccess ? 'Full credentials included.' : 'Limited access - credentials excluded.'}`,
+            'success'
+        );
+        
+    } catch (error) {
+        console.error('❌ Error exporting accounts:', error);
+        showToast('Error exporting accounts: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// ===== UTILITY FUNCTIONS =====
+function formatCurrency(amount) {
+    if (amount === null || amount === undefined || isNaN(amount)) return '0';
+    return new Intl.NumberFormat('en-IN').format(Math.abs(amount));
+}
+
+function formatNumber(number) {
+    if (number === null || number === undefined || isNaN(number)) return '0';
+    return new Intl.NumberFormat('en-IN', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 0
+    }).format(number);
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (error) {
+        return dateString;
+    }
+}
+
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+function maskPassword(password) {
+    if (!password) return '';
+    return '*'.repeat(Math.min(password.length, 8));
+}
+
+function maskAccountNumber(accountNumber) {
+    if (!accountNumber) return '';
+    if (accountNumber.length <= 4) return accountNumber;
+    return '****' + accountNumber.slice(-4);
+}
+
+function getAccountStatusClass(status) {
+    switch(status?.toLowerCase()) {
+        case 'active': return 'status--success';
+        case 'inactive': return 'status--warning';
+        case 'closed': return 'status--error';
+        case 'frozen': return 'status--info';
+        default: return 'status--success';
+    }
+}
+
+function getAccountStatusIcon(status) {
+    switch(status?.toLowerCase()) {
+        case 'active': return '✅';
+        case 'inactive': return '⏸️';
+        case 'closed': return '❌';
+        case 'frozen': return '🧊';
+        default: return '✅';
+    }
+}
+
+function getAccountCategory(accountType) {
+    if (accountType?.toLowerCase().includes('bank')) return 'Banking';
+    if (accountType?.toLowerCase().includes('demat')) return 'Trading';
+    if (accountType?.toLowerCase().includes('mutual')) return 'Investments';
+    if (accountType?.toLowerCase().includes('insurance')) return 'Insurance';
+    if (accountType?.toLowerCase().includes('trading')) return 'Trading';
+    if (accountType?.toLowerCase().includes('ppf') || accountType?.toLowerCase().includes('epf')) return 'Retirement';
+    return 'Financial';
+}
+
+function getInvestmentTypeIcon(type) {
+    const icons = {
+        equity: '📊',
+        mutualFunds: '📈',
+        fixedDeposits: '🏦',
+        insurance: '🛡️',
+        bankBalances: '💰',
+        others: '📦'
+    };
+    return icons[type] || '💼';
+}
+
+function getInvestmentInvestedDate(investment, type) {
+    switch(type) {
+        case 'fixedDeposits':
+            return investment.fd_invested_date;
+        case 'insurance':
+            return investment.insurance_invested_date;
+        case 'bankBalances':
+            return investment.bank_as_of_date;
+        default:
+            return null;
+    }
+}
+
+// ===== ENHANCED UI FUNCTIONS =====
+function showToast(message, type = 'info', duration = 5000) {
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.innerHTML = `
+        <div class="toast-content">
+            <span class="toast-icon">
+                ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+            </span>
+            <span class="toast-message">${message}</span>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Auto remove
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+    return container;
+}
+
+function showLoading(show, message = 'Loading...') {
+    const overlay = document.getElementById('loading-overlay') || createLoadingOverlay();
+    const loadingText = overlay.querySelector('.loading-text');
+    
+    if (loadingText) {
+        loadingText.textContent = message;
+    }
+    
+    overlay.style.display = show ? 'flex' : 'none';
+    document.body.style.overflow = show ? 'hidden' : '';
+}
+
+function createLoadingOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'loading-overlay';
+    overlay.className = 'loading-overlay';
+    overlay.innerHTML = `
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading...</div>
+    `;
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+function showModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Focus on first input field
+        const firstInput = modal.querySelector('input, select, textarea');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Reset form state
+    resetModalState(modalId);
+}
+
+function resetModalState(modalId) {
+    // Reset editing state
+    isEditMode = false;
+    editingInvestmentId = null;
+    editingAccountId = null;
+    editingLiabilityId = null;
+    editingReminderId = null;
+    editingMemberId = null;
+    
+    // Reset forms
+    switch(modalId) {
+        case 'investment-modal':
+            resetInvestmentForm();
+            break;
+        case 'account-modal':
+            resetAccountForm();
+            break;
+        case 'liability-modal':
+            resetLiabilityForm();
+            break;
+        case 'reminder-modal':
+            resetReminderForm();
+            break;
+        case 'member-modal':
+            resetMemberForm();
+            break;
+    }
+}
+
+// ===== FORM RESET FUNCTIONS =====
+function resetInvestmentForm() {
+    const form = document.getElementById('investment-form');
+    if (form) {
+        form.reset();
+        
+        // Hide all conditional fields
+        document.querySelectorAll('.conditional-fields').forEach(field => {
+            field.style.display = 'none';
+        });
+        
+        // Reset to default values
+        initializeDefaultValues();
+        
+        // Reset modal title
+        document.getElementById('investment-modal-title').textContent = 'Add Investment';
+    }
+}
+
+function resetAccountForm() {
+    const form = document.getElementById('account-form');
+    if (form) {
+        form.reset();
+        document.getElementById('account-status').value = 'Active';
+        document.getElementById('account-modal-title').textContent = 'Add Account';
+    }
+}
+
+function resetLiabilityForm() {
+    const form = document.getElementById('liability-form');
+    if (form) {
+        form.reset();
+        document.getElementById('liability-modal-title').textContent = 'Add Liability';
+    }
+}
+
+function resetReminderForm() {
+    const form = document.getElementById('reminder-form');
+    if (form) {
+        form.reset();
+        document.getElementById('reminder-priority').value = 'medium';
+        document.getElementById('recurring-options').style.display = 'none';
+        document.getElementById('reminder-modal-title').textContent = 'Add Reminder';
+    }
+}
+
+function resetMemberForm() {
+    const form = document.getElementById('member-form');
+    if (form) {
+        form.reset();
+        document.getElementById('current-photo').innerHTML = '👤';
+        selectedPhoto = null;
+        document.getElementById('member-modal-title').textContent = 'Add Family Member';
+    }
+}
+
+// ===== INITIALIZATION FUNCTIONS =====
+function initializeDefaultValues() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Set default dates for enhanced forms
+    const dateFields = [
+        'fd-invested-date',
+        'fd-start-date', 
+        'insurance-invested-date',
+        'insurance-start-date',
+        'bank-as-of-date',
+        'reminder-date'
+    ];
+    
+    dateFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && !field.value) {
+            field.value = today;
+        }
+    });
+    
+    // Set default values for select fields
+    const selectDefaults = {
+        'fd-interest-payout': 'Yearly',
+        'insurance-payment-frequency': 'Annual',
+        'bank-account-type': 'Savings',
+        'account-status': 'Active',
+        'reminder-priority': 'medium'
+    };
+    
+    Object.entries(selectDefaults).forEach(([fieldId, defaultValue]) => {
+        const field = document.getElementById(fieldId);
+        if (field && !field.value) {
+            field.value = defaultValue;
+        }
+    });
+}
+
+function initializeUIComponents() {
+    // Update access level UI
+    updatePasswordAccessUI();
+    
+    // Initialize tab counts
+    updateAllTabCounts();
+    
+    // Initialize statistics
+    updateAllStatistics();
+    
+    // Setup responsive handlers
+    handleWindowResize();
+}
+
+// ===== STATISTICAL UPDATE FUNCTIONS =====
+function updateAllStatistics() {
+    updateOverviewStatistics();
+    updateInvestmentTypeCounts();
+    updateLiabilityTypeCounts();
+    updateAccountStatistics();
+    updateReminderCounts();
+}
+
+function updateOverviewStatistics() {
+    // Calculate family statistics
+    const totalMembers = familyMembers.length;
+    const totalAssets = investments.reduce((sum, inv) => sum + (inv.current_value || inv.invested_amount || 0), 0);
+    const totalLiabilities = liabilities.reduce((sum, lib) => sum + (lib.outstanding_amount || 0), 0);
+    const netWorth = totalAssets - totalLiabilities;
+    
+    // Calculate FD statistics
+    const fdInvestments = investments.filter(inv => inv.type === 'fixedDeposits');
+    const totalFDValue = fdInvestments.reduce((sum, fd) => sum + (fd.current_value || fd.invested_amount || 0), 0);
+    
+    // Calculate Insurance statistics
+    const insuranceInvestments = investments.filter(inv => inv.type === 'insurance');
+    const totalInsuranceValue = insuranceInvestments.reduce((sum, ins) => sum + (ins.insurance_sum_assured || 0), 0);
+    
+    // Calculate portfolio performance
+    const totalInvested = investments.reduce((sum, inv) => sum + (inv.invested_amount || 0), 0);
+    const portfolioReturn = totalInvested > 0 ? ((totalAssets - totalInvested) / totalInvested * 100).toFixed(2) : '0.00';
+    
+    // Update UI elements
+    updateStatElement('total-members-stat', totalMembers);
+    updateStatElement('total-assets-stat', `₹${formatNumber(totalAssets)}`);
+    updateStatElement('total-liabilities-stat', `₹${formatNumber(totalLiabilities)}`);
+    updateStatElement('net-worth-stat', `₹${formatNumber(Math.abs(netWorth))}`);
+    updateStatElement('fd-total-stat', `₹${formatNumber(totalFDValue)}`);
+    updateStatElement('insurance-total-stat', `₹${formatNumber(totalInsuranceValue)}`);
+    updateStatElement('secure-accounts-stat', accounts.length);
+    updateStatElement('portfolio-performance-stat', `${portfolioReturn >= 0 ? '+' : ''}${portfolioReturn}%`);
+    
+    // Update counts
+    updateStatElement('fd-count-stat', `${fdInvestments.length} FDs tracked`);
+    updateStatElement('insurance-count-stat', `${insuranceInvestments.length} policies active`);
+    
+    // Update net worth color
+    const netWorthElement = document.getElementById('net-worth-stat');
+    if (netWorthElement) {
+        netWorthElement.className = `stat-value ${netWorth >= 0 ? 'positive' : 'negative'}`;
+    }
+    
+    // Update performance color
+    const performanceElement = document.getElementById('portfolio-performance-stat');
+    if (performanceElement) {
+        performanceElement.className = `stat-value ${portfolioReturn >= 0 ? 'positive' : 'negative'}`;
+    }
+}
+
+function updateStatElement(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function updateInvestmentTypeCounts() {
+    const typeCounts = {
+        equity: 0,
+        mutualFunds: 0,
+        fixedDeposits: 0,
+        insurance: 0,
+        bankBalances: 0,
+        others: 0
+    };
+    
+    investments.forEach(inv => {
+        if (typeCounts.hasOwnProperty(inv.type)) {
+            typeCounts[inv.type]++;
+        }
+    });
+    
+    // Update tab counts
+    Object.entries(typeCounts).forEach(([type, count]) => {
+        const tabCountElement = document.getElementById(`${type === 'mutualFunds' ? 'mf' : type === 'fixedDeposits' ? 'fd' : type === 'bankBalances' ? 'bank' : type}-tab-count`);
+        if (tabCountElement) {
+            tabCountElement.textContent = count;
+        }
+    });
+}
+
+function updateLiabilityTypeCounts() {
+    const typeCounts = {
+        homeLoan: 0,
+        personalLoan: 0,
+        creditCard: 0,
+        carLoan: 0,
+        educationLoan: 0,
+        other: 0
+    };
+    
+    liabilities.forEach(lib => {
+        if (typeCounts.hasOwnProperty(lib.type)) {
+            typeCounts[lib.type]++;
+        }
+    });
+    
+    // Update tab counts
+    Object.entries(typeCounts).forEach(([type, count]) => {
+        const tabCountElement = document.getElementById(`${type === 'homeLoan' ? 'home-loan' : type === 'personalLoan' ? 'personal-loan' : type === 'creditCard' ? 'credit-card' : type === 'carLoan' ? 'car-loan' : type === 'educationLoan' ? 'education-loan' : 'other-liability'}-count`);
+        if (tabCountElement) {
+            tabCountElement.textContent = count;
+        }
+    });
+}
+
+function updateAccountStatistics() {
+    const totalAccounts = accounts.length;
+    const activeAccounts = accounts.filter(acc => acc.status === 'Active').length;
+    const accountsWithCredentials = accounts.filter(acc => acc.username || acc.password).length;
+    const membersWithAccounts = new Set(accounts.map(acc => acc.holder_id)).size;
+    
+    updateStatElement('total-accounts-count', totalAccounts);
+    updateStatElement('active-accounts-count', activeAccounts);
+    updateStatElement('secure-accounts-count', accountsWithCredentials);
+    updateStatElement('members-with-accounts', membersWithAccounts);
+    
+    // Update account type counts
+    const typeCountMap = {};
+    accounts.forEach(acc => {
+        typeCountMap[acc.account_type] = (typeCountMap[acc.account_type] || 0) + 1;
+    });
+    
+    updateStatElement('all-accounts-count', totalAccounts);
+    updateStatElement('bank-accounts-count', typeCountMap['Bank Account'] || 0);
+    updateStatElement('demat-accounts-count', typeCountMap['Demat Account'] || 0);
+    updateStatElement('insurance-accounts-count', typeCountMap['Insurance Account'] || 0);
+    updateStatElement('trading-accounts-count', typeCountMap['Trading Account'] || 0);
+}
+
+function updateReminderCounts() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const pendingReminders = reminders.filter(r => {
+        const reminderDate = new Date(r.reminder_date);
+        return reminderDate >= today && !r.completed;
+    });
+    
+    const todayReminders = reminders.filter(r => {
+        const reminderDate = new Date(r.reminder_date);
+        return reminderDate.toDateString() === today.toDateString() && !r.completed;
+    });
+    
+    const overdueReminders = reminders.filter(r => {
+        const reminderDate = new Date(r.reminder_date);
+        return reminderDate < today && !r.completed;
+    });
+    
+    const completedReminders = reminders.filter(r => r.completed);
+    
+    const upcomingReminders = reminders.filter(r => {
+        const reminderDate = new Date(r.reminder_date);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        return reminderDate > today && reminderDate <= nextWeek && !r.completed;
+    });
+    
+    updateStatElement('pending-reminders-count', pendingReminders.length);
+    updateStatElement('today-reminders-count', todayReminders.length);
+    updateStatElement('overdue-reminders-count', overdueReminders.length);
+    updateStatElement('completed-reminders-count', completedReminders.length);
+    updateStatElement('upcoming-reminders-count', upcomingReminders.length);
+}
+
+function updateAllTabCounts() {
+    updateInvestmentTypeCounts();
+    updateLiabilityTypeCounts();
+    updateReminderCounts();
+}
+
+// ===== HELPER FUNCTIONS =====
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function downloadCSV(data, filename) {
+    if (!data || data.length === 0) {
+        showToast('No data to export', 'warning');
+        return;
+    }
+    
+    const headers = Object.keys(data);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+            headers.map(header => {
+                let value = row[header] ?? '';
+                // Escape quotes and wrap in quotes if contains comma
+                if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                    value = `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            }).join(',')
+        )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function populateAllMemberSelects() {
+    const selectIds = [
+        'investment-member', 'liability-member', 'reminder-member',
+        'account-holder', 'account-nominee'
+    ];
+    
+    selectIds.forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (select) {
+            const currentValue = select.value;
+            const isNominee = selectId.includes('nominee');
+            const isOptional = selectId.includes('reminder') || isNominee;
+            
+            select.innerHTML = isOptional ? 
+                `<option value="">Select ${isNominee ? 'Nominee' : 'Member'} (Optional)</option>` :
+                '<option value="">Select Member</option>';
+            
+            familyMembers.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = `${member.name}${member.relationship ? ` (${member.relationship})` : ''}`;
+                select.appendChild(option);
+            });
+            
+            // Restore previous value if editing
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+    });
+}
+
+function updateLastUpdatedTime() {
+    const now = new Date();
+    const timeString = now.toLocaleString('en-IN', {
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    
+    const elements = ['last-updated', 'last-updated-display'];
+    elements.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = timeString;
+        }
+    });
+}
+
+function updateUserInformation(email) {
+    const userEmailSpan = document.getElementById('user-email');
+    if (userEmailSpan) {
+        userEmailSpan.textContent = email;
+    }
+    
+    const totalRecordsSpan = document.getElementById('total-records-count');
+    if (totalRecordsSpan) {
+        const totalRecords = familyMembers.length + investments.length + liabilities.length + accounts.length + reminders.length;
+        totalRecordsSpan.textContent = totalRecords;
+    }
+    
+    const dbStatusSpan = document.getElementById('db-status');
+    if (dbStatusSpan) {
+        dbStatusSpan.textContent = 'Connected';
+        dbStatusSpan.className = 'status status--success';
+    }
+}
+
+function updateLoginButtonState(isLoading) {
+    const loginForm = document.getElementById('login-form');
+    const submitButton = loginForm?.querySelector('button[type="submit"]');
+    const buttonText = submitButton?.querySelector('.btn-text');
+    
+    if (submitButton) {
+        submitButton.disabled = isLoading;
+        if (buttonText) {
+            buttonText.textContent = isLoading ? 'Signing In...' : 'Login to Dashboard';
+        }
+    }
+}
+
+// ===== NAVIGATION AND UI FUNCTIONS =====
+function showSection(sectionId) {
+    console.log(`🔄 Switching to section: ${sectionId}`);
+    
+    // Hide all sections
+    document.querySelectorAll('.dashboard-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Show target section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
+    
+    // Update navigation state
+    updateActiveNavigation(event?.target);
+    
+    // Load section-specific data if needed
+    loadSectionData(sectionId);
+}
+
+function updateActiveNavigation(clickedElement) {
+    // Update navigation buttons
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (clickedElement) {
+        clickedElement.classList.add('active');
+    }
+}
+
+function loadSectionData(sectionId) {
+    switch(sectionId) {
+        case 'analytics-section':
+            renderAnalyticsTab(currentAnalyticsTab);
+            break;
+        case 'reminders-section':
+            renderReminderTab(currentReminderType);
+            break;
+        case 'investments-section':
+            renderInvestmentTabContent(currentInvestmentType);
+            break;
+        case 'liabilities-section':
+            renderLiabilityTabContent(currentLiabilityType);
+            break;
+        case 'accounts-section':
+            renderAccounts();
+            break;
+        default:
+            break;
+    }
+}
+
+// ===== WINDOW AND RESPONSIVE HANDLERS =====
+function handleWindowResize() {
+    const width = window.innerWidth;
+    
+    // Handle mobile navigation
+    if (width < 768) {
+        handleMobileLayout();
+    } else {
+        handleDesktopLayout();
+    }
+    
+    // Handle table responsiveness
+    handleTableResponsiveness(width);
+}
+
+function handleMobileLayout() {
+    // Implement mobile-specific layout changes
+    const navbar = document.querySelector('.navbar-nav');
+    if (navbar) {
+        navbar.classList.add('mobile-nav');
+    }
+}
+
+function handleDesktopLayout() {
+    // Implement desktop-specific layout changes
+    const navbar = document.querySelector('.navbar-nav');
+    if (navbar) {
+        navbar.classList.remove('mobile-nav');
+    }
+}
+
+function handleTableResponsiveness(width) {
+    const tables = document.querySelectorAll('.investment-table table, .family-table');
+    tables.forEach(table => {
+        if (width < 768) {
+            table.classList.add('mobile-table');
+        } else {
+            table.classList.remove('mobile-table');
+        }
+    });
+}
+
+function handleOnlineStatus() {
+    showToast('Connection restored', 'success');
+    const dbStatus = document.getElementById('db-status');
+    if (dbStatus) {
+        dbStatus.textContent = 'Connected';
+        dbStatus.className = 'status status--success';
+    }
+}
+
+function handleOfflineStatus() {
+    showToast('Connection lost - working offline', 'warning');
+    const dbStatus = document.getElementById('db-status');
+    if (dbStatus) {
+        dbStatus.textContent = 'Offline';
+        dbStatus.className = 'status status--warning';
+    }
+}
+
+// ===== ADDITIONAL MODAL OPENING FUNCTIONS =====
+function openAddInvestmentModal(type = null) {
+    isEditMode = false;
+    editingInvestmentId = null;
+    
+    resetInvestmentForm();
+    populateAllMemberSelects();
+    updatePasswordAccessUI();
+    
+    if (type) {
+        document.getElementById('investment-type').value = type;
+        updateInvestmentForm();
+    }
+    
+    document.getElementById('investment-modal-title').textContent = 'Add Investment';
+    showModal('investment-modal');
+}
+
+function openAddAccountModal() {
+    isEditMode = false;
+    editingAccountId = null;
+    
+    resetAccountForm();
+    populateAllMemberSelects();
+    updatePasswordAccessUI();
+    
+    document.getElementById('account-modal-title').textContent = 'Add Account';
+    showModal('account-modal');
+}
+
+function openAddMemberModal() {
+    isEditMode = false;
+    editingMemberId = null;
+    
+    resetMemberForm();
+    
+    document.getElementById('member-modal-title').textContent = 'Add Family Member';
+    showModal('member-modal');
+}
+
+function openAddLiabilityModal() {
+    isEditMode = false;
+    editingLiabilityId = null;
+    
+    resetLiabilityForm();
+    populateAllMemberSelects();
+    
+    document.getElementById('liability-modal-title').textContent = 'Add Liability';
+    showModal('liability-modal');
+}
+
+function openAddReminderModal() {
+    isEditMode = false;
+    editingReminderId = null;
+    
+    resetReminderForm();
+    populateAllMemberSelects();
+    
+    document.getElementById('reminder-modal-title').textContent = 'Add Reminder';
+    showModal('reminder-modal');
+}
+
+// ===== FORM VALIDATION LISTENERS =====
+function setupFormValidationListeners() {
+    // Real-time validation for PAN number
+    const panField = document.getElementById('member-pan');
+    if (panField) {
+        panField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+            const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+            if (this.value && !panRegex.test(this.value)) {
+                this.setCustomValidity('Please enter a valid PAN number (e.g., ABCDE1234F)');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+    
+    // Email validation
+    const emailFields = document.querySelectorAll('input[type="email"]');
+    emailFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value && !this.validity.valid) {
+                this.setCustomValidity('Please enter a valid email address');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    });
+    
+    // Phone number validation
+    const phoneField = document.getElementById('member-phone');
+    if (phoneField) {
+        phoneField.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9+\-\s()]/g, '');
+            if (this.value.length > 15) {
+                this.value = this.value.slice(0, 15);
+            }
+        });
+    }
+}
+
+// ===== AUTO-CALCULATION LISTENERS =====
+function setupAutoCalculationListeners() {
+    // Investment amount auto-formatting
+    const amountFields = document.querySelectorAll('input[type="number"]');
+    amountFields.forEach(field => {
+        field.addEventListener('blur', function() {
+            if (this.value) {
+                const value = parseFloat(this.value);
+                if (!isNaN(value)) {
+                    this.value = value.toFixed(2);
+                }
+            }
+        });
+    });
+    
+    // Current value auto-population
+    const investedAmountField = document.getElementById('investment-amount');
+    const currentValueField = document.getElementById('investment-current-value');
+    
+    if (investedAmountField && currentValueField) {
+        investedAmountField.addEventListener('change', function() {
+            if (!currentValueField.value && this.value) {
+                currentValueField.value = this.value;
+            }
+        });
+    }
+}
+
+// ===== ADDITIONAL UTILITY FUNCTIONS =====
+function hasUnsavedChanges() {
+    // Check if any forms have been modified
+    const forms = document.querySelectorAll('form');
+    for (const form of forms) {
+        const formData = new FormData(form);
+        for (const [key, value] of formData.entries()) {
+            if (value && value.trim() !== '') {
+                const modal = form.closest('.modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function saveCurrentForm() {
+    // Save the currently open form
+    const openModal = document.querySelector('.modal:not(.hidden)');
+    if (openModal) {
+        const form = openModal.querySelector('form');
+        if (form) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.click();
+            }
+        }
+    }
+}
+
+function showNewItemMenu() {
+    // Show a quick menu for adding new items
+    showToast('Quick Add: Use Ctrl+I for Investment, Ctrl+A for Account, Ctrl+M for Member', 'info', 3000);
+}
+
+function showExportMenu() {
+    // Navigate to export section
+    showSection('export-section');
+}
+
+async function refreshDashboard() {
+    showToast('Refreshing dashboard data...', 'info', 2000);
+    await loadCompleteDashboard();
+}
+
+// ===== REAL-TIME SUBSCRIPTIONS (IF SUPPORTED) =====
+function setupRealTimeSubscriptions() {
+    // Setup real-time subscriptions for data changes
+    // This would be implemented if real-time features are needed
+    console.log('📡 Real-time subscriptions could be setup here for live updates');
+}
+
+// ===== ERROR HANDLING AND RECOVERY =====
+window.addEventListener('error', function(e) {
+    console.error('Global error caught:', e.error);
+    showToast('An unexpected error occurred. Please refresh the page if issues persist.', 'error');
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection:', e.reason);
+    showToast('A network error occurred. Please check your connection.', 'error');
+    e.preventDefault();
 });
 
 // ===== MAKE FUNCTIONS GLOBALLY AVAILABLE =====
-window.openAddMemberModal = openAddMemberModal;
-window.saveMember = saveMember;
-window.editMember = editMember;
-window.deleteMember = deleteMember;
-window.openPhotoModal = openPhotoModal;
-window.savePhoto = savePhoto;
-window.handlePhotoUpload = handlePhotoUpload;
-window.showMemberDetails = showMemberDetails;
-window.closeMemberDetails = closeMemberDetails;
-window.openAddInvestmentModal = openAddInvestmentModal;
-window.saveInvestment = saveInvestment;
-window.editInvestment = editInvestment;
-window.deleteInvestment = deleteInvestment;
-window.updateInvestmentForm = updateInvestmentForm;
-window.renderInvestmentTabContent = renderInvestmentTabContent;
-window.openAddLiabilityModal = openAddLiabilityModal;
-window.saveLiability = saveLiability;
-window.editLiability = editLiability;
-window.deleteLiability = deleteLiability;
-window.renderLiabilityTabContent = renderLiabilityTabContent;
-window.openAddAccountModal = openAddAccountModal;
-window.saveAccount = saveAccount;
-window.editAccount = editAccount;
-window.deleteAccount = deleteAccount;
-window.exportInvestments = exportInvestments;
-window.exportLiabilities = exportLiabilities;
-window.exportAccounts = exportAccounts;
-window.exportFamilyData = exportFamilyData;
-window.sortTable = sortTable;
-window.closeModal = closeModal;
+// Authentication functions
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
-window.initializeSupabase = initializeSupabase;
-window.loadDashboardData = loadDashboardData;
-// Import functions
-window.openImportModal = openImportModal;
-window.handleImportFile = handleImportFile;
-window.processImport = processImport;
-// Additional functions
-window.showDashboard = showDashboard;
-window.updateUserInfo = updateUserInfo;
 
-// ===== APPLICATION INITIALIZATION =====
-window.addEventListener('load', async () => {
-    console.log('🚀 Initializing FamWealth Dashboard…');
+// Modal functions
+window.openAddMemberModal = openAddMemberModal;
+window.openAddInvestmentModal = openAddInvestmentModal;
+window.openAddAccountModal = openAddAccountModal;
+window.openAddLiabilityModal = openAddLiabilityModal;
+window.openAddReminderModal = openAddReminderModal;
+window.closeModal = closeModal;
+window.showModal = showModal;
 
-    const supabaseInitialized = await initializeSupabase();
-    console.log(supabaseInitialized
-        ? '✅ Supabase connection established'
-        : '⚠️ Running in demo mode without Supabase');
+// Form functions
+window.saveMember = saveMember;
+window.saveInvestment = saveInvestment;
+window.saveAccount = saveAccount;
+window.saveLiability = saveLiability;
+window.saveReminder = saveReminder;
+window.updateInvestmentForm = updateInvestmentForm;
 
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', e => {
-            e.preventDefault();
-            handleLogin();
-        });
-    }
+// Rendering functions
+window.renderInvestmentTabContent = renderInvestmentTabContent;
+window.renderAccounts = renderAccounts;
+window.showSection = showSection;
 
-    const authType = localStorage.getItem('famwealth_auth_type');
-    const storedUser = localStorage.getItem('famwealth_user');
-    if (authType === 'demo' || (authType === 'supabase' && storedUser)) {
-        try {
-            const user = authType === 'demo'
-                ? { email: 'demo@famwealth.com', id: 'demo-user-id' }
-                : JSON.parse(storedUser);
-            currentUser = user;
-            showDashboard();
-            updateUserInfo(user);
-            await loadDashboardData();
-            console.log('✅ Auto-login successful');
-        } catch (error) {
-            console.error('Auto-login error:', error);
-            localStorage.removeItem('famwealth_auth_type');
-            localStorage.removeItem('famwealth_user');
-        }
-    }
-});
+// Export functions
+window.exportFamilyData = exportFamilyData;
+window.exportInvestments = exportInvestments;
+window.exportAccounts = exportAccounts;
 
-console.log('✅ FamWealth Dashboard app.js loaded - ENHANCED VERSION WITH COMPLETE FEATURES');
-console.log('🔧 Ready for initialization');
+// Utility functions
+window.refreshDashboard = refreshDashboard;
+window.showToast = showToast;
+
+console.log('✅ Enhanced Family Wealth Dashboard - Complete 2800+ lines JavaScript loaded successfully');
+console.log('🔧 All enhanced features including FD tracking, Insurance management, and secure credentials are ready');
+
+// End of Enhanced Family Investment Dashboard JavaScript Implementation
