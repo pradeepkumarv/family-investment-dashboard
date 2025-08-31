@@ -1,540 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pradeep's Family Wealth - Complete Family Financial Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
-
-    <!-- Supabase CDN -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 Pradeep's Family Wealth Dashboard - Enhanced</title>
+    <link rel="stylesheet" href="style_V2.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* ===== GLOBAL STYLES ===== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* Additional enhanced styles for new features */
+        .conditional-fields {
+            background: var(--color-bg-3);
+            padding: var(--space-16);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-16);
+            border: 1px solid var(--color-border);
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-                Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        /* ===== LANDING PAGE ===== */
-        .landing-page {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .auth-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
-            width: 100%;
-            max-width: 480px;
-            text-align: center;
-        }
-
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 10px;
-        }
-
-        .auth-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 10px;
-        }
-
-        .auth-subtitle {
-            color: #718096;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-label {
+        
+        .form-help {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #4a5568;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn {
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 14px 20px;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-            padding: 10px 20px;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e0;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.85rem;
-        }
-
-        .btn-edit {
-            background: #ed8936;
-            color: white;
-        }
-
-        .btn-delete {
-            background: #e53e3e;
-            color: white;
-        }
-
-        .btn-photo {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-add {
-            background: #667eea;
-            color: white;
-            padding: 10px 20px;
-        }
-
-        .btn-export {
-            background: #38a169;
-            color: white;
-            padding: 8px 16px;
-            font-size: 0.9rem;
-            margin-right: 8px;
-        }
-
-        .btn-logout {
-            background: #e53e3e;
-            color: white;
-            padding: 10px 20px;
-        }
-
-        /* ===== MAIN DASHBOARD ===== */
-        .main-dashboard {
-            display: none;
-            background: #f8fafc;
-            min-height: 100vh;
-        }
-
-        .dashboard-header {
-            background: white;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .dashboard-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2d3748;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: #718096;
-            font-size: 0.9rem;
-        }
-
-        .dashboard-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        /* ===== STATS GRID ===== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid;
-            text-align: center;
-        }
-
-        .stat-card.assets {
-            border-left-color: #38a169;
-        }
-
-        .stat-card.liabilities {
-            border-left-color: #e53e3e;
-        }
-
-        .stat-card.net-worth {
-            border-left-color: #667eea;
-        }
-
-        .stat-card.accounts {
-            border-left-color: #ed8936;
-        }
-
-        .stat-card.reminders {
-            border-left-color: #9f7aea;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: #718096;
-            margin-bottom: 8px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-        }
-
-        /* ===== SECTIONS ===== */
-        .section {
-            background: white;
-            border-radius: 15px;
-            padding: 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-        }
-
-        .section-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .section-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .section-actions .btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .section-actions .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .section-content {
-            padding: 30px;
-        }
-
-        /* ===== FAMILY MEMBERS GRID ===== */
-        .family-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .family-card {
-            background: #f7fafc;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .family-card:hover {
-            transform: translateY(-2px);
-            border-color: #667eea;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .member-photo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin: 0 auto 15px;
-            border: 3px solid #667eea;
-        }
-
-        .member-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .primary-badge {
-            background: #667eea;
-            color: white;
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-
-        .member-relationship {
-            color: #718096;
-            margin-bottom: 15px;
+            margin-top: var(--space-4);
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
             font-style: italic;
         }
-
-        .member-summary {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 15px;
-            margin-bottom: 15px;
+        
+        .credentials-section {
+            background: rgba(var(--color-success-rgb), 0.05);
+            border: 1px solid rgba(var(--color-success-rgb), 0.2);
+            padding: var(--space-16);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-16);
         }
-
-        .summary-row {
+        
+        .password-warning {
+            background: rgba(var(--color-error-rgb), 0.05);
+            border: 1px solid rgba(var(--color-error-rgb), 0.2);
+            padding: var(--space-16);
+            border-radius: var(--radius-lg);
+            margin-top: var(--space-16);
+        }
+        
+        .investment-details {
+            margin-top: var(--space-8);
+            padding: var(--space-8);
+            background: var(--color-background);
+            border-radius: var(--radius-base);
+        }
+        
+        .comments {
+            color: var(--color-text-secondary) !important;
+            font-style: italic;
+        }
+        
+        .gain-loss.positive {
+            color: var(--color-success);
+            font-weight: var(--font-weight-semibold);
+        }
+        
+        .gain-loss.negative {
+            color: var(--color-error);
+            font-weight: var(--font-weight-semibold);
+        }
+        
+        .action-buttons {
             display: flex;
+            gap: var(--space-4);
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: var(--space-20);
+            right: var(--space-20);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-8);
+        }
+        
+        .toast {
+            min-width: 300px;
+            padding: var(--space-12) var(--space-16);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
+            animation: slideInRight 0.3s ease-out;
         }
-
-        .summary-label {
-            color: #718096;
-            font-weight: 500;
+        
+        .toast--success {
+            background: var(--color-success);
+            color: var(--color-white);
         }
-
-        .summary-value {
-            font-weight: 600;
+        
+        .toast--error {
+            background: var(--color-error);
+            color: var(--color-white);
         }
-
-        .summary-value.assets {
-            color: #38a169;
+        
+        .toast--warning {
+            background: var(--color-warning);
+            color: var(--color-white);
         }
-
-        .summary-value.liabilities {
-            color: #e53e3e;
+        
+        .toast--info {
+            background: var(--color-info);
+            color: var(--color-white);
         }
-
-        .summary-value.net-worth {
-            color: #667eea;
-        }
-
-        .summary-counts {
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #718096;
-        }
-
-        .count-item {
-            background: #edf2f7;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        .member-actions {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-        }
-
-        /* ===== TABS ===== */
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            background: #f7fafc;
-            border-radius: 10px;
-            padding: 5px;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            color: #718096;
-            transition: all 0.3s ease;
-        }
-
-        .tab:hover {
-            color: #4a5568;
-        }
-
-        .tab.active {
-            background: #667eea;
-            color: white;
-        }
-
-        /* ===== TAB CONTENT ===== */
-        .tab-content {
-            min-height: 200px;
-        }
-
-        /* ===== TABLES ===== */
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .data-table th {
-            background: #f7fafc;
-            font-weight: 600;
-            color: #2d3748;
-            cursor: pointer;
-            position: relative;
-            user-select: none;
-        }
-
-        .data-table th:hover {
-            background: #edf2f7;
-        }
-
-        .sort-indicator {
-            margin-left: 5px;
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .data-table tbody tr:hover {
-            background: #f7fafc;
-        }
-
-        .text-green {
-            color: #38a169;
-            font-weight: 600;
-        }
-
-        .text-red {
-            color: #e53e3e;
-            font-weight: 600;
-        }
-
-        .status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status.active {
-            background: #c6f6d5;
-            color: #2f855a;
-        }
-
-        .status.inactive {
-            background: #fed7d7;
-            color: #c53030;
-        }
-
-        /* ===== EMPTY STATES ===== */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #718096;
-        }
-
-        .empty-state .emoji {
-            font-size: 4rem;
-            margin-bottom: 20px;
-        }
-
-        .empty-state p {
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-        }
-
-        /* ===== MODALS ===== */
-        .modal {
+        
+        .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -542,1068 +116,1193 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
             display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--color-border);
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: var(--space-16);
+        }
+        
+        .loading-text {
+            color: var(--color-white);
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-medium);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .sort-indicator {
+            font-size: var(--font-size-xs);
+            opacity: 0.7;
+        }
+        
+        .member-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-full);
+            display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+            color: var(--color-white);
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
         }
-
-        .modal.hidden {
-            display: none;
+        
+        .member-avatar-large img {
+            width: 100%;
+            height: 100%;
+            border-radius: var(--radius-full);
+            object-fit: cover;
         }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 700px;
-            max-height: 90vh;
-            overflow-y: auto;
+        
+        .investment-list, .account-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-12);
         }
-
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px 15px 0 0;
+        
+        .investment-item, .account-item {
+            padding: var(--space-12);
+            background: var(--color-background);
+            border-radius: var(--radius-base);
+            border: 1px solid var(--color-border);
+        }
+        
+        .investment-basic {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: var(--space-8);
+            margin-bottom: var(--space-8);
+        }
+        
+        .investment-type {
+            background: var(--color-primary);
+            color: var(--color-btn-primary-text);
+            padding: var(--space-2) var(--space-8);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-8);
+        }
+        
+        .checkbox-group label {
+            display: flex;
             align-items: center;
-        }
-
-        .modal-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-
-        .btn-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
+            gap: var(--space-8);
             cursor: pointer;
-            padding: 5px;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: var(--color-border);
+            border-radius: var(--radius-base);
+            overflow: hidden;
+            margin-bottom: var(--space-8);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--color-primary);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .preset-photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: var(--space-8);
+            margin: var(--space-16) 0;
+        }
+        
+        .photo-option {
+            aspect-ratio: 1;
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all var(--duration-fast) var(--ease-standard);
             display: flex;
             align-items: center;
             justify-content: center;
+            background: var(--color-surface);
         }
-
-        .btn-close:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .modal-body {
-            padding: 30px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: flex-end;
-            margin-top: 25px;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        /* ===== FORM ELEMENTS ===== */
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .checkbox-group input[type='checkbox'] {
-            width: auto;
-        }
-
-        /* ===== CONDITIONAL FIELDS ===== */
-        .conditional-fields {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f7fafc;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .fixed-deposit-fields,
-        .insurance-fields,
-        .bank-balance-fields {
-            display: none;
-        }
-
-        /* ===== PHOTO MODAL ===== */
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .photo-option {
-            width: 100%;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 10px;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: all 0.3s ease;
-        }
-
+        
         .photo-option:hover {
-            border-color: #cbd5e0;
+            border-color: var(--color-primary);
+            transform: scale(1.05);
         }
-
+        
         .photo-option.selected {
-            border-color: #667eea;
+            border-color: var(--color-primary);
+            border-width: 3px;
         }
-
-        .upload-area {
-            border: 2px dashed #cbd5e0;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            margin: 15px 0;
-            cursor: pointer;
-            transition: border-color 0.3s ease;
-            background: #f8fafc;
+        
+        .photo-option img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
-
-        .upload-area:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
+        
+        .bulk-import-options {
+            margin-bottom: var(--space-24);
         }
-
-        /* ===== IMPORT SECTION STYLES ===== */
-        .import-section {
-            margin: 20px 0;
-            padding: 20px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #f7fafc;
+        
+        .family-management-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: var(--space-24);
         }
-
-        .import-section h3 {
-            color: #2d3748;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
+        
+        .family-member-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: var(--space-24);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-card-border);
+            transition: all var(--duration-normal) var(--ease-standard);
         }
-
-        .import-section p {
-            color: #718096;
-            margin-bottom: 15px;
+        
+        .family-member-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
         }
-
-        .import-buttons {
+        
+        .family-member-header {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-16);
         }
-
-        .csv-template {
-            background: #edf2f7;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            margin: 10px 0;
-        }
-
-        .csv-template ul {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-
-        .csv-template code {
-            background: #e2e8f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #e53e3e;
-        }
-
-        .file-upload {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #f7fafc;
-        }
-
-        .file-upload label {
-            cursor: pointer;
-            display: inline-block;
-        }
-
-        /* ===== MEMBER DETAILS VIEW ===== */
-        .member-details-section {
-            display: none;
-        }
-
-        .member-details-overview {
-            padding: 30px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .member-profile {
+        
+        .member-basic-info {
             display: flex;
             align-items: center;
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: var(--space-12);
         }
-
-        .member-detail-photo {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid #e2e8f0;
-        }
-
-        .member-info h3 {
-            font-size: 2rem;
-            color: #2d3748;
-            margin-bottom: 5px;
-        }
-
-        .member-info .relationship {
-            color: #718096;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-        }
-
-        .financial-summary-grid {
+        
+        .member-financial-summary {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            gap: var(--space-16);
+            margin-bottom: var(--space-16);
+            padding: var(--space-16);
+            background: var(--color-background);
+            border-radius: var(--radius-lg);
         }
-
-        .summary-card {
-            background: #f7fafc;
-            padding: 20px;
-            border-radius: 8px;
+        
+        .financial-stat {
             text-align: center;
         }
-
-        .summary-card.assets {
-            border-left: 4px solid #38a169;
+        
+        .stat-label {
+            display: block;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-4);
+            font-weight: var(--font-weight-medium);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-
-        .summary-card.liabilities {
-            border-left: 4px solid #e53e3e;
+        
+        .stat-value {
+            display: block;
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
         }
-
-        .summary-card.net-worth {
-            border-left: 4px solid #667eea;
+        
+        .stat-value.positive {
+            color: var(--color-success);
         }
-
-        .summary-card .summary-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
+        
+        .stat-value.negative {
+            color: var(--color-error);
         }
-
-        .summary-card .summary-label {
-            color: #718096;
-            font-size: 0.9rem;
+        
+        .member-investments-overview h5 {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text);
+            margin-bottom: var(--space-12);
         }
-
-        /* ===== EXPORT BUTTONS ===== */
-        .export-buttons {
+        
+        .investment-breakdown {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-8);
+        }
+        
+        .investment-summary-item {
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 20px;
+            align-items: center;
+            gap: var(--space-8);
+            padding: var(--space-8);
+            background: var(--color-secondary);
+            border-radius: var(--radius-base);
         }
-
-        /* ===== MESSAGES ===== */
-        .message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 500;
-            z-index: 10000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 300px;
+        
+        .investment-icon {
+            font-size: var(--font-size-base);
         }
-
-        .message.show {
-            transform: translateX(0);
+        
+        .investment-label {
+            flex: 1;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
         }
-
-        .message.success {
-            background: #38a169;
+        
+        .investment-value {
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
+            font-size: var(--font-size-sm);
         }
-
-        .message.error {
-            background: #e53e3e;
+        
+        .member-card-actions {
+            display: flex;
+            gap: var(--space-8);
+            margin-top: var(--space-16);
+            padding-top: var(--space-12);
+            border-top: 1px solid var(--color-border);
         }
-
-        .message.info {
-            background: #3182ce;
+        
+        .analytics-content {
+            margin-top: var(--space-24);
         }
-
-        .message.warning {
-            background: #d69e2e;
+        
+        .analytics-tabs .tab-btn {
+            min-width: 150px;
         }
-
-        /* ===== LAST UPDATED ===== */
-        .last-updated {
-            color: #718096;
-            font-size: 0.9rem;
-            text-align: center;
-            margin-top: 30px;
-            padding: 15px;
-            background: #f7fafc;
-            border-radius: 10px;
+        
+        .reminder-item {
+            padding: var(--space-16);
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            margin-bottom: var(--space-16);
         }
-
-        /* ===== RESPONSIVE DESIGN ===== */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .family-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header-content {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-
-            .section-header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-
-            .modal-content {
-                width: 95%;
-                margin: 20px;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .tabs {
-                flex-wrap: wrap;
-            }
-
-            .tab {
-                min-width: 120px;
-            }
-
-            .financial-summary-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .member-profile {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .modal-actions {
-                flex-direction: column;
-            }
-
-            .export-buttons {
-                justify-content: center;
-            }
-
-            .import-buttons {
-                justify-content: center;
-            }
+        
+        .reminder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-8);
         }
-
-        @media (max-width: 480px) {
-            .auth-container {
-                padding: 30px 20px;
-            }
-
-            .dashboard-content {
-                padding: 20px 15px;
-            }
-
-            .section-content {
-                padding: 20px;
-            }
-
-            .modal-body {
-                padding: 20px;
-            }
-
-            .data-table th,
-            .data-table td {
-                padding: 8px;
-                font-size: 0.9rem;
-            }
-
-            .photo-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        
+        .reminder-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
         }
-
-        /* ===== LOADING STATES ===== */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
+        
+        .reminder-date {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
         }
-
-        .loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #667eea;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
+        
+        .reminder-priority {
+            padding: var(--space-2) var(--space-8);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
         }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        
+        .reminder-priority.high {
+            background: rgba(var(--color-error-rgb), 0.1);
+            color: var(--color-error);
         }
-
-        /* ===== ANIMATIONS ===== */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        
+        .reminder-priority.medium {
+            background: rgba(var(--color-warning-rgb), 0.1);
+            color: var(--color-warning);
         }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease;
+        
+        .reminder-priority.low {
+            background: rgba(var(--color-success-rgb), 0.1);
+            color: var(--color-success);
+        }
+        
+        .reminder-actions {
+            display: flex;
+            gap: var(--space-8);
+            margin-top: var(--space-12);
         }
     </style>
 </head>
 <body>
-    <!-- ===== LANDING PAGE ===== -->
+    <!-- Landing Page -->
     <div id="landing-page" class="landing-page">
-        <div class="auth-container">
-            <div class="logo">💰</div>
-            <h1 class="auth-title">Pradeep's Family Wealth Dashboard</h1>
-            <p class="auth-subtitle">Complete Family Financial Management</p>
+        <div class="landing-container">
+            <div class="logo">
+                <h1>💰 Pradeep's Family Wealth Dashboard</h1>
+                <p class="logo-subtitle">Enhanced Edition with Advanced Features</p>
+                <p class="logo-tagline">Comprehensive family financial management with FD tracking, insurance management, and secure credential storage</p>
+            </div>
 
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-email" class="form-label">Email Address</label>
-                    <input type="email" id="login-email" class="form-input" placeholder="Enter your email" required autocomplete="username" />
+            <div class="landing-description">
+                <h2>Manage Your Family's Financial Future</h2>
+                <p>Track investments, monitor Fixed Deposits with detailed comments, manage insurance policies with coverage notes, and store account credentials securely with advanced access control.</p>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        🏦 Enhanced Fixed Deposits<br>
+                        <small>Track invested dates, interest rates, maturity tracking, and detailed comments for comprehensive FD management</small>
+                    </div>
+                    <div class="feature-item">
+                        🛡️ Advanced Insurance Management<br>
+                        <small>Policy details, coverage notes, premium tracking, and beneficiary management with renewal reminders</small>
+                    </div>
+                    <div class="feature-item">
+                        🔐 Secure Credential Storage<br>
+                        <small>Protected password access for authorized users only with encrypted storage and access logging</small>
+                    </div>
+                    <div class="feature-item">
+                        📊 Real-time Analytics<br>
+                        <small>Comprehensive financial analytics, performance tracking, and automated reporting with visual insights</small>
+                    </div>
+                    <div class="feature-item">
+                        📱 Responsive Design<br>
+                        <small>Works seamlessly on desktop, tablet, and mobile devices with optimized user experience</small>
+                    </div>
+                    <div class="feature-item">
+                        🔄 Data Synchronization<br>
+                        <small>Real-time data sync across all devices with automatic backup and recovery features</small>
+                    </div>
+                    <div class="feature-item">
+                        📈 Portfolio Tracking<br>
+                        <small>Advanced portfolio analysis with gain/loss tracking, asset allocation, and performance metrics</small>
+                    </div>
+                    <div class="feature-item">
+                        🔔 Smart Reminders<br>
+                        <small>Automated reminders for policy renewals, FD maturity, EMI payments, and investment reviews</small>
+                    </div>
+                    <div class="feature-item">
+                        📤 Advanced Export<br>
+                        <small>Comprehensive data export with enhanced FD details, insurance comments, and secure credential handling</small>
+                    </div>
+                    <div class="feature-item">
+                        🏠 Family Management<br>
+                        <small>Complete family member profiles with individual portfolio tracking and relationship management</small>
+                    </div>
+                    <div class="feature-item">
+                        💹 Investment Analysis<br>
+                        <small>Detailed investment performance analysis with sector allocation and risk assessment tools</small>
+                    </div>
+                    <div class="feature-item">
+                        🛡️ Data Security<br>
+                        <small>Bank-grade security with row-level security policies and encrypted sensitive data storage</small>
+                    </div>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="login-password" class="form-label">Password</label>
-                    <input
-                        type="password"
-                        id="login-password"
-                        class="form-input"
-                        placeholder="Enter your password"
-                        autocomplete="current-password"
-                        required
-                    />
+            <div class="login-section">
+                <div class="login-form">
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email" class="form-label">Email Address</label>
+                            <input type="email" id="login-email" class="form-control" placeholder="Enter your email address" required autocomplete="username">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="login-password" class="form-label">Password</label>
+                            <input type="password" id="login-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+                        </div>
+                        
+                        <button type="submit" class="btn btn--primary btn--full-width">
+                            <span class="btn-text">Login to Dashboard</span>
+                        </button>
+                    </form>
+
+                    <div class="demo-info">
+                        <h4>🔐 Enhanced Security Features</h4>
+                        <p>New advanced features for comprehensive financial management with role-based access control</p>
+                        
+                        <div class="demo-credentials">
+                            <strong>For full credential access:</strong><br>
+                            📧 <code>pradeepkumar.v@hotmail.com</code><br>
+                            🔑 Full credential access enabled<br>
+                            ✅ Can view/edit passwords and sensitive data
+                        </div>
+                        
+                        <div style="margin-top: var(--space-12); padding: var(--space-12); background: rgba(var(--color-info-rgb), 0.1); border-radius: var(--radius-base);">
+                            <small style="color: var(--color-info);">
+                                <strong>Other users:</strong> Limited access - password fields will be hidden for security
+                            </small>
+                        </div>
+                    </div>
                 </div>
-
-                <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- ===== MAIN DASHBOARD ===== -->
-    <div id="main-dashboard" class="main-dashboard">
-        <!-- Header -->
-        <div class="dashboard-header">
-            <div class="header-content">
-                <div>
-                    <h1 class="dashboard-title">💰 Pradeep's Family Wealth Dashboard</h1>
+    <!-- Main Dashboard -->
+    <div id="main-dashboard" class="main-dashboard" style="display: none;">
+        <!-- Enhanced Navigation Bar -->
+        <nav class="navbar">
+            <div class="navbar-flex">
+                <div class="navbar-nav">
+                    <button onclick="showSection('overview-section')" class="nav-btn active" data-section="overview-section">
+                        📊 Overview
+                    </button>
+                    <button onclick="showSection('family-section')" class="nav-btn" data-section="family-section">
+                        👨‍👩‍👧‍👦 Family
+                    </button>
+                    <button onclick="showSection('investments-section')" class="nav-btn" data-section="investments-section">
+                        📈 Investments
+                    </button>
+                    <button onclick="showSection('liabilities-section')" class="nav-btn" data-section="liabilities-section">
+                        📉 Liabilities
+                    </button>
+                    <button onclick="showSection('accounts-section')" class="nav-btn" data-section="accounts-section">
+                        🏦 Accounts
+                    </button>
+                    <button onclick="showSection('reminders-section')" class="nav-btn" data-section="reminders-section">
+                        🔔 Reminders
+                    </button>
+                    <button onclick="showSection('analytics-section')" class="nav-btn" data-section="analytics-section">
+                        📊 Analytics
+                    </button>
+                    <button onclick="showSection('import-section')" class="nav-btn" data-section="import-section">
+                        📥 Import
+                    </button>
+                    <button onclick="showSection('export-section')" class="nav-btn" data-section="export-section">
+                        📤 Export
+                    </button>
                 </div>
-                <div class="user-info">
-                    <span>Welcome, <span id="user-email">Loading...</span></span>
-                    <span>Last updated: <span id="last-updated">-</span></span>
-                    <button onclick="handleLogout()" class="btn btn-logout">Logout</button>
+                <div class="navbar-user">
+                    <span class="user-info">
+                        <span id="user-email" class="user-email"></span>
+                        <span id="user-access-level" class="user-access-level"></span>
+                    </span>
+                    <button onclick="handleLogout()" class="logout-btn">
+                        🚪 Logout
+                    </button>
                 </div>
             </div>
-        </div>
+        </nav>
 
-        <!-- Dashboard Content -->
-        <div class="dashboard-content">
-            <!-- Stats Overview -->
-            <div class="stats-grid" id="stats-grid">
-                <!-- Stats will be populated by JavaScript -->
-            </div>
-
-            <!-- Family Members Section -->
-            <div class="section">
+        <div class="container">
+            <!-- Enhanced Overview Section -->
+            <section id="overview-section" class="dashboard-section active">
                 <div class="section-header">
-                    <h2 class="section-title">👨‍👩‍👧‍👦 Family Members</h2>
-                    <div class="section-actions">
-                        <button onclick="openAddMemberModal()" class="btn">➕ Add Member</button>
+                    <div>
+                        <h2>📊 Financial Overview</h2>
+                        <p>Comprehensive view of your family's financial portfolio with enhanced tracking</p>
+                    </div>
+                    <div class="header-actions">
+                        <div class="date-info">
+                            Last updated: <span id="last-updated">Loading...</span>
+                        </div>
+                        <button onclick="refreshDashboard()" class="btn btn--secondary btn--sm">
+                            🔄 Refresh
+                        </button>
                     </div>
                 </div>
-                <div class="section-content">
-                    <div id="family-members-grid" class="family-grid">
-                        <!-- Family members will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
 
-            <!-- Member Details Section (Hidden by default) -->
-            <div id="member-details-section" class="section member-details-section">
-                <div class="section-header">
-                    <h2 id="member-details-title" class="section-title">Member Details</h2>
-                    <div class="section-actions">
-                        <button onclick="closeMemberDetails()" class="btn">← Back to Dashboard</button>
+                <!-- Enhanced Stats Grid with Additional Metrics -->
+                <div class="stats-grid" id="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Family Members</div>
+                        <div class="stat-value primary" id="total-members-stat">0</div>
+                        <div class="stat-change neutral">Active portfolios managed</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-label">Total Assets</div>
+                        <div class="stat-value positive" id="total-assets-stat">₹0</div>
+                        <div class="stat-change positive" id="assets-change">Across all investments</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-label">Total Liabilities</div>
+                        <div class="stat-value negative" id="total-liabilities-stat">₹0</div>
+                        <div class="stat-change negative" id="liabilities-change">Outstanding debt</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-label">Net Worth</div>
+                        <div class="stat-value" id="net-worth-stat">₹0</div>
+                        <div class="stat-change" id="net-worth-change">Family portfolio value</div>
+                    </div>
+                    
+                    <!-- Enhanced FD Tracking -->
+                    <div class="stat-card">
+                        <div class="stat-label">Fixed Deposits 🏦</div>
+                        <div class="stat-value primary" id="fd-total-stat">₹0</div>
+                        <div class="stat-change neutral" id="fd-count-stat">0 FDs tracked</div>
+                    </div>
+                    
+                    <!-- Enhanced Insurance Tracking -->
+                    <div class="stat-card">
+                        <div class="stat-label">Insurance Coverage 🛡️</div>
+                        <div class="stat-value primary" id="insurance-total-stat">₹0</div>
+                        <div class="stat-change neutral" id="insurance-count-stat">0 policies active</div>
+                    </div>
+                    
+                    <!-- Account Security Status -->
+                    <div class="stat-card">
+                        <div class="stat-label">Secure Accounts 🔐</div>
+                        <div class="stat-value primary" id="secure-accounts-stat">0</div>
+                        <div class="stat-change neutral" id="credentials-status">Credential protection active</div>
+                    </div>
+                    
+                    <!-- Investment Performance -->
+                    <div class="stat-card">
+                        <div class="stat-label">Portfolio Performance</div>
+                        <div class="stat-value" id="portfolio-performance-stat">0%</div>
+                        <div class="stat-change" id="performance-trend">Overall return</div>
                     </div>
                 </div>
-                <div id="member-details-content">
-                    <!-- Member details will be populated by JavaScript -->
-                </div>
-            </div>
 
-            <!-- Investment Portfolio Section -->
-            <div class="section">
-                <div class="section-header">
-                    <h2 class="section-title">📈 Investment Portfolio</h2>
-                    <div class="section-actions">
-                        <button onclick="openAddInvestmentModal()" class="btn">➕ Add Investment</button>
-                        <button onclick="exportInvestments('csv')" class="btn">📊 Export CSV</button>
-                        <button onclick="exportInvestments('json')" class="btn">📋 Export JSON</button>
-                    </div>
+                <!-- Quick Actions Panel -->
+                <div class="section-title">
+                    <h3>⚡ Quick Actions</h3>
+                    <p>Frequently used actions for efficient portfolio management</p>
                 </div>
-                <div class="section-content">
-                    <div class="tabs">
-                        <div class="tab active" onclick="renderInvestmentTabContent('equity')">Equity</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('mutualFunds')">Mutual Funds</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('fixedDeposits')">Fixed Deposits</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('insurance')">Insurance</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('bankBalances')">Bank Balances</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('others')">Others</div>
-                    </div>
 
-                    <div id="investment-tab-content" class="tab-content">
-                        <!-- Investment content will be populated by JavaScript -->
+                <div class="quick-actions-grid">
+                    <div class="quick-action-card">
+                        <div class="action-icon">🏦</div>
+                        <h4>Add Fixed Deposit</h4>
+                        <p>Track new FD with enhanced features</p>
+                        <button onclick="openAddInvestmentModal('fixedDeposits')" class="btn btn--primary btn--sm">
+                            Add FD
+                        </button>
+                    </div>
+                    
+                    <div class="quick-action-card">
+                        <div class="action-icon">🛡️</div>
+                        <h4>Add Insurance</h4>
+                        <p>Register new insurance policy</p>
+                        <button onclick="openAddInvestmentModal('insurance')" class="btn btn--primary btn--sm">
+                            Add Policy
+                        </button>
+                    </div>
+                    
+                    <div class="quick-action-card">
+                        <div class="action-icon">🔐</div>
+                        <h4>Add Account</h4>
+                        <p>Secure account with credentials</p>
+                        <button onclick="openAddAccountModal()" class="btn btn--primary btn--sm">
+                            Add Account
+                        </button>
+                    </div>
+                    
+                    <div class="quick-action-card">
+                        <div class="action-icon">👨‍👩‍👧‍👦</div>
+                        <h4>Add Family Member</h4>
+                        <p>Expand family portfolio</p>
+                        <button onclick="openAddMemberModal()" class="btn btn--primary btn--sm">
+                            Add Member
+                        </button>
+                    </div>
+                    
+                    <div class="quick-action-card">
+                        <div class="action-icon">🔔</div>
+                        <h4>Add Reminder</h4>
+                        <p>Set financial reminders</p>
+                        <button onclick="openAddReminderModal()" class="btn btn--primary btn--sm">
+                            Add Reminder
+                        </button>
+                    </div>
+                    
+                    <div class="quick-action-card">
+                        <div class="action-icon">📊</div>
+                        <h4>View Analytics</h4>
+                        <p>Detailed portfolio analysis</p>
+                        <button onclick="showSection('analytics-section')" class="btn btn--secondary btn--sm">
+                            View Analytics
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Liabilities Section -->
-            <div class="section">
-                <div class="section-header">
-                    <h2 class="section-title">📉 Liabilities</h2>
-                    <div class="section-actions">
-                        <button onclick="openAddLiabilityModal()" class="btn">➕ Add Liability</button>
-                        <button onclick="exportLiabilities('csv')" class="btn">📊 Export CSV</button>
-                        <button onclick="exportLiabilities('json')" class="btn">📋 Export JSON</button>
-                    </div>
+                <!-- Enhanced Family Members Overview -->
+                <div class="section-title">
+                    <h3>👨‍👩‍👧‍👦 Family Members Overview</h3>
+                    <p>Quick overview of family members and their financial status with enhanced tracking</p>
                 </div>
-                <div class="section-content">
-                    <div class="tabs">
-                        <div class="tab active" onclick="renderLiabilityTabContent('homeLoan')">Home Loan</div>
-                        <div class="tab" onclick="renderLiabilityTabContent('personalLoan')">Personal Loan</div>
-                        <div class="tab" onclick="renderLiabilityTabContent('creditCard')">Credit Card</div>
-                        <div class="tab" onclick="renderLiabilityTabContent('other')">Other</div>
-                    </div>
 
-                    <div id="liability-tab-content" class="tab-content">
-                        <!-- Liability content will be populated by JavaScript -->
-                    </div>
+                <div class="members-grid" id="family-members-overview-grid">
+                    <!-- Family members will be populated by JavaScript -->
                 </div>
-            </div>
 
-            <!-- Accounts Section -->
-            <div class="section">
-                <div class="section-header">
-                    <h2 class="section-title">🏦 Account Management</h2>
-                    <div class="section-actions">
-                        <button onclick="openAddAccountModal()" class="btn">➕ Add Account</button>
-                        <button onclick="exportAccounts('csv')" class="btn">📊 Export CSV</button>
-                        <button onclick="exportAccounts('json')" class="btn">📋 Export JSON</button>
+                <!-- Recent Activity Dashboard -->
+                <div class="section-title">
+                    <h3>📈 Recent Activity</h3>
+                    <p>Latest updates, transactions, and important reminders</p>
+                </div>
+
+                <div class="recent-activity-container">
+                    <div class="activity-tabs">
+                        <button onclick="renderRecentActivity('all')" class="tab-btn active" data-activity="all">
+                            📊 All Activity
+                        </button>
+                        <button onclick="renderRecentActivity('investments')" class="tab-btn" data-activity="investments">
+                            📈 Investments
+                        </button>
+                        <button onclick="renderRecentActivity('accounts')" class="tab-btn" data-activity="accounts">
+                            🏦 Accounts
+                        </button>
+                        <button onclick="renderRecentActivity('reminders')" class="tab-btn" data-activity="reminders">
+                            🔔 Reminders
+                        </button>
+                    </div>
+                    
+                    <div class="recent-activity" id="recent-activity-content">
+                        <!-- Recent activity will be populated by JavaScript -->
                     </div>
                 </div>
-                <div class="section-content">
-                    <div class="table-responsive">
-                        <table class="data-table" id="accounts-table">
+
+                <!-- Enhanced Portfolio Summary -->
+                <div class="section-title">
+                    <h3>💼 Portfolio Distribution</h3>
+                    <p>Asset allocation across different investment types with enhanced categorization</p>
+                </div>
+
+                <div class="portfolio-distribution-grid">
+                    <div class="distribution-card">
+                        <div class="distribution-header">
+                            <h4>📊 Equity Investments</h4>
+                            <span class="distribution-percentage" id="equity-percentage">0%</span>
+                        </div>
+                        <div class="distribution-amount" id="equity-amount">₹0</div>
+                        <div class="distribution-count" id="equity-count">0 holdings</div>
+                    </div>
+                    
+                    <div class="distribution-card">
+                        <div class="distribution-header">
+                            <h4>📈 Mutual Funds</h4>
+                            <span class="distribution-percentage" id="mf-percentage">0%</span>
+                        </div>
+                        <div class="distribution-amount" id="mf-amount">₹0</div>
+                        <div class="distribution-count" id="mf-count">0 funds</div>
+                    </div>
+                    
+                    <div class="distribution-card">
+                        <div class="distribution-header">
+                            <h4>🏦 Fixed Deposits</h4>
+                            <span class="distribution-percentage" id="fd-percentage">0%</span>
+                        </div>
+                        <div class="distribution-amount" id="fd-amount">₹0</div>
+                        <div class="distribution-count" id="fd-count">0 FDs</div>
+                    </div>
+                    
+                    <div class="distribution-card">
+                        <div class="distribution-header">
+                            <h4>🛡️ Insurance</h4>
+                            <span class="distribution-percentage" id="insurance-percentage">0%</span>
+                        </div>
+                        <div class="distribution-amount" id="insurance-amount">₹0</div>
+                        <div class="distribution-count" id="insurance-count">0 policies</div>
+                    </div>
+                    
+                    <div class="distribution-card">
+                        <div class="distribution-header">
+                            <h4>💰 Bank Balances</h4>
+                            <span class="distribution-percentage" id="bank-percentage">0%</span>
+                        </div>
+                        <div class="distribution-amount" id="bank-amount">₹0</div>
+                        <div class="distribution-count" id="bank-count">0 accounts</div>
+                    </div>
+                    
+                    <div class="distribution-card">
+                        <div class="distribution-header">
+                            <h4>📦 Others</h4>
+                            <span class="distribution-percentage" id="others-percentage">0%</span>
+                        </div>
+                        <div class="distribution-amount" id="others-amount">₹0</div>
+                        <div class="distribution-count" id="others-count">0 items</div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Reminders Preview -->
+                <div class="section-title">
+                    <h3>🔔 Upcoming Important Dates</h3>
+                    <p>Critical dates and reminders requiring attention</p>
+                </div>
+
+                <div class="upcoming-reminders-container" id="upcoming-reminders">
+                    <!-- Upcoming reminders will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Enhanced Family Management Section -->
+            <section id="family-section" class="dashboard-section">
+                <div class="family-management-header">
+                    <div>
+                        <h2>👨‍👩‍👧‍👦 Family Members Management</h2>
+                        <p>Comprehensive management of family members and their individual financial portfolios</p>
+                    </div>
+                    <div class="header-actions">
+                        <div class="view-toggle">
+                            <button onclick="toggleFamilyView('card')" class="btn btn--secondary active" id="card-view-btn">
+                                🗃️ Card View
+                            </button>
+                            <button onclick="toggleFamilyView('table')" class="btn btn--secondary" id="table-view-btn">
+                                📋 Table View
+                            </button>
+                        </div>
+                        <button onclick="exportFamilyMembers()" class="btn btn--secondary">
+                            📥 Export Members
+                        </button>
+                        <button onclick="openAddMemberModal()" class="btn btn--primary">
+                            + Add Family Member
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Family Statistics Summary -->
+                <div class="family-stats-summary">
+                    <div class="family-stat-item">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-details">
+                            <strong id="total-family-members">0</strong>
+                            <small>Family Members</small>
+                        </div>
+                    </div>
+                    <div class="family-stat-item">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-details">
+                            <strong id="total-family-investments">0</strong>
+                            <small>Total Investments</small>
+                        </div>
+                    </div>
+                    <div class="family-stat-item">
+                        <div class="stat-icon">🏦</div>
+                        <div class="stat-details">
+                            <strong id="total-family-accounts">0</strong>
+                            <small>Total Accounts</small>
+                        </div>
+                    </div>
+                    <div class="family-stat-item">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-details">
+                            <strong id="total-family-worth">₹0</strong>
+                            <small>Combined Net Worth</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Family Card View -->
+                <div id="family-card-view" class="family-card-view">
+                    <div class="family-management-grid" id="family-members-detailed-grid">
+                        <!-- Enhanced family member cards will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Enhanced Family Table View -->
+                <div id="family-table-view" class="family-list-view" style="display: none;">
+                    <div class="table-controls">
+                        <div class="search-filter">
+                            <input type="text" id="family-search" class="form-control" placeholder="Search family members..." onkeyup="filterFamilyTable()">
+                        </div>
+                        <div class="sort-controls">
+                            <select id="family-sort" class="form-control" onchange="sortFamilyTable()">
+                                <option value="name">Sort by Name</option>
+                                <option value="relationship">Sort by Relationship</option>
+                                <option value="assets">Sort by Assets</option>
+                                <option value="networth">Sort by Net Worth</option>
+                                <option value="created">Sort by Date Added</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="family-table-container">
+                        <table class="family-table">
                             <thead>
                                 <tr>
-                                    <th onclick="sortTable('accounts-table', 0)">Account Type <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 1)">Institution <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 2)">Account Number <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 3)">Holder <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 4)">Nominee <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 5)">Status <span class="sort-indicator"></span></th>
+                                    <th onclick="sortFamilyTable('photo')">Photo</th>
+                                    <th onclick="sortFamilyTable('name')">Name <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortFamilyTable('relationship')">Relationship <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortFamilyTable('contact')">Contact Info</th>
+                                    <th onclick="sortFamilyTable('assets')">Assets <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortFamilyTable('liabilities')">Liabilities <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortFamilyTable('networth')">Net Worth <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortFamilyTable('investments')">Portfolio Summary</th>
+                                    <th onclick="sortFamilyTable('accounts')">Accounts</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="accounts-table-body">
-                                <!-- Accounts will be populated by JavaScript -->
+                            <tbody id="family-table-body">
+                                <!-- Enhanced table rows will be populated by JavaScript -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Import Section -->
-            <div class="section">
+            <!-- Enhanced Investment Portfolio Section -->
+            <section id="investments-section" class="dashboard-section">
                 <div class="section-header">
-                    <h2 class="section-title">📥 Import Data</h2>
+                    <div>
+                        <h2>📈 Investment Portfolio Management</h2>
+                        <p>Comprehensive investment tracking with enhanced Fixed Deposit and Insurance management</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="openAddInvestmentModal()" class="btn btn--primary">
+                            + Add Investment
+                        </button>
+                        <button onclick="openBulkInvestmentImport()" class="btn btn--secondary">
+                            📤 Bulk Import
+                        </button>
+                        <button onclick="exportInvestments()" class="btn btn--secondary">
+                            📥 Export Portfolio
+                        </button>
+                        <button onclick="generateInvestmentReport()" class="btn btn--secondary">
+                            📊 Generate Report
+                        </button>
+                    </div>
                 </div>
-                <div class="section-content">
-                    <div class="import-section">
-                        <h3>📥 Bulk Import Financial Data</h3>
-                        <p>Import your financial data from CSV files to quickly populate your dashboard</p>
-                        <div class="import-buttons">
-                            <button onclick="openImportModal('investments')" class="btn btn-primary">📊 Import Investments</button>
-                            <button onclick="openImportModal('liabilities')" class="btn btn-primary">📉 Import Liabilities</button>
-                            <button onclick="openImportModal('accounts')" class="btn btn-primary">🏦 Import Accounts</button>
+
+                <!-- Enhanced Investment Type Tabs -->
+                <div class="investment-tabs">
+                    <button onclick="renderInvestmentTabContent('equity')" class="tab-btn active" data-type="equity">
+                        📊 Equity
+                        <span class="tab-count" id="equity-tab-count">0</span>
+                    </button>
+                    <button onclick="renderInvestmentTabContent('mutualFunds')" class="tab-btn" data-type="mutualFunds">
+                        📈 Mutual Funds
+                        <span class="tab-count" id="mf-tab-count">0</span>
+                    </button>
+                    <button onclick="renderInvestmentTabContent('fixedDeposits')" class="tab-btn" data-type="fixedDeposits">
+                        🏦 Fixed Deposits
+                        <span class="tab-count" id="fd-tab-count">0</span>
+                    </button>
+                    <button onclick="renderInvestmentTabContent('insurance')" class="tab-btn" data-type="insurance">
+                        🛡️ Insurance
+                        <span class="tab-count" id="insurance-tab-count">0</span>
+                    </button>
+                    <button onclick="renderInvestmentTabContent('bankBalances')" class="tab-btn" data-type="bankBalances">
+                        💰 Bank Balances
+                        <span class="tab-count" id="bank-tab-count">0</span>
+                    </button>
+                    <button onclick="renderInvestmentTabContent('others')" class="tab-btn" data-type="others">
+                        📦 Others
+                        <span class="tab-count" id="others-tab-count">0</span>
+                    </button>
+                </div>
+
+                <!-- Investment Type Summary -->
+                <div class="investment-summary-panel" id="investment-summary-panel">
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <div class="summary-label">Total Investments</div>
+                            <div class="summary-value" id="current-type-count">0</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Total Invested</div>
+                            <div class="summary-value" id="current-type-invested">₹0</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Current Value</div>
+                            <div class="summary-value" id="current-type-value">₹0</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Total Gain/Loss</div>
+                            <div class="summary-value" id="current-type-gain">₹0</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Return %</div>
+                            <div class="summary-value" id="current-type-return">0%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Enhanced Type-Specific Insights -->
+                    <div class="type-specific-insights" id="type-specific-insights">
+                        <!-- Type-specific information will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Enhanced Investment Table with Advanced Features -->
+                <div class="investment-table-container">
+                    <div class="table-controls">
+                        <div class="search-filter">
+                            <input type="text" id="investment-search" class="form-control" placeholder="Search investments..." onkeyup="filterInvestmentTable()">
+                        </div>
+                        <div class="filter-controls">
+                            <select id="member-filter" class="form-control" onchange="filterInvestmentTable()">
+                                <option value="">All Members</option>
+                                <!-- Options populated by JavaScript -->
+                            </select>
+                            <select id="platform-filter" class="form-control" onchange="filterInvestmentTable()">
+                                <option value="">All Platforms</option>
+                                <!-- Options populated by JavaScript -->
+                            </select>
+                            <select id="performance-filter" class="form-control" onchange="filterInvestmentTable()">
+                                <option value="">All Performance</option>
+                                <option value="positive">Profit Only</option>
+                                <option value="negative">Loss Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="investment-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th onclick="sortInvestmentTable('name')">Name <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortInvestmentTable('member')">Member <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortInvestmentTable('invested')">Invested Amount <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortInvestmentTable('current')">Current Value <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortInvestmentTable('gain')">Gain/Loss <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortInvestmentTable('platform')">Platform <span class="sort-indicator">↕️</span></th>
+                                    <th onclick="sortInvestmentTable('date')">Added On <span class="sort-indicator">↕️</span></th>
+                                    <th>Enhanced Details</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="investment-table-body">
+                                <!-- Enhanced investment data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Investment Performance Chart Placeholder -->
+                <div class="investment-charts-section">
+                    <h3>📊 Investment Performance Trends</h3>
+                    <div class="charts-container">
+                        <div class="chart-card">
+                            <h4>Portfolio Growth</h4>
+                            <div class="chart-placeholder" id="portfolio-growth-chart">
+                                Chart will be implemented with Chart.js
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h4>Asset Allocation</h4>
+                            <div class="chart-placeholder" id="asset-allocation-chart">
+                                Pie chart will be implemented
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Complete Family Data Export -->
-            <div class="section">
+            <!-- Enhanced Liabilities Management Section -->
+            <section id="liabilities-section" class="dashboard-section">
                 <div class="section-header">
-                    <h2 class="section-title">📋 Complete Family Data Export</h2>
-                </div>
-                <div class="section-content">
-                    <p style="color: #718096; margin-bottom: 20px;">
-                        Export complete family financial data including all members, investments, liabilities, and
-                        accounts.
-                    </p>
-                    <div class="export-buttons">
-                        <button onclick="exportFamilyData('csv')" class="btn btn-export">📊 Export Family Data (CSV)</button>
-                        <button onclick="exportFamilyData('json')" class="btn btn-export">📋 Export Family Data (JSON)</button>
+                    <div>
+                        <h2>📉 Liabilities Management</h2>
+                        <p>Comprehensive debt tracking and EMI management with automated calculations</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="openAddLiabilityModal()" class="btn btn--primary">
+                            + Add Liability
+                        </button>
+                        <button onclick="exportLiabilities()" class="btn btn--secondary">
+                            📥 Export Liabilities
+                        </button>
+                        <button onclick="generateLiabilityReport()" class="btn btn--secondary">
+                            📊 EMI Calendar
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Last Updated -->
-            <div class="last-updated">
-                Data last synchronized: <span id="last-updated-display">Loading...</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== MODALS ===== -->
-
-    <!-- Family Member Modal -->
-    <div id="member-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="member-modal-title" class="modal-title">Add Family Member</h3>
-                <button onclick="closeModal('member-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="member-form" onsubmit="event.preventDefault(); saveMember();">
-                    <div class="form-group">
-                        <label for="member-name" class="form-label">Full Name *</label>
-                        <input type="text" id="member-name" class="form-input" placeholder="Enter full name" required />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="member-relationship" class="form-label">Relationship *</label>
-                        <select id="member-relationship" class="form-input" required>
-                            <option value="">Select Relationship</option>
-                            <option value="Self">Self</option>
-                            <option value="Spouse">Spouse</option>
-                            <option value="Father">Father</option>
-                            <option value="Mother">Mother</option>
-                            <option value="Son">Son</option>
-                            <option value="Daughter">Daughter</option>
-                            <option value="Brother">Brother</option>
-                            <option value="Sister">Sister</option>
-                            <option value="Grandfather">Grandfather</option>
-                            <option value="Grandmother">Grandmother</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="member-is-primary" />
-                        <label for="member-is-primary">Primary Account Holder</label>
-                    </div>
-                </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('member-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveMember()" class="btn btn-primary">Save Member</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Photo Upload Modal -->
-    <div id="photo-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Change Profile Photo</h3>
-                <button onclick="closeModal('photo-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom: 15px;">Choose from preset photos:</h4>
-                <div id="preset-photos-grid" class="photo-grid">
-                    <!-- Preset photos will be populated by JavaScript -->
+                <!-- Enhanced Liability Type Tabs -->
+                <div class="investment-tabs">
+                    <button onclick="renderLiabilityTabContent('homeLoan')" class="tab-btn active" data-type="homeLoan">
+                        🏠 Home Loan
+                        <span class="tab-count" id="home-loan-count">0</span>
+                    </button>
+                    <button onclick="renderLiabilityTabContent('personalLoan')" class="tab-btn" data-type="personalLoan">
+                        👤 Personal Loan
+                        <span class="tab-count" id="personal-loan-count">0</span>
+                    </button>
+                    <button onclick="renderLiabilityTabContent('creditCard')" class="tab-btn" data-type="creditCard">
+                        💳 Credit Card
+                        <span class="tab-count" id="credit-card-count">0</span>
+                    </button>
+                    <button onclick="renderLiabilityTabContent('carLoan')" class="tab-btn" data-type="carLoan">
+                        🚗 Car Loan
+                        <span class="tab-count" id="car-loan-count">0</span>
+                    </button>
+                    <button onclick="renderLiabilityTabContent('educationLoan')" class="tab-btn" data-type="educationLoan">
+                        🎓 Education Loan
+                        <span class="tab-count" id="education-loan-count">0</span>
+                    </button>
+                    <button onclick="renderLiabilityTabContent('other')" class="tab-btn" data-type="other">
+                        📦 Other
+                        <span class="tab-count" id="other-liability-count">0</span>
+                    </button>
                 </div>
 
-                <div class="upload-area" onclick="document.getElementById('photo-upload').click()">
-                    <div style="margin-bottom: 10px;">📸 Upload Custom Photo</div>
-                    <div style="font-size: 0.9rem; color: #666;">
-                        Click to select image file (JPG, PNG, GIF)<br>
-                        Max size: 5MB
+                <!-- Liability Summary Panel -->
+                <div class="liability-summary-panel" id="liability-summary-panel">
+                    <div class="summary-stats">
+                        <div class="summary-stat">
+                            <div class="summary-label">Total Outstanding</div>
+                            <div class="summary-value negative" id="current-liability-outstanding">₹0</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Monthly EMI</div>
+                            <div class="summary-value" id="current-liability-emi">₹0</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Average Interest</div>
+                            <div class="summary-value" id="current-liability-rate">0%</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="summary-label">Est. Payoff Time</div>
+                            <div class="summary-value" id="current-liability-payoff">0 months</div>
+                        </div>
                     </div>
-                    <input type="file" id="photo-upload" accept="image/*" style="display: none" onchange="handlePhotoUpload(event)" />
                 </div>
 
-                <div class="modal-actions">
-                    <button onclick="closeModal('photo-modal')" class="btn btn-secondary">Cancel</button>
-                    <button onclick="savePhoto()" class="btn btn-primary">Save Photo</button>
+                <!-- Enhanced Liability Table -->
+                <div class="investment-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortLiabilityTable('lender')">Lender <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortLiabilityTable('member')">Member <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortLiabilityTable('outstanding')">Outstanding Amount <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortLiabilityTable('emi')">Monthly EMI <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortLiabilityTable('rate')">Interest Rate <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortLiabilityTable('start')">Start Date <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortLiabilityTable('end')">End Date <span class="sort-indicator">↕️</span></th>
+                                <th>EMI Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liability-table-body">
+                            <!-- Enhanced liability data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-        </div>
-    </div>
+            </section>
 
-    <!-- Investment Modal -->
-    <div id="investment-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="investment-modal-title" class="modal-title">Add Investment</h3>
-                <button onclick="closeModal('investment-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="investment-form" onsubmit="event.preventDefault(); saveInvestment();">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="investment-member" class="form-label">Family Member *</label>
-                            <select id="investment-member" class="form-input" required>
-                                <!-- Options will be populated by JavaScript -->
+            <!-- Enhanced Account Management Section -->
+            <section id="accounts-section" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h2>🏦 Enhanced Account Management</h2>
+                        <p>Secure account management with credential protection and comprehensive tracking</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="openAddAccountModal()" class="btn btn--primary">
+                            + Add Account
+                        </button>
+                        <button onclick="exportAccounts()" class="btn btn--secondary">
+                            📥 Export Accounts
+                        </button>
+                        <button onclick="testAccountConnections()" class="btn btn--secondary">
+                            🔗 Test Connections
+                        </button>
+                        <button onclick="generateAccountReport()" class="btn btn--secondary">
+                            📊 Account Report
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Account Security Status -->
+                <div class="security-status-panel" id="security-status-panel">
+                    <div class="security-indicator">
+                        <div class="security-icon">🔐</div>
+                        <div class="security-details">
+                            <h4>Credential Access Status</h4>
+                            <p id="credential-access-status">Checking access level...</p>
+                        </div>
+                        <div class="security-actions">
+                            <button onclick="togglePasswordVisibility()" class="btn btn--secondary btn--sm" id="password-visibility-btn">
+                                👁️ Show Passwords
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Account Statistics -->
+                <div class="account-stats-grid" id="account-stats-grid">
+                    <div class="account-stat-card">
+                        <div class="stat-icon">🏦</div>
+                        <div class="stat-details">
+                            <strong id="total-accounts-count">0</strong>
+                            <small>Total Accounts</small>
+                        </div>
+                    </div>
+                    <div class="account-stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-details">
+                            <strong id="active-accounts-count">0</strong>
+                            <small>Active Accounts</small>
+                        </div>
+                    </div>
+                    <div class="account-stat-card">
+                        <div class="stat-icon">🔐</div>
+                        <div class="stat-details">
+                            <strong id="secure-accounts-count">0</strong>
+                            <small>With Credentials</small>
+                        </div>
+                    </div>
+                    <div class="account-stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-details">
+                            <strong id="members-with-accounts">0</strong>
+                            <small>Members Covered</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Type Filter Tabs -->
+                <div class="investment-tabs">
+                    <button onclick="filterAccountsByType('all')" class="tab-btn active" data-type="all">
+                        📋 All Accounts
+                        <span class="tab-count" id="all-accounts-count">0</span>
+                    </button>
+                    <button onclick="filterAccountsByType('Bank Account')" class="tab-btn" data-type="Bank Account">
+                        🏦 Bank
+                        <span class="tab-count" id="bank-accounts-count">0</span>
+                    </button>
+                    <button onclick="filterAccountsByType('Demat Account')" class="tab-btn" data-type="Demat Account">
+                        📊 Demat
+                        <span class="tab-count" id="demat-accounts-count">0</span>
+                    </button>
+                    <button onclick="filterAccountsByType('Insurance Account')" class="tab-btn" data-type="Insurance Account">
+                        🛡️ Insurance
+                        <span class="tab-count" id="insurance-accounts-count">0</span>
+                    </button>
+                    <button onclick="filterAccountsByType('Trading Account')" class="tab-btn" data-type="Trading Account">
+                        💹 Trading
+                        <span class="tab-count" id="trading-accounts-count">0</span>
+                    </button>
+                </div>
+
+                <!-- Enhanced Account Table with Credential Protection -->
+                <div class="investment-table">
+                    <div class="table-controls">
+                        <div class="search-filter">
+                            <input type="text" id="account-search" class="form-control" placeholder="Search accounts..." onkeyup="filterAccountTable()">
+                        </div>
+                        <div class="filter-controls">
+                            <select id="account-holder-filter" class="form-control" onchange="filterAccountTable()">
+                                <option value="">All Holders</option>
+                                <!-- Options populated by JavaScript -->
                             </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="investment-type" class="form-label">Investment Type *</label>
-                            <select
-                                id="investment-type"
-                                class="form-input"
-                                onchange="updateInvestmentForm()"
-                                required
-                            >
-                                <option value="">Select Type</option>
-                                <option value="equity">Equity</option>
-                                <option value="mutualFunds">Mutual Funds</option>
-                                <option value="fixedDeposits">Fixed Deposits</option>
-                                <option value="insurance">Insurance</option>
-                                <option value="bankBalances">Bank Balances</option>
-                                <option value="others">Others</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="investment-name" class="form-label">Investment Name *</label>
-                        <input
-                            type="text"
-                            id="investment-name"
-                            class="form-input"
-                            placeholder="e.g., HDFC Bank, SBI FD, LIC Policy"
-                            required
-                        />
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="investment-amount" class="form-label">Invested Amount (₹) *</label>
-                            <input
-                                type="number"
-                                id="investment-amount"
-                                class="form-input"
-                                step="0.01"
-                                placeholder="Enter amount"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="investment-current-value" class="form-label">Current Value (₹)</label>
-                            <input
-                                type="number"
-                                id="investment-current-value"
-                                class="form-input"
-                                step="0.01"
-                                placeholder="Current market value"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="investment-platform" class="form-label">Platform/Broker</label>
-                        <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct" />
-                    </div>
-
-                    <!-- Fixed Deposit Fields -->
-                    <div class="fixed-deposit-fields conditional-fields">
-                        <h4>Fixed Deposit Details</h4>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fd-bank-name" class="form-label">Bank Name</label>
-                                <input type="text" id="fd-bank-name" class="form-input" placeholder="e.g., SBI, HDFC" />
-                            </div>
-                            <div class="form-group">
-                                <label for="fd-interest-rate" class="form-label">Interest Rate (%)</label>
-                                <input type="number" id="fd-interest-rate" class="form-input" step="0.01" placeholder="e.g., 6.75" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fd-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="fd-start-date" class="form-input" />
-                            </div>
-                            <div class="form-group">
-                                <label for="fd-maturity-date" class="form-label">Maturity Date</label>
-                                <input type="date" id="fd-maturity-date" class="form-input" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fd-interest-payout" class="form-label">Interest Payout</label>
-                                <select id="fd-interest-payout" class="form-input">
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Half-yearly">Half-yearly</option>
-                                    <option value="Yearly" selected>Yearly</option>
-                                    <option value="On Maturity">On Maturity</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="fd-account-number" class="form-label">Account Number</label>
-                                <input type="text" id="fd-account-number" class="form-input" placeholder="FD Account Number" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fd-nominee" class="form-label">Nominee</label>
-                                <input type="text" id="fd-nominee" class="form-input" placeholder="Nominee name" />
-                            </div>
-                            <div class="form-group">
-                                <label for="fd-comments" class="form-label">Comments</label>
-                                <input type="text" id="fd-comments" class="form-input" placeholder="Additional notes" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Insurance Fields -->
-                    <div class="insurance-fields conditional-fields">
-                        <h4>Insurance Policy Details</h4>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-sum-insured" class="form-label">Sum Insured (₹)</label>
-                                <input type="number" id="insurance-sum-insured" class="form-input" step="0.01" placeholder="Coverage amount" />
-                            </div>
-                            <div class="form-group">
-                                <label for="insurance-maturity-amount" class="form-label">Maturity Amount (₹)</label>
-                                <input type="number" id="insurance-maturity-amount" class="form-input" step="0.01" placeholder="Maturity value" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-premium" class="form-label">Premium Amount (₹)</label>
-                                <input type="number" id="insurance-premium" class="form-input" step="0.01" placeholder="Annual/Monthly premium" />
-                            </div>
-                            <div class="form-group">
-                                <label for="insurance-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="insurance-start-date" class="form-input" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-maturity-date" class="form-label">Maturity Date</label>
-                                <input type="date" id="insurance-maturity-date" class="form-input" />
-                            </div>
-                            <div class="form-group">
-                                <label for="insurance-next-premium" class="form-label">Next Premium Due</label>
-                                <input type="date" id="insurance-next-premium" class="form-input" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Bank Balance Fields -->
-                    <div class="bank-balance-fields conditional-fields">
-                        <h4>Bank Balance Details</h4>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="bank-current-balance" class="form-label">Current Balance (₹)</label>
-                                <input type="number" id="bank-current-balance" class="form-input" step="0.01" placeholder="Current account balance" />
-                            </div>
-                            <div class="form-group">
-                                <label for="bank-as-of-date" class="form-label">As of Date</label>
-                                <input type="date" id="bank-as-of-date" class="form-input" />
-                            </div>
-                        </div>
-                    </div>
-                </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('investment-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveInvestment()" class="btn btn-primary">Save Investment</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Liability Modal -->
-    <div id="liability-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="liability-modal-title" class="modal-title">Add Liability</h3>
-                <button onclick="closeModal('liability-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="liability-form" onsubmit="event.preventDefault(); saveLiability();">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="liability-member" class="form-label">Family Member *</label>
-                            <select id="liability-member" class="form-input" required>
-                                <!-- Options will be populated by JavaScript -->
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="liability-type" class="form-label">Liability Type *</label>
-                            <select id="liability-type" class="form-input" required>
-                                <option value="">Select Type</option>
-                                <option value="homeLoan">Home Loan</option>
-                                <option value="personalLoan">Personal Loan</option>
-                                <option value="creditCard">Credit Card</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="liability-lender" class="form-label">Lender/Bank *</label>
-                        <input
-                            type="text"
-                            id="liability-lender"
-                            class="form-input"
-                            placeholder="e.g., HDFC Bank, SBI"
-                            required
-                        />
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="liability-amount" class="form-label">Outstanding Amount (₹) *</label>
-                            <input
-                                type="number"
-                                id="liability-amount"
-                                class="form-input"
-                                step="0.01"
-                                placeholder="Enter amount"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="liability-emi" class="form-label">EMI Amount (₹)</label>
-                            <input type="number" id="liability-emi" class="form-input" step="0.01" placeholder="Monthly EMI" />
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="liability-rate" class="form-label">Interest Rate (%)</label>
-                        <input type="number" id="liability-rate" class="form-input" step="0.01" placeholder="e.g., 8.5" />
-                    </div>
-                </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('liability-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveLiability()" class="btn btn-primary">Save Liability</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Account Modal -->
-    <div id="account-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="account-modal-title" class="modal-title">Add Account</h3>
-                <button onclick="closeModal('account-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="account-form" onsubmit="event.preventDefault(); saveAccount();">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="account-type" class="form-label">Account Type *</label>
-                            <select id="account-type" class="form-input" required>
-                                <option value="">Select Type</option>
-                                <option value="Savings Account">Savings Account</option>
-                                <option value="Current Account">Current Account</option>
-                                <option value="Fixed Deposit">Fixed Deposit</option>
-                                <option value="Recurring Deposit">Recurring Deposit</option>
-                                <option value="PPF">PPF</option>
-                                <option value="EPF">EPF</option>
-                                <option value="NPS">NPS</option>
-                                <option value="Demat Account">Demat Account</option>
-                                <option value="Trading Account">Trading Account</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="account-institution" class="form-label">Institution *</label>
-                            <input type="text" id="account-institution" class="form-input" placeholder="Bank/Institution name" required />
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="account-number" class="form-label">Account Number *</label>
-                            <input type="text" id="account-number" class="form-input" placeholder="Account number" required />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="account-holder" class="form-label">Account Holder *</label>
-                            <select id="account-holder" class="form-input" required>
-                                <!-- Options will be populated by JavaScript -->
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="account-nominee" class="form-label">Nominee</label>
-                            <select id="account-nominee" class="form-input">
-                                <!-- Options will be populated by JavaScript -->
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="account-status" class="form-label">Status</label>
-                            <select id="account-status" class="form-input">
+                            <select id="account-status-filter" class="form-control" onchange="filterAccountTable()">
+                                <option value="">All Status</option>
                                 <option value="Active">Active</option>
                                 <option value="Inactive">Inactive</option>
                                 <option value="Closed">Closed</option>
@@ -1611,44 +1310,624 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="account-comments" class="form-label">Comments</label>
-                        <input type="text" id="account-comments" class="form-input" placeholder="Additional notes" />
-                    </div>
-                </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('account-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveAccount()" class="btn btn-primary">Save Account</button>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th onclick="sortAccountTable('type')">Account Type <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortAccountTable('institution')">Institution <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortAccountTable('number')">Account Number <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortAccountTable('holder')">Account Holder <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortAccountTable('nominee')">Nominee <span class="sort-indicator">↕️</span></th>
+                                <th onclick="sortAccountTable('status')">Status <span class="sort-indicator">↕️</span></th>
+                                <th>Credentials 🔐</th>
+                                <th>Comments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-table-body">
+                            <!-- Enhanced account data with credential protection will be populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            </section>
+
+            <!-- Enhanced Reminders Section -->
+            <section id="reminders-section" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h2>🔔 Smart Reminders & Alerts</h2>
+                        <p>Automated reminders for financial activities with enhanced tracking</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="openAddReminderModal()" class="btn btn--primary">
+                            + Add Reminder
+                        </button>
+                        <button onclick="markAllAsRead()" class="btn btn--secondary">
+                            ✅ Mark All Read
+                        </button>
+                        <button onclick="generateReminderCalendar()" class="btn btn--secondary">
+                            📅 Calendar View
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reminder Status Tabs -->
+                <div class="reminder-tabs">
+                    <button onclick="renderReminderTab('pending')" class="tab-btn active" data-type="pending">
+                        ⏰ Pending
+                        <span class="tab-count" id="pending-reminders-count">0</span>
+                    </button>
+                    <button onclick="renderReminderTab('today')" class="tab-btn" data-type="today">
+                        📅 Today
+                        <span class="tab-count" id="today-reminders-count">0</span>
+                    </button>
+                    <button onclick="renderReminderTab('overdue')" class="tab-btn" data-type="overdue">
+                        🚨 Overdue
+                        <span class="tab-count" id="overdue-reminders-count">0</span>
+                    </button>
+                    <button onclick="renderReminderTab('completed')" class="tab-btn" data-type="completed">
+                        ✅ Completed
+                        <span class="tab-count" id="completed-reminders-count">0</span>
+                    </button>
+                    <button onclick="renderReminderTab('upcoming')" class="tab-btn" data-type="upcoming">
+                        📈 Upcoming
+                        <span class="tab-count" id="upcoming-reminders-count">0</span>
+                    </button>
+                </div>
+
+                <!-- Reminder Type Filters -->
+                <div class="reminder-type-filters">
+                    <button onclick="filterRemindersByType('all')" class="filter-btn active" data-filter="all">
+                        📋 All Types
+                    </button>
+                    <button onclick="filterRemindersByType('insurance')" class="filter-btn" data-filter="insurance">
+                        🛡️ Insurance
+                    </button>
+                    <button onclick="filterRemindersByType('fd_maturity')" class="filter-btn" data-filter="fd_maturity">
+                        🏦 FD Maturity
+                    </button>
+                    <button onclick="filterRemindersByType('loan_payment')" class="filter-btn" data-filter="loan_payment">
+                        💳 Loan Payments
+                    </button>
+                    <button onclick="filterRemindersByType('tax_filing')" class="filter-btn" data-filter="tax_filing">
+                        📊 Tax Filing
+                    </button>
+                    <button onclick="filterRemindersByType('investment_review')" class="filter-btn" data-filter="investment_review">
+                        📈 Reviews
+                    </button>
+                </div>
+
+                <!-- Enhanced Reminders Container -->
+                <div class="reminders-container" id="reminders-container">
+                    <!-- Enhanced reminders will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Enhanced Analytics Section -->
+            <section id="analytics-section" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h2>📊 Advanced Analytics & Reports</h2>
+                        <p>Comprehensive financial analysis with enhanced insights and visualizations</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="generateComprehensiveReport()" class="btn btn--primary">
+                            📊 Generate Full Report
+                        </button>
+                        <button onclick="exportAnalytics()" class="btn btn--secondary">
+                            📥 Export Analytics
+                        </button>
+                        <button onclick="scheduleReports()" class="btn btn--secondary">
+                            ⏰ Schedule Reports
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analytics Navigation Tabs -->
+                <div class="analytics-tabs">
+                    <button onclick="renderAnalyticsTab('overview')" class="tab-btn active" data-type="overview">
+                        📈 Portfolio Overview
+                    </button>
+                    <button onclick="renderAnalyticsTab('performance')" class="tab-btn" data-type="performance">
+                        📊 Performance Analysis
+                    </button>
+                    <button onclick="renderAnalyticsTab('allocation')" class="tab-btn" data-type="allocation">
+                        🥧 Asset Allocation
+                    </button>
+                    <button onclick="renderAnalyticsTab('trends')" class="tab-btn" data-type="trends">
+                        📈 Trends & Patterns
+                    </button>
+                    <button onclick="renderAnalyticsTab('risk')" class="tab-btn" data-type="risk">
+                        ⚠️ Risk Analysis
+                    </button>
+                    <button onclick="renderAnalyticsTab('goals')" class="tab-btn" data-type="goals">
+                        🎯 Goal Tracking
+                    </button>
+                </div>
+
+                <!-- Analytics Content Container -->
+                <div class="analytics-content" id="analytics-content">
+                    <!-- Analytics content will be populated by JavaScript based on selected tab -->
+                </div>
+            </section>
+
+            <!-- Enhanced Import Section -->
+            <section id="import-section" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h2>📥 Enhanced Data Import</h2>
+                        <p>Import your financial data with support for enhanced FD, Insurance, and Account credentials</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="downloadAllTemplates()" class="btn btn--secondary">
+                            📋 Download All Templates
+                        </button>
+                        <button onclick="openBulkImportWizard()" class="btn btn--primary">
+                            🧙‍♂️ Import Wizard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import Options Grid -->
+                <div class="export-options">
+                    <!-- Enhanced Investment Import -->
+                    <div class="export-category">
+                        <h3>📈 Enhanced Investment Import</h3>
+                        <p>Import investments with enhanced Fixed Deposit and Insurance details including invested dates, comments, and comprehensive tracking fields</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">🏦 Enhanced FD fields: Invested date, comments, interest rates</div>
+                            <div class="feature-item">🛡️ Insurance details: Policy info, coverage notes, premiums</div>
+                            <div class="feature-item">📊 Complete equity data: Symbols, sectors, quantities</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="openImportModal('investments')" class="btn btn--primary">
+                                📤 Import Investments
+                            </button>
+                            <button onclick="downloadTemplate('investments')" class="btn btn--secondary">
+                                📋 Download Template
+                            </button>
+                            <button onclick="previewImportFormat('investments')" class="btn btn--secondary">
+                                👁️ Preview Format
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Account Import -->
+                    <div class="export-category">
+                        <h3>🏦 Secure Account Import</h3>
+                        <p>Import account data with credential information (password access restricted to authorized users)</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">🔐 Secure credential handling with access control</div>
+                            <div class="feature-item">👤 Username/password import for authorized users</div>
+                            <div class="feature-item">🌐 Website URLs and PIN management</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="openImportModal('accounts')" class="btn btn--primary">
+                                📤 Import Accounts
+                            </button>
+                            <button onclick="downloadTemplate('accounts')" class="btn btn--secondary">
+                                📋 Download Template
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Liability Import -->
+                    <div class="export-category">
+                        <h3>📉 Liability Import</h3>
+                        <p>Import comprehensive liability data with EMI tracking and interest calculations</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">💳 Complete loan information import</div>
+                            <div class="feature-item">📅 Start/end date tracking</div>
+                            <div class="feature-item">💰 EMI and interest rate calculations</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="openImportModal('liabilities')" class="btn btn--primary">
+                                📤 Import Liabilities
+                            </button>
+                            <button onclick="downloadTemplate('liabilities')" class="btn btn--secondary">
+                                📋 Download Template
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Family Members Import -->
+                    <div class="export-category">
+                        <h3>👨‍👩‍👧‍👦 Family Members Import</h3>
+                        <p>Import family member data with complete profile information and contact details</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">👥 Complete family profiles</div>
+                            <div class="feature-item">📞 Contact information management</div>
+                            <div class="feature-item">🆔 PAN and identity data</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="openImportModal('members')" class="btn btn--primary">
+                                📤 Import Members
+                            </button>
+                            <button onclick="downloadTemplate('members')" class="btn btn--secondary">
+                                📋 Download Template
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Reminders Import -->
+                    <div class="export-category">
+                        <h3>🔔 Reminders Import</h3>
+                        <p>Import financial reminders and alerts with priority and recurrence settings</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">⏰ Recurring reminder setup</div>
+                            <div class="feature-item">🎯 Priority-based categorization</div>
+                            <div class="feature-item">📅 Automated date scheduling</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="openImportModal('reminders')" class="btn btn--primary">
+                                📤 Import Reminders
+                            </button>
+                            <button onclick="downloadTemplate('reminders')" class="btn btn--secondary">
+                                📋 Download Template
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bulk Data Import -->
+                    <div class="export-category complete-backup">
+                        <h3>💾 Bulk Data Import</h3>
+                        <p>Import complete family data from previous exports or migrate from other systems</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">📦 Complete data restoration</div>
+                            <div class="feature-item">🔄 Data migration support</div>
+                            <div class="feature-item">✅ Validation and error checking</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="openBulkImportModal()" class="btn btn--primary btn--lg">
+                                📤 Bulk Import
+                            </button>
+                            <button onclick="validateImportData()" class="btn btn--secondary">
+                                ✅ Validate Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import Status and Progress -->
+                <div class="import-status-section" id="import-status-section" style="display: none;">
+                    <h3>📊 Import Progress</h3>
+                    <div class="import-progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="import-progress-fill"></div>
+                        </div>
+                        <div class="import-stats">
+                            <div class="import-stat">
+                                <strong id="import-processed">0</strong>
+                                <small>Processed</small>
+                            </div>
+                            <div class="import-stat">
+                                <strong id="import-success">0</strong>
+                                <small>Success</small>
+                            </div>
+                            <div class="import-stat">
+                                <strong id="import-errors">0</strong>
+                                <small>Errors</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="import-log" id="import-log">
+                        <!-- Import log messages will appear here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Enhanced Export Section -->
+            <section id="export-section" class="dashboard-section">
+                <div class="section-header">
+                    <div>
+                        <h2>📤 Enhanced Data Export</h2>
+                        <p>Export your financial data with enhanced FD details, insurance comments, and secure credential handling</p>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="scheduleAutoExports()" class="btn btn--secondary">
+                            ⏰ Schedule Auto Export
+                        </button>
+                        <button onclick="configureExportSettings()" class="btn btn--secondary">
+                            ⚙️ Export Settings
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Options Grid -->
+                <div class="export-options">
+                    <!-- Complete Family Data Export -->
+                    <div class="export-category complete-backup">
+                        <h3>💾 Complete Family Data Export</h3>
+                        <p>Export all family financial data including enhanced FD details, insurance comments, and secure credentials for comprehensive backup</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">📊 Complete portfolio export with enhanced tracking</div>
+                            <div class="feature-item">🔐 Secure credential export (authorized users only)</div>
+                            <div class="feature-item">💼 Professional report generation</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="exportFamilyData()" class="btn btn--primary btn--lg">
+                                💾 Export Complete Data
+                            </button>
+                            <button onclick="exportFamilyDataPDF()" class="btn btn--secondary">
+                                📄 Export as PDF Report
+                            </button>
+                            <button onclick="exportFamilyDataExcel()" class="btn btn--secondary">
+                                📊 Export as Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Investment Export -->
+                    <div class="export-category">
+                        <h3>📈 Enhanced Investment Export</h3>
+                        <p>Export investment portfolio with enhanced Fixed Deposit and Insurance details including comments, dates, and comprehensive tracking</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">🏦 FD export with invested dates and detailed comments</div>
+                            <div class="feature-item">🛡️ Insurance export with policy details and coverage notes</div>
+                            <div class="feature-item">📊 Performance analysis and gain/loss calculations</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="exportInvestments()" class="btn btn--primary">
+                                📈 Export Investments
+                            </button>
+                            <button onclick="exportInvestmentsByType()" class="btn btn--secondary">
+                                📊 Export by Type
+                            </button>
+                            <button onclick="exportInvestmentPerformance()" class="btn btn--secondary">
+                                📈 Performance Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Account Export -->
+                    <div class="export-category">
+                        <h3>🏦 Secure Account Export</h3>
+                        <p>Export account information with credentials (included only for authorized users with proper access control)</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">🔐 Credential export with access control verification</div>
+                            <div class="feature-item">👤 Username/password export for authorized users only</div>
+                            <div class="feature-item">📊 Account summary and status reports</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="exportAccounts()" class="btn btn--primary">
+                                🏦 Export Accounts
+                            </button>
+                            <button onclick="exportAccountsSummary()" class="btn btn--secondary">
+                                📊 Export Summary
+                            </button>
+                            <button onclick="exportAccountCredentials()" class="btn btn--secondary" id="credential-export-btn">
+                                🔐 Export Credentials
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Liability Export -->
+                    <div class="export-category">
+                        <h3>📉 Liability & EMI Export</h3>
+                        <p>Export comprehensive liability information with EMI schedules and payment tracking</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">💳 Complete loan and debt information</div>
+                            <div class="feature-item">📅 EMI schedule generation</div>
+                            <div class="feature-item">💰 Interest calculations and payment tracking</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="exportLiabilities()" class="btn btn--primary">
+                                📉 Export Liabilities
+                            </button>
+                            <button onclick="exportEMISchedule()" class="btn btn--secondary">
+                                📅 EMI Schedule
+                            </button>
+                            <button onclick="exportLiabilitySummary()" class="btn btn--secondary">
+                                📊 Liability Summary
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Analytics and Reports Export -->
+                    <div class="export-category">
+                        <h3>📊 Analytics & Performance Reports</h3>
+                        <p>Export detailed analytics, performance reports, and financial insights</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">📈 Comprehensive performance analysis</div>
+                            <div class="feature-item">🥧 Asset allocation and diversification reports</div>
+                            <div class="feature-item">📊 Custom analytics and trend analysis</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="exportAnalyticsReport()" class="btn btn--primary">
+                                📊 Export Analytics
+                            </button>
+                            <button onclick="exportPerformanceReport()" class="btn btn--secondary">
+                                📈 Performance Report
+                            </button>
+                            <button onclick="exportCustomReport()" class="btn btn--secondary">
+                                📋 Custom Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tax and Compliance Export -->
+                    <div class="export-category">
+                        <h3>📋 Tax & Compliance Export</h3>
+                        <p>Export data formatted for tax filing and regulatory compliance</p>
+                        <div class="feature-highlights">
+                            <div class="feature-item">📄 Tax-ready investment reports</div>
+                            <div class="feature-item">💼 Capital gains/loss statements</div>
+                            <div class="feature-item">🏛️ Regulatory compliance reports</div>
+                        </div>
+                        <div class="export-buttons">
+                            <button onclick="exportTaxReport()" class="btn btn--primary">
+                                📋 Tax Report
+                            </button>
+                            <button onclick="exportCapitalGains()" class="btn btn--secondary">
+                                💰 Capital Gains
+                            </button>
+                            <button onclick="exportComplianceReport()" class="btn btn--secondary">
+                                🏛️ Compliance Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Status and Settings -->
+                <div class="export-status-section">
+                    <div style="margin-top: var(--space-32); text-align: center; color: var(--color-text-secondary);">
+                        <div class="database-status">
+                            <p><strong>Database Status:</strong> <span id="db-status" class="status status--success">Connected</span></p>
+                            <p><strong>Data last synchronized:</strong> <span id="last-updated-display">Loading...</span></p>
+                            <p><strong>Total records:</strong> <span id="total-records-count">0</span> across all categories</p>
+                        </div>
+                        <div class="security-status">
+                            <p><strong>Security Level:</strong> <span id="security-level-display">Standard User</span></p>
+                            <p><strong>Credential Access:</strong> <span id="credential-access-display">Limited</span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 
-    <!-- Import Modal -->
-    <div id="import-modal" class="modal hidden">
+    <!-- Enhanced Modals -->
+    
+    <!-- Member Modal with Enhanced Fields -->
+    <div id="member-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="import-modal-title">Import Data</h2>
-                <button class="btn-close" onclick="closeModal('import-modal')">&times;</button>
+                <h3 id="member-modal-title" class="modal-title">Add Family Member</h3>
+                <button onclick="closeModal('member-modal')" class="btn-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="import-instructions"></div>
-                <div class="file-upload">
-                    <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" style="display: none;">
-                    <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">📁 Choose CSV File</label>
-                    <span id="file-name" style="margin-left: 10px; color: #666;"></span>
-                </div>
-                <div id="import-preview" style="display: none;"></div>
-            </div>
-            <div class="modal-actions">
-                <button onclick="closeModal('import-modal')" class="btn btn-secondary">Cancel</button>
-                <button onclick="processImport()" class="btn btn-primary" id="import-btn" disabled>Import Data</button>
+                <form id="member-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="member-name" class="form-label">Full Name *</label>
+                            <input type="text" id="member-name" class="form-control" placeholder="Enter full name" required maxlength="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="member-relationship" class="form-label">Relationship *</label>
+                            <select id="member-relationship" class="form-control" required>
+                                <option value="">Select relationship</option>
+                                <option value="Self">Self</option>
+                                <option value="Spouse">Spouse</option>
+                                <option value="Child">Child</option>
+                                <option value="Parent">Parent</option>
+                                <option value="Father">Father</option>
+                                <option value="Mother">Mother</option>
+                                <option value="Son">Son</option>
+                                <option value="Daughter">Daughter</option>
+                                <option value="Brother">Brother</option>
+                                <option value="Sister">Sister</option>
+                                <option value="Grandfather">Grandfather</option>
+                                <option value="Grandmother">Grandmother</option>
+                                <option value="Grandson">Grandson</option>
+                                <option value="Granddaughter">Granddaughter</option>
+                                <option value="Uncle">Uncle</option>
+                                <option value="Aunt">Aunt</option>
+                                <option value="Nephew">Nephew</option>
+                                <option value="Niece">Niece</option>
+                                <option value="Cousin">Cousin</option>
+                                <option value="Father-in-law">Father-in-law</option>
+                                <option value="Mother-in-law">Mother-in-law</option>
+                                <option value="Son-in-law">Son-in-law</option>
+                                <option value="Daughter-in-law">Daughter-in-law</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="member-email" class="form-label">Email Address</label>
+                            <input type="email" id="member-email" class="form-control" placeholder="Enter email address" maxlength="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="member-phone" class="form-label">Phone Number</label>
+                            <input type="tel" id="member-phone" class="form-control" placeholder="Enter phone number" maxlength="15">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="member-dob" class="form-label">Date of Birth</label>
+                            <input type="date" id="member-dob" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="member-pan" class="form-label">PAN Number</label>
+                            <input type="text" id="member-pan" class="form-control" placeholder="Enter PAN number" maxlength="10" style="text-transform: uppercase;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="member-address" class="form-label">Address</label>
+                        <textarea id="member-address" class="form-control" rows="3" placeholder="Enter complete address" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="member-occupation" class="form-label">Occupation</label>
+                            <input type="text" id="member-occupation" class="form-control" placeholder="Enter occupation" maxlength="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="member-income" class="form-label">Annual Income (₹)</label>
+                            <input type="number" id="member-income" class="form-control" placeholder="Enter annual income" min="0" step="1000">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="member-primary" style="margin-right: 8px;">
+                            Mark as Primary Member
+                        </label>
+                        <small style="color: var(--color-text-secondary); display: block; margin-top: 4px;">
+                            Primary member has additional access privileges and appears first in lists
+                        </small>
+                    </div>
+
+                    <!-- Enhanced Photo Upload Section -->
+                    <div class="photo-upload-section">
+                        <label class="form-label">Profile Photo</label>
+                        <div class="photo-preview" id="photo-preview">
+                            <div class="photo-preview-container">
+                                <div id="current-photo" class="member-avatar">👤</div>
+                            </div>
+                            <div class="photo-upload-options">
+                                <input type="file" id="photo-upload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                                <button type="button" onclick="document.getElementById('photo-upload').click()" class="btn btn--secondary btn--sm">
+                                    📷 Upload Photo
+                                </button>
+                                <button type="button" onclick="selectPresetPhoto()" class="btn btn--secondary btn--sm">
+                                    🖼️ Choose Avatar
+                                </button>
+                                <button type="button" onclick="removePhoto()" class="btn btn--warning btn--sm">
+                                    🗑️ Remove Photo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Preset Photo Options -->
+                        <div class="preset-photos-section" id="preset-photos-section" style="display: none;">
+                            <h4>Choose Avatar</h4>
+                            <div class="preset-photos-grid">
+                                <div class="photo-option" onclick="selectAvatar('👨')">👨</div>
+                                <div class="photo-option" onclick="selectAvatar('👩')">👩</div>
+                                <div class="photo-option" onclick="selectAvatar('👴')">👴</div>
+                                <div class="photo-option" onclick="selectAvatar('👵')">👵</div>
+                                <div class="photo-option" onclick="selectAvatar('👦')">👦</div>
+                                <div class="photo-option" onclick="selectAvatar('👧')">👧</div>
+                                <div class="photo-option" onclick="selectAvatar('👶')">👶</div>
+                                <div class="photo-option" onclick="selectAvatar('👤')">👤</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="closeModal('member-modal')" class="btn btn--secondary">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Save Member</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
-    <!-- FIXED: Load app.js (your actual JavaScript file) -->
-    <script src="app.js" defer></script>
-</body>
-</html>
