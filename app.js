@@ -1537,27 +1537,45 @@ async function saveInvestment() {
             created_at: new Date().toISOString()
         };
 
-        // ENHANCED: Add type-specific fields
-        if (type === 'fixedDeposits') {
-            investmentData.bank_name = document.getElementById('fd-bank-name').value.trim();
-            investmentData.interest_rate = parseFloat(document.getElementById('fd-interest-rate').value) || 0;
-            investmentData.start_date = document.getElementById('fd-start-date').value;
-            investmentData.maturity_date = document.getElementById('fd-maturity-date').value;
-            investmentData.interest_payout = document.getElementById('fd-interest-payout').value;
-            investmentData.account_number = document.getElementById('fd-account-number').value.trim();
-            investmentData.nominee = document.getElementById('fd-nominee').value.trim();
-            investmentData.comments = document.getElementById('fd-comments').value.trim(); // FIXED: Added comments field
-        } else if (type === 'insurance') {
-            investmentData.sum_insured = parseFloat(document.getElementById('insurance-sum-insured').value) || 0;
-            investmentData.maturity_amount = parseFloat(document.getElementById('insurance-maturity-amount').value) || 0;
-            investmentData.premium_amount = parseFloat(document.getElementById('insurance-premium').value) || 0;
-            investmentData.start_date = document.getElementById('insurance-start-date').value;
-            investmentData.maturity_date = document.getElementById('insurance-maturity-date').value;
-            investmentData.next_premium_due = document.getElementById('insurance-next-premium').value;
-        } else if (type === 'bankBalances') {
-            investmentData.current_balance = parseFloat(document.getElementById('bank-current-balance').value) || amount;
-            investmentData.as_of_date = document.getElementById('bank-as-of-date').value;
-        }
+        // Enhanced Fixed Deposit fields
+if (type === 'fixedDeposits') {
+investmentData.fd_invested_date = document.getElementById('fd-invested-date')?.value || null;
+investmentData.fd_bank_name = document.getElementById('fd-bank-name')?.value || null;
+investmentData.fd_interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
+investmentData.fd_interest_payout = document.getElementById('fd-interest-payout')?.value || null;
+investmentData.fd_start_date = document.getElementById('fd-start-date')?.value || null;
+investmentData.fd_maturity_date = document.getElementById('fd-maturity-date')?.value || null;
+investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
+investmentData.fd_nominee = document.getElementById('fd-nominee')?.value || null;
+investmentData.fd_comments = document.getElementById('fd-comments')?.value || null;
+
+     console.log('📊 Added enhanced FD fields to investment data');
+ }
+ 
+ // Enhanced Insurance fields
+ if (type === 'insurance') {
+     investmentData.insurance_invested_date = document.getElementById('insurance-invested-date')?.value || null;
+     investmentData.insurance_type = document.getElementById('insurance-type')?.value || null;
+     investmentData.insurance_premium = parseFloat(document.getElementById('insurance-premium')?.value) || null;
+     investmentData.insurance_sum_assured = parseFloat(document.getElementById('insurance-sum-assured')?.value) || null;
+     investmentData.insurance_payment_frequency = document.getElementById('insurance-payment-frequency')?.value || null;
+     investmentData.insurance_start_date = document.getElementById('insurance-start-date')?.value || null;
+     investmentData.insurance_maturity_date = document.getElementById('insurance-maturity-date')?.value || null;
+     investmentData.insurance_policy_number = document.getElementById('insurance-policy-number')?.value || null;
+     investmentData.insurance_comments = document.getElementById('insurance-comments')?.value || null;
+     
+     console.log('🛡️ Added enhanced Insurance fields to investment data');
+ }
+ 
+ // Bank Balance fields
+ if (type === 'bankBalances') {
+     investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
+     investmentData.bank_as_of_date = document.getElementById('bank-as-of-date')?.value || null;
+     investmentData.bank_account_type = document.getElementById('bank-account-type')?.value || null;
+     
+     console.log('💰 Added Bank Balance fields to investment data');
+ }
+
 
         if (editingInvestmentId) {
             await updateInvestmentData(editingInvestmentId, investmentData);
