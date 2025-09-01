@@ -17,534 +17,971 @@
             padding: 0;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-                Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-            line-height: 1.6;
+        :root {
+            /* Color Palette */
+            --primary-color: #667eea;
+            --primary-light: #764ba2;
+            --primary-dark: #5a5eb8;
+            --success-color: #38a169;
+            --success-light: #48bb78;
+            --error-color: #e53e3e;
+            --error-light: #f56565;
+            --warning-color: #ed8936;
+            --warning-light: #f6ad55;
+            --info-color: #3182ce;
+            --info-light: #4299e1;
+            --gray-100: #f7fafc;
+            --gray-200: #edf2f7;
+            --gray-300: #e2e8f0;
+            --gray-400: #cbd5e0;
+            --gray-500: #a0aec0;
+            --gray-600: #718096;
+            --gray-700: #4a5568;
+            --gray-800: #2d3748;
+            --gray-900: #1a202c;
+            --white: #ffffff;
+            --black: #000000;
+
+            /* Dark mode colors */
+            --dark-bg: #1a1a1a;
+            --dark-surface: #2d2d2d;
+            --dark-text: #e2e8f0;
+            --dark-text-secondary: #a0aec0;
+            --dark-border: #4a5568;
+
+            /* Typography */
+            --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+            /* Spacing */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-10: 2.5rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+            --space-20: 5rem;
+
+            /* Border Radius */
+            --radius-sm: 0.25rem;
+            --radius-md: 0.375rem;
+            --radius-lg: 0.5rem;
+            --radius-xl: 0.75rem;
+            --radius-2xl: 1rem;
+            --radius-full: 9999px;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+            /* Transitions */
+            --transition-fast: 0.15s ease-in-out;
+            --transition-normal: 0.25s ease-in-out;
+            --transition-slow: 0.4s ease-in-out;
+
+            /* Z-index levels */
+            --z-dropdown: 1000;
+            --z-sticky: 1020;
+            --z-fixed: 1030;
+            --z-modal-backdrop: 1040;
+            --z-modal: 1050;
+            --z-tooltip: 1070;
         }
 
-        /* ===== LANDING PAGE ===== */
+        body {
+            font-family: var(--font-primary);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            min-height: 100vh;
+            color: var(--gray-800);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                color: var(--dark-text);
+            }
+        }
+
+        /* ===== ENHANCED LANDING PAGE ===== */
         .landing-page {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: var(--space-5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .landing-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='m36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+            opacity: 0.1;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
 
         .auth-container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            padding: var(--space-10);
             width: 100%;
             max-width: 480px;
             text-align: center;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .auth-container {
+                background: rgba(45, 55, 72, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
         }
 
         .logo {
-            font-size: 3rem;
-            margin-bottom: 10px;
+            font-size: 3.5rem;
+            margin-bottom: var(--space-3);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
         }
 
         .auth-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 10px;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            margin-bottom: var(--space-3);
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .auth-subtitle {
-            color: #718096;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
+            color: var(--gray-600);
+            margin-bottom: var(--space-8);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+            margin: var(--space-8) 0;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            font-size: 0.95rem;
+            color: var(--gray-700);
+        }
+
+        .feature-icon {
+            font-size: 1.2rem;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: var(--space-5);
             text-align: left;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #4a5568;
+            margin-bottom: var(--space-2);
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.95rem;
         }
 
         .form-input {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
+            padding: var(--space-3) var(--space-4);
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-lg);
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: all var(--transition-normal);
+            background: var(--white);
+            color: var(--gray-800);
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
         }
 
+        .form-input::placeholder {
+            color: var(--gray-500);
+        }
+
+        /* ===== BUTTONS ===== */
         .btn {
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-lg);
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            font-weight: 600;
+            transition: all var(--transition-normal);
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            gap: var(--space-2);
             text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: var(--white);
+            padding: var(--space-4) var(--space-6);
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
+            box-shadow: var(--shadow-md);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
         }
 
         .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-            padding: 10px 20px;
+            background: var(--gray-200);
+            color: var(--gray-700);
+            padding: var(--space-3) var(--space-5);
+            font-size: 0.95rem;
         }
 
         .btn-secondary:hover {
-            background: #cbd5e0;
+            background: var(--gray-300);
+            transform: translateY(-1px);
         }
 
         .btn-sm {
-            padding: 6px 12px;
+            padding: var(--space-2) var(--space-3);
             font-size: 0.85rem;
+            border-radius: var(--radius-md);
         }
 
         .btn-edit {
-            background: #ed8936;
-            color: white;
+            background: var(--warning-color);
+            color: var(--white);
+        }
+
+        .btn-edit:hover {
+            background: var(--warning-light);
         }
 
         .btn-delete {
-            background: #e53e3e;
-            color: white;
+            background: var(--error-color);
+            color: var(--white);
+        }
+
+        .btn-delete:hover {
+            background: var(--error-light);
         }
 
         .btn-photo {
-            background: #667eea;
-            color: white;
+            background: var(--primary-color);
+            color: var(--white);
         }
 
         .btn-add {
-            background: #667eea;
-            color: white;
-            padding: 10px 20px;
+            background: var(--success-color);
+            color: var(--white);
+            padding: var(--space-3) var(--space-5);
+        }
+
+        .btn-add:hover {
+            background: var(--success-light);
         }
 
         .btn-export {
-            background: #38a169;
-            color: white;
-            padding: 8px 16px;
+            background: var(--info-color);
+            color: var(--white);
+            padding: var(--space-2) var(--space-4);
             font-size: 0.9rem;
-            margin-right: 8px;
+            margin-right: var(--space-2);
+        }
+
+        .btn-export:hover {
+            background: var(--info-light);
         }
 
         .btn-logout {
-            background: #e53e3e;
-            color: white;
-            padding: 10px 20px;
+            background: var(--error-color);
+            color: var(--white);
+            padding: var(--space-3) var(--space-5);
+        }
+
+        .btn-logout:hover {
+            background: var(--error-light);
         }
 
         /* ===== MAIN DASHBOARD ===== */
         .main-dashboard {
             display: none;
-            background: #f8fafc;
+            background: var(--gray-100);
             min-height: 100vh;
+            transition: all var(--transition-normal);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .main-dashboard {
+                background: var(--dark-bg);
+            }
         }
 
         .dashboard-header {
-            background: white;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border-bottom: 1px solid #e2e8f0;
+            background: var(--white);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-base);
+            border-bottom: 1px solid var(--gray-200);
+            position: sticky;
+            top: 0;
+            z-index: var(--z-sticky);
+            backdrop-filter: blur(10px);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .dashboard-header {
+                background: var(--dark-surface);
+                border-bottom: 1px solid var(--dark-border);
+            }
         }
 
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: var(--space-4);
         }
 
         .dashboard-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #2d3748;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .dashboard-title {
+                color: var(--dark-text);
+            }
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            color: #718096;
-            font-size: 0.9rem;
+            gap: var(--space-4);
+            color: var(--gray-600);
+            font-size: 0.95rem;
+            flex-wrap: wrap;
+        }
+
+        .user-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: var(--white);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            font-size: 0.85rem;
         }
 
         .dashboard-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 30px 20px;
+            padding: var(--space-8) var(--space-5);
         }
 
-        /* ===== STATS GRID ===== */
+        /* ===== ENHANCED STATS GRID ===== */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-10);
         }
 
         .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid;
+            background: var(--white);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            border-left: 5px solid;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .stat-card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .stat-card {
+                background: var(--dark-surface);
+            }
         }
 
         .stat-card.assets {
-            border-left-color: #38a169;
+            border-left-color: var(--success-color);
         }
 
         .stat-card.liabilities {
-            border-left-color: #e53e3e;
+            border-left-color: var(--error-color);
         }
 
         .stat-card.net-worth {
-            border-left-color: #667eea;
+            border-left-color: var(--primary-color);
         }
 
         .stat-card.accounts {
-            border-left-color: #ed8936;
+            border-left-color: var(--warning-color);
         }
 
         .stat-card.reminders {
-            border-left-color: #9f7aea;
+            border-left-color: var(--info-color);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-3);
+            opacity: 0.8;
         }
 
         .stat-label {
             font-size: 0.9rem;
-            color: #718096;
-            margin-bottom: 8px;
-            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: var(--space-2);
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #2d3748;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--gray-800);
+            margin-bottom: var(--space-2);
+            font-family: var(--font-mono);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .stat-value {
+                color: var(--dark-text);
+            }
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-1);
+        }
+
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+
+        .stat-change.negative {
+            color: var(--error-color);
+        }
+
+        .stat-change.neutral {
+            color: var(--gray-500);
         }
 
         /* ===== SECTIONS ===== */
         .section {
-            background: white;
-            border-radius: 15px;
+            background: var(--white);
+            border-radius: var(--radius-2xl);
             padding: 0;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: var(--space-8);
+            box-shadow: var(--shadow-md);
             overflow: hidden;
+            transition: all var(--transition-normal);
+            border: 1px solid var(--gray-200);
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .section {
+                background: var(--dark-surface);
+                border: 1px solid var(--dark-border);
+            }
         }
 
         .section-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: var(--white);
+            padding: var(--space-6) var(--space-8);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: var(--space-4);
         }
 
         .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.6rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
         }
 
         .section-actions {
             display: flex;
-            gap: 10px;
+            gap: var(--space-3);
+            flex-wrap: wrap;
         }
 
         .section-actions .btn {
             background: rgba(255, 255, 255, 0.2);
-            color: white;
+            color: var(--white);
             border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
         }
 
         .section-actions .btn:hover {
             background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
         }
 
         .section-content {
-            padding: 30px;
+            padding: var(--space-8);
         }
 
-        /* ===== FAMILY MEMBERS GRID ===== */
+        /* ===== ENHANCED FAMILY MEMBERS GRID ===== */
         .family-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: var(--space-6);
         }
 
         .family-card {
-            background: #f7fafc;
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--gray-100);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
             text-align: center;
-            border: 2px solid #e2e8f0;
-            transition: all 0.3s ease;
+            border: 2px solid var(--gray-300);
+            transition: all var(--transition-normal);
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .family-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(102, 126, 234, 0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .family-card:hover::before {
+            transform: translateX(100%);
         }
 
         .family-card:hover {
-            transform: translateY(-2px);
-            border-color: #667eea;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-6px);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-xl);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .family-card {
+                background: var(--dark-surface);
+                border-color: var(--dark-border);
+            }
+        }
+
+        .member-photo-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: var(--space-4);
         }
 
         .member-photo {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             object-fit: cover;
-            margin: 0 auto 15px;
-            border: 3px solid #667eea;
+            border: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            transition: all var(--transition-normal);
         }
 
-        .member-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 5px;
+        .member-photo:hover {
+            transform: scale(1.05);
+        }
+
+        .primary-indicator {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: linear-gradient(135deg, var(--success-color), var(--success-light));
+            color: var(--white);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            box-shadow: var(--shadow-md);
+        }
+
+        .member-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: var(--space-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .member-name {
+                color: var(--dark-text);
+            }
         }
 
         .primary-badge {
-            background: #667eea;
-            color: white;
+            background: var(--primary-color);
+            color: var(--white);
             font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-weight: 600;
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-full);
+            font-weight: 700;
         }
 
         .member-relationship {
-            color: #718096;
-            margin-bottom: 15px;
+            color: var(--gray-600);
+            margin-bottom: var(--space-4);
             font-style: italic;
+            font-weight: 500;
         }
 
         .member-summary {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 15px;
-            margin-bottom: 15px;
+            border-top: 2px solid var(--gray-300);
+            padding-top: var(--space-4);
+            margin-bottom: var(--space-4);
         }
 
         .summary-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
+            align-items: center;
+            margin-bottom: var(--space-2);
+            font-size: 0.95rem;
         }
 
         .summary-label {
-            color: #718096;
-            font-weight: 500;
-        }
-
-        .summary-value {
+            color: var(--gray-600);
             font-weight: 600;
         }
 
+        .summary-value {
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
         .summary-value.assets {
-            color: #38a169;
+            color: var(--success-color);
         }
 
         .summary-value.liabilities {
-            color: #e53e3e;
+            color: var(--error-color);
         }
 
         .summary-value.net-worth {
-            color: #667eea;
+            color: var(--primary-color);
+            font-size: 1.1rem;
         }
 
         .summary-counts {
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #718096;
+            margin-top: var(--space-3);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-2);
+            font-size: 0.8rem;
+            color: var(--gray-600);
         }
 
         .count-item {
-            background: #edf2f7;
-            padding: 4px 8px;
-            border-radius: 6px;
+            background: var(--gray-200);
+            padding: var(--space-2);
+            border-radius: var(--radius-md);
+            text-align: center;
+            font-weight: 600;
         }
 
         .member-actions {
             display: flex;
             justify-content: center;
-            gap: 5px;
+            gap: var(--space-2);
+            flex-wrap: wrap;
         }
 
-        /* ===== TABS ===== */
+        /* ===== ENHANCED TABS ===== */
         .tabs {
             display: flex;
-            margin-bottom: 20px;
-            background: #f7fafc;
-            border-radius: 10px;
-            padding: 5px;
+            margin-bottom: var(--space-6);
+            background: var(--gray-200);
+            border-radius: var(--radius-xl);
+            padding: var(--space-1);
+            overflow-x: auto;
         }
 
         .tab {
             flex: 1;
-            padding: 12px;
+            padding: var(--space-3) var(--space-4);
             text-align: center;
-            border-radius: 8px;
+            border-radius: var(--radius-lg);
             cursor: pointer;
-            font-weight: 500;
-            color: #718096;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            color: var(--gray-600);
+            transition: all var(--transition-normal);
+            white-space: nowrap;
+            position: relative;
         }
 
         .tab:hover {
-            color: #4a5568;
+            color: var(--gray-800);
+            background: var(--gray-300);
         }
 
         .tab.active {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: var(--white);
+            box-shadow: var(--shadow-base);
         }
 
-        /* ===== TAB CONTENT ===== */
         .tab-content {
-            min-height: 200px;
+            min-height: 300px;
+            animation: fadeIn 0.3s ease-in-out;
         }
 
-        /* ===== TABLES ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== ENHANCED TABLES ===== */
         .table-responsive {
             overflow-x: auto;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-base);
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            background: var(--white);
+            font-size: 0.9rem;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .data-table {
+                background: var(--dark-surface);
+            }
         }
 
         .data-table th,
         .data-table td {
-            padding: 12px;
+            padding: var(--space-4);
             text-align: left;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--gray-200);
         }
 
         .data-table th {
-            background: #f7fafc;
-            font-weight: 600;
-            color: #2d3748;
+            background: var(--gray-100);
+            font-weight: 700;
+            color: var(--gray-800);
             cursor: pointer;
             position: relative;
             user-select: none;
+            transition: background-color var(--transition-fast);
         }
 
         .data-table th:hover {
-            background: #edf2f7;
+            background: var(--gray-200);
         }
 
         .sort-indicator {
-            margin-left: 5px;
-            color: #667eea;
+            margin-left: var(--space-2);
+            color: var(--primary-color);
             font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .data-table tbody tr {
+            transition: background-color var(--transition-fast);
         }
 
         .data-table tbody tr:hover {
-            background: #f7fafc;
+            background: var(--gray-50);
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.02);
         }
 
         .text-green {
-            color: #38a169;
-            font-weight: 600;
+            color: var(--success-color);
+            font-weight: 700;
         }
 
         .text-red {
-            color: #e53e3e;
-            font-weight: 600;
+            color: var(--error-color);
+            font-weight: 700;
         }
 
         .status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status.active {
-            background: #c6f6d5;
-            color: #2f855a;
+            background: rgba(56, 161, 105, 0.2);
+            color: var(--success-color);
         }
 
         .status.inactive {
-            background: #fed7d7;
-            color: #c53030;
+            background: rgba(229, 62, 62, 0.2);
+            color: var(--error-color);
         }
 
         /* ===== EMPTY STATES ===== */
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
-            color: #718096;
+            padding: var(--space-16) var(--space-5);
+            color: var(--gray-600);
+            animation: fadeIn 0.5s ease-in-out;
         }
 
         .empty-state .emoji {
             font-size: 4rem;
-            margin-bottom: 20px;
+            margin-bottom: var(--space-6);
+            opacity: 0.7;
         }
 
         .empty-state p {
             font-size: 1.1rem;
-            margin-bottom: 10px;
+            margin-bottom: var(--space-3);
         }
 
-        /* ===== MODALS ===== */
+        .empty-state p:first-of-type {
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        /* ===== ENHANCED MODALS ===== */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: var(--z-modal);
+            padding: var(--space-5);
+            backdrop-filter: blur(5px);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .modal.hidden {
@@ -552,87 +989,158 @@
         }
 
         .modal-content {
-            background: white;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 700px;
+            background: var(--white);
+            border-radius: var(--radius-2xl);
+            width: 100%;
+            max-width: 800px;
             max-height: 90vh;
             overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .modal-content {
+                background: var(--dark-surface);
+            }
         }
 
         .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px 15px 0 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: var(--white);
+            padding: var(--space-6) var(--space-8);
+            border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .modal-title {
-            font-size: 1.3rem;
-            font-weight: 600;
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
         }
 
         .btn-close {
-            background: none;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
-            color: white;
-            font-size: 1.5rem;
+            color: var(--white);
+            font-size: 1.8rem;
             cursor: pointer;
-            padding: 5px;
-            width: 30px;
-            height: 30px;
+            padding: var(--space-2);
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all var(--transition-fast);
         }
 
         .btn-close:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
         }
 
         .modal-body {
-            padding: 30px;
+            padding: var(--space-8);
         }
 
         .modal-actions {
             display: flex;
-            gap: 15px;
+            gap: var(--space-4);
             justify-content: flex-end;
-            margin-top: 25px;
-            padding-top: 15px;
-            border-top: 1px solid #e2e8f0;
+            margin-top: var(--space-8);
+            padding-top: var(--space-6);
+            border-top: 2px solid var(--gray-200);
         }
 
-        /* ===== FORM ELEMENTS ===== */
+        /* ===== ENHANCED FORM ELEMENTS ===== */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: var(--space-4);
+            margin-bottom: var(--space-5);
+        }
+
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            transition: all var(--transition-normal);
+            background: var(--white);
+            color: var(--gray-800);
+            font-family: var(--font-primary);
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right var(--space-3) center;
+            background-size: 20px;
+            padding-right: var(--space-10);
+            appearance: none;
         }
 
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: var(--space-3);
+            margin-bottom: var(--space-5);
         }
 
         .checkbox-group input[type='checkbox'] {
-            width: auto;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            font-weight: 600;
         }
 
         /* ===== CONDITIONAL FIELDS ===== */
         .conditional-fields {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f7fafc;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
+            margin-top: var(--space-6);
+            padding: var(--space-6);
+            background: var(--gray-50);
+            border-radius: var(--radius-xl);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .conditional-fields h4 {
+            color: var(--primary-color);
+            margin-bottom: var(--space-4);
+            font-weight: 700;
         }
 
         .fixed-deposit-fields,
@@ -645,102 +1153,149 @@
         .photo-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin: 20px 0;
+            gap: var(--space-4);
+            margin: var(--space-6) 0;
         }
 
         .photo-option {
             width: 100%;
-            height: 80px;
+            height: 100px;
             object-fit: cover;
-            border-radius: 10px;
+            border-radius: var(--radius-lg);
             cursor: pointer;
             border: 3px solid transparent;
-            transition: all 0.3s ease;
+            transition: all var(--transition-normal);
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
         }
 
         .photo-option:hover {
-            border-color: #cbd5e0;
+            border-color: var(--gray-400);
+            transform: scale(1.05);
         }
 
         .photo-option.selected {
-            border-color: #667eea;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
         }
 
         .upload-area {
-            border: 2px dashed #cbd5e0;
-            border-radius: 10px;
-            padding: 20px;
+            border: 3px dashed var(--gray-400);
+            border-radius: var(--radius-lg);
+            padding: var(--space-8);
             text-align: center;
-            margin: 15px 0;
+            margin: var(--space-6) 0;
             cursor: pointer;
-            transition: border-color 0.3s ease;
-            background: #f8fafc;
+            transition: all var(--transition-normal);
+            background: var(--gray-50);
         }
 
         .upload-area:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
+            border-color: var(--primary-color);
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area .upload-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-3);
+            color: var(--gray-500);
+        }
+
+        .upload-text {
+            font-weight: 600;
+            margin-bottom: var(--space-2);
+            color: var(--gray-700);
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: var(--gray-600);
         }
 
         /* ===== IMPORT SECTION STYLES ===== */
         .import-section {
-            margin: 20px 0;
-            padding: 20px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #f7fafc;
+            margin: var(--space-6) 0;
+            padding: var(--space-6);
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-xl);
+            background: var(--gray-50);
         }
 
         .import-section h3 {
-            color: #2d3748;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
+            color: var(--gray-800);
+            margin-bottom: var(--space-3);
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
         }
 
         .import-section p {
-            color: #718096;
-            margin-bottom: 15px;
+            color: var(--gray-600);
+            margin-bottom: var(--space-5);
+            line-height: 1.6;
         }
 
         .import-buttons {
             display: flex;
-            gap: 10px;
+            gap: var(--space-3);
             flex-wrap: wrap;
         }
 
         .csv-template {
-            background: #edf2f7;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-            margin: 10px 0;
+            background: var(--gray-100);
+            padding: var(--space-5);
+            border-radius: var(--radius-lg);
+            border-left: 4px solid var(--primary-color);
+            margin: var(--space-4) 0;
+        }
+
+        .csv-template strong {
+            display: block;
+            margin-bottom: var(--space-3);
+            color: var(--gray-800);
         }
 
         .csv-template ul {
-            margin: 10px 0;
-            padding-left: 20px;
+            margin: var(--space-3) 0;
+            padding-left: var(--space-5);
+        }
+
+        .csv-template li {
+            margin-bottom: var(--space-2);
+            line-height: 1.5;
         }
 
         .csv-template code {
-            background: #e2e8f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #e53e3e;
+            background: var(--gray-200);
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            color: var(--error-color);
+            font-weight: 600;
         }
 
         .file-upload {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #f7fafc;
+            margin: var(--space-6) 0;
+            padding: var(--space-5);
+            border: 2px solid var(--gray-300);
+            border-radius: var(--radius-lg);
+            background: var(--gray-50);
         }
 
         .file-upload label {
             cursor: pointer;
             display: inline-block;
+        }
+
+        #file-name {
+            margin-left: var(--space-3);
+            color: var(--gray-600);
+            font-style: italic;
         }
 
         /* ===== MEMBER DETAILS VIEW ===== */
@@ -749,94 +1304,166 @@
         }
 
         .member-details-overview {
-            padding: 30px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: var(--space-8);
+            border-bottom: 2px solid var(--gray-200);
+            background: var(--gray-50);
         }
 
         .member-profile {
             display: flex;
             align-items: center;
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
         }
 
         .member-detail-photo {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid #e2e8f0;
+            border: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-lg);
         }
 
         .member-info h3 {
-            font-size: 2rem;
-            color: #2d3748;
-            margin-bottom: 5px;
+            font-size: 2.5rem;
+            color: var(--gray-800);
+            margin-bottom: var(--space-2);
+            font-weight: 800;
         }
 
         .member-info .relationship {
-            color: #718096;
-            font-size: 1.1rem;
-            margin-bottom: 10px;
+            color: var(--gray-600);
+            font-size: 1.2rem;
+            margin-bottom: var(--space-3);
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        .member-since {
+            font-size: 0.95rem;
+            color: var(--gray-500);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
         }
 
         .financial-summary-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-6);
         }
 
         .summary-card {
-            background: #f7fafc;
-            padding: 20px;
-            border-radius: 8px;
+            background: var(--white);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
             text-align: center;
+            box-shadow: var(--shadow-base);
+            border-left: 4px solid;
         }
 
         .summary-card.assets {
-            border-left: 4px solid #38a169;
+            border-left-color: var(--success-color);
         }
 
         .summary-card.liabilities {
-            border-left: 4px solid #e53e3e;
+            border-left-color: var(--error-color);
         }
 
         .summary-card.net-worth {
-            border-left: 4px solid #667eea;
+            border-left-color: var(--primary-color);
         }
 
         .summary-card .summary-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: var(--space-2);
+            font-family: var(--font-mono);
         }
 
         .summary-card .summary-label {
-            color: #718096;
+            color: var(--gray-600);
             font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-breakdown {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            margin-top: var(--space-2);
         }
 
         /* ===== EXPORT BUTTONS ===== */
         .export-buttons {
             display: flex;
-            gap: 10px;
+            gap: var(--space-3);
             flex-wrap: wrap;
-            margin-top: 20px;
+            margin-top: var(--space-6);
+        }
+
+        .export-category {
+            background: var(--white);
+            padding: var(--space-8);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            border: 2px solid var(--gray-300);
+            transition: all var(--transition-normal);
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .export-category:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        .export-category h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: var(--space-4);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .export-category p {
+            color: var(--gray-600);
+            margin-bottom: var(--space-6);
+            line-height: 1.6;
+        }
+
+        .export-category.complete-backup {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border: 2px solid var(--primary-color);
+        }
+
+        .export-category.complete-backup h3 {
+            color: var(--primary-color);
+            font-size: 1.6rem;
         }
 
         /* ===== MESSAGES ===== */
         .message {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 500;
-            z-index: 10000;
+            top: var(--space-5);
+            right: var(--space-5);
+            padding: var(--space-4) var(--space-6);
+            border-radius: var(--radius-lg);
+            color: var(--white);
+            font-weight: 600;
+            z-index: var(--z-tooltip);
             transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 300px;
+            transition: transform var(--transition-normal);
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
         }
 
         .message.show {
@@ -844,36 +1471,128 @@
         }
 
         .message.success {
-            background: #38a169;
+            background: var(--success-color);
         }
 
         .message.error {
-            background: #e53e3e;
+            background: var(--error-color);
         }
 
         .message.info {
-            background: #3182ce;
+            background: var(--info-color);
         }
 
         .message.warning {
-            background: #d69e2e;
+            background: var(--warning-color);
+        }
+
+        .message-icon {
+            font-size: 1.2rem;
         }
 
         /* ===== LAST UPDATED ===== */
         .last-updated {
-            color: #718096;
-            font-size: 0.9rem;
+            color: var(--gray-600);
+            font-size: 0.95rem;
             text-align: center;
-            margin-top: 30px;
-            padding: 15px;
-            background: #f7fafc;
-            border-radius: 10px;
+            margin-top: var(--space-8);
+            padding: var(--space-5);
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .sync-indicator {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ===== LOADING STATES ===== */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            margin: -20px 0 0 -20px;
+            border: 4px solid var(--gray-300);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            z-index: 1000;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn var(--transition-normal) ease;
+        }
+
+        @keyframes slideInUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .slide-in-up {
+            animation: slideInUp var(--transition-normal) ease;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0, -30px, 0); }
+            70% { transform: translate3d(0, -15px, 0); }
+            90% { transform: translate3d(0, -4px, 0); }
+        }
+
+        .bounce {
+            animation: bounce 1s ease;
         }
 
         /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: var(--space-4);
+            }
+            
+            .family-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+            
+            .dashboard-content {
+                padding: var(--space-6) var(--space-4);
+            }
+        }
+
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: 1fr;
+                gap: var(--space-4);
             }
 
             .family-grid {
@@ -882,19 +1601,23 @@
 
             .header-content {
                 flex-direction: column;
-                gap: 15px;
+                gap: var(--space-4);
                 text-align: center;
             }
 
             .section-header {
                 flex-direction: column;
-                gap: 15px;
+                gap: var(--space-4);
                 text-align: center;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
             }
 
             .modal-content {
                 width: 95%;
-                margin: 20px;
+                margin: var(--space-5);
             }
 
             .form-row {
@@ -907,6 +1630,7 @@
 
             .tab {
                 min-width: 120px;
+                flex: none;
             }
 
             .financial-summary-grid {
@@ -929,76 +1653,63 @@
             .import-buttons {
                 justify-content: center;
             }
-        }
 
-        @media (max-width: 480px) {
-            .auth-container {
-                padding: 30px 20px;
-            }
-
-            .dashboard-content {
-                padding: 20px 15px;
-            }
-
-            .section-content {
-                padding: 20px;
-            }
-
-            .modal-body {
-                padding: 20px;
+            .data-table {
+                font-size: 0.8rem;
             }
 
             .data-table th,
             .data-table td {
-                padding: 8px;
-                font-size: 0.9rem;
+                padding: var(--space-2);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: var(--space-6);
+                margin: var(--space-4);
+            }
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .auth-title {
+                font-size: 1.8rem;
+            }
+
+            .dashboard-content {
+                padding: var(--space-4) var(--space-3);
+            }
+
+            .section-content {
+                padding: var(--space-4);
+            }
+
+            .modal-body {
+                padding: var(--space-4);
             }
 
             .photo-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-        }
 
-        /* ===== LOADING STATES ===== */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2px solid #667eea;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+            .feature-list {
+                grid-template-columns: 1fr;
+                gap: var(--space-3);
             }
-        }
 
-        /* ===== ANIMATIONS ===== */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
+            .dashboard-title {
+                font-size: 1.6rem;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease;
+            .stat-value {
+                font-size: 1.8rem;
+            }
+
+            .member-name {
+                font-size: 1.1rem;
+            }
         }
     </style>
 </head>
@@ -1009,6 +1720,34 @@
             <div class="logo">💰</div>
             <h1 class="auth-title">Pradeep's Family Wealth Dashboard</h1>
             <p class="auth-subtitle">Complete Family Financial Management</p>
+
+            <!-- Feature highlights -->
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-icon">👪</span>
+                    <span>Family Members</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📈</span>
+                    <span>Investment Portfolio</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📉</span>
+                    <span>Liability Tracking</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🏦</span>
+                    <span>Account Management</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Financial Reports</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔒</span>
+                    <span>Secure & Private</span>
+                </div>
+            </div>
 
             <form id="login-form">
                 <div class="form-group">
@@ -1028,40 +1767,60 @@
                     />
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%">
+                    <span>🚀</span> Sign In to Dashboard
+                </button>
             </form>
+
+            <div style="margin-top: var(--space-6); padding-top: var(--space-6); border-top: 1px solid var(--gray-300); color: var(--gray-600); font-size: 0.9rem;">
+                <p>Demo Mode Available - No registration required</p>
+                <p style="margin-top: var(--space-2);">Just enter any email and password to try it out!</p>
+            </div>
         </div>
     </div>
 
     <!-- ===== MAIN DASHBOARD ===== -->
     <div id="main-dashboard" class="main-dashboard">
-        <!-- Header -->
+        <!-- Enhanced Header -->
         <div class="dashboard-header">
             <div class="header-content">
                 <div>
-                    <h1 class="dashboard-title">💰 Pradeep's Family Wealth Dashboard</h1>
+                    <h1 class="dashboard-title">
+                        <span>💰</span>
+                        <span>Pradeep's Family Wealth Dashboard</span>
+                    </h1>
                 </div>
                 <div class="user-info">
-                    <span>Welcome, <span id="user-email">Loading...</span></span>
+                    <div class="user-badge">
+                        <span>Welcome, <span id="user-email">Loading...</span></span>
+                    </div>
+                    <span class="sync-indicator">🔄</span>
                     <span>Last updated: <span id="last-updated">-</span></span>
-                    <button onclick="handleLogout()" class="btn btn-logout">Logout</button>
+                    <button onclick="handleLogout()" class="btn btn-logout">
+                        <span>🚪</span> Logout
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Dashboard Content -->
         <div class="dashboard-content">
-            <!-- Stats Overview -->
+            <!-- Enhanced Stats Overview -->
             <div class="stats-grid" id="stats-grid">
                 <!-- Stats will be populated by JavaScript -->
             </div>
 
             <!-- Family Members Section -->
-            <div class="section">
+            <div class="section slide-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">👨‍👩‍👧‍👦 Family Members</h2>
+                    <h2 class="section-title">
+                        <span>👨‍👩‍👧‍👦</span>
+                        <span>Family Members</span>
+                    </h2>
                     <div class="section-actions">
-                        <button onclick="openAddMemberModal()" class="btn">➕ Add Member</button>
+                        <button onclick="openAddMemberModal()" class="btn">
+                            <span>➕</span> Add Member
+                        </button>
                     </div>
                 </div>
                 <div class="section-content">
@@ -1074,9 +1833,14 @@
             <!-- Member Details Section (Hidden by default) -->
             <div id="member-details-section" class="section member-details-section">
                 <div class="section-header">
-                    <h2 id="member-details-title" class="section-title">Member Details</h2>
+                    <h2 id="member-details-title" class="section-title">
+                        <span>👤</span>
+                        <span>Member Details</span>
+                    </h2>
                     <div class="section-actions">
-                        <button onclick="closeMemberDetails()" class="btn">← Back to Dashboard</button>
+                        <button onclick="closeMemberDetails()" class="btn">
+                            <span>←</span> Back to Dashboard
+                        </button>
                     </div>
                 </div>
                 <div id="member-details-content">
@@ -1085,23 +1849,47 @@
             </div>
 
             <!-- Investment Portfolio Section -->
-            <div class="section">
+            <div class="section slide-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">📈 Investment Portfolio</h2>
+                    <h2 class="section-title">
+                        <span>📈</span>
+                        <span>Investment Portfolio</span>
+                    </h2>
                     <div class="section-actions">
-                        <button onclick="openAddInvestmentModal()" class="btn">➕ Add Investment</button>
-                        <button onclick="exportInvestments('csv')" class="btn">📊 Export CSV</button>
-                        <button onclick="exportInvestments('json')" class="btn">📋 Export JSON</button>
+                        <button onclick="openAddInvestmentModal()" class="btn">
+                            <span>➕</span> Add Investment
+                        </button>
+                        <button onclick="exportInvestments('csv')" class="btn">
+                            <span>📊</span> Export CSV
+                        </button>
+                        <button onclick="exportInvestments('json')" class="btn">
+                            <span>📋</span> Export JSON
+                        </button>
+                        <button onclick="openImportModal('investments')" class="btn">
+                            <span>📥</span> Import Data
+                        </button>
                     </div>
                 </div>
                 <div class="section-content">
                     <div class="tabs">
-                        <div class="tab active" onclick="renderInvestmentTabContent('equity')">Equity</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('mutualFunds')">Mutual Funds</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('fixedDeposits')">Fixed Deposits</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('insurance')">Insurance</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('bankBalances')">Bank Balances</div>
-                        <div class="tab" onclick="renderInvestmentTabContent('others')">Others</div>
+                        <div class="tab active" onclick="renderInvestmentTabContent('equity')">
+                            <span>📊</span> Equity
+                        </div>
+                        <div class="tab" onclick="renderInvestmentTabContent('mutualFunds')">
+                            <span>📈</span> Mutual Funds
+                        </div>
+                        <div class="tab" onclick="renderInvestmentTabContent('fixedDeposits')">
+                            <span>🏛️</span> Fixed Deposits
+                        </div>
+                        <div class="tab" onclick="renderInvestmentTabContent('insurance')">
+                            <span>🛡️</span> Insurance
+                        </div>
+                        <div class="tab" onclick="renderInvestmentTabContent('bankBalances')">
+                            <span>🏦</span> Bank Balances
+                        </div>
+                        <div class="tab" onclick="renderInvestmentTabContent('others')">
+                            <span>📦</span> Others
+                        </div>
                     </div>
 
                     <div id="investment-tab-content" class="tab-content">
@@ -1111,21 +1899,41 @@
             </div>
 
             <!-- Liabilities Section -->
-            <div class="section">
+            <div class="section slide-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">📉 Liabilities</h2>
+                    <h2 class="section-title">
+                        <span>📉</span>
+                        <span>Liabilities</span>
+                    </h2>
                     <div class="section-actions">
-                        <button onclick="openAddLiabilityModal()" class="btn">➕ Add Liability</button>
-                        <button onclick="exportLiabilities('csv')" class="btn">📊 Export CSV</button>
-                        <button onclick="exportLiabilities('json')" class="btn">📋 Export JSON</button>
+                        <button onclick="openAddLiabilityModal()" class="btn">
+                            <span>➕</span> Add Liability
+                        </button>
+                        <button onclick="exportLiabilities('csv')" class="btn">
+                            <span>📊</span> Export CSV
+                        </button>
+                        <button onclick="exportLiabilities('json')" class="btn">
+                            <span>📋</span> Export JSON
+                        </button>
+                        <button onclick="openImportModal('liabilities')" class="btn">
+                            <span>📥</span> Import Data
+                        </button>
                     </div>
                 </div>
                 <div class="section-content">
                     <div class="tabs">
-                        <div class="tab active" onclick="renderLiabilityTabContent('homeLoan')">Home Loan</div>
-                        <div class="tab" onclick="renderLiabilityTabContent('personalLoan')">Personal Loan</div>
-                        <div class="tab" onclick="renderLiabilityTabContent('creditCard')">Credit Card</div>
-                        <div class="tab" onclick="renderLiabilityTabContent('other')">Other</div>
+                        <div class="tab active" onclick="renderLiabilityTabContent('homeLoan')">
+                            <span>🏠</span> Home Loan
+                        </div>
+                        <div class="tab" onclick="renderLiabilityTabContent('personalLoan')">
+                            <span>👤</span> Personal Loan
+                        </div>
+                        <div class="tab" onclick="renderLiabilityTabContent('creditCard')">
+                            <span>💳</span> Credit Card
+                        </div>
+                        <div class="tab" onclick="renderLiabilityTabContent('other')">
+                            <span>📝</span> Other
+                        </div>
                     </div>
 
                     <div id="liability-tab-content" class="tab-content">
@@ -1135,13 +1943,25 @@
             </div>
 
             <!-- Accounts Section -->
-            <div class="section">
+            <div class="section slide-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">🏦 Account Management</h2>
+                    <h2 class="section-title">
+                        <span>🏦</span>
+                        <span>Account Management</span>
+                    </h2>
                     <div class="section-actions">
-                        <button onclick="openAddAccountModal()" class="btn">➕ Add Account</button>
-                        <button onclick="exportAccounts('csv')" class="btn">📊 Export CSV</button>
-                        <button onclick="exportAccounts('json')" class="btn">📋 Export JSON</button>
+                        <button onclick="openAddAccountModal()" class="btn">
+                            <span>➕</span> Add Account
+                        </button>
+                        <button onclick="exportAccounts('csv')" class="btn">
+                            <span>📊</span> Export CSV
+                        </button>
+                        <button onclick="exportAccounts('json')" class="btn">
+                            <span>📋</span> Export JSON
+                        </button>
+                        <button onclick="openImportModal('accounts')" class="btn">
+                            <span>📥</span> Import Data
+                        </button>
                     </div>
                 </div>
                 <div class="section-content">
@@ -1149,13 +1969,27 @@
                         <table class="data-table" id="accounts-table">
                             <thead>
                                 <tr>
-                                    <th onclick="sortTable('accounts-table', 0)">Account Type <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 1)">Institution <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 2)">Account Number <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 3)">Holder <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 4)">Nominee <span class="sort-indicator"></span></th>
-                                    <th onclick="sortTable('accounts-table', 5)">Status <span class="sort-indicator"></span></th>
-                                    <th>Actions</th>
+                                    <th onclick="sortTable('accounts-table', 0)">
+                                        <span>🏦</span> Account Type <span class="sort-indicator"></span>
+                                    </th>
+                                    <th onclick="sortTable('accounts-table', 1)">
+                                        <span>🏛️</span> Institution <span class="sort-indicator"></span>
+                                    </th>
+                                    <th onclick="sortTable('accounts-table', 2)">
+                                        <span>🔢</span> Account Number <span class="sort-indicator"></span>
+                                    </th>
+                                    <th onclick="sortTable('accounts-table', 3)">
+                                        <span>👤</span> Holder <span class="sort-indicator"></span>
+                                    </th>
+                                    <th onclick="sortTable('accounts-table', 4)">
+                                        <span>👥</span> Nominee <span class="sort-indicator"></span>
+                                    </th>
+                                    <th onclick="sortTable('accounts-table', 5)">
+                                        <span>⚡</span> Status <span class="sort-indicator"></span>
+                                    </th>
+                                    <th>
+                                        <span>⚙️</span> Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="accounts-table-body">
@@ -1166,489 +2000,1183 @@
                 </div>
             </div>
 
-            <!-- Import Section -->
-            <div class="section">
+            <!-- Enhanced Import Section -->
+            <div class="section slide-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">📥 Import Data</h2>
+                    <h2 class="section-title">
+                        <span>📥</span>
+                        <span>Bulk Data Import</span>
+                    </h2>
                 </div>
                 <div class="section-content">
                     <div class="import-section">
-                        <h3>📥 Bulk Import Financial Data</h3>
-                        <p>Import your financial data from CSV files to quickly populate your dashboard</p>
+                        <h3>
+                            <span>📊</span>
+                            Bulk Import Financial Data
+                        </h3>
+                        <p>Import your financial data from CSV files to quickly populate your dashboard. Save time by uploading your existing data instead of entering it manually.</p>
+                        
                         <div class="import-buttons">
-                            <button onclick="openImportModal('investments')" class="btn btn-primary">📊 Import Investments</button>
-                            <button onclick="openImportModal('liabilities')" class="btn btn-primary">📉 Import Liabilities</button>
-                            <button onclick="openImportModal('accounts')" class="btn btn-primary">🏦 Import Accounts</button>
+                            <button onclick="openImportModal('investments')" class="btn btn-primary">
+                                <span>📈</span> Import Investments
+                            </button>
+                            <button onclick="openImportModal('liabilities')" class="btn btn-primary">
+                                <span>📉</span> Import Liabilities
+                            </button>
+                            <button onclick="openImportModal('accounts')" class="btn btn-primary">
+                                <span>🏦</span> Import Accounts
+                            </button>
+                        </div>
+
+                        <div style="margin-top: var(--space-6); padding: var(--space-4); background: var(--gray-100); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
+                            <h4 style="color: var(--info-color); margin-bottom: var(--space-2); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>ℹ️</span> Import Tips
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700);">
+                                <li>Ensure your CSV files have proper column headers</li>
+                                <li>Family members must be added before importing their data</li>
+                                <li>Check the import instructions in each modal for required fields</li>
+                                <li>Import will validate data and show errors for any invalid rows</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Complete Family Data Export -->
-            <div class="section">
+            <!-- Enhanced Export Section -->
+            <div class="section slide-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">📋 Complete Family Data Export</h2>
+                    <h2 class="section-title">
+                        <span>📋</span>
+                        <span>Data Export & Backup</span>
+                    </h2>
                 </div>
                 <div class="section-content">
-                    <p style="color: #718096; margin-bottom: 20px;">
-                        Export complete family financial data including all members, investments, liabilities, and
-                        accounts.
-                    </p>
-                    <div class="export-buttons">
-                        <button onclick="exportFamilyData('csv')" class="btn btn-export">📊 Export Family Data (CSV)</button>
-                        <button onclick="exportFamilyData('json')" class="btn btn-export">📋 Export Family Data (JSON)</button>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6);">
+                        
+                        <!-- Individual Exports -->
+                        <div class="export-category">
+                            <h3>
+                                <span>📊</span>
+                                Individual Data Export
+                            </h3>
+                            <p>Export specific categories of your financial data for analysis or backup purposes.</p>
+                            <div class="export-buttons">
+                                <button onclick="exportInvestments('csv')" class="btn btn-export">
+                                    <span>📈</span> Export Investments (CSV)
+                                </button>
+                                <button onclick="exportInvestments('json')" class="btn btn-export">
+                                    <span>📈</span> Export Investments (JSON)
+                                </button>
+                                <button onclick="exportLiabilities('csv')" class="btn btn-export">
+                                    <span>📉</span> Export Liabilities (CSV)
+                                </button>
+                                <button onclick="exportLiabilities('json')" class="btn btn-export">
+                                    <span>📉</span> Export Liabilities (JSON)
+                                </button>
+                                <button onclick="exportAccounts('csv')" class="btn btn-export">
+                                    <span>🏦</span> Export Accounts (CSV)
+                                </button>
+                                <button onclick="exportAccounts('json')" class="btn btn-export">
+                                    <span>🏦</span> Export Accounts (JSON)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Complete Backup -->
+                        <div class="export-category complete-backup">
+                            <h3>
+                                <span>💾</span>
+                                Complete Family Data Backup
+                            </h3>
+                            <p>Export all your family's financial data in one comprehensive file. Includes all members, investments, liabilities, accounts, and calculated totals.</p>
+                            <div class="export-buttons">
+                                <button onclick="exportFamilyData('csv')" class="btn btn-export">
+                                    <span>📊</span> Complete Backup (CSV)
+                                </button>
+                                <button onclick="exportFamilyData('json')" class="btn btn-export">
+                                    <span>📋</span> Complete Backup (JSON)
+                                </button>
+                            </div>
+
+                            <div style="margin-top: var(--space-4); padding: var(--space-3); background: rgba(102, 126, 234, 0.1); border-radius: var(--radius-md);">
+                                <div style="font-size: 0.9rem; color: var(--primary-color); font-weight: 600;">
+                                    <span>💡</span> Recommended for regular backups
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
 
-            <!-- Last Updated -->
+            <!-- Enhanced Last Updated Display -->
             <div class="last-updated">
-                Data last synchronized: <span id="last-updated-display">Loading...</span>
+                <span class="sync-indicator">📊</span>
+                <span>Data last synchronized: <span id="last-updated-display">Loading...</span></span>
+                <span style="margin-left: var(--space-4); color: var(--success-color); font-weight: 600;">
+                    <span>✅</span> All data saved
+                </span>
             </div>
         </div>
     </div>
 
     <!-- ===== MODALS ===== -->
 
-    <!-- Family Member Modal -->
+    <!-- Enhanced Family Member Modal -->
     <div id="member-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="member-modal-title" class="modal-title">Add Family Member</h3>
+                <h3 id="member-modal-title" class="modal-title">
+                    <span>👤</span>
+                    <span>Add Family Member</span>
+                </h3>
                 <button onclick="closeModal('member-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="member-form" onsubmit="event.preventDefault(); saveMember();">
                     <div class="form-group">
-                        <label for="member-name" class="form-label">Full Name *</label>
+                        <label for="member-name" class="form-label">
+                            <span>👤</span> Full Name *
+                        </label>
                         <input type="text" id="member-name" class="form-input" placeholder="Enter full name" required />
                     </div>
 
                     <div class="form-group">
-                        <label for="member-relationship" class="form-label">Relationship *</label>
-                        <select id="member-relationship" class="form-input" required>
+                        <label for="member-relationship" class="form-label">
+                            <span>👥</span> Relationship *
+                        </label>
+                        <select id="member-relationship" class="form-select" required>
                             <option value="">Select Relationship</option>
                             <option value="Self">Self</option>
                             <option value="Spouse">Spouse</option>
-                            <option value="Father">Father</option>
-                            <option value="Mother">Mother</option>
-                            <option value="Son">Son</option>
-                            <option value="Daughter">Daughter</option>
-                            <option value="Brother">Brother</option>
-                            <option value="Sister">Sister</option>
-                            <option value="Grandfather">Grandfather</option>
-                            <option value="Grandmother">Grandmother</option>
+                            <option value="Child">Child</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Grandparent">Grandparent</option>
+                            <option value="Grandchild">Grandchild</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
 
                     <div class="checkbox-group">
                         <input type="checkbox" id="member-is-primary" />
-                        <label for="member-is-primary">Primary Account Holder</label>
+                        <label for="member-is-primary">
+                            <span>⭐</span> Mark as Primary Member
+                        </label>
+                    </div>
+
+                    <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
+                        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--info-color); margin-bottom: var(--space-2);">
+                            <span>ℹ️</span> Additional Information
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--gray-600);">
+                            • Primary members have administrative privileges<br>
+                            • You can add a photo after creating the member<br>
+                            • Financial data will be linked to this member profile
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('member-modal')" class="btn btn-secondary">
+                            <span>❌</span> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span>✅</span> Save Member
+                        </button>
                     </div>
                 </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('member-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveMember()" class="btn btn-primary">Save Member</button>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Photo Upload Modal -->
+    <!-- Enhanced Photo Modal -->
     <div id="photo-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Change Profile Photo</h3>
+                <h3 class="modal-title">
+                    <span>📷</span>
+                    <span>Update Member Photo</span>
+                </h3>
                 <button onclick="closeModal('photo-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 style="margin-bottom: 15px;">Choose from preset photos:</h4>
+                <h4 style="margin-bottom: var(--space-4); color: var(--gray-800); display: flex; align-items: center; gap: var(--space-2);">
+                    <span>🎭</span> Choose Avatar
+                </h4>
+                
                 <div id="preset-photos-grid" class="photo-grid">
-                    <!-- Preset photos will be populated by JavaScript -->
+                    <!-- Photo options will be populated by JavaScript -->
                 </div>
 
-                <div class="upload-area" onclick="document.getElementById('photo-upload').click()">
-                    <div style="margin-bottom: 10px;">📸 Upload Custom Photo</div>
-                    <div style="font-size: 0.9rem; color: #666;">
-                        Click to select image file (JPG, PNG, GIF)<br>
-                        Max size: 5MB
+                <div style="text-align: center; margin: var(--space-6) 0; color: var(--gray-600); font-weight: 600;">
+                    <span>— OR —</span>
+                </div>
+
+                <div class="upload-area">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Upload Custom Photo</div>
+                    <div class="upload-subtext">Click to select or drag & drop an image file</div>
+                    <input type="file" id="photo-upload" accept="image/*" onchange="handlePhotoUpload(event)" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;" />
+                </div>
+
+                <div style="margin-top: var(--space-4); padding: var(--space-3); background: var(--gray-50); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--gray-600);">
+                    <div style="font-weight: 600; margin-bottom: var(--space-1);">
+                        <span>💡</span> Photo Guidelines:
                     </div>
-                    <input type="file" id="photo-upload" accept="image/*" style="display: none" onchange="handlePhotoUpload(event)" />
+                    • Supported formats: JPG, PNG, GIF<br>
+                    • Maximum file size: 5MB<br>
+                    • Square images work best for profile photos
                 </div>
 
                 <div class="modal-actions">
-                    <button onclick="closeModal('photo-modal')" class="btn btn-secondary">Cancel</button>
-                    <button onclick="savePhoto()" class="btn btn-primary">Save Photo</button>
+                    <button type="button" onclick="closeModal('photo-modal')" class="btn btn-secondary">
+                        <span>❌</span> Cancel
+                    </button>
+                    <button onclick="savePhoto()" class="btn btn-primary">
+                        <span>✅</span> Save Photo
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Investment Modal -->
+    <!-- Enhanced Investment Modal -->
     <div id="investment-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="investment-modal-title" class="modal-title">Add Investment</h3>
+                <h3 id="investment-modal-title" class="modal-title">
+                    <span>📈</span>
+                    <span>Add Investment</span>
+                </h3>
                 <button onclick="closeModal('investment-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="investment-form" onsubmit="event.preventDefault(); saveInvestment();">
+                    <!-- Basic Investment Information -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="investment-member" class="form-label">Family Member *</label>
-                            <select id="investment-member" class="form-input" required>
-                                <!-- Options will be populated by JavaScript -->
+                            <label for="investment-member" class="form-label">
+                                <span>👤</span> Family Member *
+                            </label>
+                            <select id="investment-member" class="form-select" required>
+                                <option value="">Select Member</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="investment-type" class="form-label">Investment Type *</label>
-                            <select
-                                id="investment-type"
-                                class="form-input"
-                                onchange="updateInvestmentForm()"
-                                required
-                            >
+                            <label for="investment-type" class="form-label">
+                                <span>📊</span> Investment Type *
+                            </label>
+                            <select id="investment-type" class="form-select" onchange="updateInvestmentForm()" required>
                                 <option value="">Select Type</option>
-                                <option value="equity">Equity</option>
-                                <option value="mutualFunds">Mutual Funds</option>
-                                <option value="fixedDeposits">Fixed Deposits</option>
-                                <option value="insurance">Insurance</option>
-                                <option value="bankBalances">Bank Balances</option>
-                                <option value="others">Others</option>
+                                <option value="equity">📊 Equity/Stocks</option>
+                                <option value="mutualFunds">📈 Mutual Funds</option>
+                                <option value="fixedDeposits">🏛️ Fixed Deposits</option>
+                                <option value="insurance">🛡️ Insurance</option>
+                                <option value="bankBalances">🏦 Bank Balances</option>
+                                <option value="others">📦 Others</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="investment-name" class="form-label">Investment Name *</label>
-                        <input
-                            type="text"
-                            id="investment-name"
-                            class="form-input"
-                            placeholder="e.g., HDFC Bank, SBI FD, LIC Policy"
-                            required
-                        />
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="investment-name" class="form-label">
+                                <span>🏷️</span> Investment Name *
+                            </label>
+                            <input type="text" id="investment-name" class="form-input" placeholder="e.g., HDFC Bank, SBI Mutual Fund" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="investment-platform" class="form-label">
+                                <span>🌐</span> Platform/Broker
+                            </label>
+                            <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Bank" />
+                        </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="investment-amount" class="form-label">Invested Amount (₹) *</label>
-                            <input
-                                type="number"
-                                id="investment-amount"
-                                class="form-input"
-                                step="0.01"
-                                placeholder="Enter amount"
-                                required
-                            />
+                            <label for="investment-amount" class="form-label">
+                                <span>💰</span> Invested Amount *
+                            </label>
+                            <input type="number" id="investment-amount" class="form-input" placeholder="Enter amount in ₹" min="0" step="0.01" required />
                         </div>
 
                         <div class="form-group">
-                            <label for="investment-current-value" class="form-label">Current Value (₹)</label>
-                            <input
-                                type="number"
-                                id="investment-current-value"
-                                class="form-input"
-                                step="0.01"
-                                placeholder="Current market value"
-                            />
+                            <label for="investment-current-value" class="form-label">
+                                <span>📊</span> Current Value
+                            </label>
+                            <input type="number" id="investment-current-value" class="form-input" placeholder="Current market value" min="0" step="0.01" />
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="investment-platform" class="form-label">Platform/Broker</label>
-                        <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct" />
-                    </div>
-
-                    <!-- Fixed Deposit Fields -->
-                    <div class="fixed-deposit-fields conditional-fields">
-                        <h4>Fixed Deposit Details</h4>
+                    <!-- Fixed Deposit Specific Fields -->
+                    <div class="conditional-fields fixed-deposit-fields">
+                        <h4>
+                            <span>🏛️</span> Fixed Deposit Details
+                        </h4>
+                        
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="fd-bank-name" class="form-label">Bank Name</label>
-                                <input type="text" id="fd-bank-name" class="form-input" placeholder="e.g., SBI, HDFC" />
+                                <label for="fd-bank-name" class="form-label">
+                                    <span>🏦</span> Bank Name
+                                </label>
+                                <input type="text" id="fd-bank-name" class="form-input" placeholder="Bank or Institution" />
                             </div>
+
                             <div class="form-group">
-                                <label for="fd-interest-rate" class="form-label">Interest Rate (%)</label>
-                                <input type="number" id="fd-interest-rate" class="form-input" step="0.01" placeholder="e.g., 6.75" />
+                                <label for="fd-interest-rate" class="form-label">
+                                    <span>📈</span> Interest Rate (%)
+                                </label>
+                                <input type="number" id="fd-interest-rate" class="form-input" placeholder="Annual interest rate" min="0" max="100" step="0.01" />
                             </div>
                         </div>
+
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="fd-start-date" class="form-label">Start Date</label>
+                                <label for="fd-start-date" class="form-label">
+                                    <span>📅</span> Start Date
+                                </label>
                                 <input type="date" id="fd-start-date" class="form-input" />
                             </div>
+
                             <div class="form-group">
-                                <label for="fd-maturity-date" class="form-label">Maturity Date</label>
+                                <label for="fd-maturity-date" class="form-label">
+                                    <span>📆</span> Maturity Date
+                                </label>
                                 <input type="date" id="fd-maturity-date" class="form-input" />
                             </div>
                         </div>
+
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="fd-interest-payout" class="form-label">Interest Payout</label>
-                                <select id="fd-interest-payout" class="form-input">
+                                <label for="fd-interest-payout" class="form-label">
+                                    <span>💸</span> Interest Payout
+                                </label>
+                                <select id="fd-interest-payout" class="form-select">
                                     <option value="Monthly">Monthly</option>
                                     <option value="Quarterly">Quarterly</option>
-                                    <option value="Half-yearly">Half-yearly</option>
-                                    <option value="Yearly" selected>Yearly</option>
-                                    <option value="On Maturity">On Maturity</option>
+                                    <option value="Half Yearly">Half Yearly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="At Maturity" selected>At Maturity</option>
                                 </select>
                             </div>
+
                             <div class="form-group">
-                                <label for="fd-account-number" class="form-label">Account Number</label>
+                                <label for="fd-account-number" class="form-label">
+                                    <span>🔢</span> Account Number
+                                </label>
                                 <input type="text" id="fd-account-number" class="form-input" placeholder="FD Account Number" />
                             </div>
                         </div>
+
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="fd-nominee" class="form-label">Nominee</label>
+                                <label for="fd-nominee" class="form-label">
+                                    <span>👥</span> Nominee
+                                </label>
                                 <input type="text" id="fd-nominee" class="form-input" placeholder="Nominee name" />
                             </div>
+
                             <div class="form-group">
-                                <label for="fd-comments" class="form-label">Comments</label>
+                                <label for="fd-comments" class="form-label">
+                                    <span>📝</span> Comments
+                                </label>
                                 <input type="text" id="fd-comments" class="form-input" placeholder="Additional notes" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- Insurance Fields -->
-                    <div class="insurance-fields conditional-fields">
-                        <h4>Insurance Policy Details</h4>
+                    <!-- Insurance Specific Fields -->
+                    <div class="conditional-fields insurance-fields">
+                        <h4>
+                            <span>🛡️</span> Insurance Policy Details
+                        </h4>
+                        
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="insurance-sum-insured" class="form-label">Sum Insured (₹)</label>
-                                <input type="number" id="insurance-sum-insured" class="form-input" step="0.01" placeholder="Coverage amount" />
+                                <label for="insurance-sum-insured" class="form-label">
+                                    <span>🛡️</span> Sum Insured/Assured
+                                </label>
+                                <input type="number" id="insurance-sum-insured" class="form-input" placeholder="Coverage amount" min="0" step="0.01" />
                             </div>
+
                             <div class="form-group">
-                                <label for="insurance-maturity-amount" class="form-label">Maturity Amount (₹)</label>
-                                <input type="number" id="insurance-maturity-amount" class="form-input" step="0.01" placeholder="Maturity value" />
+                                <label for="insurance-maturity-amount" class="form-label">
+                                    <span>💰</span> Maturity Amount
+                                </label>
+                                <input type="number" id="insurance-maturity-amount" class="form-input" placeholder="Expected maturity amount" min="0" step="0.01" />
                             </div>
                         </div>
+
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="insurance-premium" class="form-label">Premium Amount (₹)</label>
-                                <input type="number" id="insurance-premium" class="form-input" step="0.01" placeholder="Annual/Monthly premium" />
+                                <label for="insurance-premium" class="form-label">
+                                    <span>💳</span> Premium Amount
+                                </label>
+                                <input type="number" id="insurance-premium" class="form-input" placeholder="Premium amount" min="0" step="0.01" />
                             </div>
+
                             <div class="form-group">
-                                <label for="insurance-start-date" class="form-label">Start Date</label>
+                                <label for="insurance-start-date" class="form-label">
+                                    <span>📅</span> Policy Start Date
+                                </label>
                                 <input type="date" id="insurance-start-date" class="form-input" />
                             </div>
                         </div>
+
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="insurance-maturity-date" class="form-label">Maturity Date</label>
+                                <label for="insurance-maturity-date" class="form-label">
+                                    <span>📆</span> Policy Maturity Date
+                                </label>
                                 <input type="date" id="insurance-maturity-date" class="form-input" />
                             </div>
+
                             <div class="form-group">
-                                <label for="insurance-next-premium" class="form-label">Next Premium Due</label>
+                                <label for="insurance-next-premium" class="form-label">
+                                    <span>⏰</span> Next Premium Due
+                                </label>
                                 <input type="date" id="insurance-next-premium" class="form-input" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- Bank Balance Fields -->
-                    <div class="bank-balance-fields conditional-fields">
-                        <h4>Bank Balance Details</h4>
+                    <!-- Bank Balance Specific Fields -->
+                    <div class="conditional-fields bank-balance-fields">
+                        <h4>
+                            <span>🏦</span> Bank Balance Details
+                        </h4>
+                        
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="bank-current-balance" class="form-label">Current Balance (₹)</label>
-                                <input type="number" id="bank-current-balance" class="form-input" step="0.01" placeholder="Current account balance" />
+                                <label for="bank-current-balance" class="form-label">
+                                    <span>💰</span> Current Balance
+                                </label>
+                                <input type="number" id="bank-current-balance" class="form-input" placeholder="Current account balance" min="0" step="0.01" />
                             </div>
+
                             <div class="form-group">
-                                <label for="bank-as-of-date" class="form-label">As of Date</label>
+                                <label for="bank-as-of-date" class="form-label">
+                                    <span>📅</span> Balance As of Date
+                                </label>
                                 <input type="date" id="bank-as-of-date" class="form-input" />
                             </div>
                         </div>
                     </div>
-                </form>
 
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('investment-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveInvestment()" class="btn btn-primary">Save Investment</button>
-                </div>
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('investment-modal')" class="btn btn-secondary">
+                            <span>❌</span> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span>✅</span> Save Investment
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Liability Modal -->
+    <!-- Enhanced Liability Modal -->
     <div id="liability-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="liability-modal-title" class="modal-title">Add Liability</h3>
+                <h3 id="liability-modal-title" class="modal-title">
+                    <span>📉</span>
+                    <span>Add Liability</span>
+                </h3>
                 <button onclick="closeModal('liability-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="liability-form" onsubmit="event.preventDefault(); saveLiability();">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="liability-member" class="form-label">Family Member *</label>
-                            <select id="liability-member" class="form-input" required>
-                                <!-- Options will be populated by JavaScript -->
+                            <label for="liability-member" class="form-label">
+                                <span>👤</span> Family Member *
+                            </label>
+                            <select id="liability-member" class="form-select" required>
+                                <option value="">Select Member</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="liability-type" class="form-label">Liability Type *</label>
-                            <select id="liability-type" class="form-input" required>
+                            <label for="liability-type" class="form-label">
+                                <span>📝</span> Liability Type *
+                            </label>
+                            <select id="liability-type" class="form-select" required>
                                 <option value="">Select Type</option>
-                                <option value="homeLoan">Home Loan</option>
-                                <option value="personalLoan">Personal Loan</option>
-                                <option value="creditCard">Credit Card</option>
-                                <option value="other">Other</option>
+                                <option value="homeLoan">🏠 Home Loan</option>
+                                <option value="personalLoan">👤 Personal Loan</option>
+                                <option value="creditCard">💳 Credit Card</option>
+                                <option value="other">📄 Other</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="liability-lender" class="form-label">Lender/Bank *</label>
-                        <input
-                            type="text"
-                            id="liability-lender"
-                            class="form-input"
-                            placeholder="e.g., HDFC Bank, SBI"
-                            required
-                        />
+                        <label for="liability-lender" class="form-label">
+                            <span>🏦</span> Lender/Bank *
+                        </label>
+                        <input type="text" id="liability-lender" class="form-input" placeholder="Name of bank or lender" required />
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="liability-amount" class="form-label">Outstanding Amount (₹) *</label>
-                            <input
-                                type="number"
-                                id="liability-amount"
-                                class="form-input"
-                                step="0.01"
-                                placeholder="Enter amount"
-                                required
-                            />
+                            <label for="liability-amount" class="form-label">
+                                <span>💰</span> Outstanding Amount *
+                            </label>
+                            <input type="number" id="liability-amount" class="form-input" placeholder="Current outstanding amount" min="0" step="0.01" required />
                         </div>
 
                         <div class="form-group">
-                            <label for="liability-emi" class="form-label">EMI Amount (₹)</label>
-                            <input type="number" id="liability-emi" class="form-input" step="0.01" placeholder="Monthly EMI" />
+                            <label for="liability-emi" class="form-label">
+                                <span>📅</span> Monthly EMI
+                            </label>
+                            <input type="number" id="liability-emi" class="form-input" placeholder="Monthly EMI amount" min="0" step="0.01" />
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="liability-rate" class="form-label">Interest Rate (%)</label>
-                        <input type="number" id="liability-rate" class="form-input" step="0.01" placeholder="e.g., 8.5" />
+                        <label for="liability-rate" class="form-label">
+                            <span>📊</span> Interest Rate (%)
+                        </label>
+                        <input type="number" id="liability-rate" class="form-input" placeholder="Annual interest rate" min="0" max="100" step="0.01" />
+                    </div>
+
+                    <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--warning-color);">
+                        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--warning-color); margin-bottom: var(--space-2);">
+                            <span>💡</span> Liability Tracking Tips
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--gray-600);">
+                            • Enter the current outstanding amount<br>
+                            • EMI and interest rate help track loan progress<br>
+                            • Update regularly to maintain accuracy
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('liability-modal')" class="btn btn-secondary">
+                            <span>❌</span> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span>✅</span> Save Liability
+                        </button>
                     </div>
                 </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('liability-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveLiability()" class="btn btn-primary">Save Liability</button>
-                </div>
             </div>
         </div>
     </div>
-
-    <!-- Account Modal -->
+        <!-- Enhanced Account Modal -->
     <div id="account-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="account-modal-title" class="modal-title">Add Account</h3>
+                <h3 id="account-modal-title" class="modal-title">
+                    <span>🏦</span>
+                    <span>Add Account</span>
+                </h3>
                 <button onclick="closeModal('account-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="account-form" onsubmit="event.preventDefault(); saveAccount();">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="account-type" class="form-label">Account Type *</label>
-                            <select id="account-type" class="form-input" required>
-                                <option value="">Select Type</option>
-                                <option value="Savings Account">Savings Account</option>
-                                <option value="Current Account">Current Account</option>
-                                <option value="Fixed Deposit">Fixed Deposit</option>
-                                <option value="Recurring Deposit">Recurring Deposit</option>
-                                <option value="PPF">PPF</option>
-                                <option value="EPF">EPF</option>
-                                <option value="NPS">NPS</option>
-                                <option value="Demat Account">Demat Account</option>
-                                <option value="Trading Account">Trading Account</option>
-                                <option value="Other">Other</option>
+                            <label for="account-type" class="form-label">
+                                <span>🏦</span> Account Type *
+                            </label>
+                            <select id="account-type" class="form-select" required>
+                                <option value="">Select Account Type</option>
+                                <option value="Savings Account">💰 Savings Account</option>
+                                <option value="Current Account">🏢 Current Account</option>
+                                <option value="Fixed Deposit">🏛️ Fixed Deposit Account</option>
+                                <option value="Investment Account">📈 Investment Account</option>
+                                <option value="Loan Account">📉 Loan Account</option>
+                                <option value="Credit Card">💳 Credit Card</option>
+                                <option value="Other">📄 Other</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="account-institution" class="form-label">Institution *</label>
-                            <input type="text" id="account-institution" class="form-input" placeholder="Bank/Institution name" required />
+                            <label for="account-institution" class="form-label">
+                                <span>🏛️</span> Institution/Bank *
+                            </label>
+                            <input type="text" id="account-institution" class="form-input" placeholder="Bank or financial institution" required />
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="account-number" class="form-label">Account Number *</label>
+                            <label for="account-number" class="form-label">
+                                <span>🔢</span> Account Number *
+                            </label>
                             <input type="text" id="account-number" class="form-input" placeholder="Account number" required />
                         </div>
 
                         <div class="form-group">
-                            <label for="account-holder" class="form-label">Account Holder *</label>
-                            <select id="account-holder" class="form-input" required>
-                                <!-- Options will be populated by JavaScript -->
+                            <label for="account-holder" class="form-label">
+                                <span>👤</span> Account Holder *
+                            </label>
+                            <select id="account-holder" class="form-select" required>
+                                <option value="">Select Account Holder</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="account-nominee" class="form-label">Nominee</label>
-                            <select id="account-nominee" class="form-input">
-                                <!-- Options will be populated by JavaScript -->
+                            <label for="account-nominee" class="form-label">
+                                <span>👥</span> Nominee
+                            </label>
+                            <select id="account-nominee" class="form-select">
+                                <option value="">Select Nominee (Optional)</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="account-status" class="form-label">Status</label>
-                            <select id="account-status" class="form-input">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Closed">Closed</option>
+                            <label for="account-status" class="form-label">
+                                <span>⚡</span> Status
+                            </label>
+                            <select id="account-status" class="form-select">
+                                <option value="Active">✅ Active</option>
+                                <option value="Inactive">❌ Inactive</option>
+                                <option value="Closed">🔒 Closed</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="account-comments" class="form-label">Comments</label>
-                        <input type="text" id="account-comments" class="form-input" placeholder="Additional notes" />
+                        <label for="account-comments" class="form-label">
+                            <span>📝</span> Comments/Notes
+                        </label>
+                        <textarea id="account-comments" class="form-input" rows="3" placeholder="Additional notes or comments about this account"></textarea>
+                    </div>
+
+                    <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
+                        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--info-color); margin-bottom: var(--space-2);">
+                            <span>🔐</span> Privacy & Security
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--gray-600);">
+                            • Account details are stored securely<br>
+                            • Use partial account numbers for additional privacy<br>
+                            • Nominee information helps with estate planning
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('account-modal')" class="btn btn-secondary">
+                            <span>❌</span> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <span>✅</span> Save Account
+                        </button>
                     </div>
                 </form>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('account-modal')" class="btn btn-secondary">Cancel</button>
-                    <button type="button" onclick="saveAccount()" class="btn btn-primary">Save Account</button>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Import Modal -->
+    <!-- Enhanced Import Modal -->
     <div id="import-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="import-modal-title">Import Data</h2>
-                <button class="btn-close" onclick="closeModal('import-modal')">&times;</button>
+                <h3 id="import-modal-title" class="modal-title">
+                    <span>📥</span>
+                    <span>Import Data</span>
+                </h3>
+                <button onclick="closeModal('import-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="import-instructions"></div>
-                <div class="file-upload">
-                    <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" style="display: none;">
-                    <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">📁 Choose CSV File</label>
-                    <span id="file-name" style="margin-left: 10px; color: #666;"></span>
+                <div id="import-instructions">
+                    <!-- Import instructions will be populated by JavaScript -->
                 </div>
-                <div id="import-preview" style="display: none;"></div>
-            </div>
-            <div class="modal-actions">
-                <button onclick="closeModal('import-modal')" class="btn btn-secondary">Cancel</button>
-                <button onclick="processImport()" class="btn btn-primary" id="import-btn" disabled>Import Data</button>
+
+                <div class="file-upload">
+                    <label for="import-file" style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--gray-800);">
+                        <span>📁</span> Select CSV File:
+                    </label>
+                    <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" />
+                    <span id="file-name" style="color: var(--gray-600); font-style: italic;"></span>
+                </div>
+
+                <div id="import-preview" style="display: none; margin-top: var(--space-6);">
+                    <!-- Preview content will be populated by JavaScript -->
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('import-modal')" class="btn btn-secondary">
+                        <span>❌</span> Cancel
+                    </button>
+                    <button id="import-btn" onclick="processImport()" class="btn btn-primary" disabled>
+                        <span>📥</span> Import Data
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- FIXED: Load app.js (your actual JavaScript file) -->
+    <!-- Enhanced Confirmation Modal -->
+    <div id="confirmation-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span>❓</span>
+                    <span>Confirm Action</span>
+                </h3>
+                <button onclick="closeModal('confirmation-modal')" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: var(--space-6);">
+                    <div style="font-size: 4rem; margin-bottom: var(--space-4); opacity: 0.8;">⚠️</div>
+                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-4);">Are you sure?</h4>
+                    <p id="confirmation-message" style="color: var(--gray-600); margin-bottom: var(--space-6);">
+                        This action cannot be undone.
+                    </p>
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('confirmation-modal')" class="btn btn-secondary">
+                            <span>❌</span> Cancel
+                        </button>
+                        <button id="confirm-action-btn" class="btn btn-delete">
+                            <span>✅</span> Confirm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Loading Modal -->
+    <div id="loading-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-body">
+                <div style="padding: var(--space-8);">
+                    <div style="font-size: 3rem; margin-bottom: var(--space-4); animation: spin 2s linear infinite;">⏳</div>
+                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-2);">Processing...</h4>
+                    <p id="loading-message" style="color: var(--gray-600);">Please wait while we process your request.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Success Modal -->
+    <div id="success-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--success-color), var(--success-light));">
+                <h3 class="modal-title">
+                    <span>✅</span>
+                    <span>Success!</span>
+                </h3>
+                <button onclick="closeModal('success-modal')" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: var(--space-6);">
+                    <div style="font-size: 4rem; margin-bottom: var(--space-4); color: var(--success-color);">🎉</div>
+                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-4);">Operation Completed!</h4>
+                    <p id="success-message" style="color: var(--gray-600); margin-bottom: var(--space-6);">
+                        Your action was completed successfully.
+                    </p>
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('success-modal')" class="btn btn-primary">
+                            <span>✅</span> Continue
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Error Modal -->
+    <div id="error-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--error-color), var(--error-light));">
+                <h3 class="modal-title">
+                    <span>❌</span>
+                    <span>Error</span>
+                </h3>
+                <button onclick="closeModal('error-modal')" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; padding: var(--space-6);">
+                    <div style="font-size: 4rem; margin-bottom: var(--space-4); color: var(--error-color);">😞</div>
+                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-4);">Something went wrong!</h4>
+                    <p id="error-message" style="color: var(--gray-600); margin-bottom: var(--space-6);">
+                        An unexpected error occurred. Please try again.
+                    </p>
+                    <div class="modal-actions">
+                        <button type="button" onclick="closeModal('error-modal')" class="btn btn-secondary">
+                            <span>❌</span> Close
+                        </button>
+                        <button type="button" onclick="location.reload()" class="btn btn-primary">
+                            <span>🔄</span> Reload Page
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Help Modal -->
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span>❓</span>
+                    <span>Help & Support</span>
+                </h3>
+                <button onclick="closeModal('help-modal')" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="padding: var(--space-4);">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-6);">
+                        
+                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--primary-color);">
+                            <h4 style="color: var(--primary-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>👪</span> Family Members
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
+                                <li>Add all family members first</li>
+                                <li>Mark primary members for admin access</li>
+                                <li>Upload photos for easy identification</li>
+                                <li>Click member cards for detailed view</li>
+                            </ul>
+                        </div>
+
+                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--success-color);">
+                            <h4 style="color: var(--success-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>📈</span> Investments
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
+                                <li>Track various investment types</li>
+                                <li>Monitor current vs invested amounts</li>
+                                <li>Use tabs to organize by category</li>
+                                <li>Import bulk data via CSV</li>
+                            </ul>
+                        </div>
+
+                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--error-color);">
+                            <h4 style="color: var(--error-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>📉</span> Liabilities
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
+                                <li>Track loans and debts</li>
+                                <li>Monitor EMI and interest rates</li>
+                                <li>Update outstanding amounts regularly</li>
+                                <li>Export data for analysis</li>
+                            </ul>
+                        </div>
+
+                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--warning-color);">
+                            <h4 style="color: var(--warning-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>🏦</span> Accounts
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
+                                <li>Manage bank and financial accounts</li>
+                                <li>Set nominees for estate planning</li>
+                                <li>Track account status</li>
+                                <li>Add notes and comments</li>
+                            </ul>
+                        </div>
+
+                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
+                            <h4 style="color: var(--info-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>📊</span> Data Management
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
+                                <li>Export data in CSV or JSON format</li>
+                                <li>Import bulk data from spreadsheets</li>
+                                <li>Regular backups recommended</li>
+                                <li>Data is stored securely</li>
+                            </ul>
+                        </div>
+
+                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--gray-600);">
+                            <h4 style="color: var(--gray-600); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
+                                <span>💡</span> Pro Tips
+                            </h4>
+                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
+                                <li>Update data regularly for accuracy</li>
+                                <li>Use consistent naming conventions</li>
+                                <li>Take advantage of sorting and filtering</li>
+                                <li>Export data before major changes</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: var(--space-8); padding: var(--space-6); background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05)); border-radius: var(--radius-lg); text-align: center;">
+                        <h4 style="color: var(--primary-color); margin-bottom: var(--space-3);">
+                            <span>🚀</span> Getting Started
+                        </h4>
+                        <p style="color: var(--gray-600); margin-bottom: var(--space-4);">
+                            Start by adding family members, then begin tracking investments and liabilities. The dashboard will automatically calculate totals and net worth.
+                        </p>
+                        <button onclick="closeModal('help-modal')" class="btn btn-primary">
+                            <span>✅</span> Got it, let's start!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Help Button -->
+    <div style="position: fixed; bottom: var(--space-6); right: var(--space-6); z-index: var(--z-fixed);">
+        <button onclick="openModal('help-modal')" class="btn" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: var(--white); font-size: 1.5rem; box-shadow: var(--shadow-lg); border: none;">
+            <span>❓</span>
+        </button>
+    </div>
+
+    <!-- Enhanced Footer Info -->
+    <div style="position: fixed; bottom: var(--space-2); left: var(--space-2); z-index: var(--z-sticky); background: rgba(255, 255, 255, 0.9); padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); font-size: 0.8rem; color: var(--gray-600); backdrop-filter: blur(5px); border: 1px solid var(--gray-300);">
+        <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span>💰</span>
+            <span>Family Wealth Dashboard v3.0</span>
+            <span>•</span>
+            <span id="connection-status">🟢 Online</span>
+        </div>
+    </div>
+
+    <!-- Progressive Web App Manifest -->
+    <script>
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('✅ ServiceWorker registration successful');
+                }, function(err) {
+                    console.log('❌ ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+
+        // Add to home screen functionality
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            deferredPrompt = e;
+            // Show install banner or button
+            console.log('💾 App can be installed');
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + M: Add Member
+            if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+                e.preventDefault();
+                if (typeof openAddMemberModal === 'function') {
+                    openAddMemberModal();
+                }
+            }
+            
+            // Ctrl/Cmd + I: Add Investment
+            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault();
+                if (typeof openAddInvestmentModal === 'function') {
+                    openAddInvestmentModal();
+                }
+            }
+            
+            // Ctrl/Cmd + L: Add Liability
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                if (typeof openAddLiabilityModal === 'function') {
+                    openAddLiabilityModal();
+                }
+            }
+            
+            // F1: Help
+            if (e.key === 'F1') {
+                e.preventDefault();
+                openModal('help-modal');
+            }
+        });
+
+        // Enhanced error handling
+        window.addEventListener('error', function(e) {
+            console.error('🚨 JavaScript Error:', e.error);
+            // Could show error modal or notification here
+        });
+
+        // Online/offline detection
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
+            if (navigator.onLine) {
+                statusElement.innerHTML = '🟢 Online';
+                statusElement.style.color = 'var(--success-color)';
+            } else {
+                statusElement.innerHTML = '🔴 Offline';
+                statusElement.style.color = 'var(--error-color)';
+            }
+        }
+
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+
+        // Initialize connection status
+        document.addEventListener('DOMContentLoaded', updateConnectionStatus);
+
+        // Auto-save functionality (placeholder for future enhancement)
+        let autoSaveInterval;
+        function startAutoSave() {
+            autoSaveInterval = setInterval(() => {
+                // Auto-save logic would go here
+                console.log('🔄 Auto-save triggered');
+            }, 30000); // Every 30 seconds
+        }
+
+        function stopAutoSave() {
+            if (autoSaveInterval) {
+                clearInterval(autoSaveInterval);
+            }
+        }
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            const perfData = performance.getEntriesByType('navigation')[0];
+            console.log('📊 Page load time:', Math.round(perfData.loadEventEnd - perfData.fetchStart), 'ms');
+        });
+
+        // Accessibility enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add focus trap for modals
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        const focusableElements = modal.querySelectorAll(
+                            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                        );
+                        const firstElement = focusableElements[0];
+                        const lastElement = focusableElements[focusableElements.length - 1];
+
+                        if (e.shiftKey) {
+                            if (document.activeElement === firstElement) {
+                                e.preventDefault();
+                                lastElement.focus();
+                            }
+                        } else {
+                            if (document.activeElement === lastElement) {
+                                e.preventDefault();
+                                firstElement.focus();
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Add ARIA labels and roles
+            document.querySelectorAll('.btn').forEach(btn => {
+                if (!btn.getAttribute('aria-label') && btn.textContent.trim()) {
+                    btn.setAttribute('aria-label', btn.textContent.trim());
+                }
+            });
+
+            // Enhanced keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const openModal = document.querySelector('.modal:not(.hidden)');
+                    if (openModal) {
+                        closeModal(openModal.id);
+                    }
+                }
+            });
+        });
+
+        // Data validation helpers
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function validateAmount(amount) {
+            return !isNaN(amount) && parseFloat(amount) >= 0;
+        }
+
+        function sanitizeInput(input) {
+            return input.trim().replace(/[<>]/g, '');
+        }
+
+        // Export data integrity check
+        function validateExportData(data) {
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error('No data available for export');
+            }
+            return true;
+        }
+
+        // Enhanced toast notifications system
+        class Toast {
+            static show(message, type = 'info', duration = 3000) {
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 24px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 600;
+                    z-index: 10000;
+                    transform: translateX(100%);
+                    transition: transform 0.3s ease;
+                    max-width: 400px;
+                    word-wrap: break-word;
+                `;
+
+                const backgrounds = {
+                    success: 'linear-gradient(135deg, #38a169, #48bb78)',
+                    error: 'linear-gradient(135deg, #e53e3e, #f56565)',
+                    warning: 'linear-gradient(135deg, #ed8936, #f6ad55)',
+                    info: 'linear-gradient(135deg, #3182ce, #4299e1)'
+                };
+
+                toast.style.background = backgrounds[type] || backgrounds.info;
+                toast.textContent = message;
+
+                document.body.appendChild(toast);
+
+                // Animate in
+                setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+
+                // Animate out
+                setTimeout(() => {
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => document.body.removeChild(toast), 300);
+                }, duration);
+            }
+        }
+
+        // Make Toast globally available
+        window.Toast = Toast;
+
+        // Enhanced console logging for development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log(`
+%c💰 Pradeep's Family Wealth Dashboard %cv3.0
+%cDevelopment Mode Active
+%c
+Features:
+- 👪 Family member management
+- 📈 Investment portfolio tracking  
+- 📉 Liability management
+- 🏦 Account organization
+- 📊 Data import/export
+- 🔒 Secure data storage
+            `, 'color: #667eea; font-size: 18px; font-weight: bold;', 'color: #718096; font-size: 14px;', 'color: #ed8936; font-size: 12px; font-weight: bold;', 'color: #4a5568; font-size: 12px;');
+        }
+    </script>
+
+    <!-- Load the main application JavaScript -->
     <script src="app.js" defer></script>
+
+    <!-- Enhanced Error Boundary -->
+    <script>
+        window.addEventListener('unhandledrejection', event => {
+            console.error('🚨 Unhandled promise rejection:', event.reason);
+            if (typeof Toast !== 'undefined') {
+                Toast.show('An unexpected error occurred. Please try refreshing the page.', 'error', 5000);
+            }
+        });
+    </script>
 </body>
 </html>
