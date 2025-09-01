@@ -1508,136 +1508,132 @@ function updateInvestmentForm() {
 
 // ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
 async function saveInvestment() {
-    const memberId = document.getElementById('investment-member').value;
-    const type = document.getElementById('investment-type').value;
-    const name = document.getElementById('investment-name').value.trim();
-    const amount = parseFloat(document.getElementById('investment-amount').value);
+  const btn = document.getElementById('investment-save-btn');
+  btn.disabled = true;
+
+  try {
+    // → Basic fields
+    const memberId     = document.getElementById('investment-member').value;
+    const type         = document.getElementById('investment-type').value;
+    const name         = document.getElementById('investment-name').value.trim();
+    const amount       = parseFloat(document.getElementById('investment-amount').value);
     const currentValue = parseFloat(document.getElementById('investment-current-value').value) || amount;
-    const platform = document.getElementById('investment-platform').value.trim() || 'Not Specified';
+    const platform     = document.getElementById('investment-platform').value.trim() || 'Not Specified';
 
+    // → Required validation
     if (!memberId || !type || !name || !amount) {
-        showMessage('Please fill in all required fields.', 'error');
-        return;
+      showMessage('Please fill in all required fields.', 'error');
+      return;
     }
-
     if (amount <= 0) {
-        showMessage('Invested amount must be greater than 0.', 'error');
-        return;
+      showMessage('Invested amount must be greater than 0.', 'error');
+      return;
     }
 
-    try {
-        // SHARED DATA - Removed user_id to make investments shared
-        const investmentData = {
-            member_id: memberId,
-            investment_type: type,
-            symbol_or_name: name,
-            invested_amount: amount,
-            current_value: currentValue,
-            broker_platform: platform,
-            created_at: new Date().toISOString()
-        };
-
-    
-// Enhanced Fixed Deposit fields - WITH COMMENTS
-if (type === 'fixedDeposits') {
-    investmentData.fd_invested_date = document.getElementById('fd-start-date')?.value || null;
-    investmentData.fd_bank_name = document.getElementById('fd-bank-name')?.value || null;
-    investmentData.fd_interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
-    investmentData.fd_interest_payout = document.getElementById('fd-interest-payout')?.value || null;
-    investmentData.fd_start_date = document.getElementById('fd-start-date')?.value || null;
-    investmentData.fd_maturity_date = document.getElementById('fd-maturity-date')?.value || null;
-    investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
-    investmentData.fd_nominee = document.getElementById('fd-nominee')?.value || null;
-    investmentData.fd_comments = document.getElementById('fd-comments')?.value || null;  // ✅ COMMENTS ADDED
-    
-    // Also populate standard fields for fixed_deposits table
-    investmentData.bank_name = document.getElementById('fd-bank-name')?.value || null;
-    investmentData.interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
-    investmentData.start_date = document.getElementById('fd-start-date')?.value || null;
-    investmentData.maturity_date = document.getElementById('fd-maturity-date')?.value || null;
-    investmentData.interest_payout = document.getElementById('fd-interest-payout')?.value || 'Yearly';
-    investmentData.account_number = document.getElementById('fd-account-number')?.value || null;
-    investmentData.nominee = document.getElementById('fd-nominee')?.value || null;
-    investmentData.comments = document.getElementById('fd-comments')?.value || null;  // ✅ COMMENTS ADDED
-    
-    console.log('📊 Added enhanced FD fields to investment data');
-}
-
- 
-  // Enhanced Insurance fields - UPDATED to match old form IDs
-if (type === 'insurance') {
-  // Core insurance fields
-  investmentData.insurance_type              = document.getElementById('ins-type')?.value                || null;
-  investmentData.insurance_premium           = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
-  investmentData.insurance_sum_assured       = parseFloat(document.getElementById('ins-sum-assured')?.value)   || null;
-  investmentData.insurance_payment_frequency = document.getElementById('ins-premium-frequency')?.value       || null;
-  investmentData.insurance_start_date        = document.getElementById('ins-start-date')?.value               || null;
-  investmentData.insurance_maturity_date     = document.getElementById('ins-maturity-date')?.value            || null;
-  investmentData.insurance_policy_number     = document.getElementById('ins-policy-number')?.value            || null;
-  investmentData.insurance_comments          = document.getElementById('ins-comments')?.value                 || null;
-
-  // Set current_value fallback
-  investmentData.current_value = investmentData.insurance_sum_assured || investmentData.invested_amount;
-
-  // Insert investment first
-  const { data, error } = await supabase
-    .from('investments')
-    .insert([investmentData]);
-
-  if (error) {
-    console.error('Investment save error:', error);
-    return;
-  }
-
-  // Then create reminder using the same form field
-  const nextPremium = document.getElementById('ins-next-premium-date')?.value;
-  if (nextPremium) {
-    const reminderData = {
-      member_id: currentUser.id,
-      title:    `Insurance premium due for ${investmentData.symbol_or_name}`,
-      date:     nextPremium,
-      type:     'insurance',
-      created_at: new Date().toISOString()
+    // → Build base investmentData
+    const investmentData = {
+      member_id:       memberId,
+      investment_type: type,
+      symbol_or_name:  name,
+      invested_amount: amount,
+      current_value:   currentValue,
+      broker_platform: platform,
+      created_at:      new Date().toISOString()
     };
-    const { error: reminderError } = await supabase
-      .from('reminders')
-      .insert([reminderData]);
-    if (reminderError) {
-      console.error('Failed to create reminder:', reminderError);
+
+    // → Fixed Deposits branch
+    if (type === 'fixedDeposits') {
+      investmentData.fd_invested_date = document.getElementById('fd-start-date')?.value || null;
+      investmentData.fd_bank_name     = document.getElementById('fd-bank-name')?.value  || null;
+      investmentData.fd_interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
+      investmentData.fd_interest_payout = document.getElementById('fd-interest-payout')?.value || null;
+      investmentData.fd_start_date    = document.getElementById('fd-start-date')?.value || null;
+      investmentData.fd_maturity_date = document.getElementById('fd-maturity-date')?.value || null;
+      investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
+      investmentData.fd_nominee       = document.getElementById('fd-nominee')?.value     || null;
+      investmentData.fd_comments      = document.getElementById('fd-comments')?.value    || null;
+
+      investmentData.bank_name        = investmentData.fd_bank_name;
+      investmentData.interest_rate    = investmentData.fd_interest_rate;
+      investmentData.start_date       = investmentData.fd_start_date;
+      investmentData.maturity_date    = investmentData.fd_maturity_date;
+      investmentData.interest_payout  = investmentData.fd_interest_payout;
+      investmentData.account_number   = investmentData.fd_account_number;
+      investmentData.nominee          = investmentData.fd_nominee;
+      investmentData.comments         = investmentData.fd_comments;
+
+      console.log('📊 Added FD fields:', investmentData);
     }
+
+    // → Insurance branch
+    if (type === 'insurance') {
+      investmentData.insurance_type              = document.getElementById('ins-type')?.value               || null;
+      investmentData.insurance_premium           = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
+      investmentData.insurance_sum_assured       = parseFloat(document.getElementById('ins-sum-assured')?.value)   || null;
+      investmentData.insurance_payment_frequency = document.getElementById('ins-premium-frequency')?.value      || null;
+      investmentData.insurance_start_date        = document.getElementById('ins-start-date')?.value              || null;
+      investmentData.insurance_maturity_date     = document.getElementById('ins-maturity-date')?.value           || null;
+      investmentData.insurance_policy_number     = document.getElementById('ins-policy-number')?.value           || null;
+      investmentData.insurance_comments          = document.getElementById('ins-comments')?.value                || null;
+
+      // Use sum_assured as current_value if needed
+      investmentData.current_value = investmentData.insurance_sum_assured || investmentData.current_value;
+
+      console.log('🛡️ Added insurance fields:', investmentData);
+    }
+
+    // → Bank Balances branch
+    if (type === 'bankBalances') {
+      investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
+      investmentData.bank_as_of_date      = document.getElementById('bank-as-of-date')?.value   || null;
+      investmentData.bank_account_type    = document.getElementById('bank-account-type')?.value|| null;
+      console.log('💰 Added bank balance fields:', investmentData);
+    }
+
+    // → Upsert investment
+    const isEditing = Boolean(editingInvestmentId);
+    let result;
+    if (isEditing) {
+      result = await updateInvestmentData(editingInvestmentId, investmentData);
+    } else {
+      result = await addInvestmentData(investmentData);
+    }
+    editingInvestmentId = null;
+
+    // → After saving investment, insert reminder for insurance
+    if (type === 'insurance') {
+      const nextPremium = document.getElementById('ins-next-premium-date')?.value;
+      if (nextPremium) {
+        const reminderData = {
+          member_id:  memberId,
+          title:      `Premium due: ${investmentData.symbol_or_name}`,
+          date:       nextPremium,
+          type:       'insurance',
+          created_at: new Date().toISOString()
+        };
+        const { error: remErr } = await supabase.from('reminders').insert([reminderData]);
+        if (remErr) console.error('Reminder error:', remErr);
+        else console.log('✅ Reminder created');
+      }
+    }
+
+    // → UI cleanup & reload
+    showMessage(isEditing ? 'Investment updated!' : 'Investment added!', 'success');
+    document.getElementById('investment-form').reset();
+    closeModal('investment-modal');
+    renderInvestmentTabContent(type);
+    renderStatsOverview();
+    await loadDashboardData();
+
+  } catch (error) {
+    console.error('❌ saveInvestment error:', error);
+    showMessage('Error saving investment.', 'error');
+
+  } finally {
+    btn.disabled = false;
   }
-
-  console.log('🛡️ Insurance investment and reminder saved');
 }
 
- 
- // Bank Balance fields
- if (type === 'bankBalances') {
-     investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
-     investmentData.bank_as_of_date = document.getElementById('bank-as-of-date')?.value || null;
-     investmentData.bank_account_type = document.getElementById('bank-account-type')?.value || null;
-     
-     console.log('💰 Added Bank Balance fields to investment data');
- }
-
-
-        if (editingInvestmentId) {
-            await updateInvestmentData(editingInvestmentId, investmentData);
-            showMessage('Investment updated successfully! ✅', 'success');
-        } else {
-            await addInvestmentData(investmentData);
-            showMessage('Investment added successfully! ✅', 'success');
-        }
-
-        renderInvestmentTabContent(type);
-        renderStatsOverview();
-        closeModal('investment-modal');
-        
-    } catch (error) {
-        console.error('❌ Investment save error:', error);
-        showMessage(`Error: ${error.message}`, 'error');
-    }
-}
 
 async function addInvestmentData(investmentData) {
     const authType = localStorage.getItem('famwealth_auth_type');
