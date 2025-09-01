@@ -1508,8 +1508,7 @@ function updateInvestmentForm() {
 
 // ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
 async function saveInvestment() {
-   editingInvestmentId = null;
-  const btn = document.getElementById('investment-save-btn');
+   const btn = document.getElementById('investment-save-btn');
   btn.disabled = true;
 
   try {
@@ -1599,7 +1598,7 @@ async function saveInvestment() {
     } else {
       result = await addInvestmentData(investmentData);
     }
-   
+   editingInvestmentId = null;
 
     // → After saving investment, insert reminder for insurance
     if (type === 'insurance') {
@@ -1690,7 +1689,7 @@ async function updateInvestmentData(investmentId, investmentData) {
 
 // ENHANCED: editInvestment with additional fields
 function editInvestment(investmentId) {
-    editingInvestmentId = id;
+    editingInvestmentId = investmentId;
     const investment = investments.find(inv => inv.id === investmentId);
     if (!investment) {
         console.error('Investment not found:', investmentId);
