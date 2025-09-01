@@ -1791,6 +1791,36 @@ function editInvestment(investmentId) {
         name: investment.symbol_or_name || investment.name
     });
 }
+function editInsurance(insuranceId) {
+  // Find the insurance record in your investments array
+  const ins = investments.find(inv => inv.id === insuranceId);
+  if (!ins) return;
+
+  // Populate shared fields
+  document.getElementById('investment-member').value         = ins.member_id || '';
+  document.getElementById('investment-type').value           = 'insurance';
+  document.getElementById('investment-name').value           = ins.symbol_or_name || '';
+  document.getElementById('investment-amount').value         = ins.insurance_sum_assured || '';
+  document.getElementById('investment-current-value').value  = ins.current_value || '';
+  document.getElementById('investment-platform').value       = ins.broker_platform || '';
+
+  // Populate insurance-specific fields
+  document.getElementById('ins-type').value                  = ins.insurance_type || '';
+  document.getElementById('ins-premium-amount').value        = ins.insurance_premium || '';
+  document.getElementById('ins-sum-assured').value           = ins.insurance_sum_assured || '';
+  document.getElementById('ins-premium-frequency').value     = ins.insurance_payment_frequency || '';
+  document.getElementById('ins-start-date').value            = ins.insurance_start_date || '';
+  document.getElementById('ins-maturity-date').value         = ins.insurance_maturity_date || '';
+  document.getElementById('ins-policy-number').value         = ins.insurance_policy_number || '';
+  document.getElementById('ins-comments').value              = ins.insurance_comments || '';
+  document.getElementById('ins-next-premium-date').value     = ''; // reminder is separate
+
+  // Mark edit mode
+  editingInvestmentId = insuranceId;
+  document.getElementById('investment-modal-title').textContent = 'Edit Insurance';
+
+  openModal('investment-modal');
+}
 
 // Helper function to safely get element value
 function safeGetElementValue(elementId, fallback = '') {
