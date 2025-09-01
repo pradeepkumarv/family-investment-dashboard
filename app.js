@@ -1566,37 +1566,23 @@ if (type === 'fixedDeposits') {
  
   // Enhanced Insurance fields - UPDATED to match old form IDs
 if (type === 'insurance') {
-    investmentData.policy_name = document.getElementById('ins-policy-name')?.value || null;
-    investmentData.policy_number = document.getElementById('ins-policy-number')?.value || null;
-    investmentData.insurance_company = document.getElementById('ins-company')?.value || null;
-    investmentData.insurance_type = document.getElementById('ins-type')?.value || null;
-    investmentData.sum_assured = parseFloat(document.getElementById('ins-sum-assured')?.value) || null;
-    investmentData.premium_amount = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
-    investmentData.premium_frequency = document.getElementById('ins-premium-frequency')?.value || null;
-    investmentData.start_date = document.getElementById('ins-start-date')?.value || null;
-    investmentData.maturity_date = document.getElementById('ins-maturity-date')?.value || null;
-    investmentData.next_premium_date = document.getElementById('ins-next-premium-date')?.value || null;
-    investmentData.nominee = document.getElementById('ins-nominee')?.value || null;
-    investmentData.policy_status = document.getElementById('ins-policy-status')?.value || 'Active';
-    investmentData.comments = document.getElementById('ins-comments')?.value || null;
-    
-    // Insurance specific mappings for investments table
-    investmentData.insurance_invested_date = document.getElementById('ins-start-date')?.value || null;
-    investmentData.insurance_premium = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
-    investmentData.insurance_sum_assured = parseFloat(document.getElementById('ins-sum-assured')?.value) || null;
-    investmentData.insurance_payment_frequency = document.getElementById('ins-premium-frequency')?.value || null;
-    investmentData.insurance_start_date = document.getElementById('ins-start-date')?.value || null;
-    investmentData.insurance_maturity_date = document.getElementById('ins-maturity-date')?.value || null;
-    investmentData.insurance_policy_number = document.getElementById('ins-policy-number')?.value || null;
-    investmentData.insurance_comments = document.getElementById('ins-comments')?.value || null;
-    
-    // Set current_value to sum_assured for insurance
-    investmentData.current_value = parseFloat(document.getElementById('ins-sum-assured')?.value) || investmentData.invested_amount;
-    
-    console.log('🛡️ Added enhanced Insurance fields to investment data');
+  // Core insurance fields (investment table columns)
+  investmentData.insurance_type              = document.getElementById('ins-type')?.value                || null;
+  investmentData.insurance_premium           = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
+  investmentData.insurance_sum_assured       = parseFloat(document.getElementById('ins-sum-assured')?.value)   || null;
+  investmentData.insurance_payment_frequency = document.getElementById('ins-premium-frequency')?.value       || null;
+  investmentData.insurance_start_date        = document.getElementById('ins-start-date')?.value               || null;
+  investmentData.insurance_maturity_date     = document.getElementById('ins-maturity-date')?.value            || null;
+  investmentData.insurance_policy_number     = document.getElementById('ins-policy-number')?.value            || null;
+  investmentData.insurance_comments          = document.getElementById('ins-comments')?.value                 || null;
+  investmentData.next_premium_date           = document.getElementById('ins-next-premium-date')?.value || null;
+
+  // Use sum_assured as current_value if no explicit current_value
+  investmentData.current_value = investmentData.insurance_sum_assured 
+    || investmentData.invested_amount;
+
+  console.log('🛡️ Added enhanced insurance fields to investment data');
 }
-
-
  
  // Bank Balance fields
  if (type === 'bankBalances') {
