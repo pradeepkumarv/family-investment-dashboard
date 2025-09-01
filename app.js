@@ -1691,7 +1691,7 @@ async function updateInvestmentData(investmentId, investmentData) {
 function editInvestment(investmentId) {
     editingInvestmentId = investmentId;
     const investment = investments.find(inv => inv.id === investmentId);
-    if (!inv) {
+    if (!investment) {
         console.error('Investment not found:', investmentId);
         return;
     }
