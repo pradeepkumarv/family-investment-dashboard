@@ -1,815 +1,539 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💰 Pradeep's Family Wealth Dashboard - Enhanced</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <style>
-        /* COMPLETE EMBEDDED CSS - NO EXTERNAL DEPENDENCIES */
-        /* Enhanced Family Wealth Dashboard Styles */
-        
-        :root {
-            /* Enhanced Color System */
-            --color-primary: #2563eb;
-            --color-primary-hover: #1d4ed8;
-            --color-secondary: #f3f4f6;
-            --color-success: #10b981;
-            --color-error: #ef4444;
-            --color-warning: #f59e0b;
-            --color-info: #3b82f6;
-            
-            /* Text Colors */
-            --color-text: #1f2937;
-            --color-text-secondary: #6b7280;
-            --color-white: #ffffff;
-            
-            /* Background Colors */
-            --color-background: #ffffff;
-            --color-surface: #f9fafb;
-            --color-border: #e5e7eb;
-            --color-card-border: #d1d5db;
-            
-            /* Enhanced RGB Values for Transparency */
-            --color-primary-rgb: 37, 99, 235;
-            --color-success-rgb: 16, 185, 129;
-            --color-error-rgb: 239, 68, 68;
-            --color-warning-rgb: 245, 158, 11;
-            --color-info-rgb: 59, 130, 246;
-            
-            /* Spacing System */
-            --space-4: 4px;
-            --space-8: 8px;
-            --space-12: 12px;
-            --space-16: 16px;
-            --space-20: 20px;
-            --space-24: 24px;
-            --space-32: 32px;
-            --space-40: 40px;
-            --space-48: 48px;
-            --space-64: 64px;
-            
-            /* Typography */
-            --font-size-xs: 0.75rem;
-            --font-size-sm: 0.875rem;
-            --font-size-base: 1rem;
-            --font-size-lg: 1.125rem;
-            --font-size-xl: 1.25rem;
-            --font-size-2xl: 1.5rem;
-            --font-size-3xl: 1.875rem;
-            --font-size-4xl: 2.25rem;
-            
-            --font-weight-normal: 400;
-            --font-weight-medium: 500;
-            --font-weight-semibold: 600;
-            --font-weight-bold: 700;
-            
-            /* Border Radius */
-            --radius-base: 8px;
-            --radius-lg: 12px;
-            --radius-xl: 16px;
-            --radius-full: 9999px;
-            
-            /* Shadows */
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            
-            /* Transitions */
-            --duration-fast: 150ms;
-            --duration-normal: 300ms;
-            --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-        }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pradeep's Family Wealth - Complete Family Financial Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
 
-        /* Global Reset and Base Styles */
+    <!-- Supabase CDN -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
+
+    <style>
+        /* ===== GLOBAL STYLES ===== */
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--color-text);
-            background: var(--color-background);
-            font-size: var(--font-size-base);
-        }
-
-        /* Enhanced Landing Page Styles */
-        .landing-page {
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+                Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: var(--space-20);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
         }
 
-        .landing-container {
-            max-width: 1200px;
+        /* ===== LANDING PAGE ===== */
+        .landing-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
             width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: var(--space-64);
-            align-items: start;
+            max-width: 480px;
+            text-align: center;
         }
 
         .logo {
-            color: var(--color-white);
-            text-align: center;
-            margin-bottom: var(--space-48);
+            font-size: 3rem;
+            margin-bottom: 10px;
         }
 
-        .logo h1 {
-            font-size: var(--font-size-4xl);
-            font-weight: var(--font-weight-bold);
-            margin-bottom: var(--space-16);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .auth-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
         }
 
-        .logo-subtitle {
-            font-size: var(--font-size-xl);
-            margin-bottom: var(--space-12);
-            opacity: 0.9;
+        .auth-subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
         }
 
-        .logo-tagline {
-            font-size: var(--font-size-base);
-            opacity: 0.8;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .landing-description {
-            color: var(--color-white);
-            margin-bottom: var(--space-48);
-        }
-
-        .landing-description h2 {
-            font-size: var(--font-size-3xl);
-            font-weight: var(--font-weight-bold);
-            margin-bottom: var(--space-24);
-            text-align: center;
-        }
-
-        .landing-description > p {
-            font-size: var(--font-size-lg);
-            text-align: center;
-            margin-bottom: var(--space-32);
-            opacity: 0.9;
-        }
-
-        .feature-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: var(--space-24);
-        }
-
-        .feature-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: var(--space-24);
-            border-radius: var(--radius-lg);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all var(--duration-normal) var(--ease-standard);
-        }
-
-        .feature-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-4px);
-        }
-
-        .feature-item strong {
-            display: block;
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-semibold);
-            margin-bottom: var(--space-8);
-        }
-
-        .feature-item small {
-            opacity: 0.8;
-            line-height: 1.5;
-        }
-
-        /* Enhanced Login Section */
-        .login-section {
-            background: var(--color-white);
-            border-radius: var(--radius-xl);
-            padding: var(--space-40);
-            box-shadow: var(--shadow-lg);
-            position: sticky;
-            top: var(--space-20);
-        }
-
-        .login-form h3 {
-            text-align: center;
-            margin-bottom: var(--space-32);
-            color: var(--color-text);
-            font-size: var(--font-size-2xl);
-            font-weight: var(--font-weight-bold);
-        }
-
-        /* Enhanced Form Styles */
         .form-group {
-            margin-bottom: var(--space-20);
+            margin-bottom: 20px;
+            text-align: left;
         }
 
         .form-label {
             display: block;
-            font-weight: var(--font-weight-medium);
-            margin-bottom: var(--space-8);
-            color: var(--color-text);
-            font-size: var(--font-size-sm);
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
         }
 
-        .form-control {
+        .form-input {
             width: 100%;
-            padding: var(--space-12) var(--space-16);
-            border: 2px solid var(--color-border);
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-base);
-            transition: all var(--duration-fast) var(--ease-standard);
-            background: var(--color-white);
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
         }
 
-        .form-control:focus {
+        .form-input:focus {
             outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .form-control::placeholder {
-            color: var(--color-text-secondary);
-        }
-
-        /* Enhanced Button Styles */
         .btn {
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: var(--space-8);
-            padding: var(--space-12) var(--space-24);
-            border: none;
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-base);
-            font-weight: var(--font-weight-medium);
+            gap: 8px;
             text-decoration: none;
-            cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-standard);
-            user-select: none;
         }
 
-        .btn--primary {
-            background: var(--color-primary);
-            color: var(--color-white);
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
-        .btn--primary:hover {
-            background: var(--color-primary-hover);
-            transform: translateY(-1px);
+        .btn-primary:hover {
+            transform: translateY(-2px);
         }
 
-        .btn--secondary {
-            background: var(--color-secondary);
-            color: var(--color-text);
-            border: 1px solid var(--color-border);
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 10px 20px;
         }
 
-        .btn--secondary:hover {
-            background: var(--color-border);
+        .btn-secondary:hover {
+            background: #cbd5e0;
         }
 
-        .btn--success {
-            background: var(--color-success);
-            color: var(--color-white);
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
         }
 
-        .btn--warning {
-            background: var(--color-warning);
-            color: var(--color-white);
+        .btn-edit {
+            background: #ed8936;
+            color: white;
         }
 
-        .btn--danger {
-            background: var(--color-error);
-            color: var(--color-white);
+        .btn-delete {
+            background: #e53e3e;
+            color: white;
         }
 
-        .btn--info {
-            background: var(--color-info);
-            color: var(--color-white);
+        .btn-photo {
+            background: #667eea;
+            color: white;
         }
 
-        .btn--sm {
-            padding: var(--space-8) var(--space-16);
-            font-size: var(--font-size-sm);
+        .btn-add {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
         }
 
-        .btn--lg {
-            padding: var(--space-16) var(--space-32);
-            font-size: var(--font-size-lg);
+        .btn-export {
+            background: #38a169;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            margin-right: 8px;
         }
 
-        .btn--full-width {
-            width: 100%;
+        .btn-logout {
+            background: #e53e3e;
+            color: white;
+            padding: 10px 20px;
         }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* Demo Info Styling */
-        .demo-info {
-            margin-top: var(--space-32);
-            padding: var(--space-24);
-            background: rgba(var(--color-info-rgb), 0.1);
-            border-radius: var(--radius-lg);
-            border: 1px solid rgba(var(--color-info-rgb), 0.2);
-        }
-
-        .demo-info h4 {
-            color: var(--color-info);
-            margin-bottom: var(--space-16);
-            font-size: var(--font-size-lg);
-        }
-
-        .demo-credentials {
-            background: var(--color-white);
-            padding: var(--space-16);
-            border-radius: var(--radius-base);
-            margin: var(--space-16) 0;
-            border-left: 4px solid var(--color-success);
-        }
-
-        .demo-credentials code {
-            background: var(--color-secondary);
-            padding: var(--space-4) var(--space-8);
-            border-radius: var(--radius-base);
-            font-family: 'Courier New', monospace;
-            font-weight: var(--font-weight-medium);
-        }
-
-        /* Enhanced Main Dashboard Styles */
+        /* ===== MAIN DASHBOARD ===== */
         .main-dashboard {
+            display: none;
+            background: #f8fafc;
             min-height: 100vh;
-            background: var(--color-background);
         }
 
-        /* Enhanced Navigation Bar */
-        .navbar {
-            background: var(--color-white);
-            border-bottom: 1px solid var(--color-border);
-            padding: var(--space-16) 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--shadow-sm);
+        .dashboard-header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .navbar-flex {
-            max-width: 1400px;
+        .header-content {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 var(--space-24);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .navbar-nav {
-            display: flex;
-            gap: var(--space-8);
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .navbar-nav::-webkit-scrollbar {
-            display: none;
-        }
-
-        .nav-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--space-8);
-            padding: var(--space-12) var(--space-16);
-            background: transparent;
-            border: none;
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-secondary);
-            cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-standard);
-            white-space: nowrap;
-        }
-
-        .nav-btn:hover {
-            background: var(--color-secondary);
-            color: var(--color-text);
-        }
-
-        .nav-btn.active {
-            background: var(--color-primary);
-            color: var(--color-white);
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: var(--space-16);
+        .dashboard-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2d3748;
         }
 
         .user-info {
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: var(--space-4);
-        }
-
-        .user-email {
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text);
-        }
-
-        .user-access-level {
-            font-size: var(--font-size-xs);
-            padding: var(--space-2) var(--space-8);
-            border-radius: var(--radius-full);
-            font-weight: var(--font-weight-medium);
-        }
-
-        .user-access-level.admin {
-            background: rgba(var(--color-success-rgb), 0.1);
-            color: var(--color-success);
-        }
-
-        .user-access-level.standard {
-            background: rgba(var(--color-warning-rgb), 0.1);
-            color: var(--color-warning);
-        }
-
-        .logout-btn {
-            background: var(--color-error);
-            color: var(--color-white);
-            border: none;
-            padding: var(--space-8) var(--space-16);
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-sm);
-            cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-standard);
-        }
-
-        .logout-btn:hover {
-            background: #dc2626;
-            transform: translateY(-1px);
-        }
-
-        /* Enhanced Container and Layout */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: var(--space-24);
-        }
-
-        /* Enhanced Dashboard Sections */
-        .dashboard-section {
-            display: none;
-            animation: fadeIn var(--duration-normal) var(--ease-standard);
-        }
-
-        .dashboard-section.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Enhanced Section Headers */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: var(--space-32);
-            padding-bottom: var(--space-24);
-            border-bottom: 2px solid var(--color-border);
-        }
-
-        .section-header h2 {
-            font-size: var(--font-size-3xl);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text);
-            margin-bottom: var(--space-8);
-        }
-
-        .section-header p {
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-base);
-            max-width: 600px;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: var(--space-12);
             align-items: center;
-            flex-wrap: wrap;
+            gap: 15px;
+            color: #718096;
+            font-size: 0.9rem;
         }
 
-        .date-info {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-secondary);
-            white-space: nowrap;
+        .dashboard-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
         }
 
-        /* Enhanced Stats Grid */
+        /* ===== STATS GRID ===== */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: var(--space-24);
-            margin-bottom: var(--space-48);
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
         }
 
         .stat-card {
-            background: var(--color-white);
-            padding: var(--space-24);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-            transition: all var(--duration-normal) var(--ease-standard);
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid;
+            text-align: center;
         }
 
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
+        .stat-card.assets {
+            border-left-color: #38a169;
+        }
+
+        .stat-card.liabilities {
+            border-left-color: #e53e3e;
+        }
+
+        .stat-card.net-worth {
+            border-left-color: #667eea;
+        }
+
+        .stat-card.accounts {
+            border-left-color: #ed8936;
+        }
+
+        .stat-card.reminders {
+            border-left-color: #9f7aea;
         }
 
         .stat-label {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--space-8);
-            font-weight: var(--font-weight-medium);
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
         .stat-value {
-            font-size: var(--font-size-2xl);
-            font-weight: var(--font-weight-bold);
-            margin-bottom: var(--space-8);
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
         }
 
-        .stat-value.primary { color: var(--color-primary); }
-        .stat-value.positive { color: var(--color-success); }
-        .stat-value.negative { color: var(--color-error); }
-
-        .stat-change {
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-        }
-
-        .stat-change.positive { color: var(--color-success); }
-        .stat-change.negative { color: var(--color-error); }
-        .stat-change.neutral { color: var(--color-text-secondary); }
-
-        /* Quick Actions Grid */
-        .quick-actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--space-24);
-            margin-bottom: var(--space-48);
-        }
-
-        .quick-action-card {
-            background: var(--color-white);
-            padding: var(--space-24);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-            text-align: center;
-            transition: all var(--duration-normal) var(--ease-standard);
-        }
-
-        .quick-action-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .action-icon {
-            font-size: var(--font-size-4xl);
-            margin-bottom: var(--space-16);
-        }
-
-        .quick-action-card h4 {
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-semibold);
-            margin-bottom: var(--space-8);
-            color: var(--color-text);
-        }
-
-        .quick-action-card p {
-            color: var(--color-text-secondary);
-            margin-bottom: var(--space-16);
-            font-size: var(--font-size-sm);
-        }
-
-        /* Enhanced Tab Styles */
-        .investment-tabs, .reminder-tabs, .analytics-tabs {
-            display: flex;
-            gap: var(--space-8);
-            margin-bottom: var(--space-32);
-            background: var(--color-surface);
-            padding: var(--space-8);
-            border-radius: var(--radius-lg);
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-        .investment-tabs::-webkit-scrollbar,
-        .reminder-tabs::-webkit-scrollbar,
-        .analytics-tabs::-webkit-scrollbar {
-            display: none;
-        }
-
-        .tab-btn {
-            display: flex;
-            align-items: center;
-            gap: var(--space-8);
-            padding: var(--space-12) var(--space-16);
-            background: transparent;
-            border: none;
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-            color: var(--color-text-secondary);
-            cursor: pointer;
-            transition: all var(--duration-fast) var(--ease-standard);
-            white-space: nowrap;
-            min-height: 44px;
-        }
-
-        .tab-btn:hover {
-            background: var(--color-white);
-            color: var(--color-text);
-        }
-
-        .tab-btn.active {
-            background: var(--color-primary);
-            color: var(--color-white);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .tab-count {
-            background: rgba(255, 255, 255, 0.2);
-            padding: var(--space-2) var(--space-8);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-xs);
-            font-weight: var(--font-weight-semibold);
-        }
-
-        .tab-btn.active .tab-count {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Enhanced Table Styles */
-        .investment-table, .family-table {
-            background: var(--color-white);
-            border-radius: var(--radius-lg);
+        /* ===== SECTIONS ===== */
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             overflow: hidden;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-            margin-bottom: var(--space-32);
         }
 
-        .table-controls {
+        .section-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: var(--space-16);
-            padding: var(--space-20);
-            background: var(--color-surface);
-            border-bottom: 1px solid var(--color-border);
-            flex-wrap: wrap;
         }
 
-        .search-filter {
-            flex: 1;
-            min-width: 200px;
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
         }
 
-        .filter-controls {
+        .section-actions {
             display: flex;
-            gap: var(--space-12);
-            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .filter-controls .form-control {
-            min-width: 150px;
+        .section-actions .btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .investment-table table, .family-table {
+        .section-actions .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .section-content {
+            padding: 30px;
+        }
+
+        /* ===== FAMILY MEMBERS GRID ===== */
+        .family-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .family-card {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .family-card:hover {
+            transform: translateY(-2px);
+            border-color: #667eea;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .member-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 15px;
+            border: 3px solid #667eea;
+        }
+
+        .member-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .primary-badge {
+            background: #667eea;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .member-relationship {
+            color: #718096;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        .member-summary {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .summary-label {
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-weight: 600;
+        }
+
+        .summary-value.assets {
+            color: #38a169;
+        }
+
+        .summary-value.liabilities {
+            color: #e53e3e;
+        }
+
+        .summary-value.net-worth {
+            color: #667eea;
+        }
+
+        .summary-counts {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .count-item {
+            background: #edf2f7;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .member-actions {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #718096;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            color: #4a5568;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* ===== TAB CONTENT ===== */
+        .tab-content {
+            min-height: 200px;
+        }
+
+        /* ===== TABLES ===== */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .data-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 15px;
         }
 
-        .investment-table th, .investment-table td,
-        .family-table th, .family-table td {
-            padding: var(--space-16);
+        .data-table th,
+        .data-table td {
+            padding: 12px;
             text-align: left;
-            border-bottom: 1px solid var(--color-border);
-            vertical-align: top;
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .investment-table th, .family-table th {
-            background: var(--color-surface);
-            font-weight: var(--font-weight-semibold);
-            color: var(--color-text);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+        .data-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #2d3748;
             cursor: pointer;
+            position: relative;
             user-select: none;
         }
 
-        .investment-table th:hover, .family-table th:hover {
-            background: var(--color-border);
+        .data-table th:hover {
+            background: #edf2f7;
         }
 
-        .investment-table tbody tr:hover, .family-table tbody tr:hover {
-            background: var(--color-surface);
+        .sort-indicator {
+            margin-left: 5px;
+            color: #667eea;
+            font-weight: bold;
         }
 
-        /* Enhanced Conditional Fields */
-        .conditional-fields {
-            background: var(--color-surface);
-            padding: var(--space-20);
-            border-radius: var(--radius-lg);
-            margin-top: var(--space-20);
-            border: 1px solid var(--color-border);
-            display: none;
+        .data-table tbody tr:hover {
+            background: #f7fafc;
         }
 
-        .conditional-fields.show {
-            display: block;
-            animation: slideDown var(--duration-normal) var(--ease-standard);
+        .text-green {
+            color: #38a169;
+            font-weight: 600;
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .text-red {
+            color: #e53e3e;
+            font-weight: 600;
         }
 
-        .conditional-fields h4 {
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-semibold);
-            margin-bottom: var(--space-16);
-            color: var(--color-text);
-            display: flex;
-            align-items: center;
-            gap: var(--space-8);
+        .status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        /* Enhanced Security Sections */
-        .credentials-section {
-            background: rgba(var(--color-success-rgb), 0.05);
-            border: 2px solid rgba(var(--color-success-rgb), 0.2);
-            padding: var(--space-20);
-            border-radius: var(--radius-lg);
-            margin-top: var(--space-20);
+        .status.active {
+            background: #c6f6d5;
+            color: #2f855a;
         }
 
-        .credentials-section h4 {
-            color: var(--color-success);
-            margin-bottom: var(--space-12);
-            display: flex;
-            align-items: center;
-            gap: var(--space-8);
+        .status.inactive {
+            background: #fed7d7;
+            color: #c53030;
         }
 
-        .password-warning {
-            background: rgba(var(--color-error-rgb), 0.05);
-            border: 2px solid rgba(var(--color-error-rgb), 0.2);
-            padding: var(--space-20);
-            border-radius: var(--radius-lg);
-            margin-top: var(--space-20);
+        /* ===== EMPTY STATES ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
         }
 
-        .password-warning h4 {
-            color: var(--color-error);
-            margin-bottom: var(--space-12);
-            display: flex;
-            align-items: center;
-            gap: var(--space-8);
+        .empty-state .emoji {
+            font-size: 4rem;
+            margin-bottom: 20px;
         }
 
-        /* Enhanced Modal Styles */
+        .empty-state p {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        /* ===== MODALS ===== */
         .modal {
             position: fixed;
             top: 0;
@@ -821,7 +545,6 @@
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            padding: var(--space-20);
         }
 
         .modal.hidden {
@@ -829,1554 +552,665 @@
         }
 
         .modal-content {
-            background: var(--color-white);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
-            max-width: 800px;
-            width: 100%;
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 700px;
             max-height: 90vh;
             overflow-y: auto;
-            position: relative;
         }
 
         .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: var(--space-24) var(--space-32);
-            border-bottom: 1px solid var(--color-border);
-            background: var(--color-surface);
-            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
         }
 
         .modal-title {
-            font-size: var(--font-size-xl);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text);
+            font-size: 1.3rem;
+            font-weight: 600;
         }
 
         .btn-close {
             background: none;
             border: none;
-            font-size: var(--font-size-2xl);
+            color: white;
+            font-size: 1.5rem;
             cursor: pointer;
-            color: var(--color-text-secondary);
-            padding: var(--space-8);
-            border-radius: var(--radius-base);
-            transition: all var(--duration-fast) var(--ease-standard);
+            padding: 5px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .btn-close:hover {
-            background: var(--color-error);
-            color: var(--color-white);
-        }
-
-        .modal-body {
-            padding: var(--space-32);
-        }
-
-        /* Enhanced Form Rows */
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--space-20);
-            margin-bottom: var(--space-20);
-        }
-
-        .form-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: var(--space-12);
-            margin-top: var(--space-32);
-            padding-top: var(--space-20);
-            border-top: 1px solid var(--color-border);
-        }
-
-        /* Enhanced Status Indicators */
-        .status {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-4);
-            padding: var(--space-4) var(--space-12);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-xs);
-            font-weight: var(--font-weight-semibold);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status--success {
-            background: rgba(var(--color-success-rgb), 0.1);
-            color: var(--color-success);
-        }
-
-        .status--warning {
-            background: rgba(var(--color-warning-rgb), 0.1);
-            color: var(--color-warning);
-        }
-
-        .status--error {
-            background: rgba(var(--color-error-rgb), 0.1);
-            color: var(--color-error);
-        }
-
-        .status--info {
-            background: rgba(var(--color-info-rgb), 0.1);
-            color: var(--color-info);
-        }
-
-        /* Enhanced Gain/Loss Display */
-        .gain-loss {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .gain-loss.positive {
-            color: var(--color-success);
-        }
-
-        .gain-loss.negative {
-            color: var(--color-error);
-        }
-
-        .gain-loss strong {
-            font-size: var(--font-size-base);
-            font-weight: var(--font-weight-bold);
-        }
-
-        .gain-loss small {
-            font-size: var(--font-size-xs);
-            opacity: 0.8;
-        }
-
-        /* Enhanced Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: var(--space-4);
-            flex-wrap: wrap;
-        }
-
-        /* Enhanced Photo Management */
-        .photo-preview {
-            display: flex;
-            align-items: center;
-            gap: var(--space-16);
-            margin-bottom: var(--space-16);
-        }
-
-        .photo-preview-container {
-            position: relative;
-        }
-
-        .member-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-            color: var(--color-white);
-            font-size: var(--font-size-xl);
-            font-weight: var(--font-weight-bold);
-            overflow: hidden;
-        }
-
-        .member-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .photo-upload-options {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-8);
-        }
-
-        .preset-photos-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: var(--space-8);
-            margin: var(--space-16) 0;
-        }
-
-        .photo-option {
-            aspect-ratio: 1;
-            border: 2px solid var(--color-border);
-            border-radius: var(--radius-full);
-            cursor: pointer;
-            overflow: hidden;
-            transition: all var(--duration-fast) var(--ease-standard);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--color-surface);
-            font-size: var(--font-size-lg);
-        }
-
-        .photo-option:hover {
-            border-color: var(--color-primary);
-            transform: scale(1.05);
-        }
-
-        .photo-option.selected {
-            border-color: var(--color-primary);
-            border-width: 3px;
-            background: rgba(var(--color-primary-rgb), 0.1);
-        }
-
-        /* Enhanced Summary Panels */
-        .investment-summary-panel, .liability-summary-panel {
-            background: var(--color-white);
-            border-radius: var(--radius-lg);
-            padding: var(--space-24);
-            margin-bottom: var(--space-32);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-        }
-
-        .summary-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: var(--space-24);
-        }
-
-        .summary-stat {
-            text-align: center;
-        }
-
-        .summary-label {
-            font-size: var(--font-size-xs);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--space-8);
-            font-weight: var(--font-weight-medium);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .summary-value {
-            font-size: var(--font-size-xl);
-            font-weight: var(--font-weight-bold);
-        }
-
-        /* Enhanced Toast Notifications */
-        .toast-container {
-            position: fixed;
-            top: var(--space-20);
-            right: var(--space-20);
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-8);
-            max-width: 400px;
-        }
-
-        .toast {
-            min-width: 320px;
-            padding: var(--space-16) var(--space-20);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            animation: slideInRight var(--duration-normal) var(--ease-standard);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .toast--success {
-            background: var(--color-success);
-            color: var(--color-white);
-        }
-
-        .toast--error {
-            background: var(--color-error);
-            color: var(--color-white);
-        }
-
-        .toast--warning {
-            background: var(--color-warning);
-            color: var(--color-white);
-        }
-
-        .toast--info {
-            background: var(--color-info);
-            color: var(--color-white);
-        }
-
-        .toast-content {
-            display: flex;
-            align-items: center;
-            gap: var(--space-12);
-            flex: 1;
-        }
-
-        .toast-icon {
-            font-size: var(--font-size-lg);
-        }
-
-        .toast-message {
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            color: inherit;
-            font-size: var(--font-size-xl);
-            cursor: pointer;
-            padding: var(--space-4);
-            border-radius: var(--radius-base);
-            transition: background var(--duration-fast) var(--ease-standard);
-        }
-
-        .toast-close:hover {
             background: rgba(255, 255, 255, 0.2);
         }
 
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .modal-body {
+            padding: 30px;
         }
 
-        /* Enhanced Loading Overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+        .modal-actions {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            backdrop-filter: blur(5px);
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
         }
 
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid var(--color-white);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: var(--space-20);
-        }
-
-        .loading-text {
-            color: var(--color-white);
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-medium);
-            text-align: center;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Enhanced Section Titles */
-        .section-title {
-            margin: var(--space-48) 0 var(--space-24) 0;
-        }
-
-        .section-title h3 {
-            font-size: var(--font-size-2xl);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text);
-            margin-bottom: var(--space-8);
-        }
-
-        .section-title p {
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-base);
-        }
-
-        /* Enhanced Export Options */
-        .export-options {
+        /* ===== FORM ELEMENTS ===== */
+        .form-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: var(--space-32);
-            margin-bottom: var(--space-48);
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .export-category {
-            background: var(--color-white);
-            padding: var(--space-32);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-            transition: all var(--duration-normal) var(--ease-standard);
-        }
-
-        .export-category:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .export-category.complete-backup {
-            border: 2px solid var(--color-primary);
-            background: rgba(var(--color-primary-rgb), 0.02);
-        }
-
-        .export-category h3 {
-            font-size: var(--font-size-xl);
-            font-weight: var(--font-weight-bold);
-            margin-bottom: var(--space-16);
-            color: var(--color-text);
-        }
-
-        .export-category p {
-            color: var(--color-text-secondary);
-            margin-bottom: var(--space-20);
-            line-height: 1.6;
-        }
-
-        .feature-highlights {
-            margin-bottom: var(--space-24);
-        }
-
-        .feature-highlights .feature-item {
-            background: var(--color-surface);
-            padding: var(--space-12);
-            border-radius: var(--radius-base);
-            margin-bottom: var(--space-8);
-            font-size: var(--font-size-sm);
-            border-left: 3px solid var(--color-primary);
-        }
-
-        .export-buttons {
+        .checkbox-group {
             display: flex;
-            gap: var(--space-12);
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type='checkbox'] {
+            width: auto;
+        }
+
+        /* ===== CONDITIONAL FIELDS ===== */
+        .conditional-fields {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .fixed-deposit-fields,
+        .insurance-fields,
+        .bank-balance-fields {
+            display: none;
+        }
+
+        /* ===== PHOTO MODAL ===== */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .photo-option {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .photo-option:hover {
+            border-color: #cbd5e0;
+        }
+
+        .photo-option.selected {
+            border-color: #667eea;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        /* ===== IMPORT SECTION STYLES ===== */
+        .import-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f7fafc;
+        }
+
+        .import-section h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .import-section p {
+            color: #718096;
+            margin-bottom: 15px;
+        }
+
+        .import-buttons {
+            display: flex;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
-        /* Enhanced Member Cards */
-        .family-management-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: var(--space-24);
-            margin-bottom: var(--space-32);
+        .csv-template {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin: 10px 0;
         }
 
-        .family-member-card {
-            background: var(--color-white);
-            border-radius: var(--radius-lg);
-            padding: var(--space-24);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-            transition: all var(--duration-normal) var(--ease-standard);
+        .csv-template ul {
+            margin: 10px 0;
+            padding-left: 20px;
         }
 
-        .family-member-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
+        .csv-template code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #e53e3e;
         }
 
-        .family-member-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: var(--space-20);
+        .file-upload {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f7fafc;
         }
 
-        .member-basic-info {
+        .file-upload label {
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        /* ===== MEMBER DETAILS VIEW ===== */
+        .member-details-section {
+            display: none;
+        }
+
+        .member-details-overview {
+            padding: 30px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .member-profile {
             display: flex;
             align-items: center;
-            gap: var(--space-16);
-            flex: 1;
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        .member-avatar-large {
-            width: 80px;
-            height: 80px;
-            border-radius: var(--radius-full);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-            color: var(--color-white);
-            font-size: var(--font-size-2xl);
-            font-weight: var(--font-weight-bold);
-            overflow: hidden;
-        }
-
-        .member-avatar-large img {
-            width: 100%;
-            height: 100%;
+        .member-detail-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
             object-fit: cover;
+            border: 4px solid #e2e8f0;
         }
 
-        .member-info h4 {
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text);
-            margin-bottom: var(--space-4);
+        .member-info h3 {
+            font-size: 2rem;
+            color: #2d3748;
+            margin-bottom: 5px;
         }
 
-        .member-relationship {
-            color: var(--color-text-secondary);
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
+        .member-info .relationship {
+            color: #718096;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
         }
 
-        .member-financial-summary {
+        .financial-summary-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: var(--space-16);
-            margin-bottom: var(--space-20);
-            padding: var(--space-16);
-            background: var(--color-surface);
-            border-radius: var(--radius-lg);
+            gap: 20px;
         }
 
-        .financial-stat {
+        .summary-card {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
             text-align: center;
         }
 
-        .stat-label {
-            display: block;
-            font-size: var(--font-size-xs);
-            color: var(--color-text-secondary);
-            margin-bottom: var(--space-4);
-            font-weight: var(--font-weight-medium);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .summary-card.assets {
+            border-left: 4px solid #38a169;
         }
 
-        .stat-value {
-            display: block;
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-bold);
+        .summary-card.liabilities {
+            border-left: 4px solid #e53e3e;
         }
 
-        /* Enhanced Investment Details */
-        .investment-details {
-            margin-top: var(--space-12);
-            padding: var(--space-12);
-            background: var(--color-surface);
-            border-radius: var(--radius-base);
-            border-left: 3px solid var(--color-primary);
+        .summary-card.net-worth {
+            border-left: 4px solid #667eea;
         }
 
-        .comments {
-            color: var(--color-text-secondary) !important;
-            font-style: italic;
-            font-size: var(--font-size-sm);
+        .summary-card .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
 
-        /* Enhanced Portfolio Distribution */
-        .portfolio-distribution-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--space-24);
-            margin-bottom: var(--space-48);
+        .summary-card .summary-label {
+            color: #718096;
+            font-size: 0.9rem;
         }
 
-        .distribution-card {
-            background: var(--color-white);
-            padding: var(--space-24);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
-            transition: all var(--duration-normal) var(--ease-standard);
-        }
-
-        .distribution-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .distribution-header {
+        /* ===== EXPORT BUTTONS ===== */
+        .export-buttons {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-12);
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
         }
 
-        .distribution-header h4 {
-            font-size: var(--font-size-base);
-            font-weight: var(--font-weight-semibold);
-            color: var(--color-text);
+        /* ===== MESSAGES ===== */
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
         }
 
-        .distribution-percentage {
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-primary);
-            background: rgba(var(--color-primary-rgb), 0.1);
-            padding: var(--space-4) var(--space-8);
-            border-radius: var(--radius-full);
+        .message.show {
+            transform: translateX(0);
         }
 
-        .distribution-amount {
-            font-size: var(--font-size-xl);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text);
-            margin-bottom: var(--space-4);
+        .message.success {
+            background: #38a169;
         }
 
-        .distribution-count {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-secondary);
+        .message.error {
+            background: #e53e3e;
         }
 
-        /* Enhanced Form Help Text */
-        .form-help {
-            display: block;
-            margin-top: var(--space-4);
-            font-size: var(--font-size-xs);
-            color: var(--color-text-secondary);
-            font-style: italic;
-            line-height: 1.4;
+        .message.info {
+            background: #3182ce;
         }
 
-        /* Enhanced Security Status Panel */
-        .security-status-panel {
-            background: var(--color-white);
-            border-radius: var(--radius-lg);
-            padding: var(--space-24);
-            margin-bottom: var(--space-32);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-card-border);
+        .message.warning {
+            background: #d69e2e;
         }
 
-        .security-indicator {
-            display: flex;
-            align-items: center;
-            gap: var(--space-20);
-        }
-
-        .security-icon {
-            font-size: var(--font-size-3xl);
-            color: var(--color-primary);
-        }
-
-        .security-details {
-            flex: 1;
-        }
-
-        .security-details h4 {
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-bold);
-            margin-bottom: var(--space-8);
-            color: var(--color-text);
-        }
-
-        .security-actions {
-            display: flex;
-            gap: var(--space-12);
-        }
-
-        /* Enhanced Account Stats Grid */
-        .account-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--space-20);
-            margin-bottom: var(--space-32);
-        }
-
-        .account-stat-card {
-            background: var(--color-white);
-            padding: var(--space-20);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--color-card-border);
-            display: flex;
-            align-items: center;
-            gap: var(--space-16);
-        }
-
-        .account-stat-card .stat-icon {
-            font-size: var(--font-size-2xl);
-            color: var(--color-primary);
-        }
-
-        .account-stat-card .stat-details strong {
-            display: block;
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-bold);
-            color: var(--color-text);
-        }
-
-        .account-stat-card .stat-details small {
-            font-size: var(--font-size-sm);
-            color: var(--color-text-secondary);
-        }
-
-        /* Enhanced Credential Display */
-        .credential-info {
-            font-size: var(--font-size-sm);
-        }
-
-        .credential-info.secure-access {
-            background: rgba(var(--color-success-rgb), 0.05);
-            padding: var(--space-8);
-            border-radius: var(--radius-base);
-            border: 1px solid rgba(var(--color-success-rgb), 0.2);
-        }
-
-        .credential-info.restricted-access {
-            background: rgba(var(--color-error-rgb), 0.05);
-            padding: var(--space-8);
-            border-radius: var(--radius-base);
-            border: 1px solid rgba(var(--color-error-rgb), 0.2);
+        /* ===== LAST UPDATED ===== */
+        .last-updated {
+            color: #718096;
+            font-size: 0.9rem;
             text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
         }
 
-        .credential-item {
-            margin-bottom: var(--space-4);
-            display: flex;
-            align-items: center;
-            gap: var(--space-8);
-        }
-
-        .credential-value {
-            font-family: 'Courier New', monospace;
-            background: rgba(var(--color-primary-rgb), 0.1);
-            padding: var(--space-2) var(--space-6);
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-xs);
-        }
-
-        /* Enhanced Responsive Design */
+        /* ===== RESPONSIVE DESIGN ===== */
         @media (max-width: 768px) {
-            .landing-container {
+            .stats-grid {
                 grid-template-columns: 1fr;
-                gap: var(--space-32);
+            }
+
+            .family-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
                 text-align: center;
-            }
-
-            .login-section {
-                position: static;
-                margin-top: var(--space-32);
-            }
-
-            .feature-list {
-                grid-template-columns: 1fr;
-            }
-
-            .container {
-                padding: var(--space-16);
             }
 
             .section-header {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: var(--space-20);
-            }
-
-            .header-actions {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-
-            .investment-tabs, .reminder-tabs, .analytics-tabs {
-                overflow-x: auto;
-                scrollbar-width: thin;
-            }
-
-            .table-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .filter-controls {
-                justify-content: stretch;
-            }
-
-            .filter-controls .form-control {
-                min-width: auto;
-                flex: 1;
-            }
-
-            .investment-table, .family-table {
-                overflow-x: auto;
-            }
-
-            .investment-table table, .family-table {
-                min-width: 800px;
-            }
-
-            .navbar-nav {
-                overflow-x: auto;
-                padding-bottom: var(--space-8);
-            }
-
-            .family-management-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .export-options {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .landing-page {
-                padding: var(--space-16);
-            }
-
-            .login-section {
-                padding: var(--space-24);
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .quick-actions-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-
-            .portfolio-distribution-grid {
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 15px;
+                text-align: center;
             }
 
             .modal-content {
-                margin: var(--space-8);
-                max-width: calc(100% - 16px);
-            }
-
-            .modal-header, .modal-body {
-                padding: var(--space-20);
+                width: 95%;
+                margin: 20px;
             }
 
             .form-row {
                 grid-template-columns: 1fr;
             }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                min-width: 120px;
+            }
+
+            .financial-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .member-profile {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+
+            .export-buttons {
+                justify-content: center;
+            }
+
+            .import-buttons {
+                justify-content: center;
+            }
         }
 
-        /* Enhanced Alert Styles */
-        .alert {
-            padding: var(--space-16);
-            border-radius: var(--radius-base);
-            margin: var(--space-16) 0;
-            display: flex;
-            align-items: center;
-            gap: var(--space-12);
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 30px 20px;
+            }
+
+            .dashboard-content {
+                padding: 20px 15px;
+            }
+
+            .section-content {
+                padding: 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
-        .alert--warning {
-            background: rgba(var(--color-warning-rgb), 0.1);
-            border: 1px solid rgba(var(--color-warning-rgb), 0.3);
-            color: var(--color-warning);
-        }
-
-        .alert--error {
-            background: rgba(var(--color-error-rgb), 0.1);
-            border: 1px solid rgba(var(--color-error-rgb), 0.3);
-            color: var(--color-error);
-        }
-
-        .alert--success {
-            background: rgba(var(--color-success-rgb), 0.1);
-            border: 1px solid rgba(var(--color-success-rgb), 0.3);
-            color: var(--color-success);
-        }
-
-        .alert--info {
-            background: rgba(var(--color-info-rgb), 0.1);
-            border: 1px solid rgba(var(--color-info-rgb), 0.3);
-            color: var(--color-info);
-        }
-
-        /* Enhanced Sort Indicators */
-        .sort-indicator {
-            font-size: var(--font-size-xs);
+        /* ===== LOADING STATES ===== */
+        .loading {
             opacity: 0.6;
-            margin-left: var(--space-4);
+            pointer-events: none;
         }
 
-        th:hover .sort-indicator {
-            opacity: 1;
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
         }
 
-        /* Enhanced Progress Indicators */
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--color-border);
-            border-radius: var(--radius-full);
-            overflow: hidden;
-            margin: var(--space-8) 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
-            transition: width var(--duration-normal) var(--ease-standard);
-            width: 0%;
-        }
-
-        /* Enhanced View Toggle */
-        .view-toggle {
-            display: flex;
-            background: var(--color-surface);
-            border-radius: var(--radius-base);
-            padding: var(--space-4);
-            gap: var(--space-4);
-        }
-
-        .view-toggle .btn {
-            padding: var(--space-8) var(--space-16);
-            font-size: var(--font-size-sm);
-        }
-
-        .view-toggle .btn.active {
-            background: var(--color-primary);
-            color: var(--color-white);
-        }
-
-        /* Print Styles */
-        @media print {
-            .navbar, .header-actions, .action-buttons, .modal {
-                display: none !important;
-            }
-            
-            .main-dashboard {
-                display: block !important;
-            }
-            
-            .dashboard-section {
-                display: block !important;
-                page-break-inside: avoid;
-            }
-            
-            .stat-card, .export-category {
-                break-inside: avoid;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
             }
         }
 
-        /* Enhanced Utility Classes */
-        .text-center { text-align: center; }
-        .text-left { text-align: left; }
-        .text-right { text-align: right; }
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-        .hidden { display: none !important; }
-        .visible { display: block !important; }
-
-        .mb-0 { margin-bottom: 0 !important; }
-        .mb-16 { margin-bottom: var(--space-16) !important; }
-        .mb-24 { margin-bottom: var(--space-24) !important; }
-        .mb-32 { margin-bottom: var(--space-32) !important; }
-
-        .mt-0 { margin-top: 0 !important; }
-        .mt-16 { margin-top: var(--space-16) !important; }
-        .mt-24 { margin-top: var(--space-24) !important; }
-        .mt-32 { margin-top: var(--space-32) !important; }
-
-        .p-0 { padding: 0 !important; }
-        .p-16 { padding: var(--space-16) !important; }
-        .p-24 { padding: var(--space-24) !important; }
-
-        .w-full { width: 100% !important; }
-        .h-full { height: 100% !important; }
-
-        .flex { display: flex !important; }
-        .inline-flex { display: inline-flex !important; }
-        .grid { display: grid !important; }
-        .block { display: block !important; }
-        .inline-block { display: inline-block !important; }
-
-        .items-center { align-items: center !important; }
-        .items-start { align-items: flex-start !important; }
-        .items-end { align-items: flex-end !important; }
-
-        .justify-center { justify-content: center !important; }
-        .justify-between { justify-content: space-between !important; }
-        .justify-start { justify-content: flex-start !important; }
-        .justify-end { justify-content: flex-end !important; }
-
-        .gap-4 { gap: var(--space-4) !important; }
-        .gap-8 { gap: var(--space-8) !important; }
-        .gap-12 { gap: var(--space-12) !important; }
-        .gap-16 { gap: var(--space-16) !important; }
-        .gap-20 { gap: var(--space-20) !important; }
-        .gap-24 { gap: var(--space-24) !important; }
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
     </style>
 </head>
 <body>
-    <!-- Landing Page -->
+    <!-- ===== LANDING PAGE ===== -->
     <div id="landing-page" class="landing-page">
-        <div class="landing-container">
-            <div>
-                <div class="logo">
-                    <h1>💰 Pradeep's Family Wealth Dashboard</h1>
-                    <p class="logo-subtitle">Enhanced Edition with Advanced Features</p>
-                    <p class="logo-tagline">Comprehensive family financial management with FD tracking, insurance management, and secure credential storage</p>
+        <div class="auth-container">
+            <div class="logo">💰</div>
+            <h1 class="auth-title">Pradeep's Family Wealth Dashboard</h1>
+            <p class="auth-subtitle">Complete Family Financial Management</p>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email" class="form-label">Email Address</label>
+                    <input type="email" id="login-email" class="form-input" placeholder="Enter your email" required autocomplete="username" />
                 </div>
 
-                <div class="landing-description">
-                    <h2>Manage Your Family's Financial Future</h2>
-                    <p>Track investments, monitor Fixed Deposits with detailed comments, manage insurance policies with coverage notes, and store account credentials securely with advanced access control.</p>
+                <div class="form-group">
+                    <label for="login-password" class="form-label">Password</label>
+                    <input
+                        type="password"
+                        id="login-password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    />
+                </div>
 
-                    <div class="feature-list">
-                        <div class="feature-item">
-                            <strong>🏦 Enhanced Fixed Deposits</strong>
-                            <small>Track invested dates, interest rates, maturity tracking, and detailed comments for comprehensive FD management</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>🛡️ Advanced Insurance Management</strong>
-                            <small>Policy details, coverage notes, premium tracking, and beneficiary management with renewal reminders</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>🔐 Secure Credential Storage</strong>
-                            <small>Protected password access for authorized users only with encrypted storage and access logging</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>📊 Real-time Analytics</strong>
-                            <small>Comprehensive financial analytics, performance tracking, and automated reporting with visual insights</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>📱 Responsive Design</strong>
-                            <small>Works seamlessly on desktop, tablet, and mobile devices with optimized user experience</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>🔄 Data Synchronization</strong>
-                            <small>Real-time data sync across all devices with automatic backup and recovery features</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>📈 Portfolio Tracking</strong>
-                            <small>Advanced portfolio analysis with gain/loss tracking, asset allocation, and performance metrics</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>🔔 Smart Reminders</strong>
-                            <small>Automated reminders for policy renewals, FD maturity, EMI payments, and investment reviews</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>📤 Advanced Export</strong>
-                            <small>Comprehensive data export with enhanced FD details, insurance comments, and secure credential handling</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>🏠 Family Management</strong>
-                            <small>Complete family member profiles with individual portfolio tracking and relationship management</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>💹 Investment Analysis</strong>
-                            <small>Detailed investment performance analysis with sector allocation and risk assessment tools</small>
-                        </div>
-                        <div class="feature-item">
-                            <strong>🛡️ Data Security</strong>
-                            <small>Bank-grade security with row-level security policies and encrypted sensitive data storage</small>
+                <button type="submit" class="btn btn-primary" style="width: 100%">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MAIN DASHBOARD ===== -->
+    <div id="main-dashboard" class="main-dashboard">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div>
+                    <h1 class="dashboard-title">💰 Pradeep's Family Wealth Dashboard</h1>
+                </div>
+                <div class="user-info">
+                    <span>Welcome, <span id="user-email">Loading...</span></span>
+                    <span>Last updated: <span id="last-updated">-</span></span>
+                    <button onclick="handleLogout()" class="btn btn-logout">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Stats Overview -->
+            <div class="stats-grid" id="stats-grid">
+                <!-- Stats will be populated by JavaScript -->
+            </div>
+
+            <!-- Family Members Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">👨‍👩‍👧‍👦 Family Members</h2>
+                    <div class="section-actions">
+                        <button onclick="openAddMemberModal()" class="btn">➕ Add Member</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div id="family-members-grid" class="family-grid">
+                        <!-- Family members will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Member Details Section (Hidden by default) -->
+            <div id="member-details-section" class="section member-details-section">
+                <div class="section-header">
+                    <h2 id="member-details-title" class="section-title">Member Details</h2>
+                    <div class="section-actions">
+                        <button onclick="closeMemberDetails()" class="btn">← Back to Dashboard</button>
+                    </div>
+                </div>
+                <div id="member-details-content">
+                    <!-- Member details will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Investment Portfolio Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">📈 Investment Portfolio</h2>
+                    <div class="section-actions">
+                        <button onclick="openAddInvestmentModal()" class="btn">➕ Add Investment</button>
+                        <button onclick="exportInvestments('csv')" class="btn">📊 Export CSV</button>
+                        <button onclick="exportInvestments('json')" class="btn">📋 Export JSON</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="tabs">
+                        <div class="tab active" onclick="renderInvestmentTabContent('equity')">Equity</div>
+                        <div class="tab" onclick="renderInvestmentTabContent('mutualFunds')">Mutual Funds</div>
+                        <div class="tab" onclick="renderInvestmentTabContent('fixedDeposits')">Fixed Deposits</div>
+                        <div class="tab" onclick="renderInvestmentTabContent('insurance')">Insurance</div>
+                        <div class="tab" onclick="renderInvestmentTabContent('bankBalances')">Bank Balances</div>
+                        <div class="tab" onclick="renderInvestmentTabContent('others')">Others</div>
+                    </div>
+
+                    <div id="investment-tab-content" class="tab-content">
+                        <!-- Investment content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liabilities Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">📉 Liabilities</h2>
+                    <div class="section-actions">
+                        <button onclick="openAddLiabilityModal()" class="btn">➕ Add Liability</button>
+                        <button onclick="exportLiabilities('csv')" class="btn">📊 Export CSV</button>
+                        <button onclick="exportLiabilities('json')" class="btn">📋 Export JSON</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="tabs">
+                        <div class="tab active" onclick="renderLiabilityTabContent('homeLoan')">Home Loan</div>
+                        <div class="tab" onclick="renderLiabilityTabContent('personalLoan')">Personal Loan</div>
+                        <div class="tab" onclick="renderLiabilityTabContent('creditCard')">Credit Card</div>
+                        <div class="tab" onclick="renderLiabilityTabContent('other')">Other</div>
+                    </div>
+
+                    <div id="liability-tab-content" class="tab-content">
+                        <!-- Liability content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accounts Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">🏦 Account Management</h2>
+                    <div class="section-actions">
+                        <button onclick="openAddAccountModal()" class="btn">➕ Add Account</button>
+                        <button onclick="exportAccounts('csv')" class="btn">📊 Export CSV</button>
+                        <button onclick="exportAccounts('json')" class="btn">📋 Export JSON</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="table-responsive">
+                        <table class="data-table" id="accounts-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable('accounts-table', 0)">Account Type <span class="sort-indicator"></span></th>
+                                    <th onclick="sortTable('accounts-table', 1)">Institution <span class="sort-indicator"></span></th>
+                                    <th onclick="sortTable('accounts-table', 2)">Account Number <span class="sort-indicator"></span></th>
+                                    <th onclick="sortTable('accounts-table', 3)">Holder <span class="sort-indicator"></span></th>
+                                    <th onclick="sortTable('accounts-table', 4)">Nominee <span class="sort-indicator"></span></th>
+                                    <th onclick="sortTable('accounts-table', 5)">Status <span class="sort-indicator"></span></th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accounts-table-body">
+                                <!-- Accounts will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">📥 Import Data</h2>
+                </div>
+                <div class="section-content">
+                    <div class="import-section">
+                        <h3>📥 Bulk Import Financial Data</h3>
+                        <p>Import your financial data from CSV files to quickly populate your dashboard</p>
+                        <div class="import-buttons">
+                            <button onclick="openImportModal('investments')" class="btn btn-primary">📊 Import Investments</button>
+                            <button onclick="openImportModal('liabilities')" class="btn btn-primary">📉 Import Liabilities</button>
+                            <button onclick="openImportModal('accounts')" class="btn btn-primary">🏦 Import Accounts</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="login-section">
-                <form id="login-form" class="login-form">
-                    <h3>Welcome Back</h3>
-                    
-                    <div class="form-group">
-                        <label for="login-email" class="form-label">Email Address</label>
-                        <input type="email" id="login-email" class="form-control" 
-                               placeholder="Enter your email address" required autocomplete="username">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="login-password" class="form-label">Password</label>
-                        <input type="password" id="login-password" class="form-control" 
-                               placeholder="Enter your password" required autocomplete="current-password">
-                    </div>
-                    
-                    <button type="submit" class="btn btn--primary btn--full-width">
-                        <span class="btn-text">Login to Dashboard</span>
-                    </button>
-                </form>
-
-                <div class="demo-info">
-                    <h4>🔐 Enhanced Security Features</h4>
-                    <p>New advanced features for comprehensive financial management with role-based access control</p>
-                    
-                    <div class="demo-credentials">
-                        <strong>For full credential access:</strong><br>
-                        📧 <code>pradeepkumar.v@hotmail.com</code><br>
-                        🔑 Full credential access enabled<br>
-                        ✅ Can view/edit passwords and sensitive data
-                    </div>
-                    
-                    <div style="margin-top: var(--space-12); padding: var(--space-12); background: rgba(var(--color-info-rgb), 0.1); border-radius: var(--radius-base);">
-                        <small style="color: var(--color-info);">
-                            <strong>Other users:</strong> Limited access - password fields will be hidden for security
-                        </small>
+            <!-- Complete Family Data Export -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">📋 Complete Family Data Export</h2>
+                </div>
+                <div class="section-content">
+                    <p style="color: #718096; margin-bottom: 20px;">
+                        Export complete family financial data including all members, investments, liabilities, and
+                        accounts.
+                    </p>
+                    <div class="export-buttons">
+                        <button onclick="exportFamilyData('csv')" class="btn btn-export">📊 Export Family Data (CSV)</button>
+                        <button onclick="exportFamilyData('json')" class="btn btn-export">📋 Export Family Data (JSON)</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Last Updated -->
+            <div class="last-updated">
+                Data last synchronized: <span id="last-updated-display">Loading...</span>
             </div>
         </div>
     </div>
 
-    <!-- Main Dashboard -->
-    <div id="main-dashboard" class="main-dashboard" style="display: none;">
-        <!-- Enhanced Navigation Bar -->
-        <nav class="navbar">
-            <div class="navbar-flex">
-                <div class="navbar-nav">
-                    <button onclick="showSection('overview-section')" class="nav-btn active" data-section="overview-section">
-                        📊 Overview
-                    </button>
-                    <button onclick="showSection('family-section')" class="nav-btn" data-section="family-section">
-                        👨‍👩‍👧‍👦 Family
-                    </button>
-                    <button onclick="showSection('investments-section')" class="nav-btn" data-section="investments-section">
-                        📈 Investments
-                    </button>
-                    <button onclick="showSection('liabilities-section')" class="nav-btn" data-section="liabilities-section">
-                        📉 Liabilities
-                    </button>
-                    <button onclick="showSection('accounts-section')" class="nav-btn" data-section="accounts-section">
-                        🏦 Accounts
-                    </button>
-                    <button onclick="showSection('reminders-section')" class="nav-btn" data-section="reminders-section">
-                        🔔 Reminders
-                    </button>
-                    <button onclick="showSection('analytics-section')" class="nav-btn" data-section="analytics-section">
-                        📊 Analytics
-                    </button>
-                    <button onclick="showSection('import-section')" class="nav-btn" data-section="import-section">
-                        📥 Import
-                    </button>
-                    <button onclick="showSection('export-section')" class="nav-btn" data-section="export-section">
-                        📤 Export
-                    </button>
-                </div>
-                <div class="navbar-user">
-                    <span class="user-info">
-                        <span id="user-email" class="user-email">Loading...</span>
-                        <span id="user-access-level" class="user-access-level">Loading...</span>
-                    </span>
-                    <button onclick="handleLogout()" class="logout-btn">
-                        🚪 Logout
-                    </button>
-                </div>
-            </div>
-        </nav>
+    <!-- ===== MODALS ===== -->
 
-        <div class="container">
-            <!-- Enhanced Overview Section -->
-            <section id="overview-section" class="dashboard-section active">
-                <div class="section-header">
-                    <div>
-                        <h2>📊 Financial Overview</h2>
-                        <p>Comprehensive view of your family's financial portfolio with enhanced tracking</p>
-                    </div>
-                    <div class="header-actions">
-                        <div class="date-info">
-                            Last updated: <span id="last-updated">Loading...</span>
-                        </div>
-                        <button onclick="refreshDashboard()" class="btn btn--secondary btn--sm">
-                            🔄 Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Enhanced Stats Grid -->
-                <div class="stats-grid" id="stats-overview">
-                    <div class="stat-card">
-                        <div class="stat-label">Total Family Members</div>
-                        <div class="stat-value primary" id="total-members-stat">0</div>
-                        <div class="stat-change neutral">Active portfolios managed</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Total Assets</div>
-                        <div class="stat-value positive" id="total-assets-stat">₹0</div>
-                        <div class="stat-change positive" id="assets-change">Across all investments</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Total Liabilities</div>
-                        <div class="stat-value negative" id="total-liabilities-stat">₹0</div>
-                        <div class="stat-change negative" id="liabilities-change">Outstanding debt</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Net Worth</div>
-                        <div class="stat-value" id="net-worth-stat">₹0</div>
-                        <div class="stat-change" id="net-worth-change">Family portfolio value</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Fixed Deposits 🏦</div>
-                        <div class="stat-value primary" id="fd-total-stat">₹0</div>
-                        <div class="stat-change neutral" id="fd-count-stat">0 FDs tracked</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Insurance Coverage 🛡️</div>
-                        <div class="stat-value primary" id="insurance-total-stat">₹0</div>
-                        <div class="stat-change neutral" id="insurance-count-stat">0 policies active</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Secure Accounts 🔐</div>
-                        <div class="stat-value primary" id="secure-accounts-stat">0</div>
-                        <div class="stat-change neutral" id="credentials-status">Credential protection active</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">Portfolio Performance</div>
-                        <div class="stat-value" id="portfolio-performance-stat">0%</div>
-                        <div class="stat-change" id="performance-trend">Overall return</div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions Panel -->
-                <div class="section-title">
-                    <h3>⚡ Quick Actions</h3>
-                    <p>Frequently used actions for efficient portfolio management</p>
-                </div>
-
-                <div class="quick-actions-grid">
-                    <div class="quick-action-card">
-                        <div class="action-icon">🏦</div>
-                        <h4>Add Fixed Deposit</h4>
-                        <p>Track new FD with enhanced features</p>
-                        <button onclick="openAddInvestmentModal('fixedDeposits')" class="btn btn--primary btn--sm">
-                            Add FD
-                        </button>
-                    </div>
-                    
-                    <div class="quick-action-card">
-                        <div class="action-icon">🛡️</div>
-                        <h4>Add Insurance</h4>
-                        <p>Register new insurance policy</p>
-                        <button onclick="openAddInvestmentModal('insurance')" class="btn btn--primary btn--sm">
-                            Add Policy
-                        </button>
-                    </div>
-                    
-                    <div class="quick-action-card">
-                        <div class="action-icon">🔐</div>
-                        <h4>Add Account</h4>
-                        <p>Secure account with credentials</p>
-                        <button onclick="openAddAccountModal()" class="btn btn--primary btn--sm">
-                            Add Account
-                        </button>
-                    </div>
-                    
-                    <div class="quick-action-card">
-                        <div class="action-icon">👨‍👩‍👧‍👦</div>
-                        <h4>Add Family Member</h4>
-                        <p>Expand family portfolio</p>
-                        <button onclick="openAddMemberModal()" class="btn btn--primary btn--sm">
-                            Add Member
-                        </button>
-                    </div>
-                    
-                    <div class="quick-action-card">
-                        <div class="action-icon">🔔</div>
-                        <h4>Add Reminder</h4>
-                        <p>Set financial reminders</p>
-                        <button onclick="openAddReminderModal()" class="btn btn--primary btn--sm">
-                            Add Reminder
-                        </button>
-                    </div>
-                    
-                    <div class="quick-action-card">
-                        <div class="action-icon">📊</div>
-                        <h4>View Analytics</h4>
-                        <p>Detailed portfolio analysis</p>
-                        <button onclick="showSection('analytics-section')" class="btn btn--secondary btn--sm">
-                            View Analytics
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Enhanced Portfolio Distribution -->
-                <div class="section-title">
-                    <h3>💼 Portfolio Distribution</h3>
-                    <p>Asset allocation across different investment types with enhanced categorization</p>
-                </div>
-
-                <div class="portfolio-distribution-grid">
-                    <div class="distribution-card">
-                        <div class="distribution-header">
-                            <h4>📊 Equity Investments</h4>
-                            <span class="distribution-percentage" id="equity-percentage">0%</span>
-                        </div>
-                        <div class="distribution-amount" id="equity-amount">₹0</div>
-                        <div class="distribution-count" id="equity-count">0 holdings</div>
-                    </div>
-                    
-                    <div class="distribution-card">
-                        <div class="distribution-header">
-                            <h4>📈 Mutual Funds</h4>
-                            <span class="distribution-percentage" id="mf-percentage">0%</span>
-                        </div>
-                        <div class="distribution-amount" id="mf-amount">₹0</div>
-                        <div class="distribution-count" id="mf-count">0 funds</div>
-                    </div>
-                    
-                    <div class="distribution-card">
-                        <div class="distribution-header">
-                            <h4>🏦 Fixed Deposits</h4>
-                            <span class="distribution-percentage" id="fd-percentage">0%</span>
-                        </div>
-                        <div class="distribution-amount" id="fd-amount">₹0</div>
-                        <div class="distribution-count" id="fd-count">0 FDs</div>
-                    </div>
-                    
-                    <div class="distribution-card">
-                        <div class="distribution-header">
-                            <h4>🛡️ Insurance</h4>
-                            <span class="distribution-percentage" id="insurance-percentage">0%</span>
-                        </div>
-                        <div class="distribution-amount" id="insurance-amount">₹0</div>
-                        <div class="distribution-count" id="insurance-count">0 policies</div>
-                    </div>
-                    
-                    <div class="distribution-card">
-                        <div class="distribution-header">
-                            <h4>💰 Bank Balances</h4>
-                            <span class="distribution-percentage" id="bank-percentage">0%</span>
-                        </div>
-                        <div class="distribution-amount" id="bank-amount">₹0</div>
-                        <div class="distribution-count" id="bank-count">0 accounts</div>
-                    </div>
-                    
-                    <div class="distribution-card">
-                        <div class="distribution-header">
-                            <h4>📦 Others</h4>
-                            <span class="distribution-percentage" id="others-percentage">0%</span>
-                        </div>
-                        <div class="distribution-amount" id="others-amount">₹0</div>
-                        <div class="distribution-count" id="others-count">0 items</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Enhanced Family Management Section -->
-            <section id="family-section" class="dashboard-section">
-                <div class="section-header">
-                    <div>
-                        <h2>👨‍👩‍👧‍👦 Family Members</h2>
-                        <p>Manage family members and their financial portfolios</p>
-                    </div>
-                    <div class="header-actions">
-                        <button onclick="openAddMemberModal()" class="btn btn--primary">
-                            + Add Family Member
-                        </button>
-                    </div>
-                </div>
-
-                <div class="family-management-grid" id="family-members-grid">
-                    <!-- Family members will be populated by JavaScript -->
-                </div>
-            </section>
-
-            <!-- Enhanced Investment Portfolio Section -->
-            <section id="investments-section" class="dashboard-section">
-                <div class="section-header">
-                    <div>
-                        <h2>📈 Investment Portfolio</h2>
-                        <p>Comprehensive investment tracking with enhanced Fixed Deposit and Insurance management</p>
-                    </div>
-                    <div class="header-actions">
-                        <button onclick="openAddInvestmentModal()" class="btn btn--primary">
-                            + Add Investment
-                        </button>
-                        <button onclick="exportInvestments()" class="btn btn--secondary">
-                            📥 Export
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Enhanced Investment Type Tabs -->
-                <div class="investment-tabs">
-                    <button onclick="renderInvestmentTabContent('equity')" class="tab-btn active" data-type="equity">
-                        📊 Equity
-                        <span class="tab-count" id="equity-tab-count">0</span>
-                    </button>
-                    <button onclick="renderInvestmentTabContent('mutualFunds')" class="tab-btn" data-type="mutualFunds">
-                        📈 Mutual Funds
-                        <span class="tab-count" id="mf-tab-count">0</span>
-                    </button>
-                    <button onclick="renderInvestmentTabContent('fixedDeposits')" class="tab-btn" data-type="fixedDeposits">
-                        🏦 Fixed Deposits
-                        <span class="tab-count" id="fd-tab-count">0</span>
-                    </button>
-                    <button onclick="renderInvestmentTabContent('insurance')" class="tab-btn" data-type="insurance">
-                        🛡️ Insurance
-                        <span class="tab-count" id="insurance-tab-count">0</span>
-                    </button>
-                    <button onclick="renderInvestmentTabContent('bankBalances')" class="tab-btn" data-type="bankBalances">
-                        💰 Bank Balances
-                        <span class="tab-count" id="bank-tab-count">0</span>
-                    </button>
-                    <button onclick="renderInvestmentTabContent('others')" class="tab-btn" data-type="others">
-                        📦 Others
-                        <span class="tab-count" id="others-tab-count">0</span>
-                    </button>
-                </div>
-
-                <!-- Investment Type Summary -->
-                <div class="investment-summary-panel" id="investment-summary-panel">
-                    <div class="summary-stats">
-                        <div class="summary-stat">
-                            <div class="summary-label">Total Investments</div>
-                            <div class="summary-value" id="current-type-count">0</div>
-                        </div>
-                        <div class="summary-stat">
-                            <div class="summary-label">Total Invested</div>
-                            <div class="summary-value" id="current-type-invested">₹0</div>
-                        </div>
-                        <div class="summary-stat">
-                            <div class="summary-label">Current Value</div>
-                            <div class="summary-value" id="current-type-value">₹0</div>
-                        </div>
-                        <div class="summary-stat">
-                            <div class="summary-label">Total Gain/Loss</div>
-                            <div class="summary-value" id="current-type-gain">₹0</div>
-                        </div>
-                        <div class="summary-stat">
-                            <div class="summary-label">Return %</div>
-                            <div class="summary-value" id="current-type-return">0%</div>
-                        </div>
-                    </div>
-                    
-                    <div class="type-specific-insights" id="type-specific-insights">
-                        <!-- Type-specific insights will be populated by JavaScript -->
-                    </div>
-                </div>
-
-                <!-- Enhanced Investment Table -->
-                <div class="investment-table">
-                    <div class="table-controls">
-                        <div class="search-filter">
-                            <input type="text" id="investment-search" class="form-control" placeholder="Search investments..." onkeyup="filterInvestmentTable()">
-                        </div>
-                        <div class="filter-controls">
-                            <select id="member-filter" class="form-control" onchange="filterInvestmentTable()">
-                                <option value="">All Members</option>
-                            </select>
-                            <select id="platform-filter" class="form-control" onchange="filterInvestmentTable()">
-                                <option value="">All Platforms</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th onclick="sortInvestmentTable('name')">Name <span class="sort-indicator">↕️</span></th>
-                                <th onclick="sortInvestmentTable('member')">Member <span class="sort-indicator">↕️</span></th>
-                                <th onclick="sortInvestmentTable('invested')">Invested <span class="sort-indicator">↕️</span></th>
-                                <th onclick="sortInvestmentTable('current')">Current Value <span class="sort-indicator">↕️</span></th>
-                                <th onclick="sortInvestmentTable('gain')">Gain/Loss <span class="sort-indicator">↕️</span></th>
-                                <th onclick="sortInvestmentTable('platform')">Platform <span class="sort-indicator">↕️</span></th>
-                                <th onclick="sortInvestmentTable('date')">Date Info <span class="sort-indicator">↕️</span></th>
-                                <th>Enhanced Details</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="investment-table-body">
-                            <!-- Investment data will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Enhanced Accounts Section -->
-            <section id="accounts-section" class="dashboard-section">
-                <div class="section-header">
-                    <div>
-                        <h2>🏦 Account Management</h2>
-                        <p>Secure account management with credential protection</p>
-                    </div>
-                    <div class="header-actions">
-                        <button onclick="openAddAccountModal()" class="btn btn--primary">
-                            + Add Account
-                        </button>
-                        <button onclick="exportAccounts()" class="btn btn--secondary">
-                            📥 Export
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Security Status Panel -->
-                <div class="security-status-panel">
-                    <div class="security-indicator">
-                        <div class="security-icon">🔐</div>
-                        <div class="security-details">
-                            <h4>Credential Access Status</h4>
-                            <p id="credential-access-status">Checking access level...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Account Statistics -->
-                <div class="account-stats-grid">
-                    <div class="account-stat-card">
-                        <div class="stat-icon">🏦</div>
-                        <div class="stat-details">
-                            <strong id="total-accounts-count">0</strong>
-                            <small>Total Accounts</small>
-                        </div>
-                    </div>
-                    <div class="account-stat-card">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-details">
-                            <strong id="active-accounts-count">0</strong>
-                            <small>Active Accounts</small>
-                        </div>
-                    </div>
-                    <div class="account-stat-card">
-                        <div class="stat-icon">🔐</div>
-                        <div class="stat-details">
-                            <strong id="secure-accounts-count">0</strong>
-                            <small>With Credentials</small>
-                        </div>
-                    </div>
-                    <div class="account-stat-card">
-                        <div class="stat-icon">👥</div>
-                        <div class="stat-details">
-                            <strong id="members-with-accounts">0</strong>
-                            <small>Members Covered</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Enhanced Account Table -->
-                <div class="investment-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Account Type</th>
-                                <th>Institution</th>
-                                <th>Account Number</th>
-                                <th>Holder</th>
-                                <th>Nominee</th>
-                                <th>Status</th>
-                                <th>Credentials 🔐</th>
-                                <th>Comments</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accounts-table-body">
-                            <!-- Account data will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Additional sections would continue here... -->
-            
-        </div>
-    </div>
-
-    <!-- Enhanced Modals -->
-    
-    <!-- Member Modal -->
+    <!-- Family Member Modal -->
     <div id="member-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -2384,54 +1218,75 @@
                 <button onclick="closeModal('member-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="member-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="member-name" class="form-label">Full Name *</label>
-                            <input type="text" id="member-name" class="form-control" placeholder="Enter full name" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="member-relationship" class="form-label">Relationship *</label>
-                            <select id="member-relationship" class="form-control" required>
-                                <option value="">Select relationship</option>
-                                <option value="Self">Self</option>
-                                <option value="Spouse">Spouse</option>
-                                <option value="Child">Child</option>
-                                <option value="Parent">Parent</option>
-                                <option value="Father">Father</option>
-                                <option value="Mother">Mother</option>
-                                <option value="Son">Son</option>
-                                <option value="Daughter">Daughter</option>
-                                <option value="Brother">Brother</option>
-                                <option value="Sister">Sister</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
+                <form id="member-form" onsubmit="event.preventDefault(); saveMember();">
+                    <div class="form-group">
+                        <label for="member-name" class="form-label">Full Name *</label>
+                        <input type="text" id="member-name" class="form-input" placeholder="Enter full name" required />
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="member-email" class="form-label">Email</label>
-                            <input type="email" id="member-email" class="form-control" placeholder="Enter email">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="member-phone" class="form-label">Phone</label>
-                            <input type="tel" id="member-phone" class="form-control" placeholder="Enter phone">
-                        </div>
+                    <div class="form-group">
+                        <label for="member-relationship" class="form-label">Relationship *</label>
+                        <select id="member-relationship" class="form-input" required>
+                            <option value="">Select Relationship</option>
+                            <option value="Self">Self</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Son">Son</option>
+                            <option value="Daughter">Daughter</option>
+                            <option value="Brother">Brother</option>
+                            <option value="Sister">Sister</option>
+                            <option value="Grandfather">Grandfather</option>
+                            <option value="Grandmother">Grandmother</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
 
-                    <div class="form-actions">
-                        <button type="button" onclick="closeModal('member-modal')" class="btn btn--secondary">Cancel</button>
-                        <button type="submit" class="btn btn--primary">Save Member</button>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="member-is-primary" />
+                        <label for="member-is-primary">Primary Account Holder</label>
                     </div>
                 </form>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('member-modal')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="saveMember()" class="btn btn-primary">Save Member</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Investment Modal with Enhanced Fields -->
+    <!-- Photo Upload Modal -->
+    <div id="photo-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Change Profile Photo</h3>
+                <button onclick="closeModal('photo-modal')" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 style="margin-bottom: 15px;">Choose from preset photos:</h4>
+                <div id="preset-photos-grid" class="photo-grid">
+                    <!-- Preset photos will be populated by JavaScript -->
+                </div>
+
+                <div class="upload-area" onclick="document.getElementById('photo-upload').click()">
+                    <div style="margin-bottom: 10px;">📸 Upload Custom Photo</div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        Click to select image file (JPG, PNG, GIF)<br>
+                        Max size: 5MB
+                    </div>
+                    <input type="file" id="photo-upload" accept="image/*" style="display: none" onchange="handlePhotoUpload(event)" />
+                </div>
+
+                <div class="modal-actions">
+                    <button onclick="closeModal('photo-modal')" class="btn btn-secondary">Cancel</button>
+                    <button onclick="savePhoto()" class="btn btn-primary">Save Photo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Modal -->
     <div id="investment-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -2439,266 +1294,259 @@
                 <button onclick="closeModal('investment-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="investment-form">
-                    <!-- Basic Investment Fields -->
+                <form id="investment-form" onsubmit="event.preventDefault(); saveInvestment();">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="investment-member" class="form-label">Family Member *</label>
-                            <select id="investment-member" class="form-control" required>
-                                <option value="">Select Member</option>
+                            <select id="investment-member" class="form-input" required>
+                                <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="investment-type" class="form-label">Investment Type *</label>
-                            <select id="investment-type" class="form-control" required>
+                            <select
+                                id="investment-type"
+                                class="form-input"
+                                onchange="updateInvestmentForm()"
+                                required
+                            >
                                 <option value="">Select Type</option>
-                                <option value="equity">📊 Equity</option>
-                                <option value="mutualFunds">📈 Mutual Funds</option>
-                                <option value="fixedDeposits">🏦 Fixed Deposits</option>
-                                <option value="insurance">🛡️ Insurance</option>
-                                <option value="bankBalances">💰 Bank Balances</option>
-                                <option value="others">📦 Others</option>
+                                <option value="equity">Equity</option>
+                                <option value="mutualFunds">Mutual Funds</option>
+                                <option value="fixedDeposits">Fixed Deposits</option>
+                                <option value="insurance">Insurance</option>
+                                <option value="bankBalances">Bank Balances</option>
+                                <option value="others">Others</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="investment-name" class="form-label">Investment Name *</label>
-                            <input type="text" id="investment-name" class="form-control" placeholder="Enter investment name" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="investment-platform" class="form-label">Platform/Broker</label>
-                            <input type="text" id="investment-platform" class="form-control" placeholder="Enter platform name">
-                        </div>
+                    <div class="form-group">
+                        <label for="investment-name" class="form-label">Investment Name *</label>
+                        <input
+                            type="text"
+                            id="investment-name"
+                            class="form-input"
+                            placeholder="e.g., HDFC Bank, SBI FD, LIC Policy"
+                            required
+                        />
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="investment-amount" class="form-label">Invested Amount (₹) *</label>
-                            <input type="number" id="investment-amount" class="form-control" placeholder="Enter invested amount" required min="0" step="0.01">
+                            <input
+                                type="number"
+                                id="investment-amount"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="Enter amount"
+                                required
+                            />
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="investment-current-value" class="form-label">Current Value (₹)</label>
-                            <input type="number" id="investment-current-value" class="form-control" placeholder="Enter current value" min="0" step="0.01">
+                            <input
+                                type="number"
+                                id="investment-current-value"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="Current market value"
+                            />
                         </div>
                     </div>
 
-                    <!-- Enhanced Fixed Deposit Fields -->
-                    <div class="conditional-fields fixed-deposit-fields">
-                        <h4>🏦 Enhanced Fixed Deposit Details</h4>
-                        
+                    <div class="form-group">
+                        <label for="investment-platform" class="form-label">Platform/Broker</label>
+                        <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct" />
+                    </div>
+
+                    <!-- Fixed Deposit Fields -->
+                    <div class="fixed-deposit-fields conditional-fields">
+                        <h4>Fixed Deposit Details</h4>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="fd-invested-date" class="form-label">Invested Date ⭐</label>
-                                <input type="date" id="fd-invested-date" class="form-control">
-                                <small class="form-help">Date when you invested in this FD</small>
-                            </div>
-                            
                             <div class="form-group">
                                 <label for="fd-bank-name" class="form-label">Bank Name</label>
-                                <input type="text" id="fd-bank-name" class="form-control" placeholder="Enter bank name">
+                                <input type="text" id="fd-bank-name" class="form-input" placeholder="e.g., SBI, HDFC" />
                             </div>
-                        </div>
-
-                        <div class="form-row">
                             <div class="form-group">
                                 <label for="fd-interest-rate" class="form-label">Interest Rate (%)</label>
-                                <input type="number" id="fd-interest-rate" class="form-control" placeholder="Enter interest rate" min="0" max="20" step="0.01">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="fd-interest-payout" class="form-label">Interest Payout</label>
-                                <select id="fd-interest-payout" class="form-control">
-                                    <option value="">Select payout frequency</option>
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Half-yearly">Half-yearly</option>
-                                    <option value="Yearly">Yearly</option>
-                                    <option value="On Maturity">On Maturity</option>
-                                </select>
+                                <input type="number" id="fd-interest-rate" class="form-input" step="0.01" placeholder="e.g., 6.75" />
                             </div>
                         </div>
-
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="fd-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="fd-start-date" class="form-control">
+                                <input type="date" id="fd-start-date" class="form-input" />
                             </div>
-                            
                             <div class="form-group">
                                 <label for="fd-maturity-date" class="form-label">Maturity Date</label>
-                                <input type="date" id="fd-maturity-date" class="form-control">
+                                <input type="date" id="fd-maturity-date" class="form-input" />
                             </div>
                         </div>
-
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="fd-account-number" class="form-label">FD Account Number</label>
-                                <input type="text" id="fd-account-number" class="form-control" placeholder="Enter FD account number">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="fd-nominee" class="form-label">Nominee</label>
-                                <input type="text" id="fd-nominee" class="form-control" placeholder="Enter nominee name">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="fd-comments" class="form-label">FD Comments ⭐</label>
-                            <textarea id="fd-comments" class="form-control" rows="3" placeholder="Enter detailed comments about this FD (terms, special conditions, etc.)"></textarea>
-                            <small class="form-help">Add any special terms, renewal instructions, or notes about this FD</small>
-                        </div>
-                    </div>
-
-                    <!-- Enhanced Insurance Fields -->
-                    <div class="conditional-fields insurance-fields">
-                        <h4>🛡️ Enhanced Insurance Policy Details</h4>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-invested-date" class="form-label">Invested Date ⭐</label>
-                                <input type="date" id="insurance-invested-date" class="form-control">
-                                <small class="form-help">Date when you first invested in this insurance policy</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="insurance-type" class="form-label">Insurance Type</label>
-                                <select id="insurance-type" class="form-control">
-                                    <option value="">Select insurance type</option>
-                                    <option value="Life Insurance">Life Insurance</option>
-                                    <option value="Health Insurance">Health Insurance</option>
-                                    <option value="Term Insurance">Term Insurance</option>
-                                    <option value="ULIP">ULIP</option>
-                                    <option value="Endowment">Endowment</option>
-                                    <option value="Money Back">Money Back</option>
-                                    <option value="Child Plan">Child Plan</option>
-                                    <option value="Pension Plan">Pension Plan</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-premium" class="form-label">Premium Amount (₹)</label>
-                                <input type="number" id="insurance-premium" class="form-control" placeholder="Enter premium amount" min="0" step="0.01">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="insurance-sum-assured" class="form-label">Sum Assured (₹)</label>
-                                <input type="number" id="insurance-sum-assured" class="form-control" placeholder="Enter sum assured" min="0" step="0.01">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-payment-frequency" class="form-label">Payment Frequency</label>
-                                <select id="insurance-payment-frequency" class="form-control">
-                                    <option value="">Select frequency</option>
+                                <label for="fd-interest-payout" class="form-label">Interest Payout</label>
+                                <select id="fd-interest-payout" class="form-input">
                                     <option value="Monthly">Monthly</option>
                                     <option value="Quarterly">Quarterly</option>
                                     <option value="Half-yearly">Half-yearly</option>
-                                    <option value="Annual">Annual</option>
+                                    <option value="Yearly" selected>Yearly</option>
+                                    <option value="On Maturity">On Maturity</option>
                                 </select>
                             </div>
-                            
                             <div class="form-group">
-                                <label for="insurance-policy-number" class="form-label">Policy Number</label>
-                                <input type="text" id="insurance-policy-number" class="form-control" placeholder="Enter policy number">
+                                <label for="fd-account-number" class="form-label">Account Number</label>
+                                <input type="text" id="fd-account-number" class="form-input" placeholder="FD Account Number" />
                             </div>
                         </div>
-
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="insurance-start-date" class="form-label">Policy Start Date</label>
-                                <input type="date" id="insurance-start-date" class="form-control">
+                                <label for="fd-nominee" class="form-label">Nominee</label>
+                                <input type="text" id="fd-nominee" class="form-input" placeholder="Nominee name" />
                             </div>
-                            
                             <div class="form-group">
-                                <label for="insurance-maturity-date" class="form-label">Policy Maturity Date</label>
-                                <input type="date" id="insurance-maturity-date" class="form-control">
+                                <label for="fd-comments" class="form-label">Comments</label>
+                                <input type="text" id="fd-comments" class="form-input" placeholder="Additional notes" />
                             </div>
                         </div>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="insurance-comments" class="form-label">Insurance Comments ⭐</label>
-                            <textarea id="insurance-comments" class="form-control" rows="3" placeholder="Enter detailed comments about this insurance policy (coverage details, beneficiaries, special terms, etc.)"></textarea>
-                            <small class="form-help">Add coverage details, beneficiary information, renewal terms, or any special conditions</small>
+                    <!-- Insurance Fields -->
+                    <div class="insurance-fields conditional-fields">
+                        <h4>Insurance Policy Details</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-sum-insured" class="form-label">Sum Insured (₹)</label>
+                                <input type="number" id="insurance-sum-insured" class="form-input" step="0.01" placeholder="Coverage amount" />
+                            </div>
+                            <div class="form-group">
+                                <label for="insurance-maturity-amount" class="form-label">Maturity Amount (₹)</label>
+                                <input type="number" id="insurance-maturity-amount" class="form-input" step="0.01" placeholder="Maturity value" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-premium" class="form-label">Premium Amount (₹)</label>
+                                <input type="number" id="insurance-premium" class="form-input" step="0.01" placeholder="Annual/Monthly premium" />
+                            </div>
+                            <div class="form-group">
+                                <label for="insurance-start-date" class="form-label">Start Date</label>
+                                <input type="date" id="insurance-start-date" class="form-input" />
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-maturity-date" class="form-label">Maturity Date</label>
+                                <input type="date" id="insurance-maturity-date" class="form-input" />
+                            </div>
+                            <div class="form-group">
+                                <label for="insurance-next-premium" class="form-label">Next Premium Due</label>
+                                <input type="date" id="insurance-next-premium" class="form-input" />
+                            </div>
                         </div>
                     </div>
 
                     <!-- Bank Balance Fields -->
-                    <div class="conditional-fields bank-balance-fields">
-                        <h4>💰 Bank Balance Details</h4>
-                        
+                    <div class="bank-balance-fields conditional-fields">
+                        <h4>Bank Balance Details</h4>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="bank-current-balance" class="form-label">Current Balance (₹)</label>
-                                <input type="number" id="bank-current-balance" class="form-control" placeholder="Enter current balance" min="0" step="0.01">
+                                <input type="number" id="bank-current-balance" class="form-input" step="0.01" placeholder="Current account balance" />
                             </div>
-                            
                             <div class="form-group">
                                 <label for="bank-as-of-date" class="form-label">As of Date</label>
-                                <input type="date" id="bank-as-of-date" class="form-control">
+                                <input type="date" id="bank-as-of-date" class="form-input" />
                             </div>
                         </div>
-
-                        <div class="form-group">
-                            <label for="bank-account-type" class="form-label">Account Type</label>
-                            <select id="bank-account-type" class="form-control">
-                                <option value="">Select account type</option>
-                                <option value="Savings">Savings Account</option>
-                                <option value="Current">Current Account</option>
-                                <option value="Salary">Salary Account</option>
-                                <option value="NRI">NRI Account</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Equity Fields -->
-                    <div class="conditional-fields equity-fields">
-                        <h4>📊 Equity Investment Details</h4>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="equity-symbol" class="form-label">Stock Symbol</label>
-                                <input type="text" id="equity-symbol" class="form-control" placeholder="Enter stock symbol (e.g., RELIANCE)">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="equity-sector" class="form-label">Sector</label>
-                                <input type="text" id="equity-sector" class="form-control" placeholder="Enter sector (e.g., Technology)">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="equity-quantity" class="form-label">Quantity</label>
-                                <input type="number" id="equity-quantity" class="form-control" placeholder="Number of shares" min="0">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="equity-avg-price" class="form-label">Average Price (₹)</label>
-                                <input type="number" id="equity-avg-price" class="form-control" placeholder="Average purchase price" min="0" step="0.01">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" onclick="closeModal('investment-modal')" class="btn btn--secondary">Cancel</button>
-                        <button type="submit" class="btn btn--primary">Save Investment</button>
                     </div>
                 </form>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('investment-modal')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="saveInvestment()" class="btn btn-primary">Save Investment</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Account Modal with Enhanced Credential Fields -->
+    <!-- Liability Modal -->
+    <div id="liability-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="liability-modal-title" class="modal-title">Add Liability</h3>
+                <button onclick="closeModal('liability-modal')" class="btn-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="liability-form" onsubmit="event.preventDefault(); saveLiability();">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="liability-member" class="form-label">Family Member *</label>
+                            <select id="liability-member" class="form-input" required>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="liability-type" class="form-label">Liability Type *</label>
+                            <select id="liability-type" class="form-input" required>
+                                <option value="">Select Type</option>
+                                <option value="homeLoan">Home Loan</option>
+                                <option value="personalLoan">Personal Loan</option>
+                                <option value="creditCard">Credit Card</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="liability-lender" class="form-label">Lender/Bank *</label>
+                        <input
+                            type="text"
+                            id="liability-lender"
+                            class="form-input"
+                            placeholder="e.g., HDFC Bank, SBI"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="liability-amount" class="form-label">Outstanding Amount (₹) *</label>
+                            <input
+                                type="number"
+                                id="liability-amount"
+                                class="form-input"
+                                step="0.01"
+                                placeholder="Enter amount"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="liability-emi" class="form-label">EMI Amount (₹)</label>
+                            <input type="number" id="liability-emi" class="form-input" step="0.01" placeholder="Monthly EMI" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="liability-rate" class="form-label">Interest Rate (%)</label>
+                        <input type="number" id="liability-rate" class="form-input" step="0.01" placeholder="e.g., 8.5" />
+                    </div>
+                </form>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('liability-modal')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="saveLiability()" class="btn btn-primary">Save Liability</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Modal -->
     <div id="account-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -2706,131 +1554,101 @@
                 <button onclick="closeModal('account-modal')" class="btn-close">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="account-form">
-                    <!-- Basic Account Fields -->
+                <form id="account-form" onsubmit="event.preventDefault(); saveAccount();">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="account-type" class="form-label">Account Type *</label>
-                            <select id="account-type" class="form-control" required>
-                                <option value="">Select Account Type</option>
-                                <option value="Bank Account">Bank Account</option>
+                            <select id="account-type" class="form-input" required>
+                                <option value="">Select Type</option>
+                                <option value="Savings Account">Savings Account</option>
+                                <option value="Current Account">Current Account</option>
+                                <option value="Fixed Deposit">Fixed Deposit</option>
+                                <option value="Recurring Deposit">Recurring Deposit</option>
+                                <option value="PPF">PPF</option>
+                                <option value="EPF">EPF</option>
+                                <option value="NPS">NPS</option>
                                 <option value="Demat Account">Demat Account</option>
-                                <option value="Mutual Fund Account">Mutual Fund Account</option>
-                                <option value="Insurance Account">Insurance Account</option>
                                 <option value="Trading Account">Trading Account</option>
-                                <option value="PPF Account">PPF Account</option>
                                 <option value="Other">Other</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="account-institution" class="form-label">Institution *</label>
-                            <input type="text" id="account-institution" class="form-control" placeholder="Enter institution name" required>
+                            <input type="text" id="account-institution" class="form-input" placeholder="Bank/Institution name" required />
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="account-number" class="form-label">Account Number *</label>
-                            <input type="text" id="account-number" class="form-control" placeholder="Enter account number" required>
+                            <input type="text" id="account-number" class="form-input" placeholder="Account number" required />
                         </div>
-                        
+
                         <div class="form-group">
-                            <label for="account-status" class="form-label">Status</label>
-                            <select id="account-status" class="form-control">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="Closed">Closed</option>
-                                <option value="Frozen">Frozen</option>
+                            <label for="account-holder" class="form-label">Account Holder *</label>
+                            <select id="account-holder" class="form-input" required>
+                                <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="account-holder" class="form-label">Account Holder *</label>
-                            <select id="account-holder" class="form-control" required>
-                                <option value="">Select Account Holder</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
                             <label for="account-nominee" class="form-label">Nominee</label>
-                            <select id="account-nominee" class="form-control">
-                                <option value="">Select Nominee (Optional)</option>
+                            <select id="account-nominee" class="form-input">
+                                <!-- Options will be populated by JavaScript -->
                             </select>
                         </div>
-                    </div>
 
-                    <!-- Enhanced Secure Credential Section -->
-                    <div class="credentials-section" style="display: none;">
-                        <h4>🔐 Secure Credentials (Authorized Access)</h4>
-                        <p style="color: var(--color-success); margin-bottom: var(--space-16);">
-                            ✅ You have full access to credential management
-                        </p>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="account-username" class="form-label">Username/Login ID</label>
-                                <input type="text" id="account-username" class="form-control" placeholder="Enter username" autocomplete="off">
-                                <small class="form-help">Login ID for online access to this account</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="account-password" class="form-label">Password</label>
-                                <input type="password" id="account-password" class="form-control" placeholder="Enter password" autocomplete="new-password">
-                                <small class="form-help">Secure password for account access</small>
-                            </div>
+                        <div class="form-group">
+                            <label for="account-status" class="form-label">Status</label>
+                            <select id="account-status" class="form-input">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="Closed">Closed</option>
+                            </select>
                         </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="account-url" class="form-label">Website URL</label>
-                                <input type="url" id="account-url" class="form-control" placeholder="https://example.com/login">
-                                <small class="form-help">Direct link to login page</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="account-pin" class="form-label">PIN/MPIN</label>
-                                <input type="password" id="account-pin" class="form-control" placeholder="Enter PIN" maxlength="6">
-                                <small class="form-help">Mobile PIN or transaction PIN</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Password Access Warning -->
-                    <div class="password-warning" style="display: none;">
-                        <h4>🔒 Credential Access Restricted</h4>
-                        <p style="color: var(--color-error);">
-                            Password and credential fields are restricted to pradeepkumar.v@hotmail.com for security reasons.
-                            You can still manage all other account information.
-                        </p>
                     </div>
 
                     <div class="form-group">
                         <label for="account-comments" class="form-label">Comments</label>
-                        <textarea id="account-comments" class="form-control" rows="3" placeholder="Enter any additional notes about this account"></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" onclick="closeModal('account-modal')" class="btn btn--secondary">Cancel</button>
-                        <button type="submit" class="btn btn--primary">Save Account</button>
+                        <input type="text" id="account-comments" class="form-input" placeholder="Additional notes" />
                     </div>
                 </form>
+
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('account-modal')" class="btn btn-secondary">Cancel</button>
+                    <button type="button" onclick="saveAccount()" class="btn btn-primary">Save Account</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="loading-overlay" style="display: none;">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading...</div>
+    <!-- Import Modal -->
+    <div id="import-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="import-modal-title">Import Data</h2>
+                <button class="btn-close" onclick="closeModal('import-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="import-instructions"></div>
+                <div class="file-upload">
+                    <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" style="display: none;">
+                    <label for="import-file" class="btn btn-secondary" style="cursor: pointer;">📁 Choose CSV File</label>
+                    <span id="file-name" style="margin-left: 10px; color: #666;"></span>
+                </div>
+                <div id="import-preview" style="display: none;"></div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeModal('import-modal')" class="btn btn-secondary">Cancel</button>
+                <button onclick="processImport()" class="btn btn-primary" id="import-btn" disabled>Import Data</button>
+            </div>
+        </div>
     </div>
 
-    <!-- Enhanced JavaScript Integration -->
-    <script src="app.js"></script>
+    <!-- FIXED: Load app.js (your actual JavaScript file) -->
+    <script src="app.js" defer></script>
 </body>
 </html>
