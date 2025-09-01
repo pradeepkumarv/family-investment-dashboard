@@ -1691,12 +1691,11 @@ async function updateInvestmentData(investmentId, investmentData) {
 function editInvestment(investmentId) {
     editingInvestmentId = investmentId;
     const investment = investments.find(inv => inv.id === investmentId);
-    if (!investment) {
+    if (!inv) {
         console.error('Investment not found:', investmentId);
         return;
     }
-
-    editingInvestmentId = investmentId;
+    
     document.getElementById('investment-modal-title').textContent = 'Edit Investment';
 
     // Populate basic fields
