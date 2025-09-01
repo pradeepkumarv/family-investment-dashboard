@@ -1566,7 +1566,7 @@ if (type === 'fixedDeposits') {
  
   // Enhanced Insurance fields - UPDATED to match old form IDs
 if (type === 'insurance') {
-  // Core insurance fields (investment table columns)
+  // Core insurance fields
   investmentData.insurance_type              = document.getElementById('ins-type')?.value                || null;
   investmentData.insurance_premium           = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
   investmentData.insurance_sum_assured       = parseFloat(document.getElementById('ins-sum-assured')?.value)   || null;
@@ -1575,14 +1575,41 @@ if (type === 'insurance') {
   investmentData.insurance_maturity_date     = document.getElementById('ins-maturity-date')?.value            || null;
   investmentData.insurance_policy_number     = document.getElementById('ins-policy-number')?.value            || null;
   investmentData.insurance_comments          = document.getElementById('ins-comments')?.value                 || null;
-  investmentData.next_premium_date           = document.getElementById('ins-next-premium-date')?.value || null;
 
-  // Use sum_assured as current_value if no explicit current_value
-  investmentData.current_value = investmentData.insurance_sum_assured 
-    || investmentData.invested_amount;
+  // Set current_value fallback
+  investmentData.current_value = investmentData.insurance_sum_assured || investmentData.invested_amount;
 
-  console.log('🛡️ Added enhanced insurance fields to investment data');
+  // Insert investment first
+  const { data, error } = await supabase
+    .from('investments')
+    .insert([investmentData]);
+
+  if (error) {
+    console.error('Investment save error:', error);
+    return;
+  }
+
+  // Then create reminder using the same form field
+  const nextPremium = document.getElementById('ins-next-premium-date')?.value;
+  if (nextPremium) {
+    const reminderData = {
+      member_id: currentUser.id,
+      title:    `Insurance premium due for ${investmentData.symbol_or_name}`,
+      date:     nextPremium,
+      type:     'insurance',
+      created_at: new Date().toISOString()
+    };
+    const { error: reminderError } = await supabase
+      .from('reminders')
+      .insert([reminderData]);
+    if (reminderError) {
+      console.error('Failed to create reminder:', reminderError);
+    }
+  }
+
+  console.log('🛡️ Insurance investment and reminder saved');
 }
+
  
  // Bank Balance fields
  if (type === 'bankBalances') {
@@ -1710,7 +1737,7 @@ function editInvestment(investmentId) {
         document.getElementById('ins-premium-frequency').value = investment.insurance_payment_frequency || investment.premium_frequency || 'Yearly';
         document.getElementById('ins-start-date').value = investment.insurance_start_date || investment.start_date || '';
         document.getElementById('ins-maturity-date').value = investment.insurance_maturity_date || investment.maturity_date || '';
-        document.getElementById('ins-next-premium-date').value = investment.next_premium_date || '';
+        //document.getElementById('ins-next-premium-date').value = investment.next_premium_date || '';
         document.getElementById('ins-nominee').value = investment.nominee || '';
         document.getElementById('ins-policy-status').value = investment.policy_status || 'Active';
         document.getElementById('ins-comments').value = investment.insurance_comments || investment.comments || '';
