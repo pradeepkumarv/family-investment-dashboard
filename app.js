@@ -1623,7 +1623,7 @@ async function saveInvestment() {
     closeModal('investment-modal');
     renderInvestmentTabContent(type);
     renderStatsOverview();
-    await loadDashboardData();
+   // await loadDashboardData(); --> Fix to remove duplicate entries
 
   } catch (error) {
     console.error('❌ saveInvestment error:', error);
@@ -1733,10 +1733,16 @@ function editInvestment(investmentId) {
         document.getElementById('ins-premium-frequency').value = investment.insurance_payment_frequency || investment.premium_frequency || 'Yearly';
         document.getElementById('ins-start-date').value = investment.insurance_start_date || investment.start_date || '';
         document.getElementById('ins-maturity-date').value = investment.insurance_maturity_date || investment.maturity_date || '';
-        //document.getElementById('ins-next-premium-date').value = investment.next_premium_date || '';
-        document.getElementById('ins-nominee').value = investment.nominee || '';
         document.getElementById('ins-policy-status').value = investment.policy_status || 'Active';
         document.getElementById('ins-comments').value = investment.insurance_comments || investment.comments || '';
+        //document.getElementById('ins-next-premium-date').value = investment.next_premium_date || '';
+        // Check if field exists before setting
+        const nextPremiumField = document.getElementById('ins-next-premium-date');
+        if (nextPremiumField) {
+        nextPremiumField.value = '';  // This is for new reminder, not editing old one
+    }
+        document.getElementById('ins-nominee').value = investment.nominee || '';
+        
         console.log('✅ Populated Insurance fields for edit');
     }
     
