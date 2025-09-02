@@ -1150,303 +1150,6 @@
             display: none;
         }
 
-        /* ===== PHOTO MODAL ===== */
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: var(--space-4);
-            margin: var(--space-6) 0;
-        }
-
-        .photo-option {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: all var(--transition-normal);
-            background: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-        }
-
-        .photo-option:hover {
-            border-color: var(--gray-400);
-            transform: scale(1.05);
-        }
-
-        .photo-option.selected {
-            border-color: var(--primary-color);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .upload-area {
-            border: 3px dashed var(--gray-400);
-            border-radius: var(--radius-lg);
-            padding: var(--space-8);
-            text-align: center;
-            margin: var(--space-6) 0;
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            background: var(--gray-50);
-        }
-
-        .upload-area:hover {
-            border-color: var(--primary-color);
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .upload-area .upload-icon {
-            font-size: 3rem;
-            margin-bottom: var(--space-3);
-            color: var(--gray-500);
-        }
-
-        .upload-text {
-            font-weight: 600;
-            margin-bottom: var(--space-2);
-            color: var(--gray-700);
-        }
-
-        .upload-subtext {
-            font-size: 0.9rem;
-            color: var(--gray-600);
-        }
-
-        /* ===== IMPORT SECTION STYLES ===== */
-        .import-section {
-            margin: var(--space-6) 0;
-            padding: var(--space-6);
-            border: 2px solid var(--gray-300);
-            border-radius: var(--radius-xl);
-            background: var(--gray-50);
-        }
-
-        .import-section h3 {
-            color: var(--gray-800);
-            margin-bottom: var(--space-3);
-            font-size: 1.3rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .import-section p {
-            color: var(--gray-600);
-            margin-bottom: var(--space-5);
-            line-height: 1.6;
-        }
-
-        .import-buttons {
-            display: flex;
-            gap: var(--space-3);
-            flex-wrap: wrap;
-        }
-
-        .csv-template {
-            background: var(--gray-100);
-            padding: var(--space-5);
-            border-radius: var(--radius-lg);
-            border-left: 4px solid var(--primary-color);
-            margin: var(--space-4) 0;
-        }
-
-        .csv-template strong {
-            display: block;
-            margin-bottom: var(--space-3);
-            color: var(--gray-800);
-        }
-
-        .csv-template ul {
-            margin: var(--space-3) 0;
-            padding-left: var(--space-5);
-        }
-
-        .csv-template li {
-            margin-bottom: var(--space-2);
-            line-height: 1.5;
-        }
-
-        .csv-template code {
-            background: var(--gray-200);
-            padding: var(--space-1) var(--space-2);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-mono);
-            color: var(--error-color);
-            font-weight: 600;
-        }
-
-        .file-upload {
-            margin: var(--space-6) 0;
-            padding: var(--space-5);
-            border: 2px solid var(--gray-300);
-            border-radius: var(--radius-lg);
-            background: var(--gray-50);
-        }
-
-        .file-upload label {
-            cursor: pointer;
-            display: inline-block;
-        }
-
-        #file-name {
-            margin-left: var(--space-3);
-            color: var(--gray-600);
-            font-style: italic;
-        }
-
-        /* ===== MEMBER DETAILS VIEW ===== */
-        .member-details-section {
-            display: none;
-        }
-
-        .member-details-overview {
-            padding: var(--space-8);
-            border-bottom: 2px solid var(--gray-200);
-            background: var(--gray-50);
-        }
-
-        .member-profile {
-            display: flex;
-            align-items: center;
-            gap: var(--space-6);
-            margin-bottom: var(--space-8);
-        }
-
-        .member-detail-photo {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid var(--primary-color);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .member-info h3 {
-            font-size: 2.5rem;
-            color: var(--gray-800);
-            margin-bottom: var(--space-2);
-            font-weight: 800;
-        }
-
-        .member-info .relationship {
-            color: var(--gray-600);
-            font-size: 1.2rem;
-            margin-bottom: var(--space-3);
-            font-style: italic;
-            font-weight: 500;
-        }
-
-        .member-since {
-            font-size: 0.95rem;
-            color: var(--gray-500);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .financial-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--space-6);
-        }
-
-        .summary-card {
-            background: var(--white);
-            padding: var(--space-6);
-            border-radius: var(--radius-xl);
-            text-align: center;
-            box-shadow: var(--shadow-base);
-            border-left: 4px solid;
-        }
-
-        .summary-card.assets {
-            border-left-color: var(--success-color);
-        }
-
-        .summary-card.liabilities {
-            border-left-color: var(--error-color);
-        }
-
-        .summary-card.net-worth {
-            border-left-color: var(--primary-color);
-        }
-
-        .summary-card .summary-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-bottom: var(--space-2);
-            font-family: var(--font-mono);
-        }
-
-        .summary-card .summary-label {
-            color: var(--gray-600);
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .detail-breakdown {
-            font-size: 0.85rem;
-            color: var(--gray-500);
-            margin-top: var(--space-2);
-        }
-
-        /* ===== EXPORT BUTTONS ===== */
-        .export-buttons {
-            display: flex;
-            gap: var(--space-3);
-            flex-wrap: wrap;
-        }
-
-        .export-category {
-            background: var(--white);
-            padding: var(--space-8);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-md);
-            border: 2px solid var(--gray-300);
-            transition: all var(--transition-normal);
-            flex: 1;
-            min-width: 300px;
-        }
-
-        .export-category:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-color);
-        }
-
-        .export-category h3 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--gray-800);
-            margin-bottom: var(--space-4);
-            display: flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .export-category p {
-            color: var(--gray-600);
-            margin-bottom: var(--space-6);
-            line-height: 1.6;
-        }
-
-        .export-category.complete-backup {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-            border: 2px solid var(--primary-color);
-        }
-
-        .export-category.complete-backup h3 {
-            color: var(--primary-color);
-            font-size: 1.6rem;
-        }
-
         /* ===== MESSAGES ===== */
         .message {
             position: fixed;
@@ -1488,89 +1191,6 @@
 
         .message-icon {
             font-size: 1.2rem;
-        }
-
-        /* ===== LAST UPDATED ===== */
-        .last-updated {
-            color: var(--gray-600);
-            font-size: 0.95rem;
-            text-align: center;
-            margin-top: var(--space-8);
-            padding: var(--space-5);
-            background: var(--white);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-base);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-2);
-        }
-
-        .sync-indicator {
-            color: var(--primary-color);
-            font-size: 1.1rem;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* ===== LOADING STATES ===== */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-            position: relative;
-        }
-
-        .loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 40px;
-            height: 40px;
-            margin: -20px 0 0 -20px;
-            border: 4px solid var(--gray-300);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s linear infinite;
-            z-index: 1000;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* ===== ANIMATIONS ===== */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .fade-in {
-            animation: fadeIn var(--transition-normal) ease;
-        }
-
-        @keyframes slideInUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .slide-in-up {
-            animation: slideInUp var(--transition-normal) ease;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-            40%, 43% { transform: translate3d(0, -30px, 0); }
-            70% { transform: translate3d(0, -15px, 0); }
-            90% { transform: translate3d(0, -4px, 0); }
-        }
-
-        .bounce {
-            animation: bounce 1s ease;
         }
 
         /* ===== RESPONSIVE DESIGN ===== */
@@ -1632,36 +1252,6 @@
                 min-width: 120px;
                 flex: none;
             }
-
-            .financial-summary-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .member-profile {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .modal-actions {
-                flex-direction: column;
-            }
-
-            .export-buttons {
-                justify-content: center;
-            }
-
-            .import-buttons {
-                justify-content: center;
-            }
-
-            .data-table {
-                font-size: 0.8rem;
-            }
-
-            .data-table th,
-            .data-table td {
-                padding: var(--space-2);
-            }
         }
 
         @media (max-width: 480px) {
@@ -1688,10 +1278,6 @@
 
             .modal-body {
                 padding: var(--space-4);
-            }
-
-            .photo-grid {
-                grid-template-columns: repeat(2, 1fr);
             }
 
             .feature-list {
@@ -1830,24 +1416,6 @@
                 </div>
             </div>
 
-            <!-- Member Details Section (Hidden by default) -->
-            <div id="member-details-section" class="section member-details-section">
-                <div class="section-header">
-                    <h2 id="member-details-title" class="section-title">
-                        <span>👤</span>
-                        <span>Member Details</span>
-                    </h2>
-                    <div class="section-actions">
-                        <button onclick="closeMemberDetails()" class="btn">
-                            <span>←</span> Back to Dashboard
-                        </button>
-                    </div>
-                </div>
-                <div id="member-details-content">
-                    <!-- Member details will be populated by JavaScript -->
-                </div>
-            </div>
-
             <!-- Investment Portfolio Section -->
             <div class="section slide-in-up">
                 <div class="section-header">
@@ -1861,12 +1429,6 @@
                         </button>
                         <button onclick="exportInvestments('csv')" class="btn">
                             <span>📊</span> Export CSV
-                        </button>
-                        <button onclick="exportInvestments('json')" class="btn">
-                            <span>📋</span> Export JSON
-                        </button>
-                        <button onclick="openImportModal('investments')" class="btn">
-                            <span>📥</span> Import Data
                         </button>
                     </div>
                 </div>
@@ -1909,15 +1471,6 @@
                         <button onclick="openAddLiabilityModal()" class="btn">
                             <span>➕</span> Add Liability
                         </button>
-                        <button onclick="exportLiabilities('csv')" class="btn">
-                            <span>📊</span> Export CSV
-                        </button>
-                        <button onclick="exportLiabilities('json')" class="btn">
-                            <span>📋</span> Export JSON
-                        </button>
-                        <button onclick="openImportModal('liabilities')" class="btn">
-                            <span>📥</span> Import Data
-                        </button>
                     </div>
                 </div>
                 <div class="section-content">
@@ -1952,15 +1505,6 @@
                     <div class="section-actions">
                         <button onclick="openAddAccountModal()" class="btn">
                             <span>➕</span> Add Account
-                        </button>
-                        <button onclick="exportAccounts('csv')" class="btn">
-                            <span>📊</span> Export CSV
-                        </button>
-                        <button onclick="exportAccounts('json')" class="btn">
-                            <span>📋</span> Export JSON
-                        </button>
-                        <button onclick="openImportModal('accounts')" class="btn">
-                            <span>📥</span> Import Data
                         </button>
                     </div>
                 </div>
@@ -1998,125 +1542,6 @@
                         </table>
                     </div>
                 </div>
-            </div>
-
-            <!-- Enhanced Import Section -->
-            <div class="section slide-in-up">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span>📥</span>
-                        <span>Bulk Data Import</span>
-                    </h2>
-                </div>
-                <div class="section-content">
-                    <div class="import-section">
-                        <h3>
-                            <span>📊</span>
-                            Bulk Import Financial Data
-                        </h3>
-                        <p>Import your financial data from CSV files to quickly populate your dashboard. Save time by uploading your existing data instead of entering it manually.</p>
-                        
-                        <div class="import-buttons">
-                            <button onclick="openImportModal('investments')" class="btn btn-primary">
-                                <span>📈</span> Import Investments
-                            </button>
-                            <button onclick="openImportModal('liabilities')" class="btn btn-primary">
-                                <span>📉</span> Import Liabilities
-                            </button>
-                            <button onclick="openImportModal('accounts')" class="btn btn-primary">
-                                <span>🏦</span> Import Accounts
-                            </button>
-                        </div>
-
-                        <div style="margin-top: var(--space-6); padding: var(--space-4); background: var(--gray-100); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
-                            <h4 style="color: var(--info-color); margin-bottom: var(--space-2); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>ℹ️</span> Import Tips
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700);">
-                                <li>Ensure your CSV files have proper column headers</li>
-                                <li>Family members must be added before importing their data</li>
-                                <li>Check the import instructions in each modal for required fields</li>
-                                <li>Import will validate data and show errors for any invalid rows</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enhanced Export Section -->
-            <div class="section slide-in-up">
-                <div class="section-header">
-                    <h2 class="section-title">
-                        <span>📋</span>
-                        <span>Data Export & Backup</span>
-                    </h2>
-                </div>
-                <div class="section-content">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6);">
-                        
-                        <!-- Individual Exports -->
-                        <div class="export-category">
-                            <h3>
-                                <span>📊</span>
-                                Individual Data Export
-                            </h3>
-                            <p>Export specific categories of your financial data for analysis or backup purposes.</p>
-                            <div class="export-buttons">
-                                <button onclick="exportInvestments('csv')" class="btn btn-export">
-                                    <span>📈</span> Export Investments (CSV)
-                                </button>
-                                <button onclick="exportInvestments('json')" class="btn btn-export">
-                                    <span>📈</span> Export Investments (JSON)
-                                </button>
-                                <button onclick="exportLiabilities('csv')" class="btn btn-export">
-                                    <span>📉</span> Export Liabilities (CSV)
-                                </button>
-                                <button onclick="exportLiabilities('json')" class="btn btn-export">
-                                    <span>📉</span> Export Liabilities (JSON)
-                                </button>
-                                <button onclick="exportAccounts('csv')" class="btn btn-export">
-                                    <span>🏦</span> Export Accounts (CSV)
-                                </button>
-                                <button onclick="exportAccounts('json')" class="btn btn-export">
-                                    <span>🏦</span> Export Accounts (JSON)
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Complete Backup -->
-                        <div class="export-category complete-backup">
-                            <h3>
-                                <span>💾</span>
-                                Complete Family Data Backup
-                            </h3>
-                            <p>Export all your family's financial data in one comprehensive file. Includes all members, investments, liabilities, accounts, and calculated totals.</p>
-                            <div class="export-buttons">
-                                <button onclick="exportFamilyData('csv')" class="btn btn-export">
-                                    <span>📊</span> Complete Backup (CSV)
-                                </button>
-                                <button onclick="exportFamilyData('json')" class="btn btn-export">
-                                    <span>📋</span> Complete Backup (JSON)
-                                </button>
-                            </div>
-
-                            <div style="margin-top: var(--space-4); padding: var(--space-3); background: rgba(102, 126, 234, 0.1); border-radius: var(--radius-md);">
-                                <div style="font-size: 0.9rem; color: var(--primary-color); font-weight: 600;">
-                                    <span>💡</span> Recommended for regular backups
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enhanced Last Updated Display -->
-            <div class="last-updated">
-                <span class="sync-indicator">📊</span>
-                <span>Data last synchronized: <span id="last-updated-display">Loading...</span></span>
-                <span style="margin-left: var(--space-4); color: var(--success-color); font-weight: 600;">
-                    <span>✅</span> All data saved
-                </span>
             </div>
         </div>
     </div>
@@ -2166,17 +1591,6 @@
                         </label>
                     </div>
 
-                    <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
-                        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--info-color); margin-bottom: var(--space-2);">
-                            <span>ℹ️</span> Additional Information
-                        </div>
-                        <div style="font-size: 0.9rem; color: var(--gray-600);">
-                            • Primary members have administrative privileges<br>
-                            • You can add a photo after creating the member<br>
-                            • Financial data will be linked to this member profile
-                        </div>
-                    </div>
-
                     <div class="modal-actions">
                         <button type="button" onclick="closeModal('member-modal')" class="btn btn-secondary">
                             <span>❌</span> Cancel
@@ -2186,57 +1600,6 @@
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Photo Modal -->
-    <div id="photo-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">
-                    <span>📷</span>
-                    <span>Update Member Photo</span>
-                </h3>
-                <button onclick="closeModal('photo-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <h4 style="margin-bottom: var(--space-4); color: var(--gray-800); display: flex; align-items: center; gap: var(--space-2);">
-                    <span>🎭</span> Choose Avatar
-                </h4>
-                
-                <div id="preset-photos-grid" class="photo-grid">
-                    <!-- Photo options will be populated by JavaScript -->
-                </div>
-
-                <div style="text-align: center; margin: var(--space-6) 0; color: var(--gray-600); font-weight: 600;">
-                    <span>— OR —</span>
-                </div>
-
-                <div class="upload-area">
-                    <div class="upload-icon">📷</div>
-                    <div class="upload-text">Upload Custom Photo</div>
-                    <div class="upload-subtext">Click to select or drag & drop an image file</div>
-                    <input type="file" id="photo-upload" accept="image/*" onchange="handlePhotoUpload(event)" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;" />
-                </div>
-
-                <div style="margin-top: var(--space-4); padding: var(--space-3); background: var(--gray-50); border-radius: var(--radius-md); font-size: 0.85rem; color: var(--gray-600);">
-                    <div style="font-weight: 600; margin-bottom: var(--space-1);">
-                        <span>💡</span> Photo Guidelines:
-                    </div>
-                    • Supported formats: JPG, PNG, GIF<br>
-                    • Maximum file size: 5MB<br>
-                    • Square images work best for profile photos
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('photo-modal')" class="btn btn-secondary">
-                        <span>❌</span> Cancel
-                    </button>
-                    <button onclick="savePhoto()" class="btn btn-primary">
-                        <span>✅</span> Save Photo
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -2389,41 +1752,134 @@
                         </div>
                     </div>
 
-            <!-- Insurance Specific Fields -->
+                    <!-- Insurance Specific Fields - FIXED -->
                     <div class="conditional-fields insurance-fields">
-                                <h4><span>🛡️</span>Insurance Details</h4>
-                                <div class="form-row">
-                                    <div class="form-group"><label for="ins-policy-number" class="form-label"><span>🔢</span>Policy Number*</label><input type="text" id="ins-policy-number" class="form-input" placeholder="Enter policy number" required /></div>
-                                    <div class="form-group"><label for="ins-policy-name" class="form-label"><span>🏷️</span>Policy Name*</label><input type="text" id="ins-policy-name" class="form-input" placeholder="Enter policy name" required /></div>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group"><label for="ins-company" class="form-label"><span>🏢</span>Company*</label><input type="text" id="ins-company" class="form-input" placeholder="Enter company name" required /></div>
-                                    <div class="form-group"><label for="ins-type" class="form-label"><span>📂</span>Type*</label><select id="ins-type" class="form-select" required><option value="">Select Type</option><option>Term</option><option>Endowment</option><option>ULIP</option><option>Whole Life</option><option>Child Plan</option><option>Money Back</option><option>Pension</option><option>Health</option><option>Group Life </option><option>Motor </option><option>Govt Sponsoserd </option><option>Others</option> </select></div>
-                                </div>                                
-                                <div class="form-row">
-                                    <div class="form-group"><label for="ins-sum-assured" class="form-label"><span>💰</span>Sum Assured*</label><input type="number" id="ins-sum-assured" class="form-input" min="0" step="0.01" required /></div>
-                                    <div class="form-group"><label for="ins-premium-amount" class="form-label"><span>💳</span>Premium Amount*</label><input type="number" id="ins-premium-amount" class="form-input" min="0" step="0.01" required /></div>
-                                </div>
+                        <h4>
+                            <span>🛡️</span> Insurance Policy Details
+                        </h4>
 
-                                <div class="form-row">
-                                    <div class="form-group"><label for="ins-premium-frequency" class="form-label"><span>⏱️</span>Frequency*</label><select id="ins-premium-frequency" class="form-select" required><option>Monthly</option><option>Quarterly</option><option>Half Yearly</option><option>Yearly</option></select></div>
-                                    <div class="form-group"><label for="ins-start-date" class="form-label"><span>📅</span>Start Date*</label><input type="date" id="ins-start-date" class="form-input" required /></div>
-                                </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-policy-name" class="form-label">
+                                    <span>🏷️</span> Policy Name *
+                                </label>
+                                <input type="text" id="ins-policy-name" class="form-input" placeholder="Enter policy name" required />
+                            </div>
 
-                                <div class="form-row">
-                                    <div class="form-group"><label for="ins-maturity-date" class="form-label"><span>📆</span>Maturity Date*</label><input type="date" id="ins-maturity-date" class="form-input" required /></div>
-                                    <div class="form-group"><label for="ins-next-premium-date" class="form-label"><span>⏳</span>Next Premium Due</label><input type="date" id="ins-next-premium-date" class="form-input" /></div>
-                                </div>
+                            <div class="form-group">
+                                <label for="ins-policy-number" class="form-label">
+                                    <span>🔢</span> Policy Number *
+                                </label>
+                                <input type="text" id="ins-policy-number" class="form-input" placeholder="Enter policy number" required />
+                            </div>
+                        </div>
 
-                                <div class="form-row">
-                                    <div class="form-group"><label for="ins-policy-status" class="form-label"><span>⚡</span>Status</label><select id="ins-policy-status" class="form-select"><option>Active</option><option>Inactive</option><option>Matured</option><option>Surrendered</option></select></div>
-                                    <div class="form-group"><label for="ins-nominee" class="form-label"><span>👥</span>Nominee</label><input type="text" id="ins-nominee" class="form-input" /></div>
-                                </div>
-                                <div class="form-group"><label for="ins-comments" class="form-label"><span>📝</span>Comments</label><textarea id="ins-comments" class="form-input" rows="3"></textarea></div>
-                                
-                    (/div)  
-                   
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-company" class="form-label">
+                                    <span>🏢</span> Insurance Company *
+                                </label>
+                                <input type="text" id="ins-company" class="form-input" placeholder="Enter insurance company name" required />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="ins-type" class="form-label">
+                                    <span>📂</span> Policy Type *
+                                </label>
+                                <select id="ins-type" class="form-select" required>
+                                    <option value="">Select type</option>
+                                    <option value="Term">Term</option>
+                                    <option value="Endowment">Endowment</option>
+                                    <option value="ULIP">ULIP</option>
+                                    <option value="Whole Life">Whole Life</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-sum-assured" class="form-label">
+                                    <span>💰</span> Sum Assured *
+                                </label>
+                                <input type="number" id="ins-sum-assured" class="form-input" placeholder="Coverage amount" min="0" step="0.01" required />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ins-premium-amount" class="form-label">
+                                    <span>💳</span> Premium Amount *
+                                </label>
+                                <input type="number" id="ins-premium-amount" class="form-input" placeholder="Enter premium amount" min="0" step="0.01" required />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-premium-frequency" class="form-label">
+                                    <span>⏱️</span> Premium Frequency *
+                                </label>
+                                <select id="ins-premium-frequency" class="form-select" required>
+                                    <option value="">Select frequency</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Half Yearly">Half Yearly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ins-start-date" class="form-label">
+                                    <span>📅</span> Start Date *
+                                </label>
+                                <input type="date" id="ins-start-date" class="form-input" required />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-maturity-date" class="form-label">
+                                    <span>📆</span> Maturity Date *
+                                </label>
+                                <input type="date" id="ins-maturity-date" class="form-input" required />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ins-next-premium-date" class="form-label">
+                                    <span>⏳</span> Next Premium Due
+                                </label>
+                                <input type="date" id="ins-next-premium-date" class="form-input" />
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-policy-status" class="form-label">
+                                    <span>⚡</span> Policy Status
+                                </label>
+                                <select id="ins-policy-status" class="form-select">
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Matured">Matured</option>
+                                    <option value="Surrendered">Surrendered</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ins-nominee" class="form-label">
+                                    <span>👥</span> Nominee
+                                </label>
+                                <input type="text" id="ins-nominee" class="form-input" placeholder="Nominee name" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ins-comments" class="form-label">
+                                <span>📝</span> Comments/Notes
+                            </label>
+                            <textarea id="ins-comments" class="form-input" rows="3" placeholder="Additional notes about this policy"></textarea>
+                        </div>
+                    </div>
+
                     <!-- Bank Balance Specific Fields -->
                     <div class="conditional-fields bank-balance-fields">
                         <h4>
@@ -2534,17 +1990,6 @@
                         <input type="number" id="liability-rate" class="form-input" placeholder="Annual interest rate" min="0" max="100" step="0.01" />
                     </div>
 
-                    <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--warning-color);">
-                        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--warning-color); margin-bottom: var(--space-2);">
-                            <span>💡</span> Liability Tracking Tips
-                        </div>
-                        <div style="font-size: 0.9rem; color: var(--gray-600);">
-                            • Enter the current outstanding amount<br>
-                            • EMI and interest rate help track loan progress<br>
-                            • Update regularly to maintain accuracy
-                        </div>
-                    </div>
-
                     <div class="modal-actions">
                         <button type="button" onclick="closeModal('liability-modal')" class="btn btn-secondary">
                             <span>❌</span> Cancel
@@ -2642,17 +2087,6 @@
                         <textarea id="account-comments" class="form-input" rows="3" placeholder="Additional notes or comments about this account"></textarea>
                     </div>
 
-                    <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
-                        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--info-color); margin-bottom: var(--space-2);">
-                            <span>🔐</span> Privacy & Security
-                        </div>
-                        <div style="font-size: 0.9rem; color: var(--gray-600);">
-                            • Account details are stored securely<br>
-                            • Use partial account numbers for additional privacy<br>
-                            • Nominee information helps with estate planning
-                        </div>
-                    </div>
-
                     <div class="modal-actions">
                         <button type="button" onclick="closeModal('account-modal')" class="btn btn-secondary">
                             <span>❌</span> Cancel
@@ -2666,303 +2100,7 @@
         </div>
     </div>
 
-    <!-- Enhanced Import Modal -->
-    <div id="import-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="import-modal-title" class="modal-title">
-                    <span>📥</span>
-                    <span>Import Data</span>
-                </h3>
-                <button onclick="closeModal('import-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="import-instructions">
-                    <!-- Import instructions will be populated by JavaScript -->
-                </div>
-
-                <div class="file-upload">
-                    <label for="import-file" style="display: flex; align-items: center; gap: var(--space-2); font-weight: 600; color: var(--gray-800);">
-                        <span>📁</span> Select CSV File:
-                    </label>
-                    <input type="file" id="import-file" accept=".csv" onchange="handleImportFile(event)" />
-                    <span id="file-name" style="color: var(--gray-600); font-style: italic;"></span>
-                </div>
-
-                <div id="import-preview" style="display: none; margin-top: var(--space-6);">
-                    <!-- Preview content will be populated by JavaScript -->
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" onclick="closeModal('import-modal')" class="btn btn-secondary">
-                        <span>❌</span> Cancel
-                    </button>
-                    <button id="import-btn" onclick="processImport()" class="btn btn-primary" disabled>
-                        <span>📥</span> Import Data
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Floating Help Button -->
-    <div style="position: fixed; bottom: var(--space-6); right: var(--space-6); z-index: var(--z-fixed);">
-        <button onclick="alert('Help functionality coming soon!')" class="btn" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: var(--white); font-size: 1.5rem; box-shadow: var(--shadow-lg); border: none;">
-            <span>❓</span>
-        </button>
-    </div>
-
-    <!-- Enhanced Footer Info -->
-    <div style="position: fixed; bottom: var(--space-2); left: var(--space-2); z-index: var(--z-sticky); background: rgba(255, 255, 255, 0.9); padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); font-size: 0.8rem; color: var(--gray-600); backdrop-filter: blur(5px); border: 1px solid var(--gray-300);">
-        <div style="display: flex; align-items: center; gap: var(--space-2);">
-            <span>💰</span>
-            <span>Family Wealth Dashboard v3.0</span>
-            <span>•</span>
-            <span id="connection-status">🟢 Online</span>
-        </div>
-    </div>
-
-    <!-- Progressive Web App Manifest -->
-    <script>
-        // Register service worker for PWA functionality
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('✅ ServiceWorker registration successful');
-                }, function(err) {
-                    console.log('❌ ServiceWorker registration failed: ', err);
-                });
-            });
-        }
-
-        // Add to home screen functionality
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            deferredPrompt = e;
-            // Show install banner or button
-            console.log('💾 App can be installed');
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + M: Add Member
-            if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
-                e.preventDefault();
-                if (typeof openAddMemberModal === 'function') {
-                    openAddMemberModal();
-                }
-            }
-            
-            // Ctrl/Cmd + I: Add Investment
-            if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-                e.preventDefault();
-                if (typeof openAddInvestmentModal === 'function') {
-                    openAddInvestmentModal();
-                }
-            }
-            
-            // Ctrl/Cmd + L: Add Liability
-            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
-                e.preventDefault();
-                if (typeof openAddLiabilityModal === 'function') {
-                    openAddLiabilityModal();
-                }
-            }
-            
-            // F1: Help
-            if (e.key === 'F1') {
-                e.preventDefault();
-                alert('Help functionality coming soon!');
-            }
-        });
-
-        // Enhanced error handling
-        window.addEventListener('error', function(e) {
-            console.error('🚨 JavaScript Error:', e.error);
-            // Could show error modal or notification here
-        });
-
-        // Online/offline detection
-        function updateConnectionStatus() {
-            const statusElement = document.getElementById('connection-status');
-            if (navigator.onLine) {
-                statusElement.innerHTML = '🟢 Online';
-                statusElement.style.color = 'var(--success-color)';
-            } else {
-                statusElement.innerHTML = '🔴 Offline';
-                statusElement.style.color = 'var(--error-color)';
-            }
-        }
-
-        window.addEventListener('online', updateConnectionStatus);
-        window.addEventListener('offline', updateConnectionStatus);
-
-        // Initialize connection status
-        document.addEventListener('DOMContentLoaded', updateConnectionStatus);
-
-        // Auto-save functionality (placeholder for future enhancement)
-        let autoSaveInterval;
-        function startAutoSave() {
-            autoSaveInterval = setInterval(() => {
-                // Auto-save logic would go here
-                console.log('🔄 Auto-save triggered');
-            }, 30000); // Every 30 seconds
-        }
-
-        function stopAutoSave() {
-            if (autoSaveInterval) {
-                clearInterval(autoSaveInterval);
-            }
-        }
-
-        // Performance monitoring
-        window.addEventListener('load', function() {
-            const perfData = performance.getEntriesByType('navigation')[0];
-            console.log('📊 Page load time:', Math.round(perfData.loadEventEnd - perfData.fetchStart), 'ms');
-        });
-
-        // Accessibility enhancements
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add focus trap for modals
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                modal.addEventListener('keydown', function(e) {
-                    if (e.key === 'Tab') {
-                        const focusableElements = modal.querySelectorAll(
-                            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                        );
-                        const firstElement = focusableElements[0];
-                        const lastElement = focusableElements[focusableElements.length - 1];
-
-                        if (e.shiftKey) {
-                            if (document.activeElement === firstElement) {
-                                e.preventDefault();
-                                lastElement.focus();
-                            }
-                        } else {
-                            if (document.activeElement === lastElement) {
-                                e.preventDefault();
-                                firstElement.focus();
-                            }
-                        }
-                    }
-                });
-            });
-
-            // Add ARIA labels and roles
-            document.querySelectorAll('.btn').forEach(btn => {
-                if (!btn.getAttribute('aria-label') && btn.textContent.trim()) {
-                    btn.setAttribute('aria-label', btn.textContent.trim());
-                }
-            });
-
-            // Enhanced keyboard navigation
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const openModal = document.querySelector('.modal:not(.hidden)');
-                    if (openModal) {
-                        closeModal(openModal.id);
-                    }
-                }
-            });
-        });
-
-        // Data validation helpers
-        function validateEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
-
-        function validateAmount(amount) {
-            return !isNaN(amount) && parseFloat(amount) >= 0;
-        }
-
-        function sanitizeInput(input) {
-            return input.trim().replace(/[<>]/g, '');
-        }
-
-        // Export data integrity check
-        function validateExportData(data) {
-            if (!Array.isArray(data) || data.length === 0) {
-                throw new Error('No data available for export');
-            }
-            return true;
-        }
-
-        // Enhanced toast notifications system
-        class Toast {
-            static show(message, type = 'info', duration = 3000) {
-                const toast = document.createElement('div');
-                toast.className = `toast toast-${type}`;
-                toast.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    color: white;
-                    font-weight: 600;
-                    z-index: 10000;
-                    transform: translateX(100%);
-                    transition: transform 0.3s ease;
-                    max-width: 400px;
-                    word-wrap: break-word;
-                `;
-
-                const backgrounds = {
-                    success: 'linear-gradient(135deg, #38a169, #48bb78)',
-                    error: 'linear-gradient(135deg, #e53e3e, #f56565)',
-                    warning: 'linear-gradient(135deg, #ed8936, #f6ad55)',
-                    info: 'linear-gradient(135deg, #3182ce, #4299e1)'
-                };
-
-                toast.style.background = backgrounds[type] || backgrounds.info;
-                toast.textContent = message;
-
-                document.body.appendChild(toast);
-
-                // Animate in
-                setTimeout(() => toast.style.transform = 'translateX(0)', 100);
-
-                // Animate out
-                setTimeout(() => {
-                    toast.style.transform = 'translateX(100%)';
-                    setTimeout(() => document.body.removeChild(toast), 300);
-                }, duration);
-            }
-        }
-
-        // Make Toast globally available
-        window.Toast = Toast;
-
-        // Enhanced console logging for development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.log(`
-%c💰 Pradeep's Family Wealth Dashboard %cv3.0
-%cDevelopment Mode Active
-%c
-Features:
-- 👪 Family member management
-- 📈 Investment portfolio tracking  
-- 📉 Liability management
-- 🏦 Account organization
-- 📊 Data import/export
-- 🔒 Secure data storage
-            `, 'color: #667eea; font-size: 18px; font-weight: bold;', 'color: #718096; font-size: 14px;', 'color: #ed8936; font-size: 12px; font-weight: bold;', 'color: #4a5568; font-size: 12px;');
-        }
-    </script>
-
     <!-- Load the main application JavaScript -->
-    <script src="app.js" defer></script>
-
-    <!-- Enhanced Error Boundary -->
-    <script>
-        window.addEventListener('unhandledrejection', event => {
-            console.error('🚨 Unhandled promise rejection:', event.reason);
-            if (typeof Toast !== 'undefined') {
-                Toast.show('An unexpected error occurred. Please try refreshing the page.', 'error', 5000);
-            }
-        });
-    </script>
+    <script src="app-complete-fixed.js" defer></script>
 </body>
 </html>
