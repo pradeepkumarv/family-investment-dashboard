@@ -1135,6 +1135,7 @@
             background: var(--gray-50);
             border-radius: var(--radius-xl);
             border-left: 4px solid var(--primary-color);
+            display: none;
         }
 
         .conditional-fields h4 {
@@ -1401,7 +1402,6 @@
             display: flex;
             gap: var(--space-3);
             flex-wrap: wrap;
-            margin-top: var(--space-6);
         }
 
         .export-category {
@@ -2389,152 +2389,97 @@
                         </div>
                     </div>
 
-<!-- Insurance Specific Fields -->
-<div class="conditional-fields insurance-fields">
-  <h4>
-    <span>🛡️</span> Insurance Policy Details
-  </h4>
+                    <!-- Insurance Specific Fields -->
+                    <div class="conditional-fields insurance-fields">
+                        <h4>
+                            <span>🛡️</span> Insurance Policy Details
+                        </h4>
 
-  <!-- Policy Name -->
-  <div class="form-group">
-    <label for="ins-policy-name" class="form-label">
-      <span>🏷️</span> Policy Name *
-    </label>
-    <input
-      type="text"
-      id="ins-policy-name"
-      class="form-input"
-      placeholder="Enter policy name"
-      required
-    />
-  </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-policy-number" class="form-label">
+                                    <span>🔢</span> Policy Number *
+                                </label>
+                                <input type="text" id="ins-policy-number" class="form-input" placeholder="Enter policy number" />
+                            </div>
 
-  <!-- Policy Number -->
-  <div class="form-group">
-    <label for="ins-policy-number" class="form-label">
-      <span>🔢</span> Policy Number *
-    </label>
-    <input
-      type="text"
-      id="ins-policy-number"
-      class="form-input"
-      placeholder="Enter policy number"
-      required
-    />
-  </div>
+                            <div class="form-group">
+                                <label for="ins-type" class="form-label">
+                                    <span>📂</span> Policy Type *
+                                </label>
+                                <select id="ins-type" class="form-select">
+                                    <option value="">Select type</option>
+                                    <option value="Term">Term</option>
+                                    <option value="Endowment">Endowment</option>
+                                    <option value="ULIP">ULIP</option>
+                                    <option value="Whole Life">Whole Life</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
 
-  <!-- Policy Type -->
-  <div class="form-group">
-    <label for="ins-type" class="form-label">
-      <span>📂</span> Policy Type *
-    </label>
-    <select id="ins-type" class="form-select" required>
-      <option value="">Select type</option>
-      <option value="Term">Term</option>
-      <option value="Endowment">Endowment</option>
-      <option value="ULIP">ULIP</option>
-      <option value="Whole Life">Whole Life</option>
-      <option value="Other">Other</option>
-    </select>
-  </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-sum-assured" class="form-label">
+                                    <span>💰</span> Sum Assured *
+                                </label>
+                                <input type="number" id="ins-sum-assured" class="form-input" placeholder="Coverage amount" min="0" step="0.01" />
+                            </div>
 
-  <!-- Sum Assured -->
-  <div class="form-group">
-    <label for="ins-sum-assured" class="form-label">
-      <span>💰</span> Sum Assured *
-    </label>
-    <input
-      type="number"
-      id="ins-sum-assured"
-      class="form-input"
-      placeholder="Coverage amount"
-      min="0"
-      step="0.01"
-      required
-    />
-  </div>
-<!-- Premium Amount -->
-<div class="form-group">
-  <label for="ins-premium-amount" class="form-label">
-    <span>💳</span> Premium Amount *
-  </label>
-  <input
-    type="number"
-    id="ins-premium-amount"
-    class="form-input"
-    placeholder="Enter premium amount"
-    min="0"
-    step="0.01"
-    required
-  />
-</div>
+                            <div class="form-group">
+                                <label for="ins-premium-amount" class="form-label">
+                                    <span>💳</span> Premium Amount *
+                                </label>
+                                <input type="number" id="ins-premium-amount" class="form-input" placeholder="Enter premium amount" min="0" step="0.01" />
+                            </div>
+                        </div>
 
-  <!-- Premium Frequency -->
-  <div class="form-group">
-    <label for="ins-premium-frequency" class="form-label">
-      <span>⏱️</span> Premium Frequency *
-    </label>
-    <select id="ins-premium-frequency" class="form-select" required>
-      <option value="">Select frequency</option>
-      <option value="Monthly">Monthly</option>
-      <option value="Quarterly">Quarterly</option>
-      <option value="Half Yearly">Half Yearly</option>
-      <option value="Yearly">Yearly</option>
-    </select>
-  </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-premium-frequency" class="form-label">
+                                    <span>⏱️</span> Premium Frequency *
+                                </label>
+                                <select id="ins-premium-frequency" class="form-select">
+                                    <option value="">Select frequency</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Half Yearly">Half Yearly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </div>
 
-  <!-- Start Date -->
-  <div class="form-group">
-    <label for="ins-start-date" class="form-label">
-      <span>📅</span> Start Date *
-    </label>
-    <input
-      type="date"
-      id="ins-start-date"
-      class="form-input"
-      required
-    />
-  </div>
+                            <div class="form-group">
+                                <label for="ins-start-date" class="form-label">
+                                    <span>📅</span> Start Date *
+                                </label>
+                                <input type="date" id="ins-start-date" class="form-input" />
+                            </div>
+                        </div>
 
-  <!-- Maturity Date -->
-  <div class="form-group">
-    <label for="ins-maturity-date" class="form-label">
-      <span>📆</span> Maturity Date *
-    </label>
-    <input
-      type="date"
-      id="ins-maturity-date"
-      class="form-input"
-      required
-    />
-  </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ins-maturity-date" class="form-label">
+                                    <span>📆</span> Maturity Date *
+                                </label>
+                                <input type="date" id="ins-maturity-date" class="form-input" />
+                            </div>
 
-  <!-- Next Premium Date -->
-  <div class="form-group">
-    <label for="ins-next-premium-date" class="form-label">
-      <span>⏳</span> Next Premium Due *
-    </label>
-    <input
-      type="date"
-      id="ins-next-premium-date"
-      class="form-input"
-      required
-    />
-  </div>
+                            <div class="form-group">
+                                <label for="ins-next-premium-date" class="form-label">
+                                    <span>⏳</span> Next Premium Due *
+                                </label>
+                                <input type="date" id="ins-next-premium-date" class="form-input" />
+                            </div>
+                        </div>
 
-  <!-- Nominee -->
-  <div class="form-group">
-    <label for="ins-nominee" class="form-label">
-      <span>👥</span> Nominee
-    </label>
-    <input
-      type="text"
-      id="ins-nominee"
-      class="form-input"
-      placeholder="Nominee name"
-    />
-  </div>
-</div>
+                        <div class="form-group">
+                            <label for="ins-nominee" class="form-label">
+                                <span>👥</span> Nominee
+                            </label>
+                            <input type="text" id="ins-nominee" class="form-input" placeholder="Nominee name" />
+                        </div>
+                    </div>
+
                     <!-- Bank Balance Specific Fields -->
                     <div class="conditional-fields bank-balance-fields">
                         <h4>
@@ -2668,7 +2613,8 @@
             </div>
         </div>
     </div>
-        <!-- Enhanced Account Modal -->
+
+    <!-- Enhanced Account Modal -->
     <div id="account-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -2815,212 +2761,9 @@
         </div>
     </div>
 
-    <!-- Enhanced Confirmation Modal -->
-    <div id="confirmation-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3 class="modal-title">
-                    <span>❓</span>
-                    <span>Confirm Action</span>
-                </h3>
-                <button onclick="closeModal('confirmation-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="text-align: center; padding: var(--space-6);">
-                    <div style="font-size: 4rem; margin-bottom: var(--space-4); opacity: 0.8;">⚠️</div>
-                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-4);">Are you sure?</h4>
-                    <p id="confirmation-message" style="color: var(--gray-600); margin-bottom: var(--space-6);">
-                        This action cannot be undone.
-                    </p>
-                    <div class="modal-actions">
-                        <button type="button" onclick="closeModal('confirmation-modal')" class="btn btn-secondary">
-                            <span>❌</span> Cancel
-                        </button>
-                        <button id="confirm-action-btn" class="btn btn-delete">
-                            <span>✅</span> Confirm
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Loading Modal -->
-    <div id="loading-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <div class="modal-body">
-                <div style="padding: var(--space-8);">
-                    <div style="font-size: 3rem; margin-bottom: var(--space-4); animation: spin 2s linear infinite;">⏳</div>
-                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-2);">Processing...</h4>
-                    <p id="loading-message" style="color: var(--gray-600);">Please wait while we process your request.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Success Modal -->
-    <div id="success-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, var(--success-color), var(--success-light));">
-                <h3 class="modal-title">
-                    <span>✅</span>
-                    <span>Success!</span>
-                </h3>
-                <button onclick="closeModal('success-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="text-align: center; padding: var(--space-6);">
-                    <div style="font-size: 4rem; margin-bottom: var(--space-4); color: var(--success-color);">🎉</div>
-                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-4);">Operation Completed!</h4>
-                    <p id="success-message" style="color: var(--gray-600); margin-bottom: var(--space-6);">
-                        Your action was completed successfully.
-                    </p>
-                    <div class="modal-actions">
-                        <button type="button" onclick="closeModal('success-modal')" class="btn btn-primary">
-                            <span>✅</span> Continue
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Error Modal -->
-    <div id="error-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header" style="background: linear-gradient(135deg, var(--error-color), var(--error-light));">
-                <h3 class="modal-title">
-                    <span>❌</span>
-                    <span>Error</span>
-                </h3>
-                <button onclick="closeModal('error-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="text-align: center; padding: var(--space-6);">
-                    <div style="font-size: 4rem; margin-bottom: var(--space-4); color: var(--error-color);">😞</div>
-                    <h4 style="color: var(--gray-800); margin-bottom: var(--space-4);">Something went wrong!</h4>
-                    <p id="error-message" style="color: var(--gray-600); margin-bottom: var(--space-6);">
-                        An unexpected error occurred. Please try again.
-                    </p>
-                    <div class="modal-actions">
-                        <button type="button" onclick="closeModal('error-modal')" class="btn btn-secondary">
-                            <span>❌</span> Close
-                        </button>
-                        <button type="button" onclick="location.reload()" class="btn btn-primary">
-                            <span>🔄</span> Reload Page
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Enhanced Help Modal -->
-    <div id="help-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <h3 class="modal-title">
-                    <span>❓</span>
-                    <span>Help & Support</span>
-                </h3>
-                <button onclick="closeModal('help-modal')" class="btn-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="padding: var(--space-4);">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-6);">
-                        
-                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--primary-color);">
-                            <h4 style="color: var(--primary-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>👪</span> Family Members
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
-                                <li>Add all family members first</li>
-                                <li>Mark primary members for admin access</li>
-                                <li>Upload photos for easy identification</li>
-                                <li>Click member cards for detailed view</li>
-                            </ul>
-                        </div>
-
-                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--success-color);">
-                            <h4 style="color: var(--success-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>📈</span> Investments
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
-                                <li>Track various investment types</li>
-                                <li>Monitor current vs invested amounts</li>
-                                <li>Use tabs to organize by category</li>
-                                <li>Import bulk data via CSV</li>
-                            </ul>
-                        </div>
-
-                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--error-color);">
-                            <h4 style="color: var(--error-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>📉</span> Liabilities
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
-                                <li>Track loans and debts</li>
-                                <li>Monitor EMI and interest rates</li>
-                                <li>Update outstanding amounts regularly</li>
-                                <li>Export data for analysis</li>
-                            </ul>
-                        </div>
-
-                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--warning-color);">
-                            <h4 style="color: var(--warning-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>🏦</span> Accounts
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
-                                <li>Manage bank and financial accounts</li>
-                                <li>Set nominees for estate planning</li>
-                                <li>Track account status</li>
-                                <li>Add notes and comments</li>
-                            </ul>
-                        </div>
-
-                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--info-color);">
-                            <h4 style="color: var(--info-color); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>📊</span> Data Management
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
-                                <li>Export data in CSV or JSON format</li>
-                                <li>Import bulk data from spreadsheets</li>
-                                <li>Regular backups recommended</li>
-                                <li>Data is stored securely</li>
-                            </ul>
-                        </div>
-
-                        <div style="padding: var(--space-4); background: var(--gray-50); border-radius: var(--radius-lg); border-left: 4px solid var(--gray-600);">
-                            <h4 style="color: var(--gray-600); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2);">
-                                <span>💡</span> Pro Tips
-                            </h4>
-                            <ul style="margin-left: var(--space-4); color: var(--gray-700); line-height: 1.6;">
-                                <li>Update data regularly for accuracy</li>
-                                <li>Use consistent naming conventions</li>
-                                <li>Take advantage of sorting and filtering</li>
-                                <li>Export data before major changes</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: var(--space-8); padding: var(--space-6); background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05)); border-radius: var(--radius-lg); text-align: center;">
-                        <h4 style="color: var(--primary-color); margin-bottom: var(--space-3);">
-                            <span>🚀</span> Getting Started
-                        </h4>
-                        <p style="color: var(--gray-600); margin-bottom: var(--space-4);">
-                            Start by adding family members, then begin tracking investments and liabilities. The dashboard will automatically calculate totals and net worth.
-                        </p>
-                        <button onclick="closeModal('help-modal')" class="btn btn-primary">
-                            <span>✅</span> Got it, let's start!
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Floating Help Button -->
     <div style="position: fixed; bottom: var(--space-6); right: var(--space-6); z-index: var(--z-fixed);">
-        <button onclick="openModal('help-modal')" class="btn" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: var(--white); font-size: 1.5rem; box-shadow: var(--shadow-lg); border: none;">
+        <button onclick="alert('Help functionality coming soon!')" class="btn" style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); color: var(--white); font-size: 1.5rem; box-shadow: var(--shadow-lg); border: none;">
             <span>❓</span>
         </button>
     </div>
@@ -3085,7 +2828,7 @@
             // F1: Help
             if (e.key === 'F1') {
                 e.preventDefault();
-                openModal('help-modal');
+                alert('Help functionality coming soon!');
             }
         });
 
