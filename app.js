@@ -1691,12 +1691,18 @@ async function updateInvestmentData(investmentId, investmentData) {
 function editInvestment(investmentId) {
     editingInvestmentId = investmentId;
     const investment = investments.find(inv => inv.id === investmentId);
+   
     if (!investment) {
         console.error('Investment not found:', investmentId);
         return;
     }
     
     document.getElementById('investment-modal-title').textContent = 'Edit Investment';
+    safeSet('investment-member', inv.member_id);
+    safeSet('investment-type', inv.investment_type);
+    safeSet('investment-name', inv.symbol_or_name);
+    safeSet('investment-amount', inv.invested_amount);
+    safeSet('investment-current-value', inv.current_value);
 
     // Populate basic fields
     document.getElementById('investment-member').value = investment.member_id || '';
@@ -1722,25 +1728,24 @@ function editInvestment(investmentId) {
         console.log('✅ Populated FD fields for edit');
     }
     
-    if (investmentType === 'insurance') {
-        // Insurance - Updated to match old form IDs
-        document.getElementById('ins-policy-name').value = investment.policy_name || '';
-        document.getElementById('ins-policy-number').value = investment.insurance_policy_number || investment.policy_number || '';
-        document.getElementById('ins-company').value = investment.insurance_company || '';
-        document.getElementById('ins-type').value = investment.insurance_type || '';
-        document.getElementById('ins-sum-assured').value = investment.insurance_sum_assured || investment.sum_assured || '';
-        document.getElementById('ins-premium-amount').value = investment.insurance_premium || investment.premium_amount || '';
-        document.getElementById('ins-premium-frequency').value = investment.insurance_payment_frequency || investment.premium_frequency || 'Yearly';
-        document.getElementById('ins-start-date').value = investment.insurance_start_date || investment.start_date || '';
-        document.getElementById('ins-maturity-date').value = investment.insurance_maturity_date || investment.maturity_date || '';
-        document.getElementById('ins-policy-status').value = investment.policy_status || 'Active';
-        document.getElementById('ins-comments').value = investment.insurance_comments || investment.comments || '';
-        //document.getElementById('ins-next-premium-date').value = investment.next_premium_date || '';
-        // Check if field exists before setting
-        const nextPremiumField = document.getElementById('ins-next-premium-date');
-        if (nextPremiumField) {
-        nextPremiumField.value = '';  // This is for new reminder, not editing old one
+    if (inv.investment_type === 'insurance') {
+        updateInvestmentForm();
+        safeSet('ins-policy-number', inv.insurance_policy_number);
+        safeSet('ins-policy-name', inv.policy_name);
+        safeSet('ins-company', inv.insurance_company);
+        safeSet('ins-type', inv.insurance_type);
+        safeSet('ins-sum-assured', inv.insurance_sum_assured);
+        safeSet('ins-premium-amount', inv.insurance_premium);
+        safeSet('ins-premium-frequency', inv.insurance_payment_frequency);
+        safeSet('ins-start-date', inv.insurance_start_date);
+        safeSet('ins-maturity-date', inv.insurance_maturity_date);
+        safeSet('ins-next-premium-date', inv.insurance_next_premium_date);
+        safeSet('ins-policy-status', inv.policy_status);
+        safeSet('ins-nominee', inv.insurance_nominee);
+        safeSet('ins-comments', inv.insurance_comments);
     }
+    openModal('investment-modal');
+}
         document.getElementById('ins-nominee').value = investment.nominee || '';
         
         console.log('✅ Populated Insurance fields for edit');
@@ -2879,7 +2884,8 @@ window.addEventListener('load', async () => {
     console.log(supabaseInitialized
         ? '✅ Supabase connection established'
         : '⚠️ Running in demo mode without Supabase');
-
+    await initialize();
+    document.getElementById('investment-type').addEventListener('change', updateInvestmentForm);  
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', e => {
