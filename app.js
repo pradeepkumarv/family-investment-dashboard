@@ -2734,7 +2734,26 @@ async function importAccountRecord(row, rowNumber) {
             nomineeId = nominee.id;
         }
     }
+async function addInvestmentDataWithDuplicateCheck(investmentData) {
+    try {
+        const { data, error } = await supabase
+            .from('investments')
+            .insert([investmentData])
+            .select();
 
+        if (error) {
+            if (error.code === '23505') {
+                throw new Error('Investment already exists. Please check for duplicates.');
+            }
+            throw error;
+        }
+        investments.push(data[0]);
+    } catch (dbError) {
+        throw dbError;
+    }
+}
+
+    
     // SHARED DATA - Removed user_id
     const accountData = {
         account_type: row.account_type,
