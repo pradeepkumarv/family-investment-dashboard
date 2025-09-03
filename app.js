@@ -1877,14 +1877,34 @@ function safeGetElementValue(elementId, fallback = '') {
 }
 
 // Helper function to safely set element value
-function safeSetElementValue(elementId, value = '') {
+function safeSet(elementId, value) {
     const element = document.getElementById(elementId);
     if (element) {
-        element.value = value;
-        return true;
+        if (element.type === 'checkbox') {
+            element.checked = Boolean(value);
+        } else if (element.type === 'date' && value) {
+            // Ensure proper date format for date inputs
+            try {
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                    element.value = date.toISOString().split('T')[0];
+                } else {
+                    element.value = '';
+                }
+            } catch (e) {
+                console.warn(`Invalid date format for ${elementId}:`, value);
+                element.value = '';
+            }
+        } else if (element.type === 'number' && value !== null && value !== undefined) {
+            element.value = Number(value) || '';
+        } else {
+            element.value = value || '';
+        }
+    } else {
+        console.warn(`Element with ID '${elementId}' not found`);
     }
-    return false;
 }
+
 
 
 async function deleteInvestment(investmentId) {
