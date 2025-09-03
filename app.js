@@ -1495,59 +1495,49 @@ function hideAllConditionalFields() {
 function updateInvestmentForm() {
     const investmentType = document.getElementById('investment-type').value;
     
-    hideAllConditionalFields();
+    // Hide all type-specific field sections
+    const allTypeFields = document.querySelectorAll('.investment-type-fields');
+    allTypeFields.forEach(field => {
+        field.style.display = 'none';
+    });
     
-    if (investmentType === 'fixedDeposits') {
-        document.querySelector('.fixed-deposit-fields').style.display = 'block';
-    } else if (investmentType === 'insurance') {
-        document.querySelector('.insurance-fields').style.display = 'block';
-    } else if (investmentType === 'bankBalances') {
-        document.querySelector('.bank-balance-fields').style.display = 'block';
-    }
-}
-
-// ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
-// Add this function to prevent duplicate investments
-async function checkForDuplicateInvestment(investmentData, editingId = null) {
-    try {
-        // Check in local array first for immediate feedback
-        const existingInvestment = investments.find(inv => 
-            inv.id !== editingId && // Exclude current item when editing
-            inv.member_id === investmentData.member_id &&
-            inv.investment_type === investmentData.investment_type &&
-            inv.symbol_or_name === investmentData.symbol_or_name &&
-            Math.abs(inv.invested_amount - investmentData.invested_amount) < 0.01 // Handle floating point precision
-        );
-        
-        if (existingInvestment) {
-            throw new Error(`A similar ${investmentData.investment_type} investment "${investmentData.symbol_or_name}" already exists for this member.`);
+    // Show relevant fields based on investment type
+    if (investmentType) {
+        const typeFieldsClass = `${investmentType.toLowerCase()}-fields`;
+        const relevantFields = document.querySelector(`.${typeFieldsClass}`);
+        if (relevantFields) {
+            relevantFields.style.display = 'block';
         }
         
-        // For Supabase, check database as well
-        if (supabase) {
-            const { data, error } = await supabase
-                .from('investments')
-                .select('id, symbol_or_name')
-                .eq('member_id', investmentData.member_id)
-                .eq('investment_type', investmentData.investment_type)
-                .eq('symbol_or_name', investmentData.symbol_or_name)
-                .eq('invested_amount', investmentData.invested_amount);
-                
-            if (error) {
-                console.error('Error checking for duplicates:', error);
-            } else if (data && data.length > 0) {
-                // If editing, exclude the current record
-                const duplicates = editingId ? data.filter(item => item.id !== editingId) : data;
-                if (duplicates.length > 0) {
-                    throw new Error(`A similar investment "${investmentData.symbol_or_name}" already exists in the database.`);
-                }
-            }
+        // Special handling for insurance to populate dropdowns
+        if (investmentType === 'insurance') {
+            populateInsuranceDropdowns();
         }
-    } catch (error) {
-        throw error;
     }
+    
+    // Update required fields based on type
+    updateRequiredFields(investmentType);
 }
 
+// ADD this new function to populate insurance dropdowns
+function populateInsuranceDropdowns() {
+    const insuredPersonSelect = document.getElementById('ins-insured-person');
+    const nomineeSelect = document.getElementById('ins-nominee');
+    
+    if (insuredPersonSelect && nomineeSelect) {
+        // Clear existing options (keep default)
+        insuredPersonSelect.innerHTML = '<option value="">Select Insured Person</option>';
+        nomineeSelect.innerHTML = '<option value="">Select Nominee</option>';
+        
+        // Add family members to both dropdowns
+        familyMembers.forEach(member => {
+            const insuredOption = new Option(member.name, member.id);
+            const nomineeOption = new Option(member.name, member.id);
+            insuredPersonSelect.add(insuredOption);
+            nomineeSelect.add(nomineeOption.cloneNode(true));
+        });
+    }
+}
 async function saveInvestment() {
    const btn = document.getElementById('investment-save-btn');
   btn.disabled = true;
@@ -1895,6 +1885,7 @@ function safeSetElementValue(elementId, value = '') {
     }
     return false;
 }
+
 
 async function deleteInvestment(investmentId) {
     if (!confirm('Are you sure you want to delete this investment?')) {
