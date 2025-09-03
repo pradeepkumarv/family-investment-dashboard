@@ -1503,6 +1503,8 @@ function updateInvestmentForm() {
         document.querySelector('.insurance-fields').style.display = 'block';
     } else if (investmentType === 'bankBalances') {
         document.querySelector('.bank-balance-fields').style.display = 'block';
+    }  else if (investmentType === 'gold') {
+        document.querySelector('.gold-fields').style.display = 'block';
     }
 }
 
