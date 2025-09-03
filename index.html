@@ -636,7 +636,41 @@
         }
 
         .fixed-deposit-fields,
-        .insurance-fields,
+        /* ===== GLASSMORPHISM INSURANCE DROPDOWN ===== */
+.insurance-fields .form-select {
+    appearance: none;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    padding: 16px 45px 16px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1a202c;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 20px;
+}
+
+.insurance-fields .form-select:hover {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(102, 126, 234, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+}
+
+.insurance-fields .form-select:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(102, 126, 234, 0.8);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), 0 12px 40px rgba(102, 126, 234, 0.3);
+}
+
         .bank-balance-fields {
             display: none;
         }
