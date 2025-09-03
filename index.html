@@ -1758,128 +1758,158 @@
                             <span>🛡️</span> Insurance Policy Details
                         </h4>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ins-policy-name" class="form-label">
-                                    <span>🏷️</span> Policy Name *
-                                </label>
-                                <input type="text" id="ins-policy-name" class="form-input" placeholder="Enter policy name" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="ins-policy-number" class="form-label">
-                                    <span>🔢</span> Policy Number *
-                                </label>
-                                <input type="text" id="ins-policy-number" class="form-input" placeholder="Enter policy number" required />
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ins-company" class="form-label">
-                                    <span>🏢</span> Insurance Company *
-                                </label>
-                                <input type="text" id="ins-company" class="form-input" placeholder="Enter insurance company name" required />
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="ins-type" class="form-label">
-                                    <span>📂</span> Policy Type *
-                                </label>
-                                <select id="ins-type" class="form-select" required>
-                                    <option value="">Select type</option>
-                                    <option value="Term">Term</option>
-                                    <option value="Endowment">Endowment</option>
-                                    <option value="ULIP">ULIP</option>
-                                    <option value="Whole Life">Whole Life</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ins-sum-assured" class="form-label">
-                                    <span>💰</span> Sum Assured *
-                                </label>
-                                <input type="number" id="ins-sum-assured" class="form-input" placeholder="Coverage amount" min="0" step="0.01" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="ins-premium-amount" class="form-label">
-                                    <span>💳</span> Premium Amount *
-                                </label>
-                                <input type="number" id="ins-premium-amount" class="form-input" placeholder="Enter premium amount" min="0" step="0.01" required />
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ins-premium-frequency" class="form-label">
-                                    <span>⏱️</span> Premium Frequency *
-                                </label>
-                                <select id="ins-premium-frequency" class="form-select" required>
-                                    <option value="">Select frequency</option>
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Half Yearly">Half Yearly</option>
-                                    <option value="Yearly">Yearly</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="ins-start-date" class="form-label">
-                                    <span>📅</span> Start Date *
-                                </label>
-                                <input type="date" id="ins-start-date" class="form-input" required />
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ins-maturity-date" class="form-label">
-                                    <span>📆</span> Maturity Date *
-                                </label>
-                                <input type="date" id="ins-maturity-date" class="form-input" required />
-                            </div>
-
-                            <div class="form-group">
-                                <label for="ins-next-premium-date" class="form-label">
-                                    <span>⏳</span> Next Premium Due
-                                </label>
-                                <input type="date" id="ins-next-premium-date" class="form-input" />
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ins-policy-status" class="form-label">
-                                    <span>⚡</span> Policy Status
-                                </label>
-                                <select id="ins-policy-status" class="form-select">
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="Matured">Matured</option>
-                                    <option value="Surrendered">Surrendered</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="ins-nominee" class="form-label">
-                                    <span>👥</span> Nominee
-                                </label>
-                                <input type="text" id="ins-nominee" class="form-input" placeholder="Nominee name" />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="ins-comments" class="form-label">
-                                <span>📝</span> Comments/Notes
-                            </label>
-                            <textarea id="ins-comments" class="form-input" rows="3" placeholder="Additional notes about this policy"></textarea>
-                        </div>
-                    </div>
-
+                       <!-- Row 1: Policy Number and Policy Name -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-policy-number" class="form-label">
+                <span>🔢</span>Policy Number*
+            </label>
+            <input type="text" id="ins-policy-number" class="form-input" 
+                   placeholder="Enter policy number" />
+        </div>
+        <div class="form-group">
+            <label for="ins-policy-name" class="form-label">
+                <span>🏷️</span>Insurance Name*
+            </label>
+            <input type="text" id="ins-policy-name" class="form-input" 
+                   placeholder="Enter policy/insurance name" required />
+        </div>
+    </div>
+    
+    <!-- Row 2: Company and Type -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-company" class="form-label">
+                <span>🏢</span>Insurance Company*
+            </label>
+            <input type="text" id="ins-company" class="form-input" 
+                   placeholder="Enter insurance company name" required />
+        </div>
+        <div class="form-group">
+            <label for="ins-type" class="form-label">
+                <span>📂</span>Insurance Type*
+            </label>
+            <select id="ins-type" class="form-select" required>
+                <option value="">Select Insurance Type</option>
+                <option value="Term Life">Term Life</option>
+                <option value="Endowment">Endowment</option>
+                <option value="ULIP">ULIP</option>
+                <option value="Whole Life">Whole Life</option>
+                <option value="Child Plan">Child Plan</option>
+                <option value="Money Back">Money Back</option>
+                <option value="Pension">Pension</option>
+                <option value="Health">Health Insurance</option>
+                <option value="Group Life">Group Life</option>
+                <option value="Motor">Motor Insurance</option>
+                <option value="Travel">Travel Insurance</option>
+                <option value="Home">Home Insurance</option>
+                <option value="Govt Sponsored">Govt Sponsored</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Row 3: Sum Assured and Premium -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-sum-assured" class="form-label">
+                <span>💰</span>Sum Assured*
+            </label>
+            <input type="number" id="ins-sum-assured" class="form-input" 
+                   min="0" step="0.01" placeholder="0.00" required />
+        </div>
+        <div class="form-group">
+            <label for="ins-premium-amount" class="form-label">
+                <span>💳</span>Premium Amount*
+            </label>
+            <input type="number" id="ins-premium-amount" class="form-input" 
+                   min="0" step="0.01" placeholder="0.00" required />
+        </div>
+    </div>
+    
+    <!-- Row 4: Premium Frequency and Start Date -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-premium-frequency" class="form-label">
+                <span>⏱️</span>Premium Frequency*
+            </label>
+            <select id="ins-premium-frequency" class="form-select" required>
+                <option value="Yearly">Yearly</option>
+                <option value="Half Yearly">Half Yearly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Monthly">Monthly</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="ins-start-date" class="form-label">
+                <span>📅</span>Start Date*
+            </label>
+            <input type="date" id="ins-start-date" class="form-input" required />
+        </div>
+    </div>
+    
+    <!-- Row 5: Maturity and Next Premium Date -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-maturity-date" class="form-label">
+                <span>📆</span>Maturity Date*
+            </label>
+            <input type="date" id="ins-maturity-date" class="form-input" required />
+        </div>
+        <div class="form-group">
+            <label for="ins-next-premium-date" class="form-label">
+                <span>⏳</span>Next Premium Due Date
+            </label>
+            <input type="date" id="ins-next-premium-date" class="form-input" />
+        </div>
+    </div>
+    
+    <!-- Row 6: Insured Person and Nominee -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-insured-person" class="form-label">
+                <span>👤</span>Insured Person
+            </label>
+            <select id="ins-insured-person" class="form-select">
+                <option value="">Select Insured Person</option>
+                <!-- Populated dynamically from family members -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="ins-nominee" class="form-label">
+                <span>👥</span>Nominee
+            </label>
+            <select id="ins-nominee" class="form-select">
+                <option value="">Select Nominee</option>
+                <!-- Populated dynamically from family members -->
+            </select>
+        </div>
+    </div>
+    
+    <!-- Row 7: Status and Comments -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-policy-status" class="form-label">
+                <span>⚡</span>Policy Status
+            </label>
+            <select id="ins-policy-status" class="form-select">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Matured">Matured</option>
+                <option value="Surrendered">Surrendered</option>
+                <option value="Lapsed">Lapsed</option>
+            </select>
+        </div>
+        <div class="form-group full-width">
+            <label for="ins-comments" class="form-label">
+                <span>📝</span>Comments
+            </label>
+            <textarea id="ins-comments" class="form-input" rows="3" 
+                      placeholder="Additional notes about this insurance policy"></textarea>
+        </div>
+    </div>
+</div>
+          
                     <!-- Bank Balance Specific Fields -->
                     <div class="conditional-fields bank-balance-fields">
                         <h4>
