@@ -1836,7 +1836,7 @@ function editInvestment(investmentId) {
 document.getElementById('ins-nominee').value = investment.nominee || '';
         
         console.log('✅ Populated Insurance fields for edit');
-    }
+    
 }
 
 function editInsurance(insuranceId) {
