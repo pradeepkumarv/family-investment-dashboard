@@ -1610,8 +1610,21 @@ if (type === 'insurance') {
      console.log('💰 Added Bank Balance fields to investment data');
  }
 
+if (type === 'gold') {
+  investmentData.gold_quantity = parseFloat(document.getElementById('gold-quantity')?.value) || 0;
+  investmentData.gold_rate = parseFloat(document.getElementById('gold-rate')?.value) || 0;
+  investmentData.comments = document.getElementById('gold-comments')?.value || null;
+}
 
-        if (editingInvestmentId) {
+if (type === 'immovable') {
+  investmentData.property_name = document.getElementById('property-name')?.value || null;
+  investmentData.property_sqft = parseFloat(document.getElementById('property-sqft')?.value) || 0;
+  investmentData.cost_per_sqft = parseFloat(document.getElementById('cost-per-sqft')?.value) || 0;
+  investmentData.total_value = parseFloat(document.getElementById('property-total-value')?.value) || 0;
+  investmentData.comments = document.getElementById('property-comments')?.value || null;
+}
+
+if (editingInvestmentId) {
             await updateInvestmentData(editingInvestmentId, investmentData);
             showMessage('Investment updated successfully! ✅', 'success');
         } else {
@@ -1680,6 +1693,7 @@ async function updateInvestmentData(investmentId, investmentData) {
         investments[investmentIndex] = { ...investments[investmentIndex], ...investmentData };
     }
 }
+
 // Add this at the top of app.js, before any functions that call safeSet
 function safeSet(elementId, value) {
   const el = document.getElementById(elementId);
@@ -1699,6 +1713,28 @@ function safeSet(elementId, value) {
   }
 }
 
+async function fetchGoldRate() {
+  try {
+    const res = await fetch('https://api.metals.live/v1/spot/gold');
+    const data = await res.json(); // example format: [{gold: "6792.50"}]
+    // Find Bangalore rate if API supports city; otherwise use gold[0]
+    const rate = parseFloat(data[0].gold) || 0;
+    document.getElementById('gold-rate').value = rate.toFixed(2);
+  } catch (e) {
+    console.error('Failed to fetch gold rate:', e);
+  }
+}
+
+// Call fetchGoldRate() inside updateInvestmentForm when investmentType === 'gold'
+
+
+function updatePropertyValue() {
+  const sqft = parseFloat(document.getElementById('property-sqft')?.value) || 0;
+  const rate = parseFloat(document.getElementById('cost-per-sqft')?.value) || 0;
+  const total = sqft * rate;
+  document.getElementById('property-total-value').value = total.toFixed(2);
+}
+ 
 // ENHANCED: editInvestment with additional fields
   function editInvestment(investmentId) {
     const investment = investments.find(inv => inv.id === investmentId);
@@ -1782,6 +1818,19 @@ function safeSet(elementId, value) {
         safeSet('other-category', investment.category);
         console.log('✅ Populated Other investment fields for edit');
     }
+if (investmentType === 'gold') {
+  safeSet('gold-quantity', investment.gold_quantity);
+  safeSet('gold-rate', investment.gold_rate);
+  safeSet('gold-comments', investment.comments);
+}
+
+if (investmentType === 'immovable') {
+  safeSet('property-name', investment.property_name);
+  safeSet('property-sqft', investment.property_sqft);
+  safeSet('cost-per-sqft', investment.cost_per_sqft);
+  safeSet('property-total-value', investment.total_value);
+  safeSet('property-comments', investment.comments);
+}
 
 
     // Update form display and populate member options
@@ -2773,6 +2822,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    const sqftInput = document.getElementById('property-sqft');
+    const rateInput = document.getElementById('cost-per-sqft');
+    if (sqftInput && rateInput) {
+        sqftInput.addEventListener('input', updatePropertyValue);
+        rateInput.addEventListener('input', updatePropertyValue);
+    }
     
     console.log('✅ Event listeners registered');
 });
