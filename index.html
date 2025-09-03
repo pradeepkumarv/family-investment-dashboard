@@ -1598,6 +1598,133 @@
                         </div>
                     </div>
                 </form>
+                <!-- Gold Fields -->
+<div class="gold-fields investment-type-fields" style="display:none;">
+  <h4>🏆 Gold Investment Details</h4>
+
+  <!-- Row: Quantity & Current Rate -->
+  <div class="form-row">
+    <div class="form-group">
+      <label for="gold-quantity" class="form-label">
+        <span>⚖️</span> Quantity (g)
+      </label>
+      <input
+        type="number"
+        id="gold-quantity"
+        class="form-input"
+        step="0.01"
+        placeholder="Enter grams"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="gold-rate" class="form-label">
+        <span>💱</span> Current Rate (₹/g)
+      </label>
+      <input
+        type="number"
+        id="gold-rate"
+        class="form-input"
+        step="0.01"
+        placeholder="Auto-fetched rate"
+        readonly
+      />
+    </div>
+  </div>
+
+  <!-- Row: Comments -->
+  <div class="form-row">
+    <div class="form-group full-width">
+      <label for="gold-comments" class="form-label">
+        <span>📝</span> Comments
+      </label>
+      <textarea
+        id="gold-comments"
+        class="form-input"
+        rows="2"
+        placeholder="Any notes"
+      ></textarea>
+    </div>
+  </div>
+</div>
+<!-- Immovable Asset Fields -->
+<div class="immovable-fields investment-type-fields" style="display:none;">
+  <h4>🏠 Immovable Asset Details</h4>
+
+  <!-- Row: Property & Size -->
+  <div class="form-row">
+    <div class="form-group">
+      <label for="property-name" class="form-label">
+        <span>🏡</span> Property Name *
+      </label>
+      <input
+        type="text"
+        id="property-name"
+        class="form-input"
+        placeholder="Enter name"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="property-sqft" class="form-label">
+        <span>📏</span> Area (sqft) *
+      </label>
+      <input
+        type="number"
+        id="property-sqft"
+        class="form-input"
+        step="0.1"
+        placeholder="Enter sqft"
+        required
+      />
+    </div>
+  </div>
+
+  <!-- Row: Cost & Total Value -->
+  <div class="form-row">
+    <div class="form-group">
+      <label for="cost-per-sqft" class="form-label">
+        <span>💲</span> Cost per sqft (₹) *
+      </label>
+      <input
+        type="number"
+        id="cost-per-sqft"
+        class="form-input"
+        step="0.01"
+        placeholder="Enter rate"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="property-total-value" class="form-label">
+        <span>💰</span> Total Value (₹)
+      </label>
+      <input
+        type="number"
+        id="property-total-value"
+        class="form-input"
+        step="0.01"
+        placeholder="Auto-calculated"
+        readonly
+      />
+    </div>
+  </div>
+
+  <!-- Row: Comments -->
+  <div class="form-row">
+    <div class="form-group full-width">
+      <label for="property-comments" class="form-label">
+        <span>📝</span> Comments
+      </label>
+      <textarea
+        id="property-comments"
+        class="form-input"
+        rows="2"
+        placeholder="Any notes"
+      ></textarea>
+    </div>
+  </div>
+</div>
 
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('investment-modal')" class="btn btn-secondary">Cancel</button>
