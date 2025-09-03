@@ -1,4 +1,4 @@
-// app-complete-fixed.js - COMPLETE VERSION WITH DUPLICATE PREVENTION & INSURANCE EDIT FIX
+// app.js - ENHANCED VERSION: Fixed Photo Upload + Enhanced Member Details + Complete Form Fields
 
 // ===== GLOBAL VARIABLES =====
 let supabase = null;
@@ -97,42 +97,6 @@ const DEMO_DATA = {
         }
     ]
 };
-
-// ===== UTILITY FUNCTIONS - ENHANCED FOR SAFETY =====
-function safeSetElementValue(elementId, value = '') {
-    try {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.value = value || '';
-            return true;
-        } else {
-            console.warn(`⚠️ Element not found: ${elementId}`);
-            return false;
-        }
-    } catch (error) {
-        console.error(`❌ Error setting value for ${elementId}:`, error);
-        return false;
-    }
-}
-
-function safeGetElementValue(elementId, fallback = '') {
-    try {
-        const element = document.getElementById(elementId);
-        return element ? (element.value || fallback) : fallback;
-    } catch (error) {
-        console.error(`❌ Error getting value for ${elementId}:`, error);
-        return fallback;
-    }
-}
-
-function checkElementExists(elementId) {
-    const element = document.getElementById(elementId);
-    const exists = element !== null;
-    if (!exists) {
-        console.warn(`⚠️ Missing element: ${elementId}`);
-    }
-    return exists;
-}
 
 // ===== SUPABASE INITIALIZATION =====
 async function initializeSupabase() {
@@ -302,14 +266,12 @@ async function loadDashboardData() {
         console.warn('No current user; cannot load data.');
         return;
     }
-    
     const authType = localStorage.getItem('famwealth_auth_type');
     if (authType === 'demo' || !supabase) {
         console.log('📊 Loading demo data...');
         loadDemoData();
         return;
     }
-    
     if (authType === 'supabase' && supabase) {
         try {
             setLoadingState(true);
@@ -340,7 +302,6 @@ async function loadDashboardData() {
                     .select('*')
                     .in('member_id', memberIds)
                     .order('created_at', { ascending: false });
-                    
                 if (error) {
                     console.error('Error fetching investments:', error);
                     showMessage('Failed to load investments.', 'error');
@@ -359,7 +320,6 @@ async function loadDashboardData() {
                     .select('*')
                     .in('member_id', memberIds)
                     .order('created_at', { ascending: false });
-                    
                 if (error) {
                     console.error('Error fetching liabilities:', error);
                     showMessage('Failed to load liabilities.', 'error');
@@ -375,7 +335,6 @@ async function loadDashboardData() {
                 .from('accounts')
                 .select('*')
                 .order('created_at', { ascending: false });
-                
             if (accountsError) {
                 console.error('Error fetching accounts:', accountsError);
                 showMessage('Failed to load accounts.', 'error');
@@ -389,7 +348,6 @@ async function loadDashboardData() {
                 .from('reminders')
                 .select('*')
                 .order('date', { ascending: true });
-                
             if (remindersError) {
                 console.error('Error fetching reminders:', remindersError);
             }
@@ -413,7 +371,7 @@ async function loadDashboardData() {
     }  
 }
 
-// ===== ENHANCED UTILITY FUNCTIONS =====
+// ===== UTILITY FUNCTIONS =====
 function showMessage(message, type = 'info') {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
@@ -505,6 +463,7 @@ function getMemberNameById(memberId) {
 }
 
 // ===== RENDERING FUNCTIONS =====
+// CRITICAL FIX 1: renderFamilyMembers - Better image handling
 function renderFamilyMembers() {
     const familyGrid = document.getElementById('family-members-grid');
     if (!familyGrid) return;
@@ -527,20 +486,26 @@ function renderFamilyMembers() {
         const memberLiabilities = calculateMemberLiabilities(member.id);
         const netWorth = memberAssets - memberLiabilities;
         
-        // Enhanced photo handling
+        // CRITICAL FIX: Determine photo source
         let photoSrc;
+        console.log(`🖼️ Member ${member.name} photo:`, member.photo);
+        
         if (member.photo && member.photo.startsWith('http')) {
             photoSrc = member.photo;
+            console.log('✅ Using uploaded photo');
         } else if (member.photo && member.photo.includes('.png')) {
             photoSrc = getEmojiDataUrl(member.photo);
+            console.log('✅ Using emoji preset');
         } else {
             photoSrc = getEmojiDataUrl('default.png');
+            console.log('✅ Using default');
         }
 
         const memberCard = document.createElement('div');
         memberCard.className = 'family-card';
         memberCard.onclick = () => showMemberDetails(member.id);
 
+        // CRITICAL FIX: Use createElement for image
         memberCard.innerHTML = `
             <div style="text-align: center;">
                 <img src="${photoSrc}" 
@@ -577,6 +542,7 @@ function renderFamilyMembers() {
             </div>
             <div class="member-actions">
                 <button onclick="event.stopPropagation(); editMember('${member.id}')" class="btn btn-sm btn-edit">Edit</button>
+                <button onclick="event.stopPropagation(); openPhotoModal('${member.id}')" class="btn btn-sm btn-photo">📷</button>
                 <button onclick="event.stopPropagation(); deleteMember('${member.id}')" class="btn btn-sm btn-delete">Delete</button>
             </div>
         `;
@@ -659,7 +625,7 @@ function renderInvestmentTabContent(type) {
     };
 
     parentTabs.forEach(tab => {
-        if (tab.textContent.trim().includes(typeMap[type])) {
+        if (tab.textContent.trim() === typeMap[type]) {
             tab.classList.add('active');
         }
     });
@@ -742,7 +708,7 @@ function renderLiabilityTabContent(type) {
     };
     
     parentTabs.forEach(tab => {
-        if (tab.textContent.trim().includes(typeMap[type])) {
+        if (tab.textContent.trim() === typeMap[type]) {
             tab.classList.add('active');
         }
     });
@@ -851,6 +817,243 @@ function renderReminders() {
     
     // Update reminders count in stats
     renderStatsOverview();
+}
+
+// ===== ENHANCED MEMBER DETAILS FUNCTIONS =====
+function showMemberDetails(memberId) {
+    const member = familyMembers.find(m => m.id === memberId);
+    if (!member) return;
+
+    // Hide main sections and show member details
+    const mainSections = document.querySelectorAll('.section:not(.member-details-section)');
+    mainSections.forEach(section => section.style.display = 'none');
+    
+    const memberDetailsSection = document.getElementById('member-details-section');
+    memberDetailsSection.style.display = 'block';
+
+    // Update title
+    const detailsTitle = document.getElementById('member-details-title');
+    detailsTitle.textContent = `${member.name} - Financial Details`;
+
+    // FIXED: Better photo handling
+    let photoSrc;
+    if (member.photo && member.photo.startsWith('http')) {
+        photoSrc = member.photo;
+    } else if (member.photo && member.photo.includes('.png')) {
+        photoSrc = getEmojiDataUrl(member.photo);
+    } else {
+        photoSrc = getEmojiDataUrl('default.png');
+    }
+
+    // Calculate member's financial data
+    const memberAssets = calculateMemberAssets(member.id);
+    const memberLiabilities = calculateMemberLiabilities(member.id);
+    const netWorth = memberAssets - memberLiabilities;
+    const memberInvestments = investments.filter(inv => inv.member_id === memberId);
+    const memberLiabilityRecords = liabilities.filter(lib => lib.member_id === memberId);
+    const memberAccounts = accounts.filter(acc => acc.holder_id === memberId);
+
+    // ENHANCED: Render detailed breakdown of investments, liabilities, and accounts
+    const detailsContent = document.getElementById('member-details-content');
+    detailsContent.innerHTML = `
+        <div class="member-details-overview">
+            <div class="member-profile">
+                <img src="${photoSrc}" alt="${member.name}" class="member-photo" 
+                     onerror="this.src='${getEmojiDataUrl('default.png')}'" />
+                <div class="member-info">
+                    <h3>${member.name} ${member.is_primary ? '<span class="primary-badge">Primary</span>' : ''}</h3>
+                    <div class="relationship">${member.relationship}</div>
+                    <div style="margin-top: 10px; font-size: 0.9rem; color: #718096;">
+                        Member since: ${formatDate(member.created_at)}
+                    </div>
+                </div>
+            </div>
+
+            <div class="financial-summary-grid">
+                <div class="summary-card assets">
+                    <div class="summary-value assets">${formatCurrency(memberAssets)}</div>
+                    <div class="summary-label">Total Assets</div>
+                    <div style="font-size: 0.8rem; color: #718096; margin-top: 5px;">
+                        From ${memberInvestments.length} investment(s)
+                    </div>
+                </div>
+                <div class="summary-card liabilities">
+                    <div class="summary-value liabilities">${formatCurrency(memberLiabilities)}</div>
+                    <div class="summary-label">Total Liabilities</div>
+                    <div style="font-size: 0.8rem; color: #718096; margin-top: 5px;">
+                        From ${memberLiabilityRecords.length} liability(ies)
+                    </div>
+                </div>
+                <div class="summary-card net-worth">
+                    <div class="summary-value net-worth">${formatCurrency(netWorth)}</div>
+                    <div class="summary-label">Net Worth</div>
+                    <div style="font-size: 0.8rem; color: #718096; margin-top: 5px;">
+                        ${memberAccounts.length} account(s)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DETAILED INVESTMENTS BREAKDOWN -->
+        <div style="padding: 30px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>📈</span> Investment Portfolio (${memberInvestments.length})
+            </h3>
+            ${memberInvestments.length === 0 ? `
+                <div class="empty-state" style="padding: 30px;">
+                    <div class="emoji">📈</div>
+                    <p>No investments found for ${member.name}</p>
+                </div>
+            ` : `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Investment Name</th>
+                                <th>Type</th>
+                                <th>Invested Amount</th>
+                                <th>Current Value</th>
+                                <th>Gain/Loss</th>
+                                <th>Platform</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${memberInvestments.map(inv => {
+                                const currentValue = inv.current_value || inv.invested_amount;
+                                const gain = currentValue - inv.invested_amount;
+                                const gainClass = gain >= 0 ? 'text-green' : 'text-red';
+                                const gainPercentage = inv.invested_amount > 0 ? ((gain / inv.invested_amount) * 100).toFixed(2) : '0.00';
+                                
+                                const typeMap = {
+                                    'equity': 'Equity',
+                                    'mutualFunds': 'Mutual Funds',
+                                    'fixedDeposits': 'Fixed Deposits',
+                                    'insurance': 'Insurance',
+                                    'bankBalances': 'Bank Balances',
+                                    'others': 'Others'
+                                };
+                                
+                                return `
+                                    <tr>
+                                        <td>${inv.symbol_or_name || inv.name || 'Unknown'}</td>
+                                        <td>${typeMap[inv.investment_type] || inv.investment_type}</td>
+                                        <td>${formatCurrency(inv.invested_amount)}</td>
+                                        <td>${formatCurrency(currentValue)}</td>
+                                        <td class="${gainClass}">
+                                            ${formatCurrency(gain)} (${gain >= 0 ? '+' : ''}${gainPercentage}%)
+                                        </td>
+                                        <td>${inv.broker_platform || inv.platform || '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+        </div>
+
+        <!-- DETAILED LIABILITIES BREAKDOWN -->
+        <div style="padding: 30px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>📉</span> Liabilities (${memberLiabilityRecords.length})
+            </h3>
+            ${memberLiabilityRecords.length === 0 ? `
+                <div class="empty-state" style="padding: 30px;">
+                    <div class="emoji">📉</div>
+                    <p>No liabilities found for ${member.name}</p>
+                </div>
+            ` : `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Lender</th>
+                                <th>Type</th>
+                                <th>Outstanding Amount</th>
+                                <th>EMI Amount</th>
+                                <th>Interest Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${memberLiabilityRecords.map(lib => {
+                                const typeMap = {
+                                    'homeLoan': 'Home Loan',
+                                    'personalLoan': 'Personal Loan',
+                                    'creditCard': 'Credit Card',
+                                    'other': 'Other'
+                                };
+                                
+                                return `
+                                    <tr>
+                                        <td>${lib.lender}</td>
+                                        <td>${typeMap[lib.type] || lib.type}</td>
+                                        <td class="text-red">${formatCurrency(lib.outstanding_amount)}</td>
+                                        <td>${formatCurrency(lib.emi_amount || 0)}</td>
+                                        <td>${lib.interest_rate ? lib.interest_rate + '%' : '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+        </div>
+
+        <!-- DETAILED ACCOUNTS BREAKDOWN -->
+        <div style="padding: 30px;">
+            <h3 style="color: #2d3748; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>🏦</span> Accounts (${memberAccounts.length})
+            </h3>
+            ${memberAccounts.length === 0 ? `
+                <div class="empty-state" style="padding: 30px;">
+                    <div class="emoji">🏦</div>
+                    <p>No accounts found for ${member.name}</p>
+                </div>
+            ` : `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Account Type</th>
+                                <th>Institution</th>
+                                <th>Account Number</th>
+                                <th>Nominee</th>
+                                <th>Status</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${memberAccounts.map(acc => {
+                                const nominee = familyMembers.find(m => m.id === acc.nominee_id);
+                                const statusClass = acc.status === 'Active' ? 'status active' : 'status inactive';
+                                
+                                return `
+                                    <tr>
+                                        <td>${acc.account_type}</td>
+                                        <td>${acc.institution}</td>
+                                        <td>${acc.account_number}</td>
+                                        <td>${nominee ? nominee.name : '-'}</td>
+                                        <td><span class="${statusClass}">${acc.status}</span></td>
+                                        <td>${acc.comments || '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+        </div>
+    `;
+}
+
+function closeMemberDetails() {
+    // Hide member details section
+    const memberDetailsSection = document.getElementById('member-details-section');
+    memberDetailsSection.style.display = 'none';
+    
+    // Show main sections
+    const mainSections = document.querySelectorAll('.section:not(.member-details-section)');
+    mainSections.forEach(section => section.style.display = 'block');
 }
 
 // ===== MODAL FUNCTIONS =====
@@ -1062,7 +1265,205 @@ async function deleteMember(memberId) {
     }
 }
 
-// ===== INVESTMENT FUNCTIONS - ENHANCED WITH DUPLICATE CHECK & INSURANCE FIX =====
+// ===== PHOTO FUNCTIONS - FIXED FOR REAL UPLOADS =====
+function openPhotoModal(memberId) {
+    currentPhotoMemberId = memberId;
+    selectedPhoto = null;
+    renderPresetPhotos();
+    openModal('photo-modal');
+}
+
+function renderPresetPhotos() {
+    const photosGrid = document.getElementById('preset-photos-grid');
+    const presetPhotos = [
+        { name: 'man1.png', emoji: '👨' },
+        { name: 'man2.png', emoji: '🧑' },
+        { name: 'woman1.png', emoji: '👩' },
+        { name: 'woman2.png', emoji: '👩‍💼' },
+        { name: 'boy1.png', emoji: '👦' },
+        { name: 'girl1.png', emoji: '👧' },
+        { name: 'elderly-man.png', emoji: '👴' },
+        { name: 'elderly-woman.png', emoji: '👵' },
+        { name: 'default.png', emoji: '👤' }
+    ];
+    
+    photosGrid.innerHTML = '';
+    presetPhotos.forEach(photo => {
+        const photoDiv = document.createElement('div');
+        photoDiv.className = 'photo-option';
+        photoDiv.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 80px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-size: 2rem;
+            background: #f7fafc;
+        `;
+        photoDiv.textContent = photo.emoji;
+        photoDiv.onclick = () => selectPhoto(photo.name, photoDiv);
+        photosGrid.appendChild(photoDiv);
+    });
+}
+
+function selectPhoto(photoName, element) {
+    // Remove previous selection
+    document.querySelectorAll('.photo-option').forEach(div => {
+        div.style.borderColor = 'transparent';
+    });
+    
+    // Add selection to clicked photo
+    element.style.borderColor = '#667eea';
+    selectedPhoto = photoName;
+}
+
+// FIXED: Real photo upload to Supabase Storage with proper error handling
+async function uploadPhoto(file) {
+    if (!file) return null;
+
+    try {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            throw new Error('Please select an image file.');
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error('File size must be less than 5MB.');
+        }
+
+        // Check if Supabase is available
+        if (!supabase) {
+            throw new Error('Photo upload requires database connection.');
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${generateId()}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        console.log('📁 Uploading photo to:', filePath);
+
+        // Upload file to Supabase Storage
+        const { data, error } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (error) {
+            console.error('❌ Upload error:', error);
+            throw new Error('Upload failed: ' + error.message);
+        }
+
+        console.log('✅ Upload successful:', data);
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+        console.log('🔗 Public URL:', publicUrl);
+        return publicUrl;
+
+    } catch (error) {
+        console.error('❌ Photo upload failed:', error);
+        throw error;
+    }
+}
+
+// FIXED: Handle both file uploads and preset photo selection
+async function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        showMessage('Uploading photo...', 'info');
+        
+        const photoUrl = await uploadPhoto(file);
+        
+        if (!photoUrl) {
+            throw new Error('Failed to get photo URL');
+        }
+
+        console.log('✅ Photo uploaded, URL:', photoUrl);
+
+        // Update member's photo immediately with the URL
+        await updateMemberPhoto(currentPhotoMemberId, photoUrl);
+
+        // Refresh UI to show new photo
+        renderFamilyMembers();
+        closeModal('photo-modal');
+        showMessage('Photo uploaded successfully! 📸', 'success');
+
+        // Reset file input
+        event.target.value = '';
+
+    } catch (error) {
+        console.error('❌ Photo upload error:', error);
+        showMessage(`Photo upload failed: ${error.message}`, 'error');
+        event.target.value = '';
+    }
+}
+
+// FIXED: Helper function to update member photo (only uses photo field, not photo_url)
+async function updateMemberPhoto(memberId, photoValue) {
+    const authType = localStorage.getItem('famwealth_auth_type');
+
+    if (authType === 'demo' || !supabase) {
+        // Demo mode - update local data
+        const member = familyMembers.find(m => m.id === memberId);
+        if (member) {
+            member.photo = photoValue;
+        }
+    } else {
+        // Supabase mode - update database (FIXED: only update photo field)
+        const { error } = await supabase
+            .from('family_members')
+            .update({ 
+                photo: photoValue  // FIXED: Only update photo, not photo_url
+            })
+            .eq('id', memberId);
+
+        if (error) {
+            console.error('❌ Database update error:', error);
+            throw error;
+        }
+
+        // Update local data
+        const member = familyMembers.find(m => m.id === memberId);
+        if (member) {
+            member.photo = photoValue;
+        }
+    }
+}
+
+// FIXED: Updated savePhoto to handle both presets and uploads
+async function savePhoto() {
+    if (!selectedPhoto) {
+        showMessage('Please select a photo or upload one.', 'error');
+        return;
+    }
+
+    try {
+        // Update member's photo in database
+        await updateMemberPhoto(currentPhotoMemberId, selectedPhoto);
+
+        // Force re-render to show updated photo
+        renderFamilyMembers();
+        closeModal('photo-modal');
+        showMessage('Photo updated successfully! ✅', 'success');
+    } catch (error) {
+        console.error('❌ Error updating photo:', error);
+        showMessage('Error updating photo: ' + error.message, 'error');
+    }
+}
+
+// ===== INVESTMENT FUNCTIONS =====
 function openAddInvestmentModal() {
     editingInvestmentId = null;
     document.getElementById('investment-modal-title').textContent = 'Add Investment';
@@ -1086,13 +1487,9 @@ function populateMemberOptions(selectId) {
 }
 
 function hideAllConditionalFields() {
-    const fields = ['.fixed-deposit-fields', '.insurance-fields', '.bank-balance-fields'];
-    fields.forEach(fieldClass => {
-        const field = document.querySelector(fieldClass);
-        if (field) {
-            field.style.display = 'none';
-        }
-    });
+    document.querySelector('.fixed-deposit-fields').style.display = 'none';
+    document.querySelector('.insurance-fields').style.display = 'none';
+    document.querySelector('.bank-balance-fields').style.display = 'none';
 }
 
 function updateInvestmentForm() {
@@ -1101,264 +1498,207 @@ function updateInvestmentForm() {
     hideAllConditionalFields();
     
     if (investmentType === 'fixedDeposits') {
-        const field = document.querySelector('.fixed-deposit-fields');
-        if (field) field.style.display = 'block';
+        document.querySelector('.fixed-deposit-fields').style.display = 'block';
     } else if (investmentType === 'insurance') {
-        const field = document.querySelector('.insurance-fields');
-        if (field) field.style.display = 'block';
+        document.querySelector('.insurance-fields').style.display = 'block';
     } else if (investmentType === 'bankBalances') {
-        const field = document.querySelector('.bank-balance-fields');
-        if (field) field.style.display = 'block';
+        document.querySelector('.bank-balance-fields').style.display = 'block';
     }
 }
 
-// ===== ENHANCED DUPLICATE PREVENTION LOGIC =====
+// ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
+// Add this function to prevent duplicate investments
 async function checkForDuplicateInvestment(investmentData, editingId = null) {
-    const authType = localStorage.getItem('famwealth_auth_type');
-    
-    if (authType === 'demo' || !supabase) {
-        // Demo mode - check local data
-        const existing = investments.find(inv => 
-            inv.id !== editingId &&
+    try {
+        // Check in local array first for immediate feedback
+        const existingInvestment = investments.find(inv => 
+            inv.id !== editingId && // Exclude current item when editing
             inv.member_id === investmentData.member_id &&
             inv.investment_type === investmentData.investment_type &&
-            (
-                (investmentData.investment_type === 'insurance' && 
-                 inv.insurance_policy_number === investmentData.insurance_policy_number) ||
-                (investmentData.investment_type !== 'insurance' && 
-                 inv.symbol_or_name?.toLowerCase() === investmentData.symbol_or_name?.toLowerCase())
-            )
+            inv.symbol_or_name === investmentData.symbol_or_name &&
+            Math.abs(inv.invested_amount - investmentData.invested_amount) < 0.01 // Handle floating point precision
         );
         
-        if (existing) {
-            throw new Error(
-                investmentData.investment_type === 'insurance' 
-                    ? 'An insurance policy with this policy number already exists for this member.'
-                    : 'An investment with this name already exists for this member.'
-            );
-        }
-    } else {
-        // Supabase mode - check database
-        let query = supabase
-            .from('investments')
-            .select('id')
-            .eq('member_id', investmentData.member_id)
-            .eq('investment_type', investmentData.investment_type);
-            
-        if (editingId) {
-            query = query.neq('id', editingId);
+        if (existingInvestment) {
+            throw new Error(`A similar ${investmentData.investment_type} investment "${investmentData.symbol_or_name}" already exists for this member.`);
         }
         
-        if (investmentData.investment_type === 'insurance') {
-            query = query.eq('insurance_policy_number', investmentData.insurance_policy_number);
-        } else {
-            query = query.ilike('symbol_or_name', investmentData.symbol_or_name);
-        }
-        
-        const { data: existing, error } = await query.limit(1);
-        
-        if (error) {
-            console.error('Error checking for duplicates:', error);
-        }
-        
-        if (existing && existing.length > 0) {
-            throw new Error(
-                investmentData.investment_type === 'insurance' 
-                    ? 'An insurance policy with this policy number already exists for this member.'
-                    : 'An investment with this name already exists for this member.'
-            );
-        }
-    }
-}
-
-// ===== ENHANCED SAVE INVESTMENT WITH ALL FIXES =====
-async function saveInvestment() {
-    const btn = document.getElementById('investment-save-btn');
-    btn.disabled = true;
-
-    try {
-        // Basic fields with enhanced validation
-        const memberId = safeGetElementValue('investment-member');
-        const type = safeGetElementValue('investment-type');
-        const name = safeGetElementValue('investment-name').trim();
-        const amount = parseFloat(safeGetElementValue('investment-amount')) || 0;
-        const currentValue = parseFloat(safeGetElementValue('investment-current-value')) || amount;
-        const platform = safeGetElementValue('investment-platform').trim() || 'Not Specified';
-
-        // Enhanced validation
-        if (!memberId || !type || !name || amount <= 0) {
-            showMessage('Please fill in all required fields with valid values.', 'error');
-            return;
-        }
-
-        // Build base investment data
-        const investmentData = {
-            member_id: memberId,
-            investment_type: type,
-            symbol_or_name: name,
-            invested_amount: amount,
-            current_value: currentValue,
-            broker_platform: platform,
-            created_at: new Date().toISOString()
-        };
-
-        // ===== INSURANCE SPECIFIC FIELDS - COMPLETE FIX =====
-        if (type === 'insurance') {
-            console.log('📋 Processing insurance investment...');
-            
-            // Required insurance fields
-            const policyName = safeGetElementValue('ins-policy-name').trim();
-            const policyNumber = safeGetElementValue('ins-policy-number').trim();
-            const company = safeGetElementValue('ins-company').trim();
-            const insuranceType = safeGetElementValue('ins-type');
-            const sumAssured = parseFloat(safeGetElementValue('ins-sum-assured')) || 0;
-            const premiumAmount = parseFloat(safeGetElementValue('ins-premium-amount')) || 0;
-            const frequency = safeGetElementValue('ins-premium-frequency');
-            const startDate = safeGetElementValue('ins-start-date');
-            const maturityDate = safeGetElementValue('ins-maturity-date');
-
-            // Enhanced validation for insurance
-            if (!policyName || !policyNumber || !company || !insuranceType || 
-                sumAssured <= 0 || premiumAmount <= 0 || !frequency || !startDate || !maturityDate) {
-                showMessage('Please fill in all required insurance fields.', 'error');
-                return;
-            }
-
-            // Add all insurance fields to investment data
-            Object.assign(investmentData, {
-                policy_name: policyName,
-                insurance_policy_number: policyNumber,
-                insurance_company: company,
-                insurance_type: insuranceType,
-                insurance_sum_assured: sumAssured,
-                insurance_premium: premiumAmount,
-                insurance_payment_frequency: frequency,
-                insurance_start_date: startDate,
-                insurance_maturity_date: maturityDate,
-                insurance_next_premium_date: safeGetElementValue('ins-next-premium-date') || null,
-                policy_status: safeGetElementValue('ins-policy-status') || 'Active',
-                insurance_nominee: safeGetElementValue('ins-nominee').trim(),
-                insurance_comments: safeGetElementValue('ins-comments').trim(),
-                // Use sum assured as current value if not specified
-                current_value: currentValue > 0 ? currentValue : sumAssured
-            });
-
-            console.log('✅ Insurance data prepared:', {
-                policyName,
-                policyNumber,
-                company,
-                sumAssured: formatCurrency(sumAssured)
-            });
-        }
-
-        // ===== FIXED DEPOSIT SPECIFIC FIELDS =====
-        if (type === 'fixedDeposits') {
-            Object.assign(investmentData, {
-                fd_bank_name: safeGetElementValue('fd-bank-name'),
-                fd_interest_rate: parseFloat(safeGetElementValue('fd-interest-rate')) || null,
-                fd_interest_payout: safeGetElementValue('fd-interest-payout') || 'At Maturity',
-                fd_start_date: safeGetElementValue('fd-start-date') || null,
-                fd_maturity_date: safeGetElementValue('fd-maturity-date') || null,
-                fd_account_number: safeGetElementValue('fd-account-number'),
-                fd_nominee: safeGetElementValue('fd-nominee'),
-                fd_comments: safeGetElementValue('fd-comments'),
-                // Also set legacy fields for compatibility
-                bank_name: safeGetElementValue('fd-bank-name'),
-                interest_rate: parseFloat(safeGetElementValue('fd-interest-rate')) || null,
-                start_date: safeGetElementValue('fd-start-date') || null,
-                maturity_date: safeGetElementValue('fd-maturity-date') || null,
-                interest_payout: safeGetElementValue('fd-interest-payout') || 'At Maturity',
-                account_number: safeGetElementValue('fd-account-number'),
-                nominee: safeGetElementValue('fd-nominee'),
-                comments: safeGetElementValue('fd-comments')
-            });
-        }
-
-        // ===== BANK BALANCE SPECIFIC FIELDS =====
-        if (type === 'bankBalances') {
-            Object.assign(investmentData, {
-                bank_current_balance: parseFloat(safeGetElementValue('bank-current-balance')) || null,
-                bank_as_of_date: safeGetElementValue('bank-as-of-date') || null,
-                bank_account_type: safeGetElementValue('bank-account-type') || null
-            });
-        }
-
-        console.log('💾 Final investment data:', investmentData);
-
-        // ===== ENHANCED DUPLICATE CHECK =====
-        await checkForDuplicateInvestment(investmentData, editingInvestmentId);
-
-        // ===== SAVE OR UPDATE =====
-        if (editingInvestmentId) {
-            await updateInvestmentData(editingInvestmentId, investmentData);
-            showMessage('Investment updated successfully! ✅', 'success');
-        } else {
-            await addInvestmentData(investmentData);
-            showMessage('Investment added successfully! ✅', 'success');
-        }
-
-        // ===== CREATE REMINDER FOR INSURANCE =====
-        if (type === 'insurance' && !editingInvestmentId) {
-            const nextPremiumDate = safeGetElementValue('ins-next-premium-date');
-            if (nextPremiumDate) {
-                try {
-                    const reminderData = {
-                        member_id: memberId,
-                        title: `Premium due: ${investmentData.policy_name || investmentData.symbol_or_name}`,
-                        date: nextPremiumDate,
-                        type: 'insurance',
-                        created_at: new Date().toISOString()
-                    };
-                    
-                    await addReminderData(reminderData);
-                    console.log('✅ Insurance reminder created');
-                } catch (reminderError) {
-                    console.error('Warning: Could not create reminder:', reminderError);
+        // For Supabase, check database as well
+        if (supabase) {
+            const { data, error } = await supabase
+                .from('investments')
+                .select('id, symbol_or_name')
+                .eq('member_id', investmentData.member_id)
+                .eq('investment_type', investmentData.investment_type)
+                .eq('symbol_or_name', investmentData.symbol_or_name)
+                .eq('invested_amount', investmentData.invested_amount);
+                
+            if (error) {
+                console.error('Error checking for duplicates:', error);
+            } else if (data && data.length > 0) {
+                // If editing, exclude the current record
+                const duplicates = editingId ? data.filter(item => item.id !== editingId) : data;
+                if (duplicates.length > 0) {
+                    throw new Error(`A similar investment "${investmentData.symbol_or_name}" already exists in the database.`);
                 }
             }
         }
-
-        // ===== CLEANUP & REFRESH UI =====
-        closeModal('investment-modal');
-        renderInvestmentTabContent(type);
-        renderStatsOverview();
-        
-        // Reset editing state
-        editingInvestmentId = null;
-
     } catch (error) {
-        console.error('❌ Save investment error:', error);
-        showMessage(error.message || 'Error saving investment.', 'error');
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-// ===== ENHANCED REMINDER CREATION =====
-async function addReminderData(reminderData) {
-    const authType = localStorage.getItem('famwealth_auth_type');
-    
-    if (authType === 'demo' || !supabase) {
-        // Demo mode
-        reminderData.id = generateId();
-        reminders.push(reminderData);
-        return reminderData;
-    }
-
-    // Supabase mode
-    const { data, error } = await supabase
-        .from('reminders')
-        .insert([reminderData])
-        .select();
-
-    if (error) {
         throw error;
     }
-
-    const newReminder = data[0];
-    reminders.push(newReminder);
-    return newReminder;
 }
+
+async function saveInvestment() {
+   const btn = document.getElementById('investment-save-btn');
+  btn.disabled = true;
+
+  try {
+    // → Basic fields
+    const memberId     = document.getElementById('investment-member').value;
+    const type         = document.getElementById('investment-type').value;
+    const name         = document.getElementById('investment-name').value.trim();
+    const amount       = parseFloat(document.getElementById('investment-amount').value);
+    const currentValue = parseFloat(document.getElementById('investment-current-value').value) || amount;
+    const platform     = document.getElementById('investment-platform').value.trim() || 'Not Specified';
+
+    // → Required validation
+    if (!memberId || !type || !name || !amount) {
+      showMessage('Please fill in all required fields.', 'error');
+      return;
+    }
+    if (amount <= 0) {
+      showMessage('Invested amount must be greater than 0.', 'error');
+      return;
+    }
+
+    // → Build base investmentData
+    const investmentData = {
+      member_id:       memberId,
+      investment_type: type,
+      symbol_or_name:  name,
+      invested_amount: amount,
+      current_value:   currentValue,
+      broker_platform: platform,
+      created_at:      new Date().toISOString()
+    };
+
+    // → Fixed Deposits branch
+    if (type === 'fixedDeposits') {
+      investmentData.fd_invested_date = document.getElementById('fd-start-date')?.value || null;
+      investmentData.fd_bank_name     = document.getElementById('fd-bank-name')?.value  || null;
+      investmentData.fd_interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
+      investmentData.fd_interest_payout = document.getElementById('fd-interest-payout')?.value || null;
+      investmentData.fd_start_date    = document.getElementById('fd-start-date')?.value || null;
+      investmentData.fd_maturity_date = document.getElementById('fd-maturity-date')?.value || null;
+      investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
+      investmentData.fd_nominee       = document.getElementById('fd-nominee')?.value     || null;
+      investmentData.fd_comments      = document.getElementById('fd-comments')?.value    || null;
+
+      investmentData.bank_name        = investmentData.fd_bank_name;
+      investmentData.interest_rate    = investmentData.fd_interest_rate;
+      investmentData.start_date       = investmentData.fd_start_date;
+      investmentData.maturity_date    = investmentData.fd_maturity_date;
+      investmentData.interest_payout  = investmentData.fd_interest_payout;
+      investmentData.account_number   = investmentData.fd_account_number;
+      investmentData.nominee          = investmentData.fd_nominee;
+      investmentData.comments         = investmentData.fd_comments;
+
+      console.log('📊 Added FD fields:', investmentData);
+    }
+
+    // → Insurance branch
+    if (type === 'insurance') {
+    // Basic insurance validation
+    const insuranceType = document.getElementById('ins-type')?.value;
+    const sumAssured = parseFloat(document.getElementById('ins-sum-assured')?.value);
+    const premiumAmount = parseFloat(document.getElementById('ins-premium-amount')?.value);
+    const policyName = document.getElementById('ins-policy-name')?.value?.trim();
+    const company = document.getElementById('ins-company')?.value?.trim();
+    
+    if (!insuranceType || !sumAssured || !premiumAmount || !policyName || !company) {
+        showMessage('Please fill in all required insurance fields (Type, Sum Assured, Premium, Policy Name, Company).', 'error');
+        return;
+    }
+    
+    // Enhanced insurance fields - ALL REQUIRED FIELDS
+    investmentData.insurance_type              = insuranceType;
+    investmentData.policy_name                 = policyName;
+    investmentData.insurance_company           = company;
+    investmentData.insurance_premium           = premiumAmount;
+    investmentData.insurance_sum_assured       = sumAssured;
+    investmentData.insurance_payment_frequency = document.getElementById('ins-premium-frequency')?.value || 'Yearly';
+    investmentData.insurance_start_date        = document.getElementById('ins-start-date')?.value || null;
+    investmentData.insurance_maturity_date     = document.getElementById('ins-maturity-date')?.value || null;
+    investmentData.insurance_policy_number     = document.getElementById('ins-policy-number')?.value || null;
+    investmentData.insurance_next_premium_date = document.getElementById('ins-next-premium-date')?.value || null;
+    investmentData.policy_status               = document.getElementById('ins-policy-status')?.value || 'Active';
+    investmentData.insurance_nominee           = document.getElementById('ins-nominee')?.value || null;
+    investmentData.insurance_insured_person    = document.getElementById('ins-insured-person')?.value || null;
+    investmentData.insurance_comments          = document.getElementById('ins-comments')?.value || null;
+    
+    console.log('📊 Added complete Insurance fields:', investmentData);
+}
+    // ADD this duplicate check right after building investmentData and before calling add/update functions:
+    // Check for duplicates BEFORE saving
+try {
+    await checkForDuplicateInvestment(investmentData, editingInvestmentId);
+} catch (duplicateError) {
+    showMessage(duplicateError.message, 'error');
+    return;
+}
+
+    // → Bank Balances branch
+    if (type === 'bankBalances') {
+      investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
+      investmentData.bank_as_of_date      = document.getElementById('bank-as-of-date')?.value   || null;
+      investmentData.bank_account_type    = document.getElementById('bank-account-type')?.value|| null;
+      console.log('💰 Added bank balance fields:', investmentData);
+    }
+
+    // → Upsert investment
+    const isEditing = Boolean(editingInvestmentId);
+    let result;
+    if (isEditing) {
+      result = await updateInvestmentData(editingInvestmentId, investmentData);
+    } else {
+      result = await addInvestmentData(investmentData);
+    }
+   editingInvestmentId = null;
+
+    // → After saving investment, insert reminder for insurance
+    if (type === 'insurance') {
+      const nextPremium = document.getElementById('ins-next-premium-date')?.value;
+      if (nextPremium) {
+        const reminderData = {
+          member_id:  memberId,
+          title:      `Premium due: ${investmentData.symbol_or_name}`,
+          date:       nextPremium,
+          type:       'insurance',
+          created_at: new Date().toISOString()
+        };
+        const { error: remErr } = await supabase.from('reminders').insert([reminderData]);
+        if (remErr) console.error('Reminder error:', remErr);
+        else console.log('✅ Reminder created');
+      }
+    }
+
+    // → UI cleanup & reload
+    showMessage(isEditing ? 'Investment updated!' : 'Investment added!', 'success');
+    document.getElementById('investment-form').reset();
+    closeModal('investment-modal');
+    renderInvestmentTabContent(type);
+    renderStatsOverview();
+   // await loadDashboardData(); --> Fix to remove duplicate entries
+
+  } catch (error) {
+    console.error('❌ saveInvestment error:', error);
+    showMessage('Error saving investment.', 'error');
+
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 
 async function addInvestmentData(investmentData) {
     const authType = localStorage.getItem('famwealth_auth_type');
@@ -1377,7 +1717,6 @@ async function addInvestmentData(investmentData) {
         .select();
 
     if (error) {
-        console.error('Database insert error:', error);
         throw error;
     }
 
@@ -1403,7 +1742,6 @@ async function updateInvestmentData(investmentId, investmentData) {
         .eq('id', investmentId);
 
     if (error) {
-        console.error('Database update error:', error);
         throw error;
     }
 
@@ -1414,110 +1752,148 @@ async function updateInvestmentData(investmentId, investmentData) {
     }
 }
 
-// ===== ENHANCED EDIT INVESTMENT WITH COMPLETE INSURANCE SUPPORT =====
+// ENHANCED: editInvestment with additional fields
 function editInvestment(investmentId) {
     editingInvestmentId = investmentId;
     const investment = investments.find(inv => inv.id === investmentId);
-    
+   
     if (!investment) {
-        console.error('❌ Investment not found:', investmentId);
-        showMessage('Investment not found.', 'error');
+        console.error('Investment not found:', investmentId);
         return;
     }
-
-    console.log('📝 Editing investment:', investment);
-
-    // Update modal title
-    document.getElementById('investment-modal-title').textContent = 'Edit Investment';
-
-    // Populate member options first
-    populateMemberOptions('investment-member');
-
-    // Populate basic fields
-    safeSetElementValue('investment-member', investment.member_id);
-    safeSetElementValue('investment-type', investment.investment_type || investment.type);
-    safeSetElementValue('investment-name', investment.symbol_or_name || investment.name);
-    safeSetElementValue('investment-amount', investment.invested_amount);
-    safeSetElementValue('investment-current-value', investment.current_value);
-    safeSetElementValue('investment-platform', investment.broker_platform || investment.platform);
-
-    // Update form to show relevant conditional fields
-    updateInvestmentForm();
-
-    // Populate type-specific fields
-    const investmentType = investment.investment_type || investment.type;
-
-    // ===== COMPLETE INSURANCE FIELD POPULATION =====
-    if (investmentType === 'insurance') {
-        console.log('🛡️ Populating insurance fields...');
-        
-        // Map all possible field variations to ensure compatibility
-        const insuranceFields = {
-            'ins-policy-name': investment.policy_name || investment.insurance_policy_name || investment.symbol_or_name || '',
-            'ins-policy-number': investment.insurance_policy_number || investment.policy_number || '',
-            'ins-company': investment.insurance_company || investment.company || '',
-            'ins-type': investment.insurance_type || investment.type || '',
-            'ins-sum-assured': investment.insurance_sum_assured || investment.sum_assured || investment.current_value || '',
-            'ins-premium-amount': investment.insurance_premium || investment.premium_amount || '',
-            'ins-premium-frequency': investment.insurance_payment_frequency || investment.premium_frequency || 'Yearly',
-            'ins-start-date': investment.insurance_start_date || investment.start_date || '',
-            'ins-maturity-date': investment.insurance_maturity_date || investment.maturity_date || '',
-            'ins-next-premium-date': investment.insurance_next_premium_date || investment.next_premium_date || '',
-            'ins-policy-status': investment.policy_status || 'Active',
-            'ins-nominee': investment.insurance_nominee || investment.nominee || '',
-            'ins-comments': investment.insurance_comments || investment.comments || ''
-        };
-
-        // Set all insurance fields safely
-        Object.entries(insuranceFields).forEach(([fieldId, value]) => {
-            const success = safeSetElementValue(fieldId, value);
-            if (success) {
-                console.log(`✅ Set ${fieldId}: ${value}`);
-            } else {
-                console.warn(`⚠️ Could not set ${fieldId}`);
-            }
-        });
-
-        console.log('✅ Insurance fields populated successfully');
-    }
-
-    // ===== FIXED DEPOSIT FIELDS =====
-    if (investmentType === 'fixedDeposits') {
-        const fdFields = {
-            'fd-bank-name': investment.fd_bank_name || investment.bank_name || '',
-            'fd-interest-rate': investment.fd_interest_rate || investment.interest_rate || '',
-            'fd-interest-payout': investment.fd_interest_payout || investment.interest_payout || 'At Maturity',
-            'fd-start-date': investment.fd_start_date || investment.start_date || '',
-            'fd-maturity-date': investment.fd_maturity_date || investment.maturity_date || '',
-            'fd-account-number': investment.fd_account_number || investment.account_number || '',
-            'fd-nominee': investment.fd_nominee || investment.nominee || '',
-            'fd-comments': investment.fd_comments || investment.comments || ''
-        };
-
-        Object.entries(fdFields).forEach(([fieldId, value]) => {
-            safeSetElementValue(fieldId, value);
-        });
-        
-        console.log('✅ Fixed deposit fields populated');
-    }
-
-    // ===== BANK BALANCE FIELDS =====
-    if (investmentType === 'bankBalances') {
-        safeSetElementValue('bank-current-balance', investment.bank_current_balance || investment.current_balance || '');
-        safeSetElementValue('bank-as-of-date', investment.bank_as_of_date || investment.as_of_date || '');
-        safeSetElementValue('bank-account-type', investment.bank_account_type || '');
-        
-        console.log('✅ Bank balance fields populated');
-    }
-
-    // Open the modal
-    openModal('investment-modal');
     
-    console.log('📝 Investment edit form opened for:', {
-        id: investmentId,
-        type: investmentType,
-        name: investment.symbol_or_name || investment.name
-    });
+    document.getElementById('investment-modal-title').textContent = 'Edit Investment';
+    
+    // Populate basic fields - FIXED VARIABLE REFERENCES
+    document.getElementById('investment-member').value = investment.member_id || '';
+    document.getElementById('investment-type').value = investment.investment_type || investment.type || '';
+    document.getElementById('investment-name').value = investment.symbol_or_name || investment.name || '';
+    document.getElementById('investment-amount').value = investment.invested_amount || '';
+    document.getElementById('investment-current-value').value = investment.current_value || '';
+    document.getElementById('investment-platform').value = investment.broker_platform || investment.platform || '';
+   
+    // Update form to show type-specific fields FIRST
+    updateInvestmentForm();
+    
+    // Populate type-specific fields based on investment type
+    const investmentType = investment.investment_type || investment.type;
+    
+    if (investmentType === 'fixedDeposits') {
+        // Fixed Deposits fields
+        safeSet('fd-bank-name', investment.fd_bank_name || investment.bank_name);
+        safeSet('fd-interest-rate', investment.fd_interest_rate || investment.interest_rate);
+        safeSet('fd-interest-payout', investment.fd_interest_payout || investment.interest_payout);
+        safeSet('fd-start-date', investment.fd_start_date || investment.start_date);
+        safeSet('fd-maturity-date', investment.fd_maturity_date || investment.maturity_date);
+        safeSet('fd-account-number', investment.fd_account_number || investment.account_number);
+        safeSet('fd-nominee', investment.fd_nominee || investment.nominee);
+        safeSet('fd-comments', investment.fd_comments || investment.comments);
+        console.log('✅ Populated FD fields for edit');
+    }
+    
+    if (investmentType === 'insurance') {
+        // FIXED: Use 'investment' instead of 'inv' - CRITICAL BUG FIX
+        safeSet('ins-policy-number', investment.insurance_policy_number);
+        safeSet('ins-policy-name', investment.policy_name || investment.symbol_or_name);
+        safeSet('ins-company', investment.insurance_company);
+        safeSet('ins-type', investment.insurance_type);
+        safeSet('ins-sum-assured', investment.insurance_sum_assured);
+        safeSet('ins-premium-amount', investment.insurance_premium);
+        safeSet('ins-premium-frequency', investment.insurance_payment_frequency);
+        safeSet('ins-start-date', investment.insurance_start_date);
+        safeSet('ins-maturity-date', investment.insurance_maturity_date);
+        safeSet('ins-next-premium-date', investment.insurance_next_premium_date);
+        safeSet('ins-policy-status', investment.policy_status);
+        safeSet('ins-nominee', investment.insurance_nominee);
+        safeSet('ins-insured-person', investment.insurance_insured_person);
+        safeSet('ins-comments', investment.insurance_comments);
+        console.log('✅ Populated Insurance fields for edit');
+    }
+    
+    if (investmentType === 'bankBalances') {
+        safeSet('bank-name', investment.bank_name);
+        safeSet('bank-account-type', investment.account_type);
+        safeSet('bank-account-number', investment.account_number);
+        safeSet('bank-interest-rate', investment.interest_rate);
+        safeSet('bank-nominee', investment.nominee);
+        safeSet('bank-comments', investment.comments);
+        console.log('✅ Populated Bank Balance fields for edit');
+    }
+    
+    if (investmentType === 'mutualFunds') {
+        safeSet('mf-fund-name', investment.fund_name || investment.symbol_or_name);
+        safeSet('mf-fund-type', investment.fund_type);
+        safeSet('mf-sip-amount', investment.sip_amount);
+        safeSet('mf-sip-date', investment.sip_date);
+        safeSet('mf-broker', investment.broker_platform);
+        safeSet('mf-folio-number', investment.folio_number);
+        safeSet('mf-comments', investment.comments);
+        console.log('✅ Populated Mutual Fund fields for edit');
+    }
+    
+    if (investmentType === 'equity') {
+        safeSet('eq-symbol', investment.symbol_or_name);
+        safeSet('eq-quantity', investment.quantity);
+        safeSet('eq-avg-price', investment.avg_price);
+        safeSet('eq-broker', investment.broker_platform);
+        safeSet('eq-comments', investment.comments);
+        console.log('✅ Populated Equity fields for edit');
+    }
+    
+    openModal('investment-modal');
+}
+
+document.getElementById('ins-nominee').value = investment.nominee || '';
+        
+        console.log('✅ Populated Insurance fields for edit');
+    }
+}
+
+function editInsurance(insuranceId) {
+  // Find the insurance record in your investments array
+  const ins = investments.find(inv => inv.id === insuranceId);
+  if (!ins) return;
+
+  // Populate shared fields
+  document.getElementById('investment-member').value         = ins.member_id || '';
+  document.getElementById('investment-type').value           = 'insurance';
+  document.getElementById('investment-name').value           = ins.symbol_or_name || '';
+  document.getElementById('investment-amount').value         = ins.insurance_sum_assured || '';
+  document.getElementById('investment-current-value').value  = ins.current_value || '';
+  document.getElementById('investment-platform').value       = ins.broker_platform || '';
+
+  // Populate insurance-specific fields
+  document.getElementById('ins-type').value                  = ins.insurance_type || '';
+  document.getElementById('ins-premium-amount').value        = ins.insurance_premium || '';
+  document.getElementById('ins-sum-assured').value           = ins.insurance_sum_assured || '';
+  document.getElementById('ins-premium-frequency').value     = ins.insurance_payment_frequency || '';
+  document.getElementById('ins-start-date').value            = ins.insurance_start_date || '';
+  document.getElementById('ins-maturity-date').value         = ins.insurance_maturity_date || '';
+  document.getElementById('ins-policy-number').value         = ins.insurance_policy_number || '';
+  document.getElementById('ins-comments').value              = ins.insurance_comments || '';
+  document.getElementById('ins-next-premium-date').value     = ''; // reminder is separate
+
+  // Mark edit mode
+  editingInvestmentId = insuranceId;
+  document.getElementById('investment-modal-title').textContent = 'Edit Insurance';
+
+  openModal('investment-modal');
+}
+
+// Helper function to safely get element value
+function safeGetElementValue(elementId, fallback = '') {
+    const element = document.getElementById(elementId);
+    return element ? element.value : fallback;
+}
+
+// Helper function to safely set element value
+function safeSetElementValue(elementId, value = '') {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.value = value;
+        return true;
+    }
+    return false;
 }
 
 async function deleteInvestment(investmentId) {
@@ -1556,12 +1932,7 @@ async function deleteInvestment(investmentId) {
                 'Bank Balances': 'bankBalances',
                 'Others': 'others'
             };
-            
-            const tabText = activeTab.textContent.trim();
-            const matchedType = Object.keys(typeMap).find(key => tabText.includes(key));
-            if (matchedType) {
-                renderInvestmentTabContent(typeMap[matchedType]);
-            }
+            renderInvestmentTabContent(typeMap[activeTab.textContent.trim()]);
         }
         
         renderStatsOverview();
@@ -1734,12 +2105,7 @@ async function deleteLiability(liabilityId) {
                 'Credit Card': 'creditCard',
                 'Other': 'other'
             };
-            
-            const tabText = activeTab.textContent.trim();
-            const matchedType = Object.keys(typeMap).find(key => tabText.includes(key));
-            if (matchedType) {
-                renderLiabilityTabContent(typeMap[matchedType]);
-            }
+            renderLiabilityTabContent(typeMap[activeTab.textContent.trim()]);
         }
         
         renderStatsOverview();
@@ -1941,6 +2307,90 @@ function exportInvestments(format) {
     }
 }
 
+function exportLiabilities(format) {
+    if (liabilities.length === 0) {
+        showMessage('No liabilities to export.', 'warning');
+        return;
+    }
+
+    // ENHANCED: Add member names to export data
+    const liabilitiesWithMemberNames = liabilities.map(lib => {
+        const member = familyMembers.find(m => m.id === lib.member_id);
+        return {
+            ...lib,
+            member_name: member ? member.name : 'Unknown Member'
+        };
+    });
+
+    if (format === 'csv') {
+        const csvContent = convertToCSV(liabilitiesWithMemberNames);
+        downloadFile('liabilities.csv', csvContent, 'text/csv');
+    } else if (format === 'json') {
+        const jsonContent = JSON.stringify(liabilitiesWithMemberNames, null, 2);
+        downloadFile('liabilities.json', jsonContent, 'application/json');
+    }
+}
+
+function exportAccounts(format) {
+    if (accounts.length === 0) {
+        showMessage('No accounts to export.', 'warning');
+        return;
+    }
+
+    if (format === 'csv') {
+        const csvContent = convertToCSV(accounts);
+        downloadFile('accounts.csv', csvContent, 'text/csv');
+    } else if (format === 'json') {
+        const jsonContent = JSON.stringify(accounts, null, 2);
+        downloadFile('accounts.json', jsonContent, 'application/json');
+    }
+}
+
+function exportFamilyData(format) {
+    const familyData = {
+        members: familyMembers,
+        investments: investments,
+        liabilities: liabilities,
+        accounts: accounts,
+        reminders: reminders,
+        exported_at: new Date().toISOString(),
+        total_assets: familyMembers.reduce((acc, member) => acc + calculateMemberAssets(member.id), 0),
+        total_liabilities: familyMembers.reduce((acc, member) => acc + calculateMemberLiabilities(member.id), 0)
+    };
+
+    familyData.net_worth = familyData.total_assets - familyData.total_liabilities;
+
+    if (format === 'csv') {
+        let csvContent = '';
+        
+        csvContent += '# FAMILY DATA EXPORT\n';
+        csvContent += `# Generated on: ${new Date().toLocaleString()}\n`;
+        csvContent += `# Total Assets: ${formatCurrency(familyData.total_assets)}\n`;
+        csvContent += `# Total Liabilities: ${formatCurrency(familyData.total_liabilities)}\n`;
+        csvContent += `# Net Worth: ${formatCurrency(familyData.net_worth)}\n\n`;
+        
+        csvContent += '# FAMILY MEMBERS\n';
+        csvContent += convertToCSV(familyMembers) + '\n\n';
+        
+        csvContent += '# INVESTMENTS\n';
+        csvContent += convertToCSV(investments) + '\n\n';
+        
+        csvContent += '# LIABILITIES\n';
+        csvContent += convertToCSV(liabilities) + '\n\n';
+        
+        csvContent += '# ACCOUNTS\n';
+        csvContent += convertToCSV(accounts) + '\n\n';
+        
+        csvContent += '# REMINDERS\n';
+        csvContent += convertToCSV(reminders);
+        
+        downloadFile('family_financial_data.csv', csvContent, 'text/csv');
+    } else if (format === 'json') {
+        const jsonContent = JSON.stringify(familyData, null, 2);
+        downloadFile('family_financial_data.json', jsonContent, 'application/json');
+    }
+}
+
 function convertToCSV(data) {
     if (!data || data.length === 0) return 'No data available';
 
@@ -2027,6 +2477,352 @@ function sortTable(tableId, columnIndex) {
     rows.forEach(row => tbody.appendChild(row));
 }
 
+// ===== IMPORT FUNCTIONALITY =====
+function openImportModal(type) {
+    currentImportType = type;
+    document.getElementById('import-modal-title').textContent = `Import ${capitalizeFirst(type)}`;
+
+    const instructions = getImportInstructions(type);
+    document.getElementById('import-instructions').innerHTML = instructions;
+
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-preview').style.display = 'none';
+    document.getElementById('import-btn').disabled = true;
+    document.getElementById('file-name').textContent = '';
+
+    openModal('import-modal');
+}
+
+function getImportInstructions(type) {
+    const templates = {
+        investments: `
+            <h4>📊 Investment Import Instructions</h4>
+            <p>CSV should contain these columns (exact names required):</p>
+            <div class="csv-template">
+                <strong>Required columns:</strong>
+                <ul>
+                    <li><code>member_name</code> - Name of family member</li>
+                    <li><code>investment_type</code> - equity, mutualFunds, fixedDeposits, insurance, bankBalances, others</li>
+                    <li><code>name</code> - Investment/stock/fund name</li>
+                    <li><code>invested_amount</code> - Amount invested</li>
+                    <li><code>current_value</code> - Current value (optional, defaults to invested_amount)</li>
+                    <li><code>platform</code> - Broker/platform name (optional)</li>
+                </ul>
+            </div>
+        `,
+        liabilities: `
+            <h4>📉 Liability Import Instructions</h4>
+            <p>CSV should contain these columns (exact names required):</p>
+            <div class="csv-template">
+                <strong>Required columns:</strong>
+                <ul>
+                    <li><code>member_name</code> - Name of family member</li>
+                    <li><code>liability_type</code> - homeLoan, personalLoan, creditCard, other</li>
+                    <li><code>lender</code> - Name of lender/bank</li>
+                    <li><code>outstanding_amount</code> - Outstanding amount</li>
+                    <li><code>emi_amount</code> - Monthly EMI (optional)</li>
+                    <li><code>interest_rate</code> - Interest rate % (optional)</li>
+                </ul>
+            </div>
+        `,
+        accounts: `
+            <h4>🏦 Account Import Instructions</h4>
+            <p>CSV should contain these columns (exact names required):</p>
+            <div class="csv-template">
+                <strong>Required columns:</strong>
+                <ul>
+                    <li><code>account_type</code> - Type of account</li>
+                    <li><code>institution</code> - Bank/institution name</li>
+                    <li><code>account_number</code> - Account number</li>
+                    <li><code>holder_name</code> - Name of account holder</li>
+                    <li><code>nominee_name</code> - Name of nominee (optional)</li>
+                    <li><code>status</code> - Active, Inactive (optional, defaults to Active)</li>
+                    <li><code>comments</code> - Additional comments (optional)</li>
+                </ul>
+            </div>
+        `
+    };
+    return templates[type] || '';
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    document.getElementById('file-name').textContent = file.name;
+
+    if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        showMessage('Please select a CSV file.', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csvText = e.target.result;
+            const parsedData = parseCSV(csvText);
+
+            if (parsedData.length === 0) {
+                showMessage('CSV file is empty or invalid.', 'error');
+                return;
+            }
+
+            importData = parsedData;
+            showImportPreview(parsedData);
+            document.getElementById('import-btn').disabled = false;
+
+        } catch (error) {
+            console.error('Error parsing CSV:', error);
+            showMessage('Error parsing CSV file: ' + error.message, 'error');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function parseCSV(csvText) {
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const data = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = [];
+        let currentValue = '';
+        let inQuotes = false;
+
+        for (let j = 0; j < line.length; j++) {
+            const char = line[j];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                values.push(currentValue.trim().replace(/"/g, ''));
+                currentValue = '';
+            } else {
+                currentValue += char;
+            }
+        }
+        values.push(currentValue.trim().replace(/"/g, ''));
+
+        if (values.length === headers.length) {
+            const row = {};
+            headers.forEach((header, index) => {
+                row[header] = values[index];
+            });
+            data.push(row);
+        }
+    }
+
+    return data;
+}
+
+function showImportPreview(data) {
+    const previewDiv = document.getElementById('import-preview');
+
+    if (data.length === 0) {
+        previewDiv.innerHTML = '<p>No valid data found in CSV.</p>';
+        previewDiv.style.display = 'block';
+        return;
+    }
+
+    const headers = Object.keys(data[0]);
+    let tableHTML = `
+        <h4>📋 Import Preview (${data.length} records)</h4>
+        <div class="table-responsive" style="max-height: 300px; overflow: auto;">
+            <table class="data-table">
+                <thead>
+                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.slice(0, 10).map(row => 
+                        `<tr>${headers.map(h => `<td>${row[h] || ''}</td>`).join('')}</tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    if (data.length > 10) {
+        tableHTML += `<p><em>Showing first 10 records. Total: ${data.length} records</em></p>`;
+    }
+
+    previewDiv.innerHTML = tableHTML;
+    previewDiv.style.display = 'block';
+}
+
+async function processImport() {
+    if (!importData || !currentImportType) {
+        showMessage('No data to import.', 'error');
+        return;
+    }
+
+    try {
+        document.getElementById('import-btn').disabled = true;
+        document.getElementById('import-btn').textContent = 'Importing...';
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (let i = 0; i < importData.length; i++) {
+            try {
+                const row = importData[i];
+                await importSingleRecord(currentImportType, row, i + 2);
+                successCount++;
+            } catch (error) {
+                errorCount++;
+                console.error(`Import error for row ${i + 2}:`, error);
+            }
+        }
+
+        if (successCount > 0) {
+            showMessage(`Successfully imported ${successCount} records!`, 'success');
+            await loadDashboardData();
+        }
+
+        if (errorCount > 0) {
+            showMessage(`${errorCount} records failed to import.`, 'warning');
+        }
+
+        closeModal('import-modal');
+
+    } catch (error) {
+        console.error('Import process error:', error);
+        showMessage('Import failed: ' + error.message, 'error');
+    } finally {
+        document.getElementById('import-btn').disabled = false;
+        document.getElementById('import-btn').textContent = 'Import Data';
+    }
+}
+
+async function importSingleRecord(type, row, rowNumber) {
+    switch (type) {
+        case 'investments':
+            return await importInvestmentRecord(row, rowNumber);
+        case 'liabilities':
+            return await importLiabilityRecord(row, rowNumber);
+        case 'accounts':
+            return await importAccountRecord(row, rowNumber);
+        default:
+            throw new Error(`Unknown import type: ${type}`);
+    }
+}
+
+async function importInvestmentRecord(row, rowNumber) {
+    const required = ['member_name', 'investment_type', 'name', 'invested_amount'];
+    for (const field of required) {
+        if (!row[field]) {
+            throw new Error(`Missing required field: ${field}`);
+        }
+    }
+
+    const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
+    if (!member) {
+        throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
+    }
+
+    // SHARED DATA - Removed user_id
+    const investmentData = {
+        member_id: member.id,
+        investment_type: row.investment_type,
+        symbol_or_name: row.name,
+        invested_amount: parseFloat(row.invested_amount) || 0,
+        current_value: parseFloat(row.current_value) || parseFloat(row.invested_amount) || 0,
+        broker_platform: row.platform || '',
+        created_at: new Date().toISOString()
+    };
+
+    await addInvestmentData(investmentData);
+}
+
+async function importLiabilityRecord(row, rowNumber) {
+    const required = ['member_name', 'liability_type', 'lender', 'outstanding_amount'];
+    for (const field of required) {
+        if (!row[field]) {
+            throw new Error(`Missing required field: ${field}`);
+        }
+    }
+
+    const member = familyMembers.find(m => m.name.toLowerCase() === row.member_name.toLowerCase());
+    if (!member) {
+        throw new Error(`Member not found: ${row.member_name}. Please add this member first.`);
+    }
+
+    // SHARED DATA - Removed user_id
+    const liabilityData = {
+        member_id: member.id,
+        liability_type: row.liability_type,
+        type: row.liability_type,
+        lender: row.lender,
+        outstanding_amount: parseFloat(row.outstanding_amount) || 0,
+        emi_amount: parseFloat(row.emi_amount) || 0,
+        interest_rate: parseFloat(row.interest_rate) || 0,
+        created_at: new Date().toISOString()
+    };
+
+    await addLiabilityData(liabilityData);
+}
+
+async function importAccountRecord(row, rowNumber) {
+    const required = ['account_type', 'institution', 'account_number', 'holder_name'];
+    for (const field of required) {
+        if (!row[field]) {
+            throw new Error(`Missing required field: ${field}`);
+        }
+    }
+
+    const holder = familyMembers.find(m => m.name.toLowerCase() === row.holder_name.toLowerCase());
+    if (!holder) {
+        throw new Error(`Holder not found: ${row.holder_name}. Please add this member first.`);
+    }
+
+    let nominee = null;
+    let nomineeId = null;
+    if (row.nominee_name) {
+        nominee = familyMembers.find(m => m.name.toLowerCase() === row.nominee_name.toLowerCase());
+        if (nominee) {
+            nomineeId = nominee.id;
+        }
+    }
+async function addInvestmentDataWithDuplicateCheck(investmentData) {
+    try {
+        const { data, error } = await supabase
+            .from('investments')
+            .insert([investmentData])
+            .select();
+
+        if (error) {
+            if (error.code === '23505') {
+                throw new Error('Investment already exists. Please check for duplicates.');
+            }
+            throw error;
+        }
+        investments.push(data[0]);
+    } catch (dbError) {
+        throw dbError;
+    }
+}
+
+    
+    // SHARED DATA - Removed user_id
+    const accountData = {
+        account_type: row.account_type,
+        institution: row.institution,
+        account_number: row.account_number,
+        holder_id: holder.id,
+        holder_name: holder.name,
+        nominee_id: nomineeId,
+        nominee_name: nominee ? nominee.name : '',
+        status: row.status || 'Active',
+        comments: row.comments || '',
+        created_at: new Date().toISOString()
+    };
+
+    await addAccountData(accountData);
+}
+
 // ===== EVENT LISTENERS =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 FamWealth Dashboard DOM loaded');
@@ -2089,6 +2885,11 @@ window.openAddMemberModal = openAddMemberModal;
 window.saveMember = saveMember;
 window.editMember = editMember;
 window.deleteMember = deleteMember;
+window.openPhotoModal = openPhotoModal;
+window.savePhoto = savePhoto;
+window.handlePhotoUpload = handlePhotoUpload;
+window.showMemberDetails = showMemberDetails;
+window.closeMemberDetails = closeMemberDetails;
 window.openAddInvestmentModal = openAddInvestmentModal;
 window.saveInvestment = saveInvestment;
 window.editInvestment = editInvestment;
@@ -2105,12 +2906,20 @@ window.saveAccount = saveAccount;
 window.editAccount = editAccount;
 window.deleteAccount = deleteAccount;
 window.exportInvestments = exportInvestments;
+window.exportLiabilities = exportLiabilities;
+window.exportAccounts = exportAccounts;
+window.exportFamilyData = exportFamilyData;
 window.sortTable = sortTable;
 window.closeModal = closeModal;
 window.handleLogin = handleLogin;
 window.handleLogout = handleLogout;
 window.initializeSupabase = initializeSupabase;
 window.loadDashboardData = loadDashboardData;
+// Import functions
+window.openImportModal = openImportModal;
+window.handleImportFile = handleImportFile;
+window.processImport = processImport;
+// Additional functions
 window.showDashboard = showDashboard;
 window.updateUserInfo = updateUserInfo;
 
@@ -2122,7 +2931,8 @@ window.addEventListener('load', async () => {
     console.log(supabaseInitialized
         ? '✅ Supabase connection established'
         : '⚠️ Running in demo mode without Supabase');
-
+    await initialize();
+    document.getElementById('investment-type').addEventListener('change', updateInvestmentForm);  
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', e => {
@@ -2151,5 +2961,5 @@ window.addEventListener('load', async () => {
     }
 });
 
-console.log('✅ FamWealth Dashboard app-complete-fixed.js loaded - COMPLETE VERSION WITH ALL FIXES');
+console.log('✅ FamWealth Dashboard app.js loaded - ENHANCED VERSION WITH COMPLETE FEATURES');
 console.log('🔧 Ready for initialization');
