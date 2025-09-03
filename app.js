@@ -1678,6 +1678,24 @@ async function updateInvestmentData(investmentId, investmentData) {
         investments[investmentIndex] = { ...investments[investmentIndex], ...investmentData };
     }
 }
+// Add this at the top of app.js, before any functions that call safeSet
+function safeSet(elementId, value) {
+  const el = document.getElementById(elementId);
+  if (!el) {
+    console.warn(`safeSet: element "${elementId}" not found`);
+    return;
+  }
+  if (el.type === 'checkbox') {
+    el.checked = Boolean(value);
+  } else if (el.type === 'date' && value) {
+    const d = new Date(value);
+    el.value = isNaN(d) ? '' : d.toISOString().split('T')[0];
+  } else if (el.type === 'number' && (value !== null && value !== undefined)) {
+    el.value = Number(value);
+  } else {
+    el.value = value || '';
+  }
+}
 
 // ENHANCED: editInvestment with additional fields
   function editInvestment(investmentId) {
