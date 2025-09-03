@@ -1415,39 +1415,139 @@
                     </div>
 
                     <!-- Insurance Fields -->
-                    <div class="insurance-fields conditional-fields">
-                        <h4>Insurance Policy Details</h4>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-sum-insured" class="form-label">Sum Insured (₹)</label>
-                                <input type="number" id="insurance-sum-insured" class="form-input" step="0.01" placeholder="Coverage amount" />
-                            </div>
-                            <div class="form-group">
-                                <label for="insurance-maturity-amount" class="form-label">Maturity Amount (₹)</label>
-                                <input type="number" id="insurance-maturity-amount" class="form-input" step="0.01" placeholder="Maturity value" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-premium" class="form-label">Premium Amount (₹)</label>
-                                <input type="number" id="insurance-premium" class="form-input" step="0.01" placeholder="Annual/Monthly premium" />
-                            </div>
-                            <div class="form-group">
-                                <label for="insurance-start-date" class="form-label">Start Date</label>
-                                <input type="date" id="insurance-start-date" class="form-input" />
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="insurance-maturity-date" class="form-label">Maturity Date</label>
-                                <input type="date" id="insurance-maturity-date" class="form-input" />
-                            </div>
-                            <div class="form-group">
-                                <label for="insurance-next-premium" class="form-label">Next Premium Due</label>
-                                <input type="date" id="insurance-next-premium" class="form-input" />
-                            </div>
-                        </div>
-                    </div>
+                   <!-- Insurance Fields -->
+<div class="insurance-fields conditional-fields">
+    <h4>🛡️ Insurance Policy Details</h4>
+    
+    <!-- Row 1: Policy Name and Number -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-policy-name" class="form-label">
+                <span>🏷️</span> Policy Name *
+            </label>
+            <input type="text" id="ins-policy-name" class="form-input" placeholder="Enter policy name" required />
+        </div>
+        <div class="form-group">
+            <label for="ins-policy-number" class="form-label">
+                <span>🔢</span> Policy Number
+            </label>
+            <input type="text" id="ins-policy-number" class="form-input" placeholder="Enter policy number" />
+        </div>
+    </div>
+    
+    <!-- Row 2: Company and Type -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-company" class="form-label">
+                <span>🏢</span> Insurance Company *
+            </label>
+            <input type="text" id="ins-company" class="form-input" placeholder="Enter company name" required />
+        </div>
+        <div class="form-group">
+            <label for="ins-type" class="form-label">
+                <span>📂</span> Policy Type *
+            </label>
+            <select id="ins-type" class="form-select" required>
+                <option value="">Select Type</option>
+                <option value="Term Life">Term Life</option>
+                <option value="Endowment">Endowment</option>
+                <option value="ULIP">ULIP</option>
+                <option value="General Insurance">Health Insurance</option>
+                <option value="Whole Life">Motor Insurance</option>
+                <option value="Child Policy">Motor Insurance</option>
+                <option value="Money Back Policy">Motor Insurance</option>
+                <option value="Retirement Policy">Motor Insurance</option>
+                <option value="Govt Sponsored Policy">Motor Insurance</option>
+                <option value="Group/Corporate Policy">Motor Insurance</option>
+                <option value="Others">Others</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Row 3: Sum Assured and Premium -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-sum-assured" class="form-label">
+                <span>💰</span> Sum Assured (₹) *
+            </label>
+            <input type="number" id="ins-sum-assured" class="form-input" step="0.01" placeholder="Coverage amount" required />
+        </div>
+        <div class="form-group">
+            <label for="ins-premium-amount" class="form-label">
+                <span>💳</span> Premium Amount (₹) *
+            </label>
+            <input type="number" id="ins-premium-amount" class="form-input" step="0.01" placeholder="Premium amount" required />
+        </div>
+    </div>
+    
+    <!-- Row 4: Frequency and Dates -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-premium-frequency" class="form-label">
+                <span>⏱️</span> Premium Frequency *
+            </label>
+            <select id="ins-premium-frequency" class="form-select" required>
+                <option value="Yearly">Yearly</option>
+                <option value="Half Yearly">Half Yearly</option>
+                <option value="Quarterly">Quarterly</option>
+                <option value="Monthly">Monthly</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="ins-start-date" class="form-label">
+                <span>📅</span> Start Date *
+            </label>
+            <input type="date" id="ins-start-date" class="form-input" required />
+        </div>
+    </div>
+    
+    <!-- Row 5: Maturity and Next Premium -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-maturity-date" class="form-label">
+                <span>📆</span> Maturity Date
+            </label>
+            <input type="date" id="ins-maturity-date" class="form-input" />
+        </div>
+        <div class="form-group">
+            <label for="ins-next-premium-date" class="form-label">
+                <span>⏳</span> Next Premium Due
+            </label>
+            <input type="date" id="ins-next-premium-date" class="form-input" />
+        </div>
+    </div>
+    
+    <!-- Row 6: Nominee and Status -->
+    <div class="form-row">
+        <div class="form-group">
+            <label for="ins-nominee" class="form-label">
+                <span>👥</span> Nominee
+            </label>
+            <input type="text" id="ins-nominee" class="form-input" placeholder="Nominee name" />
+        </div>
+        <div class="form-group">
+            <label for="ins-policy-status" class="form-label">
+                <span>⚡</span> Policy Status
+            </label>
+            <select id="ins-policy-status" class="form-select">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Matured">Matured</option>
+                <option value="Lapsed">Lapsed</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Row 7: Comments -->
+    <div class="form-row">
+        <div class="form-group full-width">
+            <label for="ins-comments" class="form-label">
+                <span>📝</span> Comments
+            </label>
+            <textarea id="ins-comments" class="form-input" rows="3" placeholder="Additional notes"></textarea>
+        </div>
+    </div>
+</div>
 
                     <!-- Bank Balance Fields -->
                     <div class="bank-balance-fields conditional-fields">
