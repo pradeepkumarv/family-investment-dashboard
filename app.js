@@ -196,6 +196,7 @@ function loadDemoData() {
     renderAccounts();
     renderReminders();
     updateLastUpdated();
+    
 }
 
 function showDashboard() {
@@ -621,6 +622,8 @@ function renderInvestmentTabContent(type) {
         'fixedDeposits': 'Fixed Deposits',
         'insurance': 'Insurance',
         'bankBalances': 'Bank Balances',
+        'gold': 'Gold',           
+        'immovable': 'Immovable Assets', 
         'others': 'Others'
     };
 
@@ -1491,7 +1494,6 @@ function hideAllConditionalFields() {
     document.querySelector('.insurance-fields').style.display = 'none';
     document.querySelector('.bank-balance-fields').style.display = 'none';
 }
-
 function updateInvestmentForm() {
     const investmentType = document.getElementById('investment-type').value;
     
@@ -1503,10 +1505,17 @@ function updateInvestmentForm() {
         document.querySelector('.insurance-fields').style.display = 'block';
     } else if (investmentType === 'bankBalances') {
         document.querySelector('.bank-balance-fields').style.display = 'block';
-    }  else if (investmentType === 'gold') {
+    } else if (investmentType === 'gold') {
         document.querySelector('.gold-fields').style.display = 'block';
+        // Fetch live gold rate whenever gold is selected
+        fetchGoldRate();
+    } else if (investmentType === 'immovable') {
+        document.querySelector('.immovable-fields').style.display = 'block';
+        // Calculate total value if quantity and rate already have values
+        updatePropertyValue();
     }
 }
+
 
 // ENHANCED: saveInvestment with additional fields for FD, Insurance, and Bank Balance
 async function saveInvestment() {
