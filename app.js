@@ -432,6 +432,96 @@ function calculateDaysDifference(date1, date2) {
     const secondDate = new Date(date2);
     return Math.round((secondDate - firstDate) / oneDay);
 }
+// ===== AUTOMATIC REMINDER CREATION =====
+async function createAutomaticReminders() {
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    console.log('🔔 Creating automatic reminders...');
+    
+    // Clear existing automatic reminders to avoid duplicates
+    reminders = reminders.filter(reminder => !reminder.auto_generated);
+    
+    let newReminders = [];
+    
+    // 1. Fixed Deposit Maturity Reminders
+    investments.filter(inv => inv.investment_type === 'fixedDeposits' && inv.fd_maturity_date).forEach(fd => {
+        const maturityDate = new Date(fd.fd_maturity_date);
+        const reminderDate = new Date(maturityDate.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 days before
+        
+        // Only create reminder if maturity is in the future and reminder date is within next 6 months
+        if (maturityDate > today && reminderDate <= thirtyDaysFromNow) {
+            const member = familyMembers.find(m => m.id === fd.member_id);
+            newReminders.push({
+                id: generateId(),
+                member_id: fd.member_id,
+                title: `FD Maturity: ${fd.symbol_or_name || 'Fixed Deposit'} (${member ? member.name : 'Unknown'})`,
+                description: `Fixed Deposit of ₹${formatNumber(fd.invested_amount)} matures on ${formatDate(maturityDate)}`,
+                date: reminderDate.toISOString().split('T')[0],
+                type: 'fd_maturity',
+                investment_id: fd.id,
+                auto_generated: true,
+                created_at: new Date().toISOString()
+            });
+        }
+    });
+    
+    // 2. Insurance Premium Due Reminders
+    investments.filter(inv => inv.investment_type === 'insurance' && inv.next_premium_date).forEach(insurance => {
+        const premiumDate = new Date(insurance.next_premium_date);
+        const reminderDate = new Date(premiumDate.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 days before
+        
+        // Only create reminder if premium date is in the future and reminder date is within next 6 months
+        if (premiumDate > today && reminderDate <= thirtyDaysFromNow) {
+            const member = familyMembers.find(m => m.id === insurance.member_id);
+            newReminders.push({
+                id: generateId(),
+                member_id: insurance.member_id,
+                title: `Insurance Premium Due: ${insurance.policy_name || insurance.symbol_or_name} (${member ? member.name : 'Unknown'})`,
+                description: `Premium of ₹${formatNumber(insurance.premium_amount)} due on ${formatDate(premiumDate)}`,
+                date: reminderDate.toISOString().split('T')[0],
+                type: 'insurance_premium',
+                investment_id: insurance.id,
+                auto_generated: true,
+                created_at: new Date().toISOString()
+            });
+        }
+    });
+    
+    // Add new reminders to the array
+    reminders.push(...newReminders);
+    
+    // Save to database if using Supabase
+    if (newReminders.length > 0) {
+        await saveRemindersToDatabase(newReminders);
+        console.log(`✅ Created ${newReminders.length} automatic reminders`);
+    }
+    
+    // Re-render reminders
+    renderReminders();
+}
+
+async function saveRemindersToDatabase(newReminders) {
+    const authType = localStorage.getItem('famwealth_auth_type');
+    
+    if (authType === 'demo' || !supabase) {
+        // Demo mode - already added to local array
+        return;
+    }
+    
+    try {
+        // Supabase mode - save to database
+        const { error } = await supabase
+            .from('reminders')
+            .insert(newReminders);
+            
+        if (error) {
+            console.error('Error saving reminders:', error);
+        }
+    } catch (error) {
+        console.error('Error saving reminders to database:', error);
+    }
+}
 
 // ===== CALCULATION FUNCTIONS =====
 function calculateMemberAssets(memberId) {
@@ -806,21 +896,77 @@ function renderAccounts() {
         `;
     }).join('');
 }
-
 function renderReminders() {
-    // This function can be expanded to render reminders in a dedicated section
     const today = new Date();
-    const urgentReminders = reminders.filter(reminder => {
+    const upcomingReminders = reminders.filter(reminder => {
         const reminderDate = new Date(reminder.date);
         const daysDiff = calculateDaysDifference(today, reminderDate);
-        return daysDiff >= 0 && daysDiff <= 7;
-    });
+        return daysDiff >= 0 && daysDiff <= 30; // Show reminders for next 30 days
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    console.log(`${urgentReminders.length} urgent reminders found`);
+    console.log(`${upcomingReminders.length} upcoming reminders found`);
     
     // Update reminders count in stats
     renderStatsOverview();
+    
+    // Render reminders section if it exists
+    const remindersSection = document.getElementById('reminders-list');
+    if (remindersSection) {
+        if (upcomingReminders.length === 0) {
+            remindersSection.innerHTML = `
+                <div class="empty-state">
+                    <div class="emoji">🔔</div>
+                    <p>No upcoming reminders</p>
+                    <p>Reminders will automatically appear 30 days before FD maturity and insurance premium due dates.</p>
+                </div>
+            `;
+        } else {
+            remindersSection.innerHTML = `
+                <div class="reminders-list">
+                    ${upcomingReminders.map(reminder => {
+                        const reminderDate = new Date(reminder.date);
+                        const daysDiff = calculateDaysDifference(today, reminderDate);
+                        const member = familyMembers.find(m => m.id === reminder.member_id);
+                        
+                        let urgencyClass = 'reminder-normal';
+                        let urgencyText = `${daysDiff} days`;
+                        
+                        if (daysDiff <= 7) {
+                            urgencyClass = 'reminder-urgent';
+                            urgencyText = daysDiff === 0 ? 'Today' : `${daysDiff} days`;
+                        } else if (daysDiff <= 15) {
+                            urgencyClass = 'reminder-warning';
+                        }
+                        
+                        const typeIcon = reminder.type === 'fd_maturity' ? '💰' : 
+                                       reminder.type === 'insurance_premium' ? '🛡️' : '📋';
+                        
+                        return `
+                            <div class="reminder-card ${urgencyClass}">
+                                <div class="reminder-icon">${typeIcon}</div>
+                                <div class="reminder-content">
+                                    <h4 class="reminder-title">${reminder.title}</h4>
+                                    <p class="reminder-description">${reminder.description || ''}</p>
+                                    <div class="reminder-meta">
+                                        <span class="reminder-date">📅 ${formatDate(reminderDate)}</span>
+                                        <span class="reminder-urgency">${urgencyText}</span>
+                                        ${reminder.auto_generated ? '<span class="auto-tag">Auto</span>' : ''}
+                                    </div>
+                                </div>
+                                ${!reminder.auto_generated ? `
+                                    <div class="reminder-actions">
+                                        <button onclick="deleteReminder('${reminder.id}')" class="btn btn-sm btn-delete">✕</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+    }
 }
+
 
 // ===== ENHANCED MEMBER DETAILS FUNCTIONS =====
 function showMemberDetails(memberId) {
