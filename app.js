@@ -1875,21 +1875,24 @@ function safeSet(elementId, value) {
 
 async function fetchGoldRate() {
   try {
-    // GoldAPI.io - free tier allows 100 requests/month
     const res = await fetch('https://www.goldapi.io/api/XAU/INR', {
       headers: {
-        'x-access-token': 'goldapi-8dupsmf59jqzx-io', // Get free key from goldapi.io
+        'x-access-token': 'goldapi-8dupsmf59jqzx-io',
         'Content-Type': 'application/json'
       }
     });
     const data = await res.json();
-    const ratePerGram = data.price_gram_24k; // 24k gold per gram in INR
-    document.getElementById('gold-rate').value = ratePerGram.toFixed(2);
-    console.log('✅ Gold rate fetched:', ratePerGram);
+    // data.price_gram_24k is price per gram for 24 K
+    const rate24k = data.price_gram_24k;
+    // Convert to 22 K rate
+    const rate22k = rate24k * (22 / 24);
+    document.getElementById('gold-rate').value = rate22k.toFixed(2);
+    console.log('✅ 22 K Gold rate fetched:', rate22k);
   } catch (e) {
     console.error('Failed to fetch gold rate:', e);
-    // Fallback to manual rate
-    setFallbackGoldRate();
+    // Fallback
+    document.getElementById('gold-rate').value = '6300.00'; // example fallback
+    showMessage('Using fallback gold rate.', 'warning');
   }
 }
 
