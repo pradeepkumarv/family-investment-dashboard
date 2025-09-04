@@ -1674,117 +1674,98 @@ async function saveInvestment() {
     const type = document.getElementById('investment-type').value;
     const name = document.getElementById('investment-name').value.trim();
     const amount = parseFloat(document.getElementById('investment-amount').value);
-    const currentValue = parseFloat(document.getElementById('investment-current-value').value) || amount;
+    let currentValueInput = parseFloat(document.getElementById('investment-current-value').value) || 0;
     const platform = document.getElementById('investment-platform').value.trim() || 'Not Specified';
 
+    // Basic validation
     if (!memberId || !type || !name || !amount) {
         showMessage('Please fill in all required fields.', 'error');
         return;
     }
-
     if (amount <= 0) {
         showMessage('Invested amount must be greater than 0.', 'error');
         return;
     }
 
     try {
-        // SHARED DATA - Removed user_id to make investments shared
+        // 1) Override for Insurance: use Sum Assured
+        if (type === 'insurance') {
+            const sumAssured = parseFloat(document.getElementById('ins-sum-assured').value) || 0;
+            currentValueInput = sumAssured;
+        }
+
+        // 2) Override for Gold: grams × rate
+        if (type === 'gold') {
+            const grams = parseFloat(document.getElementById('gold-quantity').value) || 0;
+            const rate = parseFloat(document.getElementById('gold-rate').value) || 0;
+            currentValueInput = grams * rate;
+        }
+
+        // 3) Fallback to invested amount if currentValueInput is zero
+        const currentValue = currentValueInput > 0 ? currentValueInput : amount;
+
+        // 4) Build base investmentData
         const investmentData = {
-            member_id: memberId,
+            member_id:       memberId,
             investment_type: type,
-            symbol_or_name: name,
+            symbol_or_name:  name,
             invested_amount: amount,
-            current_value: currentValue,
+            current_value:   currentValue,
             broker_platform: platform,
-            created_at: new Date().toISOString()
+            created_at:      new Date().toISOString()
         };
 
-    
-// Enhanced Fixed Deposit fields - WITH COMMENTS
-if (type === 'fixedDeposits') {
-    investmentData.fd_invested_date = document.getElementById('fd-start-date')?.value || null;
-    investmentData.fd_bank_name = document.getElementById('fd-bank-name')?.value || null;
-    investmentData.fd_interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
-    investmentData.fd_interest_payout = document.getElementById('fd-interest-payout')?.value || null;
-    investmentData.fd_start_date = document.getElementById('fd-start-date')?.value || null;
-    investmentData.fd_maturity_date = document.getElementById('fd-maturity-date')?.value || null;
-    investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
-    investmentData.fd_nominee = document.getElementById('fd-nominee')?.value || null;
-    investmentData.fd_comments = document.getElementById('fd-comments')?.value || null;  // ✅ COMMENTS ADDED
-    
-    // Also populate standard fields for fixed_deposits table
-    investmentData.bank_name = document.getElementById('fd-bank-name')?.value || null;
-    investmentData.interest_rate = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
-    investmentData.start_date = document.getElementById('fd-start-date')?.value || null;
-    investmentData.maturity_date = document.getElementById('fd-maturity-date')?.value || null;
-    investmentData.interest_payout = document.getElementById('fd-interest-payout')?.value || 'Yearly';
-    investmentData.account_number = document.getElementById('fd-account-number')?.value || null;
-    investmentData.nominee = document.getElementById('fd-nominee')?.value || null;
-    investmentData.comments = document.getElementById('fd-comments')?.value || null;  // ✅ COMMENTS ADDED
-    
-    console.log('📊 Added enhanced FD fields to investment data');
-}
+        // 5) Append type-specific fields
 
- 
-  // Enhanced Insurance fields - UPDATED to match old form IDs
-if (type === 'insurance') {
-    // Get all insurance field values using correct IDs
-    const policyName = document.getElementById('ins-policy-name')?.value?.trim();
-    const policyNumber = document.getElementById('ins-policy-number')?.value?.trim();
-    const company = document.getElementById('ins-company')?.value?.trim();
-    const insuranceType = document.getElementById('ins-type')?.value;
-    const sumAssured = parseFloat(document.getElementById('ins-sum-assured')?.value);
-    const premiumAmount = parseFloat(document.getElementById('ins-premium-amount')?.value);
-    
-    // Validation for required fields
-    if (!policyName || !company || !insuranceType || !sumAssured || !premiumAmount) {
-        showMessage('Please fill in all required insurance fields.', 'error');
-        return;
-    }
-    
-    // Store data with simple field names (compatible with database)
-    investmentData.policy_name = policyName;
-    investmentData.policy_number = policyNumber || null;
-    investmentData.company = company;
-    investmentData.insurance_type = insuranceType;
-    investmentData.sum_assured = sumAssured;
-    investmentData.premium_amount = premiumAmount;
-    investmentData.premium_frequency = document.getElementById('ins-premium-frequency')?.value || 'Yearly';
-    investmentData.start_date = document.getElementById('ins-start-date')?.value || null;
-    investmentData.maturity_date = document.getElementById('ins-maturity-date')?.value || null;
-    investmentData.next_premium_date = document.getElementById('ins-next-premium-date')?.value || null;
-    investmentData.nominee = document.getElementById('ins-nominee')?.value || null;
-    investmentData.policy_status = document.getElementById('ins-policy-status')?.value || 'Active';
-    investmentData.comments = document.getElementById('ins-comments')?.value || null;
-    
-    console.log('📊 Added Insurance fields:', investmentData);
-}
+        if (type === 'fixedDeposits') {
+            investmentData.fd_bank_name      = document.getElementById('fd-bank-name')?.value || null;
+            investmentData.fd_interest_rate  = parseFloat(document.getElementById('fd-interest-rate')?.value) || null;
+            investmentData.fd_interest_payout= document.getElementById('fd-interest-payout')?.value || null;
+            investmentData.fd_start_date     = document.getElementById('fd-start-date')?.value || null;
+            investmentData.fd_maturity_date  = document.getElementById('fd-maturity-date')?.value || null;
+            investmentData.fd_account_number = document.getElementById('fd-account-number')?.value || null;
+            investmentData.fd_nominee        = document.getElementById('fd-nominee')?.value || null;
+            investmentData.fd_comments       = document.getElementById('fd-comments')?.value || null;
+        }
 
-        
- // Bank Balance fields
- if (type === 'bankBalances') {
-     investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
-     investmentData.bank_as_of_date = document.getElementById('bank-as-of-date')?.value || null;
-     investmentData.bank_account_type = document.getElementById('bank-account-type')?.value || null;
-     
-     console.log('💰 Added Bank Balance fields to investment data');
- }
+        if (type === 'insurance') {
+            investmentData.policy_name       = document.getElementById('ins-policy-name')?.value?.trim() || null;
+            investmentData.policy_number     = document.getElementById('ins-policy-number')?.value?.trim() || null;
+            investmentData.company           = document.getElementById('ins-company')?.value?.trim() || null;
+            investmentData.insurance_type    = document.getElementById('ins-type')?.value || null;
+            investmentData.sum_assured       = parseFloat(document.getElementById('ins-sum-assured')?.value) || 0;
+            investmentData.premium_amount    = parseFloat(document.getElementById('ins-premium-amount')?.value) || null;
+            investmentData.premium_frequency = document.getElementById('ins-premium-frequency')?.value || null;
+            investmentData.start_date        = document.getElementById('ins-start-date')?.value || null;
+            investmentData.maturity_date     = document.getElementById('ins-maturity-date')?.value || null;
+            investmentData.next_premium_date = document.getElementById('ins-next-premium-date')?.value || null;
+            investmentData.nominee           = document.getElementById('ins-nominee')?.value || null;
+            investmentData.policy_status     = document.getElementById('ins-policy-status')?.value || null;
+            investmentData.comments          = document.getElementById('ins-comments')?.value || null;
+        }
 
-if (type === 'gold') {
-  investmentData.gold_quantity = parseFloat(document.getElementById('gold-quantity')?.value) || 0;
-  investmentData.gold_rate = parseFloat(document.getElementById('gold-rate')?.value) || 0;
-  investmentData.comments = document.getElementById('gold-comments')?.value || null;
-}
+        if (type === 'bankBalances') {
+            investmentData.bank_current_balance = parseFloat(document.getElementById('bank-current-balance')?.value) || null;
+            investmentData.bank_as_of_date      = document.getElementById('bank-as-of-date')?.value || null;
+            investmentData.bank_account_type    = document.getElementById('bank-account-type')?.value || null;
+        }
 
-if (type === 'immovable') {
-  investmentData.property_name = document.getElementById('property-name')?.value || null;
-  investmentData.property_sqft = parseFloat(document.getElementById('property-sqft')?.value) || 0;
-  investmentData.cost_per_sqft = parseFloat(document.getElementById('cost-per-sqft')?.value) || 0;
-  investmentData.total_value = parseFloat(document.getElementById('property-total-value')?.value) || 0;
-  investmentData.comments = document.getElementById('property-comments')?.value || null;
-}
+        if (type === 'gold') {
+            investmentData.gold_quantity    = parseFloat(document.getElementById('gold-quantity')?.value) || 0;
+            investmentData.gold_rate        = parseFloat(document.getElementById('gold-rate')?.value)     || 0;
+            investmentData.comments         = document.getElementById('gold-comments')?.value || null;
+        }
 
-if (editingInvestmentId) {
+        if (type === 'immovable') {
+            investmentData.property_name     = document.getElementById('property-name')?.value || null;
+            investmentData.property_sqft     = parseFloat(document.getElementById('property-sqft')?.value) || 0;
+            investmentData.cost_per_sqft     = parseFloat(document.getElementById('cost-per-sqft')?.value)  || 0;
+            investmentData.total_value       = parseFloat(document.getElementById('property-total-value')?.value) || 0;
+            investmentData.comments          = document.getElementById('property-comments')?.value || null;
+        }
+
+        // 6) Persist data
+        if (editingInvestmentId) {
             await updateInvestmentData(editingInvestmentId, investmentData);
             showMessage('Investment updated successfully! ✅', 'success');
         } else {
@@ -1795,7 +1776,7 @@ if (editingInvestmentId) {
         renderInvestmentTabContent(type);
         renderStatsOverview();
         closeModal('investment-modal');
-        
+
     } catch (error) {
         console.error('❌ Investment save error:', error);
         showMessage(`Error: ${error.message}`, 'error');
