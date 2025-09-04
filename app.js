@@ -1490,10 +1490,13 @@ function populateMemberOptions(selectId) {
 }
 
 function hideAllConditionalFields() {
-    document.querySelector('.fixed-deposit-fields').style.display = 'none';
-    document.querySelector('.insurance-fields').style.display = 'none';
-    document.querySelector('.bank-balance-fields').style.display = 'none';
+    // Hide all investment-type-fields and conditional-fields
+    document.querySelectorAll('.conditional-fields, .investment-type-fields').forEach(field => {
+        field.style.display = 'none';
+    });
 }
+
+
 function updateInvestmentForm() {
     const investmentType = document.getElementById('investment-type').value;
     
