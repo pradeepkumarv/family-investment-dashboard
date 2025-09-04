@@ -368,6 +368,7 @@ async function loadDashboardData() {
             console.error('Error loading dashboard data:', error);
             showMessage('Error loading dashboard data.', 'error');
             await createAutomaticReminders();
+            renderReminders();
             setLoadingState(false);
             }
     }  
@@ -902,7 +903,7 @@ function renderReminders() {
     const upcomingReminders = reminders.filter(reminder => {
         const reminderDate = new Date(reminder.date);
         const daysDiff = calculateDaysDifference(today, reminderDate);
-        return daysDiff >= 0 && daysDiff <= 30; // Show reminders for next 30 days
+        return daysDiff >= 0 && daysDiff <= 60; // Show reminders for next 30 days
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     console.log(`${upcomingReminders.length} upcoming reminders found`);
@@ -1874,17 +1875,21 @@ function safeSet(elementId, value) {
 
 async function fetchGoldRate() {
   try {
-    const res = await fetch('https://api.metals.live/v1/spot/gold');
-    const data = await res.json(); // example format: [{gold: "6792.50"}]
-    // Find Bangalore rate if API supports city; otherwise use gold[0]
-    const rate = parseFloat(data[0].gold) || 0;
-    document.getElementById('gold-rate').value = rate.toFixed(2);
+    // BusinessLine JSON endpoint for Bangalore gold price
+    const res = await fetch(
+      'https://www.thehindubusinessline.com/meta/goldrate?city=Bangalore'
+    );
+    if (!res.ok) throw new Error('Network response was not ok');
+    const data = await res.json(); 
+    // data[0].price contains the rate per 10 grams
+    const ratePer10g = parseFloat(data[0].price.replace(/,/g, ''));
+    // Convert to per-gram rate
+    const ratePerGram = ratePer10g / 10;
+    document.getElementById('gold-rate').value = ratePerGram.toFixed(2);
   } catch (e) {
-    console.error('Failed to fetch gold rate:', e);
+    console.error('Failed to fetch Bangalore gold rate:', e);
   }
 }
-
-// Call fetchGoldRate() inside updateInvestmentForm when investmentType === 'gold'
 
 
 function updatePropertyValue() {
