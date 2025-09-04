@@ -903,7 +903,7 @@ function renderReminders() {
     const upcomingReminders = reminders.filter(reminder => {
         const reminderDate = new Date(reminder.date);
         const daysDiff = calculateDaysDifference(today, reminderDate);
-        return daysDiff >= 0 && daysDiff <= 60; // Show reminders for next 30 days
+        return daysDiff >= 0; // Show reminders for next 30 days
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     console.log(`${upcomingReminders.length} upcoming reminders found`);
