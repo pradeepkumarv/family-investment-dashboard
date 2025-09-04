@@ -2030,50 +2030,43 @@ function safeSetElementValue(elementId, value = '') {
 }
 
 async function deleteInvestment(investmentId) {
-    if (!confirm('Are you sure you want to delete this investment?')) {
-        return;
+  if (!confirm('Delete this investment and its reminders?')) return;
+
+  try {
+    // 1. Delete any reminders referencing this investment
+    const { error: remError } = await supabase
+      .from('reminders')
+      .delete()
+      .eq('investment_id', investmentId);
+    if (remError) {
+      console.error('Error deleting reminders:', remError);
+      showMessage(`Failed to delete reminders: ${remError.message}`, 'error');
+      return;
     }
 
-    try {
-        const authType = localStorage.getItem('famwealth_auth_type');
-        
-        if (authType === 'demo' || !supabase) {
-            // Demo mode - delete from local data
-            investments = investments.filter(inv => inv.id !== investmentId);
-        } else {
-            // Supabase mode
-            const { error } = await supabase
-                .from('investments')
-                .delete()
-                .eq('id', investmentId);
-
-            if (error) {
-                throw error;
-            }
-
-            investments = investments.filter(inv => inv.id !== investmentId);
-        }
-
-        // Re-render current tab
-        const activeTab = document.querySelector('#investment-tab-content').parentElement.querySelector('.tab.active');
-        if (activeTab) {
-            const typeMap = {
-                'Equity': 'equity',
-                'Mutual Funds': 'mutualFunds',
-                'Fixed Deposits': 'fixedDeposits',
-                'Insurance': 'insurance',
-                'Bank Balances': 'bankBalances',
-                'Others': 'others'
-            };
-            renderInvestmentTabContent(typeMap[activeTab.textContent.trim()]);
-        }
-        
-        renderStatsOverview();
-        showMessage('Investment deleted successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting investment:', error);
-        showMessage('Error deleting investment.', 'error');
+    // 2. Now delete the investment itself
+    const { error: invError } = await supabase
+      .from('investments')
+      .delete()
+      .eq('id', investmentId);
+    if (invError) {
+      console.error('Error deleting investment:', invError);
+      showMessage(`Failed to delete investment: ${invError.message}`, 'error');
+      return;
     }
+
+    // 3. Update local arrays and re-render
+    reminders = reminders.filter(r => r.investment_id !== investmentId);
+    investments = investments.filter(inv => inv.id !== investmentId);
+    renderInvestmentTabContent(/* current tab */);
+    renderReminders();
+    renderStatsOverview();
+    showMessage('Investment and its reminders deleted successfully!', 'success');
+
+  } catch (error) {
+    console.error('Unexpected deletion error:', error);
+    showMessage(`Unexpected error: ${error.message}`, 'error');
+  }
 }
 
 // ===== LIABILITY FUNCTIONS =====
