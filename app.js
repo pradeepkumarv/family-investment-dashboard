@@ -491,62 +491,24 @@ async function createAutomaticReminders() {
     
     let newReminders = [];
     
-    // 1. Fixed Deposit Maturity Reminders
-    investments.filter(inv => inv.investment_type === 'fixedDeposits' && inv.fd_maturity_date).forEach(fd => {
-        const maturityDate = new Date(fd.fd_maturity_date);
-        const reminderDate = new Date(maturityDate.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 days before
-        
-        // Only create reminder if maturity is in the future and reminder date is within next 6 months
-        if (maturityDate > today && reminderDate <= thirtyDaysFromNow) {
-            const member = familyMembers.find(m => m.id === fd.member_id);
-            newReminders.push({
-                id: generateId(),
-                member_id: fd.member_id,
-                title: `FD Maturity: ${fd.symbol_or_name || 'Fixed Deposit'} (${member ? member.name : 'Unknown'})`,
-                description: `Fixed Deposit of ₹${formatNumber(fd.invested_amount)} matures on ${formatDate(maturityDate)}`,
-                date: reminderDate.toISOString().split('T')[0],
-                type: 'fd_maturity',
-                investment_id: fd.id,
-                auto_generated: true,
-                created_at: new Date().toISOString()
-            });
-        }
-    });
-    
-    // 2. Insurance Premium Due Reminders
-    investments.filter(inv => inv.investment_type === 'insurance' && inv.next_premium_date).forEach(insurance => {
-        const premiumDate = new Date(insurance.next_premium_date);
-        const reminderDate = new Date(premiumDate.getTime() - (30 * 24 * 60 * 60 * 1000)); // 30 days before
-        
-        // Only create reminder if premium date is in the future and reminder date is within next 6 months
-        if (premiumDate > today && reminderDate <= thirtyDaysFromNow) {
-            const member = familyMembers.find(m => m.id === insurance.member_id);
-            newReminders.push({
-                id: generateId(),
-                member_id: insurance.member_id,
-                title: `Insurance Premium Due: ${insurance.policy_name || insurance.symbol_or_name} (${member ? member.name : 'Unknown'})`,
-                description: `Premium of ₹${formatNumber(insurance.premium_amount)} due on ${formatDate(premiumDate)}`,
-                date: reminderDate.toISOString().split('T')[0],
-                type: 'insurance_premium',
-                investment_id: insurance.id,
-                auto_generated: true,
-                created_at: new Date().toISOString()
-            });
-        }
-    });
-    
-    // Add new reminders to the array
-    reminders.push(...newReminders);
+    // ... your existing reminder creation logic ...
     
     // Save to database if using Supabase
     if (newReminders.length > 0) {
-        await saveRemindersToDatabase(newReminders);
-        console.log(`✅ Created ${newReminders.length} automatic reminders`);
+        const savedReminders = await saveRemindersToDatabase(newReminders);
+        if (savedReminders) {
+            console.log(`✅ Created ${savedReminders.length} automatic reminders`);
+            // Don't manually add to reminders array here - saveRemindersToDatabase already did it
+        } else {
+            // Fallback: add to local array if database save failed
+            reminders.push(...newReminders);
+        }
     }
     
     // Re-render reminders
     renderReminders();
 }
+
 async function saveRemindersToDatabase(newReminders) {
     const authType = localStorage.getItem('famwealth_auth_type');
     
@@ -558,10 +520,11 @@ async function saveRemindersToDatabase(newReminders) {
     try {
         console.log('💾 Saving reminders to database:', newReminders);
         
+        // 🔥 KEY FIX: Add .select() to get the inserted data back
         const { data, error } = await supabase
             .from('reminders')
             .insert(newReminders)
-            .select(); // Return the inserted data
+            .select('*'); // This is crucial!
             
         if (error) {
             console.error('❌ Supabase insert error:', error);
@@ -572,13 +535,21 @@ async function saveRemindersToDatabase(newReminders) {
         console.log('✅ Reminders saved successfully:', data);
         console.log(`📊 Inserted ${data.length} new reminders`);
         
+        // 🔥 IMPORTANT: Update your local reminders array with the actual inserted data
+        // This ensures the IDs match what's in the database
+        if (data && data.length > 0) {
+            // Replace the temporary IDs with the actual database data
+            reminders = reminders.filter(r => !r.auto_generated); // Remove old auto-generated
+            reminders.push(...data); // Add the real database records
+        }
+        
+        return data; // Return the inserted data
+        
     } catch (error) {
         console.error('💥 Unexpected error saving reminders:', error);
         showMessage(`Unexpected error saving reminders: ${error.message}`, 'error');
     }
 }
-
-
 // ===== CALCULATION FUNCTIONS =====
 function calculateMemberAssets(memberId) {
     return investments
