@@ -2030,44 +2030,49 @@ function safeSetElementValue(elementId, value = '') {
 }
 
 async function deleteInvestment(investmentId) {
-  if (!confirm('Delete this investment and its reminders?')) return;
+  if (!confirm('Delete this investment and its associated reminders?')) return;
 
   try {
-    // 1. Delete any reminders referencing this investment
+    // 1. Delete all reminders referencing this investment
     const { error: remError } = await supabase
       .from('reminders')
       .delete()
       .eq('investment_id', investmentId);
+
     if (remError) {
       console.error('Error deleting reminders:', remError);
       showMessage(`Failed to delete reminders: ${remError.message}`, 'error');
       return;
     }
+    console.log(`✅ Deleted reminders for investment ${investmentId}`);
 
-    // 2. Now delete the investment itself
+    // 2. Delete the investment
     const { error: invError } = await supabase
       .from('investments')
       .delete()
       .eq('id', investmentId);
+
     if (invError) {
       console.error('Error deleting investment:', invError);
       showMessage(`Failed to delete investment: ${invError.message}`, 'error');
       return;
     }
+    console.log(`✅ Deleted investment ${investmentId}`);
 
-    // 3. Update local arrays and re-render
+    // 3. Update local state and re-render UI
     reminders = reminders.filter(r => r.investment_id !== investmentId);
     investments = investments.filter(inv => inv.id !== investmentId);
-    renderInvestmentTabContent(/* current tab */);
+    renderInvestmentTabContent(/* current tab type */);
     renderReminders();
     renderStatsOverview();
     showMessage('Investment and its reminders deleted successfully!', 'success');
 
   } catch (error) {
-    console.error('Unexpected deletion error:', error);
+    console.error('Unexpected error during deletion:', error);
     showMessage(`Unexpected error: ${error.message}`, 'error');
   }
 }
+
 
 // ===== LIABILITY FUNCTIONS =====
 function openAddLiabilityModal() {
