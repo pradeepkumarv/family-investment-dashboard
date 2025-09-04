@@ -353,6 +353,7 @@ async function loadDashboardData() {
                 console.error('Error fetching reminders:', remindersError);
             }
             reminders = remindersData || [];
+             renderReminders();
 
             // Render all data
             renderFamilyMembers();
@@ -360,7 +361,7 @@ async function loadDashboardData() {
             renderInvestmentTabContent('equity');
             renderLiabilityTabContent('homeLoan');
             renderAccounts();
-            renderReminders();
+           
             updateLastUpdated();
             setLoadingState(false);
 
