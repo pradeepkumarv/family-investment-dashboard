@@ -383,7 +383,7 @@ async function loadDashboardData() {
             // STEP 6: Create automatic reminders if needed
             console.log('🔄 Creating automatic reminders...');
             await createAutomaticReminders();
-            
+            await refreshGoldInvestments();
             // STEP 7: Render all data
             console.log('🎨 Rendering UI components...');
             renderFamilyMembers();
@@ -1881,17 +1881,51 @@ async function fetchGoldRate() {
       }
     });
     const data = await res.json();
-    // data.price_gram_24k is price per gram for 24 K
-    const rate24k = data.price_gram_24k;
-    // Convert to 22 K rate
-    const rate22k = rate24k * (22 / 24);
+    const rate22k = data.price_gram_24k * (22 / 24);
     document.getElementById('gold-rate').value = rate22k.toFixed(2);
-    console.log('✅ 22 K Gold rate fetched:', rate22k);
+    console.log('✅ 22K Gold rate fetched:', rate22k);
+    return rate22k;
   } catch (e) {
-    console.error('Failed to fetch gold rate:', e);
-    // Fallback
-    document.getElementById('gold-rate').value = '6300.00'; // example fallback
+    console.error('❌ Failed to fetch gold rate:', e);
+    const fallback = 6300.00;
+    document.getElementById('gold-rate').value = fallback.toFixed(2);
     showMessage('Using fallback gold rate.', 'warning');
+    return fallback;
+  }
+}
+
+      
+// Fetch and update all gold investments with the latest rate
+async function refreshGoldInvestments() {
+  try {
+    // 1. Get the latest 22K gold rate
+    console.log('⏳ Refreshing gold rate for all gold investments…');
+    await fetchGoldRate(); // sets document.getElementById('gold-rate').value
+    const latestRate = parseFloat(document.getElementById('gold-rate').value);
+    if (isNaN(latestRate)) throw new Error('Invalid gold rate');
+
+    // 2. Update each gold investment locally and in the database
+    const goldInvs = investments.filter(inv => inv.investment_type === 'gold');
+    for (const inv of goldInvs) {
+      const newValue = inv.gold_quantity * latestRate;
+      inv.current_value = newValue;
+      inv.gold_rate = latestRate;
+
+      // Persist change to Supabase
+      const { error } = await supabase
+        .from('investments')
+        .update({ current_value: newValue, gold_rate: latestRate })
+        .eq('id', inv.id);
+
+      if (error) {
+        console.error(`❌ Failed to update gold inv ${inv.id}:`, error);
+      } else {
+        console.log(`✅ Updated gold inv ${inv.id} to ₹${newValue.toFixed(2)}`);
+      }
+    }
+  } catch (e) {
+    console.error('💥 Error refreshing gold investments:', e);
+    showMessage(`Gold refresh failed: ${e.message}`, 'error');
   }
 }
 
