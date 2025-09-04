@@ -899,76 +899,69 @@ function renderAccounts() {
     }).join('');
 }
 function renderReminders() {
-    const today = new Date();
-    const upcomingReminders = reminders.filter(reminder => {
-        const reminderDate = new Date(reminder.date);
-        const daysDiff = calculateDaysDifference(today, reminderDate);
-        return daysDiff >= 0; // Show reminders for next 30 days
-    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const today = new Date();
+  // Show reminders whose date is today or later
+  const upcomingReminders = reminders
+    .filter(rem => new Date(rem.date) >= today)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    console.log(`${upcomingReminders.length} upcoming reminders found`);
-    
-    // Update reminders count in stats
-    renderStatsOverview();
-    
-    // Render reminders section if it exists
-    const remindersSection = document.getElementById('reminders-list');
-    if (remindersSection) {
-        if (upcomingReminders.length === 0) {
-            remindersSection.innerHTML = `
-                <div class="empty-state">
-                    <div class="emoji">🔔</div>
-                    <p>No upcoming reminders</p>
-                    <p>Reminders will automatically appear 30 days before FD maturity and insurance premium due dates.</p>
-                </div>
-            `;
-        } else {
-            remindersSection.innerHTML = `
-                <div class="reminders-list">
-                    ${upcomingReminders.map(reminder => {
-                        const reminderDate = new Date(reminder.date);
-                        const daysDiff = calculateDaysDifference(today, reminderDate);
-                        const member = familyMembers.find(m => m.id === reminder.member_id);
-                        
-                        let urgencyClass = 'reminder-normal';
-                        let urgencyText = `${daysDiff} days`;
-                        
-                        if (daysDiff <= 7) {
-                            urgencyClass = 'reminder-urgent';
-                            urgencyText = daysDiff === 0 ? 'Today' : `${daysDiff} days`;
-                        } else if (daysDiff <= 15) {
-                            urgencyClass = 'reminder-warning';
-                        }
-                        
-                        const typeIcon = reminder.type === 'fd_maturity' ? '💰' : 
-                                       reminder.type === 'insurance_premium' ? '🛡️' : '📋';
-                        
-                        return `
-                            <div class="reminder-card ${urgencyClass}">
-                                <div class="reminder-icon">${typeIcon}</div>
-                                <div class="reminder-content">
-                                    <h4 class="reminder-title">${reminder.title}</h4>
-                                    <p class="reminder-description">${reminder.description || ''}</p>
-                                    <div class="reminder-meta">
-                                        <span class="reminder-date">📅 ${formatDate(reminderDate)}</span>
-                                        <span class="reminder-urgency">${urgencyText}</span>
-                                        ${reminder.auto_generated ? '<span class="auto-tag">Auto</span>' : ''}
-                                    </div>
-                                </div>
-                                ${!reminder.auto_generated ? `
-                                    <div class="reminder-actions">
-                                        <button onclick="deleteReminder('${reminder.id}')" class="btn btn-sm btn-delete">✕</button>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-    }
+  console.log(`${upcomingReminders.length} upcoming reminders found`);
+
+  renderStatsOverview();  
+
+  const remindersSection = document.getElementById('reminders-list');
+  if (!remindersSection) return;
+
+  if (upcomingReminders.length === 0) {
+    remindersSection.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🔔</div>
+        <p>No upcoming reminders</p>
+        <p>Reminders will automatically appear 30 days before FD maturity and insurance premium due dates.</p>
+      </div>
+    `;
+    return;
+  }
+
+  remindersSection.innerHTML = `
+    <div class="reminders-list">
+      ${upcomingReminders.map(rem => {
+        const date = new Date(rem.date);
+        const daysDiff = calculateDaysDifference(today, date);
+        const urgencyClass = daysDiff <= 7
+          ? 'reminder-urgent'
+          : daysDiff <= 15
+            ? 'reminder-warning'
+            : 'reminder-normal';
+        const urgencyText = daysDiff === 0 ? 'Today' : `${daysDiff} days`;
+
+        const icon =
+          rem.type === 'fd_maturity' ? '💰' :
+          rem.type === 'insurance_premium' ? '🛡️' :
+          '📋';
+
+        return `
+          <div class="reminder-card ${urgencyClass}">
+            <div class="reminder-icon">${icon}</div>
+            <div class="reminder-content">
+              <h4 class="reminder-title">${rem.title}</h4>
+              <p class="reminder-description">${rem.description || ''}</p>
+              <div class="reminder-meta">
+                <span class="reminder-date">📅 ${formatDate(date)}</span>
+                <span class="reminder-urgency">${urgencyText}</span>
+                ${rem.auto_generated ? '<span class="auto-tag">Auto</span>' : ''}
+              </div>
+            </div>
+            ${!rem.auto_generated ? `
+              <div class="reminder-actions">
+                <button onclick="deleteReminder('${rem.id}')" class="btn btn-sm btn-delete">✕</button>
+              </div>
+            ` : ''}
+          </div>`;
+      }).join('')}
+    </div>
+  `;
 }
-
 
 // ===== ENHANCED MEMBER DETAILS FUNCTIONS =====
 function showMemberDetails(memberId) {
