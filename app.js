@@ -1875,19 +1875,21 @@ function safeSet(elementId, value) {
 
 async function fetchGoldRate() {
   try {
-    // BusinessLine JSON endpoint for Bangalore gold price
-    const res = await fetch(
-      'https://www.thehindubusinessline.com/meta/goldrate?city=Bangalore'
-    );
-    if (!res.ok) throw new Error('Network response was not ok');
-    const data = await res.json(); 
-    // data[0].price contains the rate per 10 grams
-    const ratePer10g = parseFloat(data[0].price.replace(/,/g, ''));
-    // Convert to per-gram rate
-    const ratePerGram = ratePer10g / 10;
+    // GoldAPI.io - free tier allows 100 requests/month
+    const res = await fetch('https://www.goldapi.io/api/XAU/INR', {
+      headers: {
+        'x-access-token': 'goldapi-8dupsmf59jqzx-io', // Get free key from goldapi.io
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    const ratePerGram = data.price_gram_24k; // 24k gold per gram in INR
     document.getElementById('gold-rate').value = ratePerGram.toFixed(2);
+    console.log('✅ Gold rate fetched:', ratePerGram);
   } catch (e) {
-    console.error('Failed to fetch Bangalore gold rate:', e);
+    console.error('Failed to fetch gold rate:', e);
+    // Fallback to manual rate
+    setFallbackGoldRate();
   }
 }
 
