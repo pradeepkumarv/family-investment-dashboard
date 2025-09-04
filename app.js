@@ -267,35 +267,40 @@ async function loadDashboardData() {
         console.warn('No current user; cannot load data.');
         return;
     }
+    
     const authType = localStorage.getItem('famwealth_auth_type');
+    
     if (authType === 'demo' || !supabase) {
         console.log('📊 Loading demo data...');
         loadDemoData();
         return;
     }
+    
     if (authType === 'supabase' && supabase) {
         try {
             setLoadingState(true);
-
-            // SHARED DATA - NO user_id filtering
+            console.log('🚀 Starting data load from Supabase...');
             
-            // Load family members (SHARED - All users see same data)
+            // STEP 1: Load family members (SHARED - All users see same data)
+            console.log('📋 Loading family members...');
             const { data: membersData, error: membersError } = await supabase
                 .from('family_members')
                 .select('*')
                 .order('created_at', { ascending: true });
-
+                
             if (membersError) {
-                console.error('Error fetching family members:', membersError);
-                showMessage('Failed to load family members.', 'error');
+                console.error('❌ Error fetching family members:', membersError);
+                showMessage(`Failed to load family members: ${membersError.message}`, 'error');
                 setLoadingState(false);
                 return;
             }
-
+            
             familyMembers = membersData || [];
+            console.log(`✅ Loaded ${familyMembers.length} family members`);
             const memberIds = familyMembers.map(member => member.id);
-
-            // Load investments (SHARED - All users see same data)
+            
+            // STEP 2: Load investments (SHARED - All users see same data)
+            console.log('💰 Loading investments...');
             let investmentsData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -303,17 +308,20 @@ async function loadDashboardData() {
                     .select('*')
                     .in('member_id', memberIds)
                     .order('created_at', { ascending: false });
+                    
                 if (error) {
-                    console.error('Error fetching investments:', error);
-                    showMessage('Failed to load investments.', 'error');
+                    console.error('❌ Error fetching investments:', error);
+                    showMessage(`Failed to load investments: ${error.message}`, 'error');
                     setLoadingState(false);
                     return;
                 }
                 investmentsData = data || [];
             }
             investments = investmentsData;
-
-            // Load liabilities (SHARED - All users see same data)
+            console.log(`✅ Loaded ${investments.length} investments`);
+            
+            // STEP 3: Load liabilities (SHARED - All users see same data)
+            console.log('📉 Loading liabilities...');
             let liabilitiesData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -321,58 +329,94 @@ async function loadDashboardData() {
                     .select('*')
                     .in('member_id', memberIds)
                     .order('created_at', { ascending: false });
+                    
                 if (error) {
-                    console.error('Error fetching liabilities:', error);
-                    showMessage('Failed to load liabilities.', 'error');
+                    console.error('❌ Error fetching liabilities:', error);
+                    showMessage(`Failed to load liabilities: ${error.message}`, 'error');
                     setLoadingState(false);
                     return;
                 }
                 liabilitiesData = data || [];
             }
             liabilities = liabilitiesData;
-
-            // Load accounts (SHARED - All users see same data)
+            console.log(`✅ Loaded ${liabilities.length} liabilities`);
+            
+            // STEP 4: Load accounts (SHARED - All users see same data)
+            console.log('🏦 Loading accounts...');
             const { data: accountsData, error: accountsError } = await supabase
                 .from('accounts')
                 .select('*')
                 .order('created_at', { ascending: false });
+                
             if (accountsError) {
-                console.error('Error fetching accounts:', accountsError);
-                showMessage('Failed to load accounts.', 'error');
+                console.error('❌ Error fetching accounts:', accountsError);
+                showMessage(`Failed to load accounts: ${accountsError.message}`, 'error');
                 setLoadingState(false);
                 return;
             }
             accounts = accountsData || [];
-
-            // Load reminders (SHARED - All users see same data)
+            console.log(`✅ Loaded ${accounts.length} accounts`);
+            
+            // STEP 5: Load reminders (SHARED - All users see same data) - ENHANCED DEBUGGING
+            console.log('🔔 Loading reminders...');
             const { data: remindersData, error: remindersError } = await supabase
                 .from('reminders')
                 .select('*')
                 .order('date', { ascending: true });
+                
             if (remindersError) {
-                console.error('Error fetching reminders:', remindersError);
+                console.error('❌ Error fetching reminders:', remindersError);
+                showMessage(`Failed to load reminders: ${remindersError.message}`, 'error');
+                // Don't return here - continue with empty reminders array
+                reminders = [];
+            } else {
+                reminders = remindersData || [];
+                console.log(`✅ Loaded ${reminders.length} reminders from database`);
+                console.log('📋 Raw reminders data:', remindersData);
+                
+                // Debug: Show breakdown by type
+                const autoGenerated = reminders.filter(r => r.auto_generated).length;
+                const manual = reminders.filter(r => !r.auto_generated).length;
+                console.log(`📊 Reminders breakdown: ${autoGenerated} auto-generated, ${manual} manual`);
             }
-            reminders = remindersData || [];
-             renderReminders();
-
-            // Render all data
+            
+            // STEP 6: Create automatic reminders if needed
+            console.log('🔄 Creating automatic reminders...');
+            await createAutomaticReminders();
+            
+            // STEP 7: Render all data
+            console.log('🎨 Rendering UI components...');
             renderFamilyMembers();
             renderStatsOverview();
             renderInvestmentTabContent('equity');
             renderLiabilityTabContent('homeLoan');
             renderAccounts();
-           
-            updateLastUpdated();
-            setLoadingState(false);
-
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            showMessage('Error loading dashboard data.', 'error');
-            await createAutomaticReminders();
             renderReminders();
+            updateLastUpdated();
+            
             setLoadingState(false);
+            console.log('✅ Dashboard data loaded successfully!');
+            
+        } catch (error) {
+            console.error('💥 Critical error loading dashboard data:', error);
+            showMessage(`Critical error loading data: ${error.message}`, 'error');
+            setLoadingState(false);
+            
+            // Fallback: try to render what we have
+            try {
+                renderFamilyMembers();
+                renderStatsOverview();
+                renderInvestmentTabContent('equity');
+                renderLiabilityTabContent('homeLoan');
+                renderAccounts();
+                renderReminders();
+                updateLastUpdated();
+                console.log('🛠️ Rendered with fallback data');
+            } catch (renderError) {
+                console.error('💥 Even rendering failed:', renderError);
             }
-    }  
+        }
+    }
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -503,28 +547,37 @@ async function createAutomaticReminders() {
     // Re-render reminders
     renderReminders();
 }
-
 async function saveRemindersToDatabase(newReminders) {
     const authType = localStorage.getItem('famwealth_auth_type');
     
     if (authType === 'demo' || !supabase) {
-        // Demo mode - already added to local array
+        console.log('📝 Demo mode - reminders saved to local array only');
         return;
     }
     
     try {
-        // Supabase mode - save to database
-        const { error } = await supabase
+        console.log('💾 Saving reminders to database:', newReminders);
+        
+        const { data, error } = await supabase
             .from('reminders')
-            .insert(newReminders);
+            .insert(newReminders)
+            .select(); // Return the inserted data
             
         if (error) {
-            console.error('Error saving reminders:', error);
+            console.error('❌ Supabase insert error:', error);
+            showMessage(`Failed to save reminders: ${error.message}`, 'error');
+            return;
         }
+        
+        console.log('✅ Reminders saved successfully:', data);
+        console.log(`📊 Inserted ${data.length} new reminders`);
+        
     } catch (error) {
-        console.error('Error saving reminders to database:', error);
+        console.error('💥 Unexpected error saving reminders:', error);
+        showMessage(`Unexpected error saving reminders: ${error.message}`, 'error');
     }
 }
+
 
 // ===== CALCULATION FUNCTIONS =====
 function calculateMemberAssets(memberId) {
