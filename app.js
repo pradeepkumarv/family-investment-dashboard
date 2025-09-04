@@ -367,9 +367,9 @@ async function loadDashboardData() {
         } catch (error) {
             console.error('Error loading dashboard data:', error);
             showMessage('Error loading dashboard data.', 'error');
-            setLoadingState(false);
             await createAutomaticReminders();
-        }
+            setLoadingState(false);
+            }
     }  
 }
 
