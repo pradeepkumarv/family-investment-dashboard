@@ -8,8 +8,6 @@
 
     <!-- Supabase CDN -->
     <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
-    <!... Load UMD KiteConnect-->
-    <script src="https://unpkg.com/kiteconnect@3.0.0/dist/umd/kiteconnect.umd.js">
 
     <style>
         /* ===== GLOBAL STYLES ===== */
@@ -1245,32 +1243,11 @@
                         <div class="tab" onclick="renderInvestmentTabContent('others')">Others</div>
                     </div>
 
-                 <div id="investment-tab-content" class="tab-content">
-                      <div id="equity-content" class="investment-panel">
-                    <!-- Placeholder for your dashboard’s dynamically injected rows -->
-                    <h3>Your Holdings</h3>
-                        <div class="investment-table">
-                          <table>
-                            <thead>
-                                <tr>
-                                <th>Symbol</th>
-                                <th>Exchange</th>
-                                <th>Quantity</th>
-                                <th>Avg Price</th>
-                                <th>Last Price</th>
-                                <th>P&amp;L</th>
-                                 </tr>
-                             </thead>
-                    <tbody id="holdings-table-body">
-                      <!-- JS will inject rows here -->
-                                </tbody>
-                              </table>
-    </div>
-
-    <!-- Equity investments rendered by renderInvestmentTabContent('equity') follow -->
-    <div id="equity-items-list"></div>
-  </div>   
-  
+                    <div id="investment-tab-content" class="tab-content">
+                        <!-- Investment content will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
 
             <!-- Liabilities Section -->
             <div class="section">
@@ -2055,8 +2032,6 @@
     </div>
 
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
-    <script type="module" src="kite.js"></script>
-    <script type="module" src="app.js" defer></script>
-  //  <script src="app.js" defer></script>
+    <script src="app.js" defer></script>
 </body>
 </html>
