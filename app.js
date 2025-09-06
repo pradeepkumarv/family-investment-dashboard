@@ -1,5 +1,4 @@
 // app.js - ENHANCED VERSION: Fixed Photo Upload + Enhanced Member Details + Complete Form Fields
-import { fetchHoldings, fetchPositions } from './kite.js';
 
 // ===== GLOBAL VARIABLES =====
 let supabase = null;
@@ -419,30 +418,6 @@ async function loadDashboardData() {
         }
     }
 }
-
-
-window.addEventListener('load', async () => {
-  // existing init…
-  await loadDashboardData();
-  // now render portfolio
-  const holdings = await fetchHoldings();
-  renderHoldingsTable(holdings);
-});
-
-function renderHoldingsTable(holdings) {
-  const tbody = document.getElementById('holdings-table-body');
-  tbody.innerHTML = holdings.map(h => `
-    <tr>
-      <td>${h.tradingsymbol}</td>
-      <td>${h.exchange}</td>
-      <td>${h.quantity}</td>
-      <td>₹${h.average_price.toFixed(2)}</td>
-      <td>₹${h.last_price.toFixed(2)}</td>
-      <td>₹${h.pnl.toFixed(2)}</td>
-    </tr>
-  `).join('');
-}
-
 
 // ===== UTILITY FUNCTIONS =====
 function showMessage(message, type = 'info') {
