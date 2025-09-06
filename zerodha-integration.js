@@ -1,16 +1,14 @@
-// zerodha-integration.js - FIXED VERSION with Member Selection & Auto-Refresh
-// Author: Family Wealth Dashboard
-// Version: 2.1.0
+// zerodha-integration.js — Fixed Version with Member Select & Auto-Refresh
+// Version 2.2.0
 
-// ===== ZERODHA CONFIGURATION =====
+// ===== CONFIG =====
 const ZERODHA_CONFIG = {
-    api_key: 'ci3r8v1cbqb6e73p',
-    redirect_url: 'https://pradeepkumarv.github.io/family-investment-dashboard/',
-    base_url: 'https://api.kite.trade',
-    login_url: 'https://kite.zerodha.com/connect/login'
+  api_key: 'ci3r8v1cbqb6e73p',
+  base_url: 'https://api.kite.trade',
+  login_url: 'https://kite.zerodha.com/connect/login'
 };
 
-// Global variables
+// ===== STATE =====
 let zerodhaAccessToken = null;
 let autoRefreshInterval = null;
 let refreshIntervalMinutes = 0;
@@ -18,268 +16,295 @@ let apiCallCount = 0;
 let apiCallResetTime = Date.now() + 60000;
 const MAX_API_CALLS_PER_MINUTE = 100;
 
-// ===== SECURITY & RATE LIMITING =====
+// ===== UTIL =====
+function log(msg, type='info') {
+  const emoji = {info:'ℹ️',success:'✅',warning:'⚠️',error:'❌'}[type];
+  console.log(`${emoji} [${new Date().toISOString()}] ZERODHA: ${msg}`);
+}
+function showZerodhaMessage(msg,type='info') {
+  if (typeof showMessage==='function') showMessage(`Zerodha: ${msg}`, type);
+  else console.log(msg);
+}
+function safeHTML(el, html) {
+  if (typeof el==='string') el=document.getElementById(el);
+  if (!el) return;
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  el.innerHTML='';
+  while(tmp.firstChild) el.appendChild(tmp.firstChild);
+}
 function canMakeAPICall() {
-    const now = Date.now();
-    if (now > apiCallResetTime) {
-        apiCallCount = 0;
-        apiCallResetTime = now + 60000;
+  const now=Date.now();
+  if (now>apiCallResetTime) {
+    apiCallCount=0;
+    apiCallResetTime=now+60000;
+  }
+  if (apiCallCount>=MAX_API_CALLS_PER_MINUTE) {
+    log('Rate limit exceeded', 'warning');
+    return false;
+  }
+  apiCallCount++;
+  return true;
+}
+
+// ===== AUTH =====
+function generateLoginURL() {
+  return `${ZERODHA_CONFIG.login_url}?v=3&api_key=${ZERODHA_CONFIG.api_key}`;
+}
+function extractRequestToken() {
+  const p=new URLSearchParams(location.search);
+  if (p.get('status')==='success' && p.get('action')==='login') return p.get('request_token');
+  return null;
+}
+async function generateSession(rt) {
+  const secret = atob(localStorage.getItem('zerodha_api_secret')||'');
+  if (!secret) throw new Error('API Secret missing');
+  const chkBuf = await crypto.subtle.digest('SHA-256',
+    new TextEncoder().encode(ZERODHA_CONFIG.api_key + rt + secret)
+  );
+  const checksum = Array.from(new Uint8Array(chkBuf))
+    .map(b=>b.toString(16).padStart(2,'0')).join('');
+  if (!canMakeAPICall()) throw new Error('Rate limited');
+  const res = await fetch(`${ZERODHA_CONFIG.base_url}/session/token`, {
+    method:'POST',
+    headers:{'X-Kite-Version':'3','Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({
+      api_key:ZERODHA_CONFIG.api_key,
+      request_token:rt,
+      checksum
+    })
+  });
+  const j=await res.json();
+  if (j.status!=='success') throw new Error(j.message);
+  zerodhaAccessToken=j.data.access_token;
+  localStorage.setItem('zerodha_access_token', zerodhaAccessToken);
+  localStorage.setItem('zerodha_user_data', JSON.stringify(j.data));
+  return j.data;
+}
+async function initFromStorage() {
+  const tok=localStorage.getItem('zerodha_access_token');
+  if (!tok) return false;
+  zerodhaAccessToken=tok;
+  return verifyToken();
+}
+async function verifyToken() {
+  if (!zerodhaAccessToken || !canMakeAPICall()) return false;
+  const res=await fetch(`${ZERODHA_CONFIG.base_url}/user/profile`, {
+    headers:{
+      'Authorization':`token ${ZERODHA_CONFIG.api_key}:${zerodhaAccessToken}`,
+      'X-Kite-Version':'3'
     }
-    if (apiCallCount >= MAX_API_CALLS_PER_MINUTE) {
-        log('Rate limit exceeded, please wait', 'warning');
-        return false;
+  });
+  const j=await res.json();
+  return j.status==='success';
+}
+function clearStorage() {
+  localStorage.removeItem('zerodha_access_token');
+  localStorage.removeItem('zerodha_user_data');
+  clearInterval(autoRefreshInterval);
+  zerodhaAccessToken=null;
+}
+
+// ===== API =====
+async function apiRequest(ep, method='GET', params={}) {
+  if (!zerodhaAccessToken) throw new Error('Not connected');
+  if (!canMakeAPICall()) throw new Error('Rate limited');
+  const url=new URL(ZERODHA_CONFIG.base_url+ep);
+  const opt={ method, headers:{
+    'Authorization':`token ${ZERODHA_CONFIG.api_key}:${zerodhaAccessToken}`,
+    'X-Kite-Version':'3',
+    'Content-Type':'application/json'
+  }};
+  if (method==='GET') Object.entries(params).forEach(([k,v])=>url.searchParams.append(k,v));
+  else opt.body=JSON.stringify(params);
+  const res=await fetch(url,opt), j=await res.json();
+  if (j.status!=='success') throw new Error(j.message||j.error_type);
+  return j.data;
+}
+async function getHoldings() { return apiRequest('/portfolio/holdings'); }
+
+// ===== UI =====
+function populateMemberSelect() {
+  const sel=document.getElementById('member-select');
+  if (!sel) return;
+  sel.innerHTML='';
+  familyMembers.forEach(m=>{
+    const o=document.createElement('option');
+    o.value=m.id; o.textContent=m.name;
+    sel.appendChild(o);
+  });
+}
+function updateConnectionStatus(ok, user) {
+  const c=document.getElementById('zerodha-connection-status');
+  if (!c) return;
+  if (ok) {
+    safeHTML(c, `
+      <div style="padding:8px;background:#e6ffed;border:1px solid #34d058;border-radius:6px;display:flex;align-items:center;gap:8px;">
+        ✅ Connected <small>${user.user_name}</small>
+        <button onclick="disconnect()" style="margin-left:auto">Disconnect</button>
+      </div>
+      <div id="last-refresh" style="font-size:12px;margin-top:4px;"></div>
+      <div id="next-refresh" style="font-size:12px;margin-top:2px;"></div>
+    `);
+  } else {
+    safeHTML(c, `
+      <div style="padding:8px;background:#ffeef0;border:1px solid #cb2431;border-radius:6px;display:flex;align-items:center;gap:8px;">
+        ❌ Not Connected
+        <button onclick="connect()" style="margin-left:auto">Connect</button>
+      </div>
+    `);
+  }
+}
+
+// ===== IMPORT & UPDATE =====
+async function importHoldings(memberId) {
+  const holdings=await getHoldings();
+  const user=JSON.parse(localStorage.getItem('zerodha_user_data')||'{}');
+  let cnt=0;
+  for (const h of holdings) {
+    if (!investments.some(i=>i.symbol_or_name===h.tradingsymbol && i.broker_platform.includes('Zerodha'))) {
+      await addInvestmentData({
+        member_id:memberId,
+        investment_type:'equity',
+        symbol_or_name:h.tradingsymbol,
+        invested_amount:h.quantity*h.average_price,
+        current_value:h.quantity*h.last_price,
+        broker_platform:`Zerodha (${user.user_id})`,
+        zerodha_data:h,
+        created_at:new Date().toISOString(),
+        last_updated:new Date().toISOString()
+      });
+      cnt++;
     }
-    apiCallCount++;
-    return true;
+  }
+  showZerodhaMessage(`Imported ${cnt} holdings`, 'success');
+  loadDashboardData();
 }
-
-// ===== UTILITY =====
-function log(message, type='info') {
-    const emoji = {info:'ℹ️',success:'✅',error:'❌',warning:'⚠️'}[type];
-    console.log(`${emoji} [${new Date().toISOString()}] ZERODHA: ${message}`);
-}
-function showZerodhaMessage(msg,type='info'){
-    if(typeof showMessage==='function') showMessage(`Zerodha: ${msg}`,type);
-    else console.log(msg);
-}
-function safeSetInnerHTML(el, html) {
-    if (typeof el==='string') el=document.getElementById(el);
-    if(!el) return;
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    el.innerHTML = '';
-    while(temp.firstChild) el.appendChild(temp.firstChild);
-}
-function sanitizeHTML(str){
-    const d=document.createElement('div');
-    d.textContent=str;
-    return d.innerHTML;
-}
-
-// ===== MEMBER SELECT POPULATION =====
-function populateZerodhaMemberSelect() {
-    const sel=document.getElementById('member-select');
-    sel.innerHTML='';
-    familyMembers.forEach(m=>{
-        const o=document.createElement('option');
-        o.value=m.id; o.textContent=m.name;
-        sel.append(o);
-    });
-}
-
-// ===== AUTHENTICATION =====
-function generateZerodhaLoginURL(){
-    return `${ZERODHA_CONFIG.login_url}?v=3&api_key=${ZERODHA_CONFIG.api_key}`;
-}
-function extractRequestToken(){
-    const p=new URLSearchParams(window.location.search);
-    if(p.get('status')==='success' && p.get('action')==='login') return p.get('request_token');
-    return null;
-}
-async function generateZerodhaSession(rt){
-    const secret=atob(localStorage.getItem('zerodha_api_secret_encrypted')||'');
-    if(!secret) throw new Error('API Secret not configured');
-    const chk=await crypto.subtle.digest('SHA-256',
-        new TextEncoder().encode(ZERODHA_CONFIG.api_key+rt+secret)
-    ).then(b=>Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''));
-    if(!canMakeAPICall()) throw new Error('Rate limit exceeded');
-    const res=await fetch(`${ZERODHA_CONFIG.base_url}/session/token`,{
-        method:'POST',
-        headers:{'X-Kite-Version':'3','Content-Type':'application/x-www-form-urlencoded'},
-        body:new URLSearchParams({api_key:ZERODHA_CONFIG.api_key,request_token:rt,checksum:chk})
-    });
-    const jd=await res.json();
-    if(jd.status!=='success') throw new Error(jd.message||'Session failed');
-    zerodhaAccessToken=jd.data.access_token;
-    localStorage.setItem('zerodha_access_token',zerodhaAccessToken);
-    localStorage.setItem('zerodha_user_data',JSON.stringify(jd.data));
-    return jd.data;
-}
-async function initializeZerodhaFromStorage(){
-    const tok=localStorage.getItem('zerodha_access_token');
-    if(!tok) return false;
-    zerodhaAccessToken=tok;
-    return verifyZerodhaToken();
-}
-async function verifyZerodhaToken(){
-    if(!zerodhaAccessToken||!canMakeAPICall()) return false;
-    const r=await fetch(`${ZERODHA_CONFIG.base_url}/user/profile`,{
-        headers:{'Authorization':`token ${ZERODHA_CONFIG.api_key}:${zerodhaAccessToken}`,'X-Kite-Version':'3'}
-    });
-    const d=await r.json();
-    return d.status==='success';
-}
-function clearZerodhaStorage(){
-    localStorage.removeItem('zerodha_access_token');
-    localStorage.removeItem('zerodha_user_data');
-    clearInterval(autoRefreshInterval);
-    zerodhaAccessToken=null;
-}
-
-// ===== API REQUEST =====
-async function apiRequest(ep,method='GET',params={}){
-    if(!zerodhaAccessToken) throw new Error('Not connected');
-    if(!canMakeAPICall()) throw new Error('Rate limit exceeded');
-    const u=new URL(`${ZERODHA_CONFIG.base_url}${ep}`);
-    const o={method,headers:{'Authorization':`token ${ZERODHA_CONFIG.api_key}:${zerodhaAccessToken}`,'X-Kite-Version':'3','Content-Type':'application/json'}};
-    if(method==='GET') Object.entries(params).forEach(([k,v])=>u.searchParams.append(k,v));
-    else o.body=JSON.stringify(params);
-    const r=await fetch(u,o), j=await r.json();
-    if(j.status!=='success') throw new Error(j.message||j.error_type);
-    return j.data;
-}
-
-// ===== DATA FETCH =====
-async function getPortfolioHoldings(){return apiRequest('/portfolio/holdings');}
-
-// ===== UI FUNCTIONS =====
-function updateZerodhaConnectionStatus(connected,userData){
-    const c=document.getElementById('zerodha-connection-status');
-    if(!c) return;
-    if(connected){
-        safeSetInnerHTML(c,`
-            <div style="display:flex;gap:8px;padding:8px;background:#e6ffed;border:1px solid #34d058;border-radius:6px">
-                <strong style="color:#28a745">✅ Connected</strong>
-                <small>${sanitizeHTML(userData.user_name)}</small>
-                <button onclick="disconnectZerodha()" class="btn btn-sm btn-secondary" style="margin-left:auto">Disconnect</button>
-            </div>
-            <div id="zerodha-last-refresh" style="font-size:12px;margin-top:4px"></div>
-            <div id="zerodha-auto-refresh-status" style="font-size:12px;margin-top:2px">${getNextRefreshTime()}</div>
-        `);
-    } else {
-        safeSetInnerHTML(c,`
-            <div style="display:flex;gap:8px;padding:8px;background:#ffeef0;border:1px solid #cb2431;border-radius:6px">
-                <strong style="color:#cb2431">❌ Not Connected</strong>
-                <button onclick="connectToZerodha()" class="btn btn-sm btn-primary" style="margin-left:auto">Connect</button>
-            </div>
-        `);
+async function updatePrices() {
+  if (!zerodhaAccessToken) throw new Error('Not connected');
+  const holdings=await getHoldings();
+  let cnt=0;
+  investments.filter(i=>i.broker_platform.includes('Zerodha')).forEach(async inv=>{
+    const h=holdings.find(x=>x.tradingsymbol===inv.symbol_or_name);
+    if (h) {
+      await updateInvestmentInDashboard(inv.id, {
+        current_value:h.quantity*h.last_price,
+        last_updated:new Date().toISOString()
+      });
+      cnt++;
     }
-}
-
-// ===== MEMBER SELECT & IMPORT BUTTON =====
-populateZerodhaMemberSelect();  // initial
-document.getElementById('member-select').addEventListener('change',()=>{
-    const has=!!document.getElementById('member-select').value;
-    document.getElementById('import-holdings').disabled=!zerodhaAccessToken||!has;
-});
-document.getElementById('import-holdings').addEventListener('click',async()=>{
-    const memberId=document.getElementById('member-select').value;
-    await importZerodhaHoldings(memberId);
-});
-
-// ===== IMPORT & UPDATE FUNCTIONS =====
-async function importZerodhaHoldings(memberId){
-    const holdings=await getPortfolioHoldings();
-    const user=JSON.parse(localStorage.getItem('zerodha_user_data'));
-    let count=0;
-    for(const h of holdings){
-        if(!investments.find(inv=>inv.symbol_or_name===h.tradingsymbol&&inv.broker_platform.includes('Zerodha'))){
-            await addInvestmentData({
-                member_id:memberId,
-                investment_type:'equity',
-                symbol_or_name:h.tradingsymbol,
-                invested_amount:h.quantity*h.average_price,
-                current_value:h.quantity*h.last_price,
-                broker_platform:`Zerodha (${user.user_id})`,
-                zerodha_data:h,
-                created_at:new Date().toISOString(),
-                last_updated:new Date().toISOString()
-            });
-            count++;
-        }
-    }
-    showZerodhaMessage(`Imported ${count} holdings`, 'success');
-    loadDashboardData();
-}
-async function updateEquityInvestments(){
-    if(!zerodhaAccessToken) throw new Error('Not connected');
-    const holdings=await getPortfolioHoldings();
-    let updated=0;
-    for(const inv of investments.filter(i=>i.investment_type==='equity'&&i.broker_platform.includes('Zerodha'))){
-        const h=holdings.find(x=>x.tradingsymbol===inv.symbol_or_name);
-        if(h){
-            await updateInvestmentInDashboard(inv.id,{
-                current_value:h.quantity*h.last_price,
-                last_updated:new Date().toISOString()
-            });
-            updated++;
-        }
-    }
-    showZerodhaMessage(`Updated ${updated} investments`, 'success');
+  });
+  showZerodhaMessage(`Updated ${cnt} prices`, 'success');
 }
 
 // ===== AUTO-REFRESH =====
-function startAutoRefresh(mins){
-    stopAutoRefresh();
-    if(mins>0){
-        refreshIntervalMinutes=mins;
-        autoRefreshInterval=setInterval(()=>updateEquityInvestments(),mins*60000);
-        localStorage.setItem('zerodha_auto_refresh_interval',mins);
-    }
+function startAuto(mins) {
+  clearInterval(autoRefreshInterval);
+  if (mins>0) {
+    refreshIntervalMinutes=mins;
+    autoRefreshInterval=setInterval(()=>updatePrices(), mins*60000);
+    localStorage.setItem('zerodha_refresh',mins);
+    updateNext();
+  }
 }
-function stopAutoRefresh(){
-    clearInterval(autoRefreshInterval);
-    refreshIntervalMinutes=0;
-    localStorage.removeItem('zerodha_auto_refresh_interval');
+function stopAuto() {
+  clearInterval(autoRefreshInterval);
+  refreshIntervalMinutes=0;
+  localStorage.removeItem('zerodha_refresh');
+  updateNext();
 }
-function getNextRefreshTime(){
-    if(!refreshIntervalMinutes) return 'Auto-refresh disabled';
-    return `Next refresh: ${new Date(Date.now()+refreshIntervalMinutes*60000).toLocaleTimeString()}`;
+function updateNext() {
+  const el=document.getElementById('next-refresh');
+  if (el) {
+    el.textContent = refreshIntervalMinutes>0
+      ? `Next refresh: ${new Date(Date.now()+refreshIntervalMinutes*60000).toLocaleTimeString()}`
+      : '';
+  }
 }
 
 // ===== SETTINGS MODAL =====
-
-// ===== PUBLIC =====
-window.connectToZerodha=async()=>{function showZerodhaSettingsModal() {
-  // 1) If modal doesn’t exist, create it now
+function showSettingsModal() {
   if (!document.getElementById('zerodha-settings-modal')) {
-    const modalHTML = `
+    document.body.insertAdjacentHTML('beforeend', `
       <div id="zerodha-settings-modal" class="modal hidden">
-        <div class="modal-content">…</div>
+        <div class="modal-content" style="padding:20px">
+          <div id="zerodha-connection-status"></div>
+          <div style="margin-top:16px">
+            <label>Member:</label>
+            <select id="member-select"></select>
+          </div>
+          <div style="margin-top:16px">
+            <button id="import-holdings" disabled>Import Holdings</button>
+            <button id="update-prices" disabled>Update All</button>
+          </div>
+          <div style="margin-top:16px">
+            <label>Auto-refresh:</label>
+            <select id="refresh-select">
+              <option value="0">Off</option>
+              <option value="15">15m</option>
+              <option value="30">30m</option>
+              <option value="60">1h</option>
+            </select>
+          </div>
+          <button onclick="closeSettingsModal()" style="margin-top:16px">Close</button>
+        </div>
       </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    `);
+    // Wire buttons
+    document.getElementById('member-select').addEventListener('change',()=>{
+      const m=!!document.getElementById('member-select').value;
+      document.getElementById('import-holdings').disabled = !zerodhaAccessToken || !m;
+    });
+    document.getElementById('import-holdings').addEventListener('click',()=>{
+      importHoldings(document.getElementById('member-select').value);
+    });
+    document.getElementById('update-prices').addEventListener('click',()=>updatePrices());
+    document.getElementById('refresh-select').addEventListener('change',e=>{
+      const m=+e.target.value;
+      if (m>0) startAuto(m); else stopAuto();
+    });
   }
-
-  // 2) Now it definitely exists, so toggle hidden
-  const modal = document.getElementById('zerodha-settings-modal');
-  modal.classList.remove('hidden');
-
-  // 3) Populate and update status
-  populateZerodhaMemberSelect();
-  const user = JSON.parse(localStorage.getItem('zerodha_user_data') || 'null');
-  updateZerodhaConnectionStatus(!!zerodhaAccessToken, user);
-  updateRateLimitStatus();
+  populateMemberSelect();
+  updateConnectionStatus(!!zerodhaAccessToken, JSON.parse(localStorage.getItem('zerodha_user_data')||'{}'));
+  document.getElementById('refresh-select').value = localStorage.getItem('zerodha_refresh')||0;
+  document.getElementById('zerodha-settings-modal').classList.remove('hidden');
 }
 
-    if(await initializeZerodhaFromStorage()){
-        updateZerodhaConnectionStatus(true,JSON.parse(localStorage.getItem('zerodha_user_data')));
-        return;
-    }
-    const rt=extractRequestToken();
-    if(rt){
-        await generateZerodhaSession(rt);
-        updateZerodhaConnectionStatus(true,JSON.parse(localStorage.getItem('zerodha_user_data')));
-        history.replaceState({},'',window.location.pathname);
-    } else {
-        window.location.href=generateZerodhaLoginURL();
-    }
+function closeSettingsModal(){
+  const m=document.getElementById('zerodha-settings-modal');
+  if(m) m.classList.add('hidden');
+}
+
+// ===== PUBLIC API =====
+window.connect = async function(){
+  if (await initFromStorage()) {
+    updateConnectionStatus(true, JSON.parse(localStorage.getItem('zerodha_user_data')));
+    return;
+  }
+  const rt = extractRequestToken();
+  if (rt) {
+    const u = await generateSession(rt);
+    updateConnectionStatus(true, u);
+    history.replaceState({},'',location.pathname);
+  } else {
+    location.href = generateLoginURL();
+  }
 };
-window.disconnectZerodha=()=>{
-    clearZerodhaStorage();
-    updateZerodhaConnectionStatus(false);
+window.disconnect = function(){
+  clearStorage();
+  updateConnectionStatus(false);
 };
-window.startAutoRefresh=startAutoRefresh;
-window.stopAutoRefresh=stopAutoRefresh;
+window.showZerodhaSettingsModal = showSettingsModal;
+window.startAutoRefresh = startAuto;
+window.stopAutoRefresh = stopAuto;
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded',async()=>{
-    if(await initializeZerodhaFromStorage()){
-        updateZerodhaConnectionStatus(true,JSON.parse(localStorage.getItem('zerodha_user_data')));
-        const iv=+localStorage.getItem('zerodha_auto_refresh_interval');
-        if(iv) startAutoRefresh(iv);
-    } else {
-        updateZerodhaConnectionStatus(false);
-    }
+document.addEventListener('DOMContentLoaded', async ()=>{
+  if (await initFromStorage()) {
+    updateConnectionStatus(true, JSON.parse(localStorage.getItem('zerodha_user_data')));
+    const iv=+localStorage.getItem('zerodha_refresh')||0;
+    if (iv>0) startAuto(iv);
+  } else {
+    updateConnectionStatus(false);
+  }
 });
-window.showZerodhaSettingsModal = showZerodhaSettingsModal;
