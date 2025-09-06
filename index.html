@@ -1518,6 +1518,14 @@
                         <label for="investment-platform" class="form-label">Platform/Broker</label>
                         <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct" />
                     </div>
+                    <section id="zerodha-section" style="display:none">
+                    <h2>🔗 Zerodha Integration</h2>
+                    <button id="connect-zerodha">Connect to Zerodha</button>
+                        <select id="member-select"></select>
+                    <button id="import-holdings" disabled>Import Holdings</button>
+                    <button id="update-prices" disabled>Update All</button>
+                    </section>
+
 
                     <!-- Fixed Deposit Fields -->
                     <div class="fixed-deposit-fields conditional-fields">
@@ -2033,5 +2041,8 @@
 
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
+    <script src="zerodha-integration.js"></script>
+
+
 </body>
 </html>
