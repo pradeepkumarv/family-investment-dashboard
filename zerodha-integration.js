@@ -282,3 +282,4 @@ document.addEventListener('DOMContentLoaded',async()=>{
         updateZerodhaConnectionStatus(false);
     }
 });
+window.showZerodhaSettingsModal = showZerodhaSettingsModal;
