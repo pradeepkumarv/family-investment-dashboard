@@ -228,14 +228,30 @@ function getNextRefreshTime(){
 }
 
 // ===== SETTINGS MODAL =====
-function showZerodhaSettingsModal(){
-    populateZerodhaMemberSelect();
-    updateZerodhaConnectionStatus(!!zerodhaAccessToken,JSON.parse(localStorage.getItem('zerodha_user_data')||'{}'));
-    document.getElementById('zerodha-settings-modal').classList.remove('hidden');
-}
 
 // ===== PUBLIC =====
-window.connectToZerodha=async()=>{
+window.connectToZerodha=async()=>{function showZerodhaSettingsModal() {
+  // 1) If modal doesn’t exist, create it now
+  if (!document.getElementById('zerodha-settings-modal')) {
+    const modalHTML = `
+      <div id="zerodha-settings-modal" class="modal hidden">
+        <div class="modal-content">…</div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+  }
+
+  // 2) Now it definitely exists, so toggle hidden
+  const modal = document.getElementById('zerodha-settings-modal');
+  modal.classList.remove('hidden');
+
+  // 3) Populate and update status
+  populateZerodhaMemberSelect();
+  const user = JSON.parse(localStorage.getItem('zerodha_user_data') || 'null');
+  updateZerodhaConnectionStatus(!!zerodhaAccessToken, user);
+  updateRateLimitStatus();
+}
+
     if(await initializeZerodhaFromStorage()){
         updateZerodhaConnectionStatus(true,JSON.parse(localStorage.getItem('zerodha_user_data')));
         return;
