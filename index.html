@@ -1227,6 +1227,7 @@
                     <h2 class="section-title">📈 Investment Portfolio</h2>
                     <div class="section-actions">
                         <button onclick="openAddInvestmentModal()" class="btn">➕ Add Investment</button>
+                        <button onclick="showZerodhaSettingsModal()" class="btn btn-secondary btn-sm">🔗 Zerodha</button>
                         <button onclick="exportInvestments('csv')" class="btn">📊 Export CSV</button>
                         <button onclick="exportInvestments('json')" class="btn">📋 Export JSON</button>
                     </div>
@@ -1518,15 +1519,7 @@
                         <label for="investment-platform" class="form-label">Platform/Broker</label>
                         <input type="text" id="investment-platform" class="form-input" placeholder="e.g., Zerodha, Groww, Direct" />
                     </div>
-                    <section id="zerodha-section" style="display:none">
-                    <h2>🔗 Zerodha Integration</h2>
-                    <button id="connect-zerodha">Connect to Zerodha</button>
-                        <select id="member-select"></select>
-                    <button id="import-holdings" disabled>Import Holdings</button>
-                    <button id="update-prices" disabled>Update All</button>
-                    </section>
-
-
+                    
                     <!-- Fixed Deposit Fields -->
                     <div class="fixed-deposit-fields conditional-fields">
                         <h4>Fixed Deposit Details</h4>
@@ -2038,6 +2031,13 @@
             </div>
         </div>
     </div>
+        <section id="zerodha-section" style="display:none">
+                        <h2>🔗 Zerodha Integration</h2>
+                        <button id="connect-zerodha">Connect to Zerodha</button>
+                            <select id="member-select"></select>
+                        <button id="import-holdings" disabled>Import Holdings</button>
+                        <button id="update-prices" disabled>Update All</button>
+                        </section>
 
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
