@@ -1,5 +1,4 @@
 // zerodha-integrated.js — Corrected full version with modal and member mapping
-// Version Updated 2.3.1
 
 const ZERODHA_CONFIG = {
   api_key: 'ci3r8cbqb',  // Your actual API key here
