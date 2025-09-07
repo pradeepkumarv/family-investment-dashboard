@@ -395,6 +395,7 @@ async function loadDashboardData() {
             updateLastUpdated();
             
             setLoadingState(false);
+            
             console.log('✅ Dashboard data loaded successfully!');
             
         } catch (error) {
@@ -409,6 +410,7 @@ async function loadDashboardData() {
                 renderInvestmentTabContent('equity');
                 renderLiabilityTabContent('homeLoan');
                 renderAccounts();
+                renderInvestmentsByMember('befadefbfa2-47-49ce-b19-40'); // Correct id from your data
                 renderReminders();
                 updateLastUpdated();
                 console.log('🛠️ Rendered with fallback data');
@@ -3032,6 +3034,40 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Event listeners registered');
 });
+function renderInvestmentsByMember(memberId) {
+  const container = document.getElementById('investment-list-container');
+  if (!container) return;
+
+  // Filter investments for the given member.
+  const memberInvestments = investments.filter(inv => inv.member_id === memberId);
+
+  // Clear current list.
+  container.innerHTML = '';
+
+  if (memberInvestments.length === 0) {
+    container.innerHTML = '<p>No investments found for this member.</p>';
+    return;
+  }
+
+  // Create a simple table
+  let html = '<table class="data-table"><thead><tr>' + 
+    '<th>Symbol</th><th>Quantity</th><th>Invested Amount (₹)</th><th>Current Value (₹)</th><th>Platform</th></tr></thead><tbody>';
+
+  memberInvestments.forEach(inv => {
+    html += '<tr>' + 
+      `<td>${inv.symbol_or_name}</td>` +
+      `<td>${inv.quantity || '-'}</td>` +
+      `<td>${inv.invested_amount.toFixed(2)}</td>` +
+      `<td>${inv.current_value.toFixed(2)}</td>` +
+      `<td>${inv.broker_platform || '-'}</td>` +
+      '</tr>';
+  });
+
+  html += '</tbody></table>';
+
+  container.innerHTML = html;
+}
+
 
 // ===== MAKE FUNCTIONS GLOBALLY AVAILABLE =====
 window.openAddMemberModal = openAddMemberModal;
