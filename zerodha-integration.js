@@ -1,9 +1,9 @@
 // zerodha-integrated.js — Corrected full version with modal and member mapping
 
 const ZERODHA_CONFIG = {
-  api_key: 'ci3r8cbqb',  // Your actual API key here
+  api_key: 'ci3r8v1cbqb6e73p',  // Your actual API key here
   base_url: 'https://api.kite.trade',
-  login_url: 'https://kite.zerodha.com/login'
+  login_url: 'https://kite.zerodha.com/connect/login'
 };
 
 // State variables
