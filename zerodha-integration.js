@@ -233,7 +233,7 @@ function updateNext() {
 }
 
 // ===== SETTINGS MODAL =====
-// Replace your existing showSettingsModal() with this:
+// ===== SETTINGS MODAL ===== (CORRECTED)
 function showSettingsModal() {
   // 1) Inject modal if missing
   if (!document.getElementById('zerodha-settings-modal')) {
@@ -242,10 +242,6 @@ function showSettingsModal() {
         <div class="modal-content" style="padding:20px; max-width:400px;">
           <h2>Zerodha Integration Settings</h2>
           <div id="zerodha-connection-status" style="margin-bottom:16px;"></div>
-
-   //       <label>API Secret:</label><br>
-     //     <input type="password" id="zerodha-api-secret-input" placeholder="Enter API Secret" style="width:100%;margin-bottom:16px;"/><br>
-       //   <button id="zerodha-save-secret">Save Secret</button>
 
           <hr/>
 
@@ -270,25 +266,23 @@ function showSettingsModal() {
       </div>
     `);
 
-    // Wire up buttons:
-    document.getElementById('zerodha-save-secret').addEventListener('click', () => {
-      const val = document.getElementById('zerodha-api-secret-input').value.trim();
-      if (!val) return showZerodhaMessage('API Secret cannot be empty','error');
-      localStorage.setItem('zerodha_api_secret', btoa(val));
-      showZerodhaMessage('API Secret saved','success');
-    });
+    // Wire up buttons: (FIXED - removed API secret listeners)
     document.getElementById('member-select').addEventListener('change', () => {
       const m = !!document.getElementById('member-select').value;
       document.getElementById('import-holdings').disabled = !zerodhaAccessToken || !m;
     });
+    
     document.getElementById('import-holdings').addEventListener('click', () =>
       importHoldings(document.getElementById('member-select').value)
     );
+    
     document.getElementById('update-prices').addEventListener('click', updatePrices);
+    
     document.getElementById('refresh-select').addEventListener('change', e => {
       const v = +e.target.value;
       if (v>0) startAuto(v); else stopAuto();
     });
+    
     document.getElementById('zerodha-close-settings').addEventListener('click', () => {
       document.getElementById('zerodha-settings-modal').classList.add('hidden');
     });
@@ -297,7 +291,7 @@ function showSettingsModal() {
   // 2) Populate current state
   updateConnectionStatus(!!zerodhaAccessToken,
     JSON.parse(localStorage.getItem('zerodha_user_data')||'{}'));
-  document.getElementById('zerodha-api-secret-input').value = ''; // never
+  
   const saved = localStorage.getItem('zerodha_refresh')||0;
   document.getElementById('refresh-select').value = saved;
 
