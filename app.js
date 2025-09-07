@@ -410,7 +410,20 @@ async function loadDashboardData() {
                 renderInvestmentTabContent('equity');
                 renderLiabilityTabContent('homeLoan');
                 renderAccounts();
-                renderInvestmentsByMember('befadefbfa2-47-49ce-b19-40'); // Correct id from your data
+                renderInvestmentsByMember('try {
+                renderFamilyMembers();
+                renderStatsOverview();
+                renderInvestmentTabContent('equity');
+                renderLiabilityTabContent('homeLoan');
+                renderAccounts();
+                renderInvestmentsByMember('bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'); // Correct id from your data
+                renderReminders();
+                updateLastUpdated();
+                console.log('🛠️ Rendered with fallback data');
+            } catch (renderError) {
+                console.error('💥 Even rendering failed:', renderError);
+            }
+     '); // Correct id from your data
                 renderReminders();
                 updateLastUpdated();
                 console.log('🛠️ Rendered with fallback data');
