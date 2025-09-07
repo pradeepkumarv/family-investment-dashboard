@@ -1,14 +1,13 @@
-// zerodha-integrated.js — Updated for fixed member mapping and cleaned UI
-// Version Updated 2.2.1
+// zerodha-integrated.js — Corrected full version with modal and member mapping
+// Version Updated 2.3.1
 
-// ===== CONFIG =====
 const ZERODHA_CONFIG = {
-  api_key: 'ci3r8cbqb',  // Your actual key here
+  api_key: 'ci3r8cbqb',  // Your actual API key here
   base_url: 'https://api.kite.trade',
   login_url: 'https://kite.zerodha.com/login'
 };
 
-// ===== STATE =====
+// State variables
 let zerodhaAccessToken = null;
 let autoRefreshInterval = null;
 let refreshIntervalMinutes = 0;
@@ -16,17 +15,15 @@ let apiCallCount = 0;
 let apiCallResetTime = Date.now() + 60000;
 const MAX_API_CALLS_PER_MINUTE = 100;
 
-// ===== UTILITIES =====
+// Utilities
 function log(msg, type='info') {
   const emoji = {info:'ℹ️',success:'✅',warning:'⚠️',error:'❌'}[type];
   console.log(`${emoji} [${new Date().toISOString()}] ZERODHA: ${msg}`);
 }
-
 function showZerodhaMessage(msg, type='info') {
   if (typeof showMessage === 'function') showMessage(`Zerodha: ${msg}`, type);
   else console.log(msg);
 }
-
 function safeHTML(el, html) {
   if (typeof el === 'string') el = document.getElementById(el);
   if (!el) return;
@@ -35,7 +32,6 @@ function safeHTML(el, html) {
   el.innerHTML = '';
   while (tmp.firstChild) el.appendChild(tmp.firstChild);
 }
-
 function canMakeAPICall() {
   const now = Date.now();
   if (now > apiCallResetTime) {
@@ -50,11 +46,10 @@ function canMakeAPICall() {
   return true;
 }
 
-// ===== AUTHENTICATION =====
+// Authentication
 function generateLoginURL() {
   return `${ZERODHA_CONFIG.login_url}?api_key=${ZERODHA_CONFIG.api_key}`;
 }
-
 function extractRequestToken() {
   const params = new URLSearchParams(window.location.search);
   if (params.get('status') === 'success' && params.get('action') === 'login') {
@@ -62,7 +57,6 @@ function extractRequestToken() {
   }
   return null;
 }
-
 async function generateSession(request_token) {
   try {
     log('Requesting session from backend...');
@@ -71,15 +65,9 @@ async function generateSession(request_token) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ request_token }),
     });
-    
     if (!response.ok) throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-
     const data = await response.json();
-
-    if (data.status !== 'success') {
-      throw new Error(data.error || data.message || 'Session creation failed');
-    }
-
+    if (data.status !== 'success') throw new Error(data.error || data.message || 'Session creation failed');
     zerodhaAccessToken = data.data.access_token;
     localStorage.setItem('zerodha_access_token', zerodhaAccessToken);
     localStorage.setItem('zerodha_user_data', JSON.stringify(data.data));
@@ -90,14 +78,12 @@ async function generateSession(request_token) {
     throw error;
   }
 }
-
 async function initFromStorage() {
   const token = localStorage.getItem('zerodha_access_token');
   if (!token) return false;
   zerodhaAccessToken = token;
   return verifyToken();
 }
-
 async function verifyToken() {
   if (!zerodhaAccessToken || !canMakeAPICall()) return false;
   try {
@@ -113,7 +99,6 @@ async function verifyToken() {
     return false;
   }
 }
-
 function clearStorage() {
   localStorage.removeItem('zerodha_access_token');
   localStorage.removeItem('zerodha_user_data');
@@ -121,11 +106,10 @@ function clearStorage() {
   zerodhaAccessToken = null;
 }
 
-// ===== API REQUEST =====
+// API requests
 async function apiRequest(endpoint, method = 'GET', params = {}) {
   if (!zerodhaAccessToken) throw new Error('Not connected');
   if (!canMakeAPICall()) throw new Error('API rate limited');
-  
   const url = new URL(`${ZERODHA_CONFIG.base_url}${endpoint}`);
   const options = {
     method,
@@ -135,32 +119,26 @@ async function apiRequest(endpoint, method = 'GET', params = {}) {
       'Content-Type': 'application/json'
     }
   };
-
   if (method === 'GET') {
     Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
   } else {
     options.body = JSON.stringify(params);
   }
-
   const response = await fetch(url, options);
   const data = await response.json();
   if (data.status !== 'success') throw new Error(data.message || 'API error');
   return data.data;
 }
-
 async function getHoldings() {
   return apiRequest('/portfolio/holdings');
 }
 
-// ===== IMPORT AND UPDATE =====
+// Import and update
 async function importHoldings() {
-  // Hardcoded member id - change as per your data
   const pradeepId = 'bef9dbfa-2a47-49ce-b17a-19e5a40d4e98';
-
   const holdings = await getHoldings();
   const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
   let count = 0;
-
   for (const holding of holdings) {
     if (!investments.some(inv =>
       inv.member_id === pradeepId &&
@@ -181,16 +159,13 @@ async function importHoldings() {
       count++;
     }
   }
-
   showZerodhaMessage(`Imported ${count} holdings`, 'success');
   await loadDashboardData();
 }
-
 async function updatePrices() {
   if (!zerodhaAccessToken) throw new Error('Not connected');
   const holdings = await getHoldings();
   let updatedCount = 0;
-
   for (const inv of investments.filter(i => i.broker_platform.includes('Zerodha'))) {
     const matchingHolding = holdings.find(h => h.tradingsymbol === inv.symbol_or_name);
     if (matchingHolding) {
@@ -201,11 +176,10 @@ async function updatePrices() {
       updatedCount++;
     }
   }
-
   showZerodhaMessage(`Updated ${updatedCount} prices`, 'success');
 }
 
-// ===== AUTO REFRESH =====
+// Auto refresh
 function startAuto(minutes) {
   clearInterval(autoRefreshInterval);
   if (minutes > 0) {
@@ -215,48 +189,41 @@ function startAuto(minutes) {
     updateNextRefreshText();
   }
 }
-
 function stopAuto() {
   clearInterval(autoRefreshInterval);
   refreshIntervalMinutes = 0;
   localStorage.removeItem('zerodha_refresh');
   updateNextRefreshText();
 }
-
 function updateNextRefreshText() {
   const el = document.getElementById('next-refresh');
   if (el) {
-    if (refreshIntervalMinutes > 0) {
-      el.textContent = `Next refresh: ${new Date(Date.now() + refreshIntervalMinutes * 60000).toLocaleTimeString()}`;
-    } else {
-      el.textContent = '';
-    }
+    el.textContent = refreshIntervalMinutes > 0
+      ? `Next refresh: ${new Date(Date.now() + refreshIntervalMinutes * 60000).toLocaleTimeString()}`
+      : '';
   }
 }
 
-// ===== MODAL =====
+// Settings Modal
 function showSettings() {
   if (!document.getElementById('zerodha_settings_modal')) {
     document.body.insertAdjacentHTML('beforeend', `
-      <div id="zerodha_settings_modal" class="modal hidden">
-        <div class="modal_content" style="padding: 20px; max-width: 400px;">
+      <div id="zerodha_settings_modal" class="modal hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;">
+        <div style="background:#fff;padding:20px;border-radius:12px;max-width:400px;width:90%;">
           <h2>Zerodha Integration Settings</h2>
-          <div id="zerodha_connection_status" style="margin-bottom: 16px;"></div>
-          
+          <div id="zerodha_connection_status" style="margin-bottom:16px;"></div>
           <hr/>
-          <button id="btn_import_holdings" disabled>Import Holdings</button>
-          <button id="btn_update_prices" disabled style="margin-left: 8px;">Update Prices</button>
+          <button id="btn_import_holdings" disabled style="padding:8px 12px;">Import Holdings</button>
+          <button id="btn_update_prices" disabled style="padding:8px 12px; margin-left:10px;">Update Prices</button>
           <hr/>
-
-          <label for="select_refresh_interval">Auto-refresh:</label>
-          <select id="select_refresh_interval" style="width: 100%; margin-bottom: 16px;">
+          <label for="select_refresh_interval">Auto-refresh:</label><br/>
+          <select id="select_refresh_interval" style="width:100%; margin-bottom:16px;">
             <option value="0">Off</option>
             <option value="15">15 minutes</option>
             <option value="30">30 minutes</option>
             <option value="60">1 hour</option>
           </select>
-
-          <button id="btn_close_settings">Close</button>
+          <button id="btn_close_settings" style="padding:6px 12px;">Close</button>
         </div>
       </div>
     `);
@@ -275,77 +242,70 @@ function showSettings() {
 
   const user = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
   updateConnectionStatus(Boolean(zerodhaAccessToken), user);
-
   const savedRefresh = localStorage.getItem('zerodha_refresh') || '0';
   document.getElementById('select_refresh_interval').value = savedRefresh;
-
+  
   const modal = document.getElementById('zerodha_settings_modal');
   modal.classList.remove('hidden');
 
-  // Enable buttons based on connection
   const enabled = Boolean(zerodhaAccessToken);
   document.getElementById('btn_import_holdings').disabled = !enabled;
   document.getElementById('btn_update_prices').disabled = !enabled;
 }
 
-// ===== CONNECTION STATUS =====
+// Update connection status UI
 function updateConnectionStatus(connected, user) {
   const el = document.getElementById('zerodha_connection_status');
   if (!el) return;
-
   if (connected) {
     safeHTML(el, `
-      <div style="background:#d4edda; color:#155724; padding:10px; border-radius:6px;">
-        ✅ Connected: ${user?.user_name || ''}
-        <button style="float:right;" onclick="disconnect()">Disconnect</button>
+      <div style="padding:8px;background:#e6ffed;border:1px solid #34d058;border-radius:6px;display:flex;align-items:center;gap:8px;">
+        ✅ Connected <small>${user.user_name || ''}</small>
+        <button onclick="disconnect()" style="margin-left:auto">Disconnect</button>
       </div>
-      <div id="last-refresh" style="font-size: 12px; margin-top: 5px;"></div>
-      <div id="next-refresh" style="font-size: 12px; margin-top: 2px;"></div>
+      <div id="last-refresh" style="font-size:12px;margin-top:4px;"></div>
+      <div id="next-refresh" style="font-size:12px;margin-top:2px;"></div>
     `);
   } else {
     safeHTML(el, `
-      <div style="background:#f8d7da; color:#721c24; padding:10px; border-radius:6px;">
-        ❌ Not connected
-        <button style="float:right;" onclick="connect()">Connect</button>
+      <div style="padding:8px;background:#ffeef0;border:1px solid #cb2431;border-radius:6px;display:flex;align-items:center;gap:8px;">
+        ❌ Not Connected
+        <button onclick="connect()" style="margin-left:auto">Connect</button>
       </div>
     `);
   }
 }
 
-// ===== API =====
+// Public API
 window.connect = async function() {
   if (await initFromStorage()) {
-    const user = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-    updateConnectionStatus(true, user);
+    updateConnectionStatus(true, JSON.parse(localStorage.getItem('zerodha_user_data')));
     return;
   }
-
-  const requestToken = extractRequestToken();
-  if (requestToken) {
-    const sessionData = await generateSession(requestToken);
-    updateConnectionStatus(true, sessionData);
-    history.replaceState(null, '', window.location.pathname);
+  const rt = extractRequestToken();
+  if (rt) {
+    const u = await generateSession(rt);
+    updateConnectionStatus(true, u);
+    history.replaceState({}, '', location.pathname);
   } else {
-    window.location.href = generateLoginURL();
+    location.href = generateLoginURL();
   }
 };
-
 window.disconnect = function() {
   clearStorage();
   updateConnectionStatus(false);
 };
-
 window.showSettings = showSettings;
+window.showZerodhaSettingsModal = showSettings; // alias
 window.startAuto = startAuto;
 window.stopAuto = stopAuto;
 
-// Initialize at start
+// Initialization on startup
 document.addEventListener('DOMContentLoaded', async () => {
   if (await initFromStorage()) {
-    const user = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-    updateConnectionStatus(true, user);
-    const refreshTime = +localStorage.getItem('zerodha_refresh') || 0;
-    if (refreshTime > 0) startAuto(refreshTime);
+    updateConnectionStatus(true, JSON.parse(localStorage.getItem('zerodha_user_data')));
+    const iv = +localStorage.getItem('zerodha_refresh') || 0;
+    if (iv > 0) startAuto(iv);
   } else {
     updateConnectionStatus(false);
   }
