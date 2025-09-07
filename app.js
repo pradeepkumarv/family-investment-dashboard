@@ -410,12 +410,6 @@ async function loadDashboardData() {
                 renderInvestmentTabContent('equity');
                 renderLiabilityTabContent('homeLoan');
                 renderAccounts();
-                renderInvestmentsByMember('try {
-                renderFamilyMembers();
-                renderStatsOverview();
-                renderInvestmentTabContent('equity');
-                renderLiabilityTabContent('homeLoan');
-                renderAccounts();
                 renderInvestmentsByMember('bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'); // Correct id from your data
                 renderReminders();
                 updateLastUpdated();
