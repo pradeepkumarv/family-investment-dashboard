@@ -242,8 +242,22 @@ function showSettings() {
       </div>
     `);
 
-    document.getElementById('btn_import_holdings').addEventListener('click', importHoldings);
-    document.getElementById('btn_update_prices').addEventListener('click', updatePrices);
+   
+    document.getElementById('btn_import_holdings')?.addEventListener('click', async () => {
+  try {
+    await importHoldings();
+  } catch(e) {
+    alert('Import failed: ' + e.message);
+  }
+});
+     
+    document.getElementById('btn_update')?.addEventListener('click', async () => {
+  try {
+    await updatePrices();
+  } catch(e) {
+    alert('Update failed: ' + e.message);
+  }
+});
     document.getElementById('select_refresh_interval').addEventListener('change', e => {
       const val = +e.target.value;
       if (val > 0) startAuto(val);
