@@ -129,9 +129,21 @@ async function apiRequest(endpoint, method = 'GET', params = {}) {
   return data.data;
 }
 async function getHoldings() {
- // return apiRequest('/portfolio/holdings');
-   return apiRequest('/api/zerodha/holdings');
- }
+  const proxyUrl = 'https://family-investment-dashboard-4hli.vercel.app/api/zerodha/holdings';  // your deployed proxy
+  const response = await fetch(proxyUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      access_token: localStorage.getItem('zerodha_access_token'),
+      api_key: ZERODHA_CONFIG.api_key
+    })
+  });
+  const data = await response.json();
+  return data;
+}
+
 
 // Import and update
 async function importHoldings() {
