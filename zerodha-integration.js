@@ -129,19 +129,28 @@ async function apiRequest(endpoint, method = 'GET', params = {}) {
   return data.data;
 }
 async function getHoldings() {
-  const proxyUrl = 'https://family-investment-dashboard-4hli.vercel.app/api/zerodha/holdings';  // your deployed proxy
-  const response = await fetch(proxyUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      access_token: localStorage.getItem('zerodha_access_token'),
-      api_key: ZERODHA_CONFIG.api_key
-    })
-  });
-  const data = await response.json();
-  return data;
+  const proxyUrl = 'https://family-investment-dashboard-4hli.vercel.app/api/zerodha/holdings';
+
+  try {
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_token: localStorage.getItem('zerodha_access_token'),
+        api_key: ZERODA_CONFIG.api_key
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching holdings:', error);
+    throw error;
+  }
 }
 
 
