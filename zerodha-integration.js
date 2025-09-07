@@ -221,67 +221,71 @@ function updateNextRefreshText() {
 
 // Settings Modal
 function showSettings() {
-  if (!document.getElementById('zerodha_settings_modal')) {
+    // Remove any previous modal instance before inserting new one
+    const oldModal = document.getElementById('zerodha_settings_modal');
+    if (oldModal) oldModal.remove();
+
     document.body.insertAdjacentHTML('beforeend', `
-      <div id="zerodha_settings_modal" class="modal hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;">
-        <div style="background:#fff;padding:20px;border-radius:12px;max-width:400px;width:90%;">
-          <h2>Zerodha Integration Settings</h2>
-          <div id="zerodha_connection_status" style="margin-bottom:16px;"></div>
-          <hr/>
-          <button id="btn_import_holdings" disabled style="padding:8px 12px;">Import Holdings</button>
-          <button id="btn_update_prices" disabled style="padding:8px 12px; margin-left:10px;">Update Prices</button>
-          <hr/>
-          <label for="select_refresh_interval">Auto-refresh:</label><br/>
-          <select id="select_refresh_interval" style="width:100%; margin-bottom:16px;">
-            <option value="0">Off</option>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-            <option value="60">1 hour</option>
-          </select>
-          <button id="btn_close_settings" style="padding:6px 12px;">Close</button>
+    <div id="zerodha_settings_modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Zerodha Integration</h2>
+          <button id="btn_close_settings" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="zerodha_connection_status" style="margin-bottom: 15px;"></div>
+          <button id="btn_import_holdings" disabled>Import Holdings</button>
+          <button id="btn_update_prices" disabled>Update Prices</button>
+          <div style="margin-top: 12px;">
+            <label for="select_refresh_interval">Auto Refresh:</label>
+            <select id="select_refresh_interval">
+              <option value="0">Off</option>
+              <option value="15">15 mins</option>
+              <option value="30">30 mins</option>
+              <option value="60">1 hour</option>
+            </select>
+          </div>
         </div>
       </div>
+    </div>
     `);
 
-   
-   document.getElementById('btn_import_holdings')?.addEventListener('click', async () => {
-  try {
-    await importHoldings();
-  } catch(e) {
-    alert('Import failed: ' + e.message);
-  }
-});
-     
-document.getElementById('btn_update')?.addEventListener('click', async () => {
-  try {
-    await updatePrices();
-  } catch(e) {
-    alert('Update failed: ' + e.message);
-  }
-});
-    document.getElementById('select_refresh_interval').addEventListener('change', e => {
-      const val = +e.target.value;
-      if (val > 0) startAuto(val);
-      else stopAuto();
-    });
-    document.getElementById('btn_close_settings').addEventListener('click', () => {
-      document.getElementById('zerodha_settings_modal').classList.add('hidden');
-    });
-  }
+    // Wire up event listeners IMMEDIATELY after injection
+    document.getElementById('btn_close_settings').onclick = () => {
+        document.getElementById('zerodha_settings_modal').classList.add('hidden');
+    };
 
-  const user = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-  updateConnectionStatus(Boolean(zerodhaAccessToken), user);
-  const savedRefresh = localStorage.getItem('zerodha_refresh') || '0';
-  document.getElementById('select_refresh_interval').value = savedRefresh;
-  
-  const modal = document.getElementById('zerodha_settings_modal');
-  if (oldModal) oldModal.remove();
-  
-  modal.classList.remove('hidden');
+    document.getElementById('btn_import_holdings').onclick = async () => {
+        try { await importHoldings(); }
+        catch (e) { alert('Import failed: ' + e.message); }
+    };
 
-  const enabled = Boolean(zerodhaAccessToken);
-  document.getElementById('btn_import_holdings').disabled = !enabled;
-  document.getElementById('btn_update_prices').disabled = !enabled;
+    document.getElementById('btn_update_prices').onclick = async () => {
+        try { await updatePrices(); }
+        catch (e) { alert('Update failed: ' + e.message); }
+    };
+
+    document.getElementById('select_refresh_interval').onchange = (e) => {
+        const val = +e.target.value;
+        if (val > 0) startAuto(val);
+        else stopAuto();
+    };
+
+    // Enable/disable buttons based on auth state
+    const enabled = Boolean(zerodhaAccessToken);
+    document.getElementById('btn_import_holdings').disabled = !enabled;
+    document.getElementById('btn_update_prices').disabled = !enabled;
+
+    // Show the modal
+    document.getElementById('zerodha_settings_modal').classList.remove('hidden');
+
+    // Update connection status if needed (optional)
+    const user = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
+    updateConnectionStatus(Boolean(zerodhaAccessToken), user);
+
+    // Set saved refresh value
+    const savedRefresh = localStorage.getItem('zerodha_refresh') || '0';
+    document.getElementById('select_refresh_interval').value = savedRefresh;
 }
 
 // Update connection status UI
