@@ -177,6 +177,21 @@ async function updatePrices() {
   }
   showZerodhaMessage(`Updated ${updatedCount} prices`, 'success');
 }
+// Example: render all investments for Pradeep in a table or list
+function renderInvestmentsForPradeep() {
+  const pradeepId = 'bef9dbfa-2a47-49ce-b17a-19e5a40d4e98';
+  const pradeepInvestments = investments.filter(inv => inv.member_id === pradeepId);
+
+  // Replace this with your actual rendering logic
+  const container = document.getElementById('investment-list-container');
+  container.innerHTML = '';
+
+  pradeepInvestments.forEach(inv => {
+    const div = document.createElement('div');
+    div.textContent = `${inv.symbol_or_name}: Qty ${inv.quantity || '-'}, Current ₹${inv.current_value.toFixed(2)}`;
+    container.appendChild(div);
+  });
+}
 
 // Auto refresh
 function startAuto(minutes) {
