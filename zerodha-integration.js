@@ -137,7 +137,7 @@ async function getHoldings() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         access_token: localStorage.getItem('zerodha_access_token'),
-        api_key: ZERODA_CONFIG.api_key
+        api_key: ZERODHA_CONFIG.api_key
       })
     });
 
