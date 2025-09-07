@@ -56,31 +56,41 @@ function extractRequestToken() {
   if (p.get('status')==='success' && p.get('action')==='login') return p.get('request_token');
   return null;
 }
-async function generateSession(rt) {
-  const secret = atob(localStorage.getItem('zerodha_api_secret')||'');
-  if (!secret) throw new Error('API Secret missing');
-  const chkBuf = await crypto.subtle.digest('SHA-256',
-    new TextEncoder().encode(ZERODHA_CONFIG.api_key + rt + secret)
-  );
-  const checksum = Array.from(new Uint8Array(chkBuf))
-    .map(b=>b.toString(16).padStart(2,'0')).join('');
-  if (!canMakeAPICall()) throw new Error('Rate limited');
-  const res = await fetch(`${ZERODHA_CONFIG.base_url}/session/token`, {
-    method:'POST',
-    headers:{'X-Kite-Version':'3','Content-Type':'application/x-www-form-urlencoded'},
-    body:new URLSearchParams({
-      api_key:ZERODHA_CONFIG.api_key,
-      request_token:rt,
-      checksum
-    })
-  });
-  const j=await res.json();
-  if (j.status!=='success') throw new Error(j.message);
-  zerodhaAccessToken=j.data.access_token;
-  localStorage.setItem('zerodha_access_token', zerodhaAccessToken);
-  localStorage.setItem('zerodha_user_data', JSON.stringify(j.data));
-  return j.data;
+async function generateSession(request_token) {
+  try {
+    log('Calling backend to generate session...');
+    
+    // Replace with your actual Vercel URL
+    const response = await fetch('https://family-investment-dashboard-4hli.vercel.app/api/zerodha/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request_token }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.status !== 'success') {
+      throw new Error(data.error || data.message || 'Session generation failed');
+    }
+
+    // Store tokens
+    zerodhaAccessToken = data.data.access_token;
+    localStorage.setItem('zerodha_access_token', zerodhaAccessToken);
+    localStorage.setItem('zerodha_user_data', JSON.stringify(data.data));
+    
+    log('Session generated successfully!', 'success');
+    return data.data;
+    
+  } catch (error) {
+    log(`Session generation error: ${error.message}`, 'error');
+    throw error;
+  }
 }
+
 async function initFromStorage() {
   const tok=localStorage.getItem('zerodha_access_token');
   if (!tok) return false;
@@ -233,9 +243,9 @@ function showSettingsModal() {
           <h2>Zerodha Integration Settings</h2>
           <div id="zerodha-connection-status" style="margin-bottom:16px;"></div>
 
-          <label>API Secret:</label><br>
-          <input type="password" id="zerodha-api-secret-input" placeholder="Enter API Secret" style="width:100%;margin-bottom:16px;"/><br>
-          <button id="zerodha-save-secret">Save Secret</button>
+   //       <label>API Secret:</label><br>
+     //     <input type="password" id="zerodha-api-secret-input" placeholder="Enter API Secret" style="width:100%;margin-bottom:16px;"/><br>
+       //   <button id="zerodha-save-secret">Save Secret</button>
 
           <hr/>
 
