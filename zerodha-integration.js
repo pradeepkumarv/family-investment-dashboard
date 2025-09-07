@@ -129,8 +129,9 @@ async function apiRequest(endpoint, method = 'GET', params = {}) {
   return data.data;
 }
 async function getHoldings() {
-  return apiRequest('/portfolio/holdings');
-}
+ // return apiRequest('/portfolio/holdings');
+   return apiRequest('/api/zerodha/holdings');
+ }
 
 // Import and update
 async function importHoldings() {
@@ -243,7 +244,7 @@ function showSettings() {
     `);
 
    
-    document.getElementById('btn_import_holdings')?.addEventListener('click', async () => {
+   document.getElementById('btn_import_holdings')?.addEventListener('click', async () => {
   try {
     await importHoldings();
   } catch(e) {
@@ -251,7 +252,7 @@ function showSettings() {
   }
 });
      
-    document.getElementById('btn_update')?.addEventListener('click', async () => {
+document.getElementById('btn_update')?.addEventListener('click', async () => {
   try {
     await updatePrices();
   } catch(e) {
@@ -274,6 +275,8 @@ function showSettings() {
   document.getElementById('select_refresh_interval').value = savedRefresh;
   
   const modal = document.getElementById('zerodha_settings_modal');
+  if (oldModal) oldModal.remove();
+  
   modal.classList.remove('hidden');
 
   const enabled = Boolean(zerodhaAccessToken);
