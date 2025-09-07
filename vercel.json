@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/zerodha/session.js": {
+      "maxDuration": 10
+    }
+  }
+}
