@@ -66,7 +66,7 @@ function extractRequestToken() {
 async function generateSession(request_token) {
   try {
     log('Requesting session from backend...');
-    const response = await fetch('https://family-integration.vercel.app/api/zerodha/session', {
+    const response = await fetch('https://family-investment-dashboard-4hli.vercel.app/api/zerodha/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ request_token }),
