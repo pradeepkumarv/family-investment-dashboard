@@ -156,7 +156,7 @@ async function getHoldings() {
 
 // Import and update
 async function importHoldings() {
-  const pradeepId = 'bef9dbfa-2a47-49ce-b17a-19e5a40d4e98';
+  const pradeepId = 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49';
   const holdingsResponse = await getHoldings();
 
   // Defensive: log and check that response is as expected
@@ -212,7 +212,7 @@ async function updatePrices() {
 }
 // Example: render all investments for Pradeep in a table or list
 function renderInvestmentsForPradeep() {
-  const pradeepId = 'bef9dbfa-2a47-49ce-b17a-19e5a40d4e98';
+  const pradeepId = 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49';
   const pradeepInvestments = investments.filter(inv => inv.member_id === pradeepId);
 
   // Replace this with your actual rendering logic
