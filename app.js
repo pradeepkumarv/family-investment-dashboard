@@ -390,7 +390,7 @@ async function loadDashboardData() {
             renderLiabilityTabContent('homeLoan');
             renderAccounts();
             renderReminders();
-            renderInvestmentsByMember('befadefb-47ce-40'); // Replace with your actual member ID
+            renderInvestmentsByMember('bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'); // Replace with your actual member ID
             updateLastUpdated();
             
             setLoadingState(false);
