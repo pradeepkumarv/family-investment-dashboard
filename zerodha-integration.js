@@ -158,6 +158,7 @@ async function getHoldings() {
 async function importHoldings() {
   const pradeepId = 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49';
   const holdingsResponse = await getHoldings();
+  const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
 
   // Defensive: log and check that response is as expected
   console.log('Holdings response:', holdingsResponse);
@@ -193,10 +194,10 @@ async function importHoldings() {
   await loadDashboardData();
 }
 
-
 async function updatePrices() {
   if (!zerodhaAccessToken) throw new Error('Not connected');
-  const holdings = await getHoldings();
+  const holdingsResponse = await getHoldings();
+  const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
   let updatedCount = 0;
   for (const inv of investments.filter(i => i.broker_platform.includes('Zerodha'))) {
     const matchingHolding = holdings.find(h => h.tradingsymbol === inv.symbol_or_name);
@@ -210,6 +211,8 @@ async function updatePrices() {
   }
   showZerodhaMessage(`Updated ${updatedCount} prices`, 'success');
 }
+
+
 // Example: render all investments for Pradeep in a table or list
 function renderInvestmentsForPradeep() {
   const pradeepId = 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49';
