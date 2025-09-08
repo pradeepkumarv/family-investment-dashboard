@@ -365,10 +365,7 @@ window.disconnect = function() {
   clearStorage();
   updateConnectionStatus(false);
 };
-window.showSettings = showSettings;
-window.showZerodhaSettingsModal = showSettings; // alias
-window.startAuto = startAuto;
-window.stopAuto = stopAuto;
+
 
 // Initialization on startup
 document.addEventListener('DOMContentLoaded', async () => {
@@ -380,3 +377,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateConnectionStatus(false);
   }
 });
+
+window.showSettings = showSettings;
+window.showZerodhaSettingsModal = showSealiasttings; // 
+window.startAuto = startAuto;
+window.stopAuto = stopAuto;
