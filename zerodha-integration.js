@@ -157,7 +157,16 @@ async function getHoldings() {
 // Import and update
 async function importHoldings() {
   const pradeepId = 'bef9dbfa-2a47-49ce-b17a-19e5a40d4e98';
-  const holdings = await getHoldings();
+  const holdingsResponse = await getHoldings();
+
+  // Defensive: log and check that response is as expected
+  console.log('Holdings response:', holdingsResponse);
+
+  if (!holdingsResponse || holdingsResponse.status !== 'success' || !Array.isArray(holdingsResponse.data)) {
+    throw new Error('Import failed: holdings is not an array or fetch errored');
+  }
+
+  const holdings = holdingsResponse.data;
   const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
   let count = 0;
   for (const holding of holdings) {
@@ -183,6 +192,8 @@ async function importHoldings() {
   showZerodhaMessage(`Imported ${count} holdings`, 'success');
   await loadDashboardData();
 }
+
+
 async function updatePrices() {
   if (!zerodhaAccessToken) throw new Error('Not connected');
   const holdings = await getHoldings();
