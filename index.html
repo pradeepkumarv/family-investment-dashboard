@@ -2347,17 +2347,23 @@
    <section id="broker-integration-section" class="section">
     <h2>🔗 Broker Integration</h2>
     
-    <!-- Zerodha Integration -->
+    <!-- Zerodha Integration - UPDATED -->
     <div class="broker-card">
         <h3>📈 Zerodha</h3>
+        <div class="account-mapping">
+            <small>Equity: Pradeep Kumar V | MF: Saanvi Pradeep (UPDATED)</small>
+        </div>
         <div class="broker-buttons">
-            <button class="btn btn-primary" onclick="showSettings('zerodha')" title="Configure Zerodha settings">
+            <button class="btn btn-primary" onclick="showZerodhaSettings()" title="Configure Zerodha settings">
                 ⚙️ Zerodha Settings
             </button>
-            <button class="btn btn-success" onclick="zerodhaImportEquity()" title="Import equity holdings from Zerodha">
-                📥 EQ-Zerodha
+            <button class="btn btn-success" onclick="zerodhaImportAll()" title="Import equity (Pradeep) and MF (Saanvi) from Zerodha" style="background: #805ad5;">
+                📥 Import All
             </button>
-            <button class="btn btn-info" onclick="zerodhaImportMF()" title="Import mutual fund holdings from Zerodha">
+            <button class="btn btn-success" onclick="zerodhaImportEquity()" title="Import equity holdings for Pradeep Kumar V">
+                📈 EQ-Zerodha
+            </button>
+            <button class="btn btn-info" onclick="zerodhaImportMF()" title="Import mutual fund holdings for Saanvi Pradeep">
                 📊 MF-Zerodha
             </button>
             <button class="btn btn-warning" onclick="zerodhaUpdatePrices()" title="Update current prices for all Zerodha holdings">
@@ -2373,17 +2379,23 @@
     <!-- HDFC Securities Integration -->
     <div class="broker-card">
         <h3>🏦 HDFC Securities</h3>
+        <div class="account-mapping">
+            <small>Equity: Pradeep Kumar V | MF: Sanchita Pradeep</small>
+        </div>
         <div class="broker-buttons">
-            <button class="btn btn-primary" onclick="showSettings('hdfc')" title="Configure HDFC Securities settings">
+            <button class="btn btn-primary" onclick="showHDFCSettings()" title="Configure HDFC Securities settings">
                 ⚙️ HDFC Settings
             </button>
+            <button class="btn btn-success" onclick="hdfcImportAll()" title="Import both equity and MF from HDFC Securities" style="background: #805ad5;">
+                📥 Import All (Demo)
+            </button>
             <button class="btn btn-success" onclick="hdfcImportEquity()" title="Import equity holdings from HDFC Securities">
-                📥 EQ-HDFC
+                📈 EQ-HDFC
             </button>
             <button class="btn btn-info" onclick="hdfcImportMF()" title="Import mutual fund holdings from HDFC Securities">
                 📊 MF-HDFC
             </button>
-            <button class="btn btn-secondary" onclick="showMessage('HDFC integration coming soon!', 'info')" title="Price updates coming soon">
+            <button class="btn btn-secondary" onclick="hdfcUpdatePrices()" title="Update prices (Demo)">
                 🔄 Update Prices
             </button>
         </div>
@@ -2396,17 +2408,23 @@
     <!-- ICICI Securities Integration -->
     <div class="broker-card">
         <h3>💼 ICICI Securities</h3>
+        <div class="account-mapping">
+            <small>Equity & MF: Smruthi Pradeep</small>
+        </div>
         <div class="broker-buttons">
-            <button class="btn btn-primary" onclick="showSettings('icici')" title="Configure ICICI Securities settings">
+            <button class="btn btn-primary" onclick="showICICISettings()" title="Configure ICICI Securities settings">
                 ⚙️ ICICI Settings
             </button>
+            <button class="btn btn-success" onclick="iciciImportAll()" title="Import both equity and MF from ICICI Securities" style="background: #805ad5;">
+                📥 Import All (Demo)
+            </button>
             <button class="btn btn-success" onclick="iciciImportEquity()" title="Import equity holdings from ICICI Securities">
-                📥 EQ-ICICI
+                📈 EQ-ICICI
             </button>
             <button class="btn btn-info" onclick="iciciImportMF()" title="Import mutual fund holdings from ICICI Securities">
                 📊 MF-ICICI
             </button>
-            <button class="btn btn-secondary" onclick="showMessage('ICICI integration coming soon!', 'info')" title="Price updates coming soon">
+            <button class="btn btn-secondary" onclick="iciciUpdatePrices()" title="Update prices (Demo)">
                 🔄 Update Prices
             </button>
         </div>
@@ -2419,20 +2437,64 @@
     <!-- FundsIndia Integration -->
     <div class="broker-card">
         <h3>💰 FundsIndia</h3>
+        <div class="account-mapping">
+            <small>MF: Pradeep Kumar V</small>
+        </div>
         <div class="broker-buttons">
-            <button class="btn btn-primary" onclick="showSettings('fundsindia')" title="Configure FundsIndia settings">
+            <button class="btn btn-primary" onclick="showFundsIndiaSettings()" title="Configure FundsIndia settings">
                 ⚙️ FundsIndia Settings
             </button>
             <button class="btn btn-info" onclick="fundsindiaImportMF()" title="Import mutual fund holdings from FundsIndia">
                 📊 MF-FundsIndia
             </button>
-            <button class="btn btn-secondary" onclick="showMessage('FundsIndia integration coming soon!', 'info')" title="Price updates coming soon">
+            <button class="btn btn-secondary" onclick="fundsindiaUpdatePrices()" title="Update prices (Demo)">
                 🔄 Update Prices
             </button>
         </div>
         <div id="fundsindia-status" class="status-display">
             <span id="fundsindia-connection-status">❌ Not Connected</span>
             <span id="fundsindia-last-sync">Last sync: Never</span>
+        </div>
+    </div>
+
+    <!-- Updated Account Summary -->
+    <div class="account-summary-card" style="background: #e6fffa; border: 1px solid #38b2ac; border-radius: 8px; padding: 15px; margin-top: 20px;">
+        <h4 style="margin: 0 0 10px 0; color: #234e52;">📋 Updated Account Mapping Summary</h4>
+        <div class="mapping-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+            <div style="background: white; padding: 10px; border-radius: 6px;">
+                <strong>👨‍💼 Pradeep Kumar V</strong><br>
+                <small style="color: #4a5568;">
+                    • Equity: Zerodha, HDFC Securities<br>
+                    • MF: FundsIndia
+                </small>
+            </div>
+            <div style="background: white; padding: 10px; border-radius: 6px;">
+                <strong>👩‍💼 Smruthi Pradeep</strong><br>
+                <small style="color: #4a5568;">
+                    • Equity: ICICI Securities<br>
+                    • MF: ICICI Securities
+                </small>
+            </div>
+            <div style="background: white; padding: 10px; border-radius: 6px; border: 2px solid #f56565;">
+                <strong>👧 Saanvi Pradeep</strong><br>
+                <small style="color: #4a5568;">
+                    • Equity: None<br>
+                    • MF: Zerodha <span style="color: #e53e3e; font-weight: bold;">(UPDATED)</span>
+                </small>
+            </div>
+            <div style="background: white; padding: 10px; border-radius: 6px;">
+                <strong>👧 Sanchita Pradeep</strong><br>
+                <small style="color: #4a5568;">
+                    • Equity: None<br>
+                    • MF: HDFC Securities
+                </small>
+            </div>
+        </div>
+        <div style="margin-top: 15px; padding: 10px; background: #fef5e7; border-radius: 6px; border-left: 4px solid #f6ad55;">
+            <p style="margin: 0; font-size: 13px; color: #744210;">
+                <strong>Important Change:</strong> Zerodha MF imports now go to <strong>Saanvi Pradeep only</strong>. 
+                Pradeep Kumar V's mutual funds should be imported through FundsIndia.
+            </p>
         </div>
     </div>
 
@@ -2453,6 +2515,7 @@
                 <option value="zerodha">Zerodha Only</option>
                 <option value="hdfc">HDFC Only</option>
                 <option value="icici">ICICI Only</option>
+                <option value="fundsindia">FundsIndia Only</option>
             </select>
         </div>
         <div id="consolidated-portfolio" style="display: none; margin-top: 20px;">
@@ -2469,30 +2532,32 @@
             <div class="status-item">
                 <span class="status-broker">Zerodha</span>
                 <span id="zerodha-summary-status" class="status-indicator">❌</span>
-                <span class="status-details">Equity & MF supported</span>
+                <span class="status-details">EQ: Pradeep | MF: Saanvi</span>
             </div>
             <div class="status-item">
                 <span class="status-broker">HDFC Sec</span>
-                <span class="status-indicator">🚧</span>
-                <span class="status-details">Coming soon</span>
+                <span id="hdfc-summary-status" class="status-indicator">🚧</span>
+                <span class="status-details">EQ: Pradeep | MF: Sanchita</span>
             </div>
             <div class="status-item">
                 <span class="status-broker">ICICI Sec</span>
-                <span class="status-indicator">🚧</span>
-                <span class="status-details">Coming soon</span>
+                <span id="icici-summary-status" class="status-indicator">🚧</span>
+                <span class="status-details">EQ & MF: Smruthi</span>
             </div>
             <div class="status-item">
                 <span class="status-broker">FundsIndia</span>
-                <span class="status-indicator">🚧</span>
-                <span class="status-details">Coming soon</span>
+                <span id="fundsindia-summary-status" class="status-indicator">🚧</span>
+                <span class="status-details">MF: Pradeep</span>
             </div>
         </div>
     </div>
 </section>
-
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
     <script src="zerodha-integration.js" defer></script>
+    <script src="hdfc-securities-integration.js"></script>
+    <script src="icici-securities-integration.js"></script>
+    <script src="fundsindia-integration.js"></script>
     
 
 
