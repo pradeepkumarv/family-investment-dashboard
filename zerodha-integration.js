@@ -100,6 +100,10 @@ async function generateSession(request_token) {
         zerodhaAccessToken = data.data.access_token;
         localStorage.setItem('zerodha_access_token', zerodhaAccessToken);
         localStorage.setItem('zerodha_user_data', JSON.stringify(data.data));
+        // Immediately refresh the UI status
+        updateConnectionStatus();
+        updateModalStatus();
+
         log('Session created successfully', 'success');
         return data.data;
     } catch (error) {
