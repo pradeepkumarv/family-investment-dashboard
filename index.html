@@ -2122,52 +2122,151 @@
             </div>
         </div>
     </div>
-    <!-- IMPROVED HTML: Fixed Zerodha Section -->
+   <section id="broker-integration-section" class="section">
+    <h2>🔗 Broker Integration</h2>
+    
+    <!-- Zerodha Integration -->
+    <div class="broker-card">
+        <h3>📈 Zerodha</h3>
+        <div class="broker-buttons">
+            <button class="btn btn-primary" onclick="showSettings('zerodha')" title="Configure Zerodha settings">
+                ⚙️ Zerodha Settings
+            </button>
+            <button class="btn btn-success" onclick="zerodhaImportEquity()" title="Import equity holdings from Zerodha">
+                📥 EQ-Zerodha
+            </button>
+            <button class="btn btn-info" onclick="zerodhaImportMF()" title="Import mutual fund holdings from Zerodha">
+                📊 MF-Zerodha
+            </button>
+            <button class="btn btn-warning" onclick="zerodhaUpdatePrices()" title="Update current prices for all Zerodha holdings">
+                🔄 Update Prices
+            </button>
+        </div>
+        <div id="zerodha-status" class="status-display">
+            <span id="zerodha-connection-status">Checking connection...</span>
+            <span id="zerodha-last-sync">Last sync: Never</span>
+        </div>
+    </div>
 
-<!-- Make sure this section is VISIBLE (removed display:none) -->
-<section id="zerodha-section" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0;">
-    <h2>🔗 Zerodha Integration</h2>
-    
-    <!-- Status display at the top -->
-    <div id="zerodha-status" class="status-display" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
-        <span id="connection-status" style="display: block; font-weight: bold;">Checking connection...</span>
-        <span id="last-sync" style="display: block; font-size: 0.9em; color: #666;">Last sync: Never</span>
+    <!-- HDFC Securities Integration -->
+    <div class="broker-card">
+        <h3>🏦 HDFC Securities</h3>
+        <div class="broker-buttons">
+            <button class="btn btn-primary" onclick="showSettings('hdfc')" title="Configure HDFC Securities settings">
+                ⚙️ HDFC Settings
+            </button>
+            <button class="btn btn-success" onclick="hdfcImportEquity()" title="Import equity holdings from HDFC Securities">
+                📥 EQ-HDFC
+            </button>
+            <button class="btn btn-info" onclick="hdfcImportMF()" title="Import mutual fund holdings from HDFC Securities">
+                📊 MF-HDFC
+            </button>
+            <button class="btn btn-secondary" onclick="showMessage('HDFC integration coming soon!', 'info')" title="Price updates coming soon">
+                🔄 Update Prices
+            </button>
+        </div>
+        <div id="hdfc-status" class="status-display">
+            <span id="hdfc-connection-status">❌ Not Connected</span>
+            <span id="hdfc-last-sync">Last sync: Never</span>
+        </div>
     </div>
-    
-    <!-- Action buttons - using onclick for better compatibility -->
-    <div class="zerodha-actions" style="display: flex; flex-wrap: wrap; gap: 10px;">
-        <button class="btn btn-primary" onclick="showSettings()" title="Open Zerodha settings">
-            ⚙️ Zerodha Settings
-        </button>
-        
-        <button class="btn btn-success" onclick="zerodhaUpdatePrices()" title="Update current prices from Zerodha">
-            🔄 Update Prices
-        </button>
-        
-        <button class="btn btn-info" onclick="zerodhaImportHoldings()" title="Import holdings from Zerodha">
-            📥 Import Holdings
-        </button>
-        
-        <button class="btn btn-secondary" onclick="zerodhaViewPortfolio()" title="View Zerodha portfolio">
-            📊 View Portfolio
-        </button>
+
+    <!-- ICICI Securities Integration -->
+    <div class="broker-card">
+        <h3>💼 ICICI Securities</h3>
+        <div class="broker-buttons">
+            <button class="btn btn-primary" onclick="showSettings('icici')" title="Configure ICICI Securities settings">
+                ⚙️ ICICI Settings
+            </button>
+            <button class="btn btn-success" onclick="iciciImportEquity()" title="Import equity holdings from ICICI Securities">
+                📥 EQ-ICICI
+            </button>
+            <button class="btn btn-info" onclick="iciciImportMF()" title="Import mutual fund holdings from ICICI Securities">
+                📊 MF-ICICI
+            </button>
+            <button class="btn btn-secondary" onclick="showMessage('ICICI integration coming soon!', 'info')" title="Price updates coming soon">
+                🔄 Update Prices
+            </button>
+        </div>
+        <div id="icici-status" class="status-display">
+            <span id="icici-connection-status">❌ Not Connected</span>
+            <span id="icici-last-sync">Last sync: Never</span>
+        </div>
     </div>
-    
-    <!-- Member selection (if needed) -->
-    <div id="member-selection" style="margin-top: 15px; display: none;">
-        <label for="zerodha-member-select">Import for member:</label>
-        <select id="zerodha-member-select" class="form-control" style="width: 200px; display: inline-block; margin-left: 10px;">
-            <option value="">Select Member</option>
-        </select>
+
+    <!-- FundsIndia Integration -->
+    <div class="broker-card">
+        <h3>💰 FundsIndia</h3>
+        <div class="broker-buttons">
+            <button class="btn btn-primary" onclick="showSettings('fundsindia')" title="Configure FundsIndia settings">
+                ⚙️ FundsIndia Settings
+            </button>
+            <button class="btn btn-info" onclick="fundsindiaImportMF()" title="Import mutual fund holdings from FundsIndia">
+                📊 MF-FundsIndia
+            </button>
+            <button class="btn btn-secondary" onclick="showMessage('FundsIndia integration coming soon!', 'info')" title="Price updates coming soon">
+                🔄 Update Prices
+            </button>
+        </div>
+        <div id="fundsindia-status" class="status-display">
+            <span id="fundsindia-connection-status">❌ Not Connected</span>
+            <span id="fundsindia-last-sync">Last sync: Never</span>
+        </div>
     </div>
-    
-    <!-- Portfolio display area -->
-    <div id="zerodha-portfolio" style="margin-top: 15px; display: none;">
-        <h4>📈 Zerodha Portfolio</h4>
-        <div id="portfolio-content">Loading...</div>
+
+    <!-- Portfolio View -->
+    <div class="portfolio-view">
+        <h3>📊 Consolidated Portfolio View</h3>
+        <div class="portfolio-controls">
+            <button class="btn btn-outline" onclick="viewConsolidatedPortfolio()">
+                📈 View All Holdings
+            </button>
+            <button class="btn btn-outline" onclick="refreshAllBrokers()" title="Refresh data from all connected brokers">
+                🔄 Refresh All
+            </button>
+            <select id="portfolio-filter" onchange="filterPortfolioView()" class="form-control" style="width: auto; display: inline-block;">
+                <option value="all">All Holdings</option>
+                <option value="equity">Equity Only</option>
+                <option value="mutualFunds">Mutual Funds Only</option>
+                <option value="zerodha">Zerodha Only</option>
+                <option value="hdfc">HDFC Only</option>
+                <option value="icici">ICICI Only</option>
+            </select>
+        </div>
+        <div id="consolidated-portfolio" style="display: none; margin-top: 20px;">
+            <div id="investment-list-container">
+                <p>Click "View All Holdings" to see your consolidated portfolio</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integration Status Summary -->
+    <div class="integration-summary">
+        <h3>📋 Integration Status</h3>
+        <div class="status-grid">
+            <div class="status-item">
+                <span class="status-broker">Zerodha</span>
+                <span id="zerodha-summary-status" class="status-indicator">❌</span>
+                <span class="status-details">Equity & MF supported</span>
+            </div>
+            <div class="status-item">
+                <span class="status-broker">HDFC Sec</span>
+                <span class="status-indicator">🚧</span>
+                <span class="status-details">Coming soon</span>
+            </div>
+            <div class="status-item">
+                <span class="status-broker">ICICI Sec</span>
+                <span class="status-indicator">🚧</span>
+                <span class="status-details">Coming soon</span>
+            </div>
+            <div class="status-item">
+                <span class="status-broker">FundsIndia</span>
+                <span class="status-indicator">🚧</span>
+                <span class="status-details">Coming soon</span>
+            </div>
+        </div>
     </div>
 </section>
-
 
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
