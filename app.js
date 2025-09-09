@@ -3007,29 +3007,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function checkZerodhaFunctions() {
-        const functionsToCheck = ['showSettings', 'zerodhaUpdatePrices', 'zerodhaImportHoldings', 'zerodhaViewPortfolio'];
-        const missing = [];
-
-        functionsToCheck.forEach(funcName => {
-            if (typeof window[funcName] !== 'function') {
-                missing.push(funcName);
-            }
-        });
-
-        if (missing.length > 0) {
-            console.warn('⚠️ Missing Zerodha functions:', missing);
-            // Update connection status display
-            const statusEl = document.getElementById('connection-status');
-            if (statusEl) {
-                statusEl.textContent = '⚠️ Zerodha script not loaded properly';
-                statusEl.style.color = '#ffc107';
-            }
-        } else {
-            console.log('✅ All Zerodha functions are available');
-        }
-    }
-
+   
     function showZerodhaSection() {
         const section = document.getElementById('zerodha-section');
         if (section) {
@@ -3041,7 +3019,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ====== Initialize Zerodha Section
     showZerodhaSection();
     updateConnectionStatus();
-    setTimeout(checkZerodhaFunctions, 1000); // Delay to ensure scripts loaded
+    // setTimeout(checkZerodhaFunctions, 1000); // Delay to ensure scripts loaded
 
     // ====== Register Event Listeners (inside DOMContentLoaded)
     // Modal close buttons
@@ -3099,11 +3077,11 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateConnectionStatus, 30000);
 
     // Populate member dropdown if applicable
-    setTimeout(() => {
-        if (typeof familyMembers !== 'undefined') {
-            populateMemberDropdown();
-        }
-    }, 2000);
+    // setTimeout(() => {
+     //   if (typeof familyMembers !== 'undefined') {
+       //     populateMemberDropdown();
+       // }
+  //  }, 2000);
 });
 
 // ====== Any globally accessible functions
