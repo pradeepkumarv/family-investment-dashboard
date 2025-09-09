@@ -2122,28 +2122,52 @@
             </div>
         </div>
     </div>
-        <section id="zerodha-section" style="display:none">
-                        <h2>🔗 Zerodha Integration</h2>
-                             <button class="btn btn-primary" onclick="showSettings()">
-                            ⚙️ Zerodha Settings
-                            </button>
-                            <button id="connect-zerodha">Connect to Zerodha</button>
-                            <select id="member-select"></select>
-                        <button id="import-holdings" disabled>Import Holdings</button>
-                        <button id="update-prices" disabled>Update All</button>
-                         <button class="btn btn-success" onclick="zerodhaUpdatePrices()" title="Update current prices from Zerodha">
-                        🔄 Update Prices
-                         </button>
-                        <button class="btn btn-info" onclick="zerodhaImportHoldings()" title="Import holdings from Zerodha">
-                        📥 Import Holdings
-                            </button>
-                         <button id="view-zerodha-portfolio">View Portfolio</button>
-                          <div id="zerodha-status" class="status-display">
-        <span id="connection-status">Checking connection...</span>
-        <span id="last-sync">Last sync: Never</span>
+    <!-- IMPROVED HTML: Fixed Zerodha Section -->
+
+<!-- Make sure this section is VISIBLE (removed display:none) -->
+<section id="zerodha-section" style="padding: 15px; border: 1px solid #ddd; border-radius: 8px; margin: 10px 0;">
+    <h2>🔗 Zerodha Integration</h2>
+    
+    <!-- Status display at the top -->
+    <div id="zerodha-status" class="status-display" style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+        <span id="connection-status" style="display: block; font-weight: bold;">Checking connection...</span>
+        <span id="last-sync" style="display: block; font-size: 0.9em; color: #666;">Last sync: Never</span>
     </div>
-</div>                
-        </section>
+    
+    <!-- Action buttons - using onclick for better compatibility -->
+    <div class="zerodha-actions" style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <button class="btn btn-primary" onclick="showSettings()" title="Open Zerodha settings">
+            ⚙️ Zerodha Settings
+        </button>
+        
+        <button class="btn btn-success" onclick="zerodhaUpdatePrices()" title="Update current prices from Zerodha">
+            🔄 Update Prices
+        </button>
+        
+        <button class="btn btn-info" onclick="zerodhaImportHoldings()" title="Import holdings from Zerodha">
+            📥 Import Holdings
+        </button>
+        
+        <button class="btn btn-secondary" onclick="zerodhaViewPortfolio()" title="View Zerodha portfolio">
+            📊 View Portfolio
+        </button>
+    </div>
+    
+    <!-- Member selection (if needed) -->
+    <div id="member-selection" style="margin-top: 15px; display: none;">
+        <label for="zerodha-member-select">Import for member:</label>
+        <select id="zerodha-member-select" class="form-control" style="width: 200px; display: inline-block; margin-left: 10px;">
+            <option value="">Select Member</option>
+        </select>
+    </div>
+    
+    <!-- Portfolio display area -->
+    <div id="zerodha-portfolio" style="margin-top: 15px; display: none;">
+        <h4>📈 Zerodha Portfolio</h4>
+        <div id="portfolio-content">Loading...</div>
+    </div>
+</section>
+
 
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
