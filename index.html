@@ -1137,6 +1137,96 @@
     display: flex;
     gap: 5px;
 }
+ .zerodha-section {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+.zerodha-section button {
+    margin: 5px;
+    padding: 8px 15px;
+}
+
+.status-display {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.status-display span {
+    display: block;
+    margin: 2px 0;
+}
+
+/* Modal styles for the settings dialog */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.btn-close {
+    font-size: 24px;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.connection-status {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.actions button {
+    margin: 5px;
+}
+
+.help-text {
+    font-size: 0.85em;
+    color: #666;
+    margin: 5px 0;
+}
+
+.auto-refresh {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.auto-refresh select {
+    width: 100%;
+    padding: 5px;
+    margin: 5px 0;
+}       
     </style>
 </head>
 <body>
@@ -2034,12 +2124,26 @@
     </div>
         <section id="zerodha-section" style="display:none">
                         <h2>🔗 Zerodha Integration</h2>
-                        <button id="connect-zerodha">Connect to Zerodha</button>
+                             <button class="btn btn-primary" onclick="showSettings()">
+                            ⚙️ Zerodha Settings
+                            </button>
+                            <button id="connect-zerodha">Connect to Zerodha</button>
                             <select id="member-select"></select>
                         <button id="import-holdings" disabled>Import Holdings</button>
                         <button id="update-prices" disabled>Update All</button>
-                        <button id="view-zerodha-portfolio">View Portfolio</button>
-                        </section>
+                         <button class="btn btn-success" onclick="zerodhaUpdatePrices()" title="Update current prices from Zerodha">
+                        🔄 Update Prices
+                         </button>
+                        <button class="btn btn-info" onclick="zerodhaImportHoldings()" title="Import holdings from Zerodha">
+                        📥 Import Holdings
+                            </button>
+                         <button id="view-zerodha-portfolio">View Portfolio</button>
+                          <div id="zerodha-status" class="status-display">
+        <span id="connection-status">Checking connection...</span>
+        <span id="last-sync">Last sync: Never</span>
+    </div>
+</div>                
+        </section>
 
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
