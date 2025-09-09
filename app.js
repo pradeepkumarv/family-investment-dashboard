@@ -2968,20 +2968,22 @@ async function importAccountRecord(row, rowNumber) {
     await addAccountData(accountData);
 }
 
-// ===== EVENT LISTENERS =====
+// Your existing global variables and utility functions
+
+// ===== START of DOMContentLoaded =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 FamWealth Dashboard DOM loaded');
-    
-    // =====  ZERODHA CONNECTION STATUS =====
+
+    // ====== Zerodha Functions and Initialization ========
     function updateConnectionStatus() {
         try {
             const statusEl = document.getElementById('connection-status');
             const syncEl = document.getElementById('last-sync');
-            
+
             if (statusEl) {
                 const connected = localStorage.getItem('zerodha_access_token');
                 const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-                
+
                 if (connected) {
                     statusEl.textContent = `✅ Connected ${userData.user_name ? '(' + userData.user_name + ')' : ''}`;
                     statusEl.style.color = '#28a745';
@@ -2990,7 +2992,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusEl.style.color = '#dc3545';
                 }
             }
-            
+
             if (syncEl) {
                 const lastSync = localStorage.getItem('zerodha_last_sync');
                 if (lastSync) {
@@ -3004,21 +3006,20 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error updating Zerodha connection status:', error);
         }
     }
-    
-    // ===== ZERODHA FUNCTION AVAILABILITY CHECK =====
+
     function checkZerodhaFunctions() {
-        const functionsToCheck = ['showSettings', 'zerodhaUpdatePrices', 'zerodhaImportHoldings'];
+        const functionsToCheck = ['showSettings', 'zerodhaUpdatePrices', 'zerodhaImportHoldings', 'zerodhaViewPortfolio'];
         const missing = [];
-        
+
         functionsToCheck.forEach(funcName => {
             if (typeof window[funcName] !== 'function') {
                 missing.push(funcName);
             }
         });
-        
+
         if (missing.length > 0) {
             console.warn('⚠️ Missing Zerodha functions:', missing);
-            // Show a warning in the status
+            // Update connection status display
             const statusEl = document.getElementById('connection-status');
             if (statusEl) {
                 statusEl.textContent = '⚠️ Zerodha script not loaded properly';
@@ -3028,97 +3029,62 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ All Zerodha functions are available');
         }
     }
-    
-    // ===== ZERODHA SECTION VISIBILITY =====
+
     function showZerodhaSection() {
-        const zerodhaSection = document.getElementById('zerodha-section');
-        if (zerodhaSection) {
-            zerodhaSection.style.display = 'block';
+        const section = document.getElementById('zerodha-section');
+        if (section) {
+            section.style.display = 'block'; // make sure it's visible
             console.log('✅ Zerodha section is now visible');
         }
     }
-    
-    // ===== POPULATE MEMBER DROPDOWN =====
-    function populateMemberDropdown() {
-        const memberSelect = document.getElementById('zerodha-member-select');
-        if (memberSelect && typeof familyMembers !== 'undefined') {
-            memberSelect.innerHTML = '<option value="">Select Member</option>';
-            familyMembers.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = member.name;
-                memberSelect.appendChild(option);
-            });
-        }
-    }
-    
-    // ===== INITIALIZATION =====
-    // Show Zerodha section immediately
+
+    // ====== Initialize Zerodha Section
     showZerodhaSection();
-    
-    // Initial status update
     updateConnectionStatus();
-    
-    // Check if Zerodha functions are available (with delay to allow script loading)
-    setTimeout(checkZerodhaFunctions, 1000);
-    
-    // Update status every 30 seconds
-    setInterval(updateConnectionStatus, 30000);
-    
-    // Populate member dropdown when family data is loaded
-    setTimeout(populateMemberDropdown, 2000);
-    
-    // ===== EXISTING MODAL HANDLERS =====
-    // Add click handlers for modal close buttons
-    document.querySelectorAll('.btn-close').forEach(button => {
-        button.addEventListener('click', function() {
-            const modal = this.closest('.modal');
-            if (modal) {
-                closeModal(modal.id);
-            }
+    setTimeout(checkZerodhaFunctions, 1000); // Delay to ensure scripts loaded
+
+    // ====== Register Event Listeners (inside DOMContentLoaded)
+    // Modal close buttons
+    document.querySelectorAll('.btn-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modal = btn.closest('.modal');
+            if (modal) closeModal(modal.id);
         });
     });
 
-    // Add click handlers for modal backgrounds
+    // Modal background to close
     document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal(this.id);
-            }
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal(modal.id);
         });
     });
 
-    // Add escape key handler for modals
-    document.addEventListener('keydown', function(e) {
+    // Escape key for closing modals
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const openModal = document.querySelector('.modal:not(.hidden)');
-            if (openModal) {
-                closeModal(openModal.id);
-            }
+            if (openModal) closeModal(openModal.id);
         }
     });
 
-    // ===== FORM SUBMISSION HANDLERS =====
+    // Form submissions
     const forms = ['member-form', 'investment-form', 'liability-form', 'account-form'];
-    forms.forEach(formId => {
-        const form = document.getElementById(formId);
+    forms.forEach(fid => {
+        const form = document.getElementById(fid);
         if (form) {
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                if (formId === 'member-form') {
-                    saveMember();
-                } else if (formId === 'investment-form') {
-                    saveInvestment();
-                } else if (formId === 'liability-form') {
-                    saveLiability();
-                } else if (formId === 'account-form') {
-                    saveAccount();
+                switch (fid) {
+                    case 'member-form': saveMember(); break;
+                    case 'investment-form': saveInvestment(); break;
+                    case 'liability-form': saveLiability(); break;
+                    case 'account-form': saveAccount(); break;
                 }
             });
         }
     });
 
-    // ===== PROPERTY VALUE CALCULATION =====
+    // Property value calculation
     const sqftInput = document.getElementById('property-sqft');
     const rateInput = document.getElementById('cost-per-sqft');
     if (sqftInput && rateInput) {
@@ -3126,11 +3092,21 @@ document.addEventListener('DOMContentLoaded', function() {
         rateInput.addEventListener('input', updatePropertyValue);
     }
 
-    console.log('✅ Event listeners registered');
+    // Load other initializations, e.g., populate dashboard
+    // ... your remaining code ...
+
+    // Set interval to update connection status
+    setInterval(updateConnectionStatus, 30000);
+
+    // Populate member dropdown if applicable
+    setTimeout(() => {
+        if (typeof familyMembers !== 'undefined') {
+            populateMemberDropdown();
+        }
+    }, 2000);
 });
 
-// ===== ADDITIONAL ZERODHA HELPER FUNCTIONS =====
-// Add this function to handle portfolio viewing
+// ====== Any globally accessible functions
 function zerodhaViewPortfolio() {
     try {
         const connected = localStorage.getItem('zerodha_access_token');
@@ -3138,83 +3114,21 @@ function zerodhaViewPortfolio() {
             showMessage('Please connect to Zerodha first', 'warning');
             return;
         }
-        
         const portfolioDiv = document.getElementById('zerodha-portfolio');
         if (portfolioDiv) {
             portfolioDiv.style.display = 'block';
-            // Call your existing function to render investments
             if (typeof renderInvestmentsByMember === 'function') {
-                renderInvestmentsByMember('bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'); // Your member ID
+                renderInvestmentsByMember('YOUR_MEMBER_ID');
             }
         }
-    } catch (error) {
-        console.error('Error viewing portfolio:', error);
-        showMessage('Error viewing portfolio: ' + error.message, 'error');
+    } catch (e) {
+        console.error('Error viewing Zerodha portfolio:', e);
+        showMessage('Error viewing portfolio: ' + e.message, 'error');
     }
 }
 
-// Make it globally
-window.zerodhaViewPortfolio = zerodhaViewPortfolio;
-    
-    // Add click handlers for modal close buttons
-    document.querySelectorAll('.btn-close').forEach(button => {
-        button.addEventListener('click', function() {
-            const modal = this.closest('.modal');
-            if (modal) {
-                closeModal(modal.id);
-            }
-        });
-    });
-    
-    // Add click handlers for modal backgrounds
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal(this.id);
-            }
-        });
-    });
-    
-    // Add escape key handler for modals
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const openModal = document.querySelector('.modal:not(.hidden)');
-            if (openModal) {
-                closeModal(openModal.id);
-            }
-        }
-    });
-    
-    // Add form submission handlers
-    const forms = ['member-form', 'investment-form', 'liability-form', 'account-form'];
-    forms.forEach(formId => {
-        const form = document.getElementById(formId);
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                if (formId === 'member-form') {
-                    saveMember();
-                } else if (formId === 'investment-form') {
-                    saveInvestment();
-                } else if (formId === 'liability-form') {
-                    saveLiability();
-                } else if (formId === 'account-form') {
-                    saveAccount();
-                }
-            });
-        }
-    });
 
-    const sqftInput = document.getElementById('property-sqft');
-    const rateInput = document.getElementById('cost-per-sqft');
-    if (sqftInput && rateInput) {
-        sqftInput.addEventListener('input', updatePropertyValue);
-        rateInput.addEventListener('input', updatePropertyValue);
-    }
     
-    console.log('✅ Event listeners registered');
-});
 function renderInvestmentsByMember(memberId) {
   const container = document.getElementById('investment-list-container');
   if (!container) return;
