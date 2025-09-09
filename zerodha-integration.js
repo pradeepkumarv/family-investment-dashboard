@@ -1,9 +1,40 @@
-// zerodha-integration-fixed.js — Corrected full version with modal and member mapping
+// zerodha-integration-updated-v2.js - Updated with MF only for Saanvi Pradeep
+
+// Account mapping from accounts.xlsx - UPDATED
+const BROKER_MEMBER_MAPPING = {
+    // Pradeep Kumar V - has Zerodha & HDFC Securities for Demat, FundsIndia for MF
+    'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49': {
+        name: 'Pradeep Kumar V',
+        demat: ['Zerodha', 'HDFC Securities'],
+        mutualFunds: ['FundsIndia'] // Pradeep uses FundsIndia for MF, not Zerodha
+    },
+    // Smruthi Pradeep - has ICICI securities for both Demat and MF
+    '0221a8e7-fad8-42cd-bdf6-2f84b85dac31': {
+        name: 'Smruthi Pradeep', 
+        demat: ['ICICI Securities'],
+        mutualFunds: ['ICICI Securities']
+    },
+    // Saanvi Pradeep - has Zerodha for MF only
+    'c2f4b3d8-bb69-4516-b107-dffbde92c77c': {
+        name: 'Saanvi Pradeep',
+        demat: [],
+        mutualFunds: ['Zerodha'] // Only Saanvi uses Zerodha for MF
+    },
+    // Sanchita Pradeep - has HDFC Securities for MF only
+    'd3a4fc84-a94b-494d-915f-60901f16d973': {
+        name: 'Sanchita Pradeep',
+        demat: [],
+        mutualFunds: ['HDFC Securities']
+    }
+};
 
 const ZERODHA_CONFIG = {
-    api_key: 'ci3r8v1cbqb6e73p', // Your actual API key here
+    api_key: 'ci3r8v1cbqb6e73p',
     base_url: 'https://api.kite.trade',
-    login_url: 'https://kite.zerodha.com/connect/login'
+    login_url: 'https://kite.zerodha.com/connect/login',
+    // Zerodha members mapping - UPDATED
+    equity_members: ['bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'], // Only Pradeep has Zerodha Demat
+    mf_members: ['c2f4b3d8-bb69-4516-b107-dffbde92c77c'] // ONLY Saanvi has Zerodha MF
 };
 
 // State variables
@@ -21,20 +52,8 @@ function log(msg, type='info') {
 }
 
 function showZerodhaMessage(msg, type='info') {
-    if (typeof showMessage === 'function') {
-        showMessage(`Zerodha: ${msg}`, type);
-    } else {
-        console.log(msg);
-    }
-}
-
-function safeHTML(el, html) {
-    if (typeof el === 'string') el = document.getElementById(el);
-    if (!el) return;
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    el.innerHTML = '';
-    while (tmp.firstChild) el.appendChild(tmp.firstChild);
+    if (typeof showMessage === 'function') showMessage(`Zerodha: ${msg}`, type);
+    else console.log(msg);
 }
 
 function canMakeAPICall() {
@@ -51,7 +70,7 @@ function canMakeAPICall() {
     return true;
 }
 
-// Authentication
+// Authentication functions
 function generateLoginURL() {
     return `${ZERODHA_CONFIG.login_url}?api_key=${ZERODHA_CONFIG.api_key}`;
 }
@@ -73,14 +92,10 @@ async function generateSession(request_token) {
             body: JSON.stringify({ request_token }),
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
 
         const data = await response.json();
-        if (data.status !== 'success') {
-            throw new Error(data.error || data.message || 'Session creation failed');
-        }
+        if (data.status !== 'success') throw new Error(data.error || data.message || 'Session creation failed');
 
         zerodhaAccessToken = data.data.access_token;
         localStorage.setItem('zerodha_access_token', zerodhaAccessToken);
@@ -123,33 +138,7 @@ function clearStorage() {
     zerodhaAccessToken = null;
 }
 
-// API requests
-async function apiRequest(endpoint, method = 'GET', params = {}) {
-    if (!zerodhaAccessToken) throw new Error('Not connected');
-    if (!canMakeAPICall()) throw new Error('API rate limited');
-
-    const url = new URL(`${ZERODHA_CONFIG.base_url}${endpoint}`);
-    const options = {
-        method,
-        headers: {
-            'Authorization': `token ${ZERODHA_CONFIG.api_key}:${zerodhaAccessToken}`,
-            'X-Kite-Version': '3',
-            'Content-Type': 'application/json'
-        }
-    };
-
-    if (method === 'GET') {
-        Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
-    } else {
-        options.body = JSON.stringify(params);
-    }
-
-    const response = await fetch(url, options);
-    const data = await response.json();
-    if (data.status !== 'success') throw new Error(data.message || 'API error');
-    return data.data;
-}
-
+// API request functions
 async function getHoldings() {
     const proxyUrl = 'https://family-investment-dashboard-4hli.vercel.app/api/zerodha/holdings';
     try {
@@ -174,291 +163,528 @@ async function getHoldings() {
     }
 }
 
-// Import and update
-async function importHoldings() {
+async function getMutualFunds() {
+    const proxyUrl = 'https://family-investment-dashboard-4hli.vercel.app/api/zerodha/mf-holdings';
     try {
-        const pradeepId = 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49';
-        const holdingsResponse = await getHoldings();
-        
-        // Defensive: log and check that response is as expected
-        console.log('Holdings response:', holdingsResponse);
-        if (!holdingsResponse || holdingsResponse.status !== 'success' || !Array.isArray(holdingsResponse.data)) {
-            throw new Error('Import failed: holdings is not an array or fetch errored');
+        const response = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                access_token: localStorage.getItem('zerodha_access_token'),
+                api_key: ZERODHA_CONFIG.api_key
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const holdings = holdingsResponse.data;
-        const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-        let count = 0;
-
-        for (const holding of holdings) {
-            if (!investments.some(inv => 
-                inv.member_id === pradeepId && 
-                inv.symbol_or_name === holding.tradingsymbol && 
-                inv.broker_platform.includes('Zerodha')
-            )) {
-                await addInvestmentData({
-                    member_id: pradeepId,
-                    investment_type: 'equity',
-                    symbol_or_name: holding.tradingsymbol,
-                    invested_amount: holding.quantity * holding.average_price,
-                    current_value: holding.quantity * holding.last_price,
-                    broker_platform: `Zerodha (${userData.user_id})`,
-                    zerodha_data: holding,
-                    created_at: new Date().toISOString(),
-                    last_updated: new Date().toISOString()
-                });
-                count++;
-            }
-        }
-
-        showZerodhaMessage(`Imported ${count} holdings`, 'success');
-        await loadDashboardData();
+        const data = await response.json();
+        return data;
     } catch (error) {
-        log(error.message, 'error');
-        showZerodhaMessage(`Import failed: ${error.message}`, 'error');
+        console.error('Error fetching MF holdings:', error);
         throw error;
     }
 }
 
-// FIXED: updatePrices function with corrected syntax and error handling
-async function updatePrices() {
+// OPTION 1: Single connect for equity (Pradeep) and MF (Saanvi) - UPDATED
+async function zerodhaImportAll() {
     try {
-        if (!zerodhaAccessToken) {
-            throw new Error('Not connected to Zerodha');
+        if (!localStorage.getItem('zerodha_access_token')) {
+            showZerodhaMessage('Please connect to Zerodha first', 'warning');
+            return;
         }
 
-        log('Starting price update...', 'info');
-        const holdingsResponse = await getHoldings();
+        showZerodhaMessage('Importing all holdings from Zerodha...', 'info');
         
-        // Check if holdings response is valid
-        if (!holdingsResponse || holdingsResponse.status !== 'success' || !Array.isArray(holdingsResponse.data)) {
-            throw new Error('Failed to fetch holdings data');
+        let totalImported = 0;
+        
+        // Import Equity for Pradeep Kumar V only
+        const holdingsResponse = await getHoldings();
+        const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
+        
+        if (holdings.length > 0) {
+            const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
+            
+            // Import equity for Pradeep Kumar V only
+            for (const memberId of ZERODHA_CONFIG.equity_members) {
+                const memberInfo = BROKER_MEMBER_MAPPING[memberId];
+                
+                for (const holding of holdings) {
+                    if (!investments.some(inv => 
+                        inv.member_id === memberId && 
+                        inv.symbol_or_name === holding.tradingsymbol && 
+                        inv.broker_platform.includes('Zerodha') &&
+                        inv.investment_type === 'equity'
+                    )) {
+                        await addInvestmentData({
+                            member_id: memberId,
+                            investment_type: 'equity',
+                            symbol_or_name: holding.tradingsymbol,
+                            invested_amount: holding.quantity * holding.average_price,
+                            current_value: holding.quantity * holding.last_price,
+                            broker_platform: `Zerodha Equity (${memberInfo.name})`,
+                            zerodha_data: holding,
+                            equity_quantity: holding.quantity,
+                            equity_avg_price: holding.average_price,
+                            equity_symbol: holding.tradingsymbol,
+                            created_at: new Date().toISOString(),
+                            last_updated: new Date().toISOString()
+                        });
+                        totalImported++;
+                    }
+                }
+            }
         }
-
-        const holdings = holdingsResponse.data; // Fixed: consistent variable naming
-        let updatedCount = 0;
-
-        // Update prices for existing Zerodha investments
-        for (const inv of investments.filter(i => i.broker_platform && i.broker_platform.includes('Zerodha'))) {
-            const matchingHolding = holdings.find(h => h.tradingsymbol === inv.symbol_or_name);
-            if (matchingHolding) {
-                try {
-                    await updateInvestmentInDashboard(inv.id, {
-                        current_value: matchingHolding.quantity * matchingHolding.last_price,
-                        last_updated: new Date().toISOString()
-                    });
-                    updatedCount++;
-                } catch (updateError) {
-                    log(`Failed to update ${inv.symbol_or_name}: ${updateError.message}`, 'warning');
+        
+        // Import Mutual Funds for Saanvi Pradeep ONLY - UPDATED
+        const mfResponse = await getMutualFunds();
+        const mfHoldings = Array.isArray(mfResponse.data) ? mfResponse.data : [];
+        
+        if (mfHoldings.length > 0) {
+            const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
+            
+            // Import MF for Saanvi Pradeep ONLY
+            for (const memberId of ZERODHA_CONFIG.mf_members) {
+                const memberInfo = BROKER_MEMBER_MAPPING[memberId];
+                
+                for (const mf of mfHoldings) {
+                    if (!investments.some(inv => 
+                        inv.member_id === memberId && 
+                        inv.folio_number === mf.folio && 
+                        inv.broker_platform.includes('Zerodha') &&
+                        inv.investment_type === 'mutualFunds'
+                    )) {
+                        await addInvestmentData({
+                            member_id: memberId,
+                            investment_type: 'mutualFunds',
+                            symbol_or_name: mf.fund || mf.tradingsymbol,
+                            invested_amount: mf.quantity * mf.average_price,
+                            current_value: mf.quantity * mf.last_price,
+                            broker_platform: `Zerodha MF (${memberInfo.name})`,
+                            zerodha_data: mf,
+                            fund_name: mf.fund,
+                            folio_number: mf.folio,
+                            scheme_code: mf.instrument_token ? mf.instrument_token.toString() : '',
+                            fund_house: mf.fund_house || 'Unknown',
+                            mf_quantity: mf.quantity,
+                            mf_nav: mf.last_price,
+                            mf_average_price: mf.average_price,
+                            created_at: new Date().toISOString(),
+                            last_updated: new Date().toISOString()
+                        });
+                        totalImported++;
+                    }
                 }
             }
         }
 
-        showZerodhaMessage(`Updated ${updatedCount} prices successfully`, 'success');
-        log(`Price update completed: ${updatedCount} investments updated`, 'success');
+        localStorage.setItem('zerodha_last_sync', new Date().toISOString());
         
-        // Refresh the dashboard to show updated values
+        const equityMember = BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.equity_members[0]].name;
+        const mfMember = BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.mf_members[0]].name;
+        showZerodhaMessage(`Imported ${totalImported} total holdings (Equity: ${holdings.length} for ${equityMember}, MF: ${mfHoldings.length} for ${mfMember})`, 'success');
         await loadDashboardData();
-        
+
     } catch (error) {
-        log(`Price update failed: ${error.message}`, 'error');
-        showZerodhaMessage(`Price update failed: ${error.message}`, 'error');
-        throw error;
+        console.error('Error importing all holdings:', error);
+        showZerodhaMessage(`Failed to import holdings: ${error.message}`, 'error');
     }
 }
 
-// Example: render all investments for Pradeep in a table or list
-function renderInvestmentsForPradeep() {
-    const pradeepId = 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49';
-    const pradeepInvestments = investments.filter(inv => inv.member_id === pradeepId);
-    
-    // Replace this with your actual rendering logic
-    const container = document.getElementById('investment-list-container');
-    if (container) {
-        container.innerHTML = '';
-        pradeepInvestments.forEach(inv => {
-            const div = document.createElement('div');
-            div.textContent = `${inv.symbol_or_name}: Qty ${inv.quantity || '-'}, Current ₹${inv.current_value.toFixed(2)}`;
-            container.appendChild(div);
-        });
-    }
-}
-
-// Auto refresh
-function startAuto(minutes) {
-    clearInterval(autoRefreshInterval);
-    if (minutes > 0) {
-        refreshIntervalMinutes = minutes;
-        autoRefreshInterval = setInterval(() => {
-            updatePrices().catch(error => {
-                log(`Auto refresh failed: ${error.message}`, 'error');
-            });
-        }, minutes * 60 * 1000);
-        localStorage.setItem('zerodha_refresh', minutes);
-        updateNextRefreshText();
-    }
-}
-
-function stopAuto() {
-    clearInterval(autoRefreshInterval);
-    refreshIntervalMinutes = 0;
-    localStorage.removeItem('zerodha_refresh');
-    updateNextRefreshText();
-}
-
-function updateNextRefreshText() {
-    const el = document.getElementById('next-refresh');
-    if (el) {
-        el.textContent = refreshIntervalMinutes > 0 
-            ? `Next refresh: ${new Date(Date.now() + refreshIntervalMinutes * 60000).toLocaleTimeString()}` 
-            : '';
-    }
-}
-
-// FIXED: Settings Modal with proper error handling and HTML structure
-function showSettings() {
+// OPTION 2: Import equity for Pradeep Kumar V only
+async function zerodhaImportEquity() {
     try {
-        // Remove any previous modal instance before inserting new one
-        const oldModal = document.getElementById('zerodha_settings_modal');
-        if (oldModal) oldModal.remove();
-
-        const connected = !!zerodhaAccessToken;
-        const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-        
-        document.body.insertAdjacentHTML('beforeend', `
-            <div class="modal" id="zerodha_settings_modal" style="display: block;">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>🔗 Zerodha Integration Settings</h3>
-                        <span class="btn-close" onclick="closeZerodhaModal()">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <div class="connection-status">
-                            <p><strong>Status:</strong> ${connected ? '✅ Connected' : '❌ Not Connected'}</p>
-                            ${connected ? `
-                                <p><strong>User:</strong> ${userData.user_name || 'N/A'} (${userData.user_id || 'N/A'})</p>
-                                <p><strong>Broker:</strong> ${userData.broker || 'N/A'}</p>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="actions">
-                            ${!connected ? `
-                                <button class="btn btn-primary" onclick="connectToZerodha()">
-                                    🔗 Connect to Zerodha
-                                </button>
-                                <p class="help-text">Click to authenticate with your Zerodha account</p>
-                            ` : `
-                                <button class="btn btn-success" onclick="importHoldings()">
-                                    📥 Import Holdings
-                                </button>
-                                <button class="btn btn-info" onclick="updatePrices()">
-                                    🔄 Update Prices
-                                </button>
-                                <button class="btn btn-danger" onclick="disconnectZerodha()">
-                                    ❌ Disconnect
-                                </button>
-                            `}
-                        </div>
-                        
-                        ${connected ? `
-                            <div class="auto-refresh">
-                                <h4>🔄 Auto Refresh</h4>
-                                <select id="refresh_interval" onchange="handleRefreshChange()">
-                                    <option value="0">Disabled</option>
-                                    <option value="5">Every 5 minutes</option>
-                                    <option value="15">Every 15 minutes</option>
-                                    <option value="30">Every 30 minutes</option>
-                                    <option value="60">Every hour</option>
-                                </select>
-                                <p id="next-refresh" class="help-text"></p>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `);
-
-        // Set current refresh interval
-        if (connected) {
-            const refreshSelect = document.getElementById('refresh_interval');
-            if (refreshSelect) {
-                refreshSelect.value = refreshIntervalMinutes || 0;
-            }
-            updateNextRefreshText();
+        if (!localStorage.getItem('zerodha_access_token')) {
+            showZerodhaMessage('Please connect to Zerodha first', 'warning');
+            return;
         }
+
+        showZerodhaMessage('Importing equity holdings from Zerodha...', 'info');
         
+        const holdingsResponse = await getHoldings();
+        const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
+
+        if (holdings.length === 0) {
+            showZerodhaMessage('No equity holdings found', 'warning');
+            return;
+        }
+
+        let count = 0;
+        
+        // Import equity for Pradeep Kumar V only
+        for (const memberId of ZERODHA_CONFIG.equity_members) {
+            const memberInfo = BROKER_MEMBER_MAPPING[memberId];
+            
+            for (const holding of holdings) {
+                if (!investments.some(inv => 
+                    inv.member_id === memberId && 
+                    inv.symbol_or_name === holding.tradingsymbol && 
+                    inv.broker_platform.includes('Zerodha') &&
+                    inv.investment_type === 'equity'
+                )) {
+                    await addInvestmentData({
+                        member_id: memberId,
+                        investment_type: 'equity',
+                        symbol_or_name: holding.tradingsymbol,
+                        invested_amount: holding.quantity * holding.average_price,
+                        current_value: holding.quantity * holding.last_price,
+                        broker_platform: `Zerodha Equity (${memberInfo.name})`,
+                        zerodha_data: holding,
+                        equity_quantity: holding.quantity,
+                        equity_avg_price: holding.average_price,
+                        equity_symbol: holding.tradingsymbol,
+                        created_at: new Date().toISOString(),
+                        last_updated: new Date().toISOString()
+                    });
+                    count++;
+                }
+            }
+        }
+
+        localStorage.setItem('zerodha_last_sync', new Date().toISOString());
+        
+        showZerodhaMessage(`Imported ${count} equity holdings for ${BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.equity_members[0]].name}`, 'success');
+        await loadDashboardData();
+        renderInvestmentTabContent('equity');
+
     } catch (error) {
-        log(`Failed to show settings: ${error.message}`, 'error');
-        showZerodhaMessage(`Failed to open settings: ${error.message}`, 'error');
+        console.error('Error importing equity:', error);
+        showZerodhaMessage(`Failed to import equity: ${error.message}`, 'error');
     }
 }
 
-// Helper functions for the modal
-function closeZerodhaModal() {
-    const modal = document.getElementById('zerodha_settings_modal');
-    if (modal) modal.remove();
+// OPTION 2: Import MF for Saanvi Pradeep ONLY - UPDATED
+async function zerodhaImportMF() {
+    try {
+        if (!localStorage.getItem('zerodha_access_token')) {
+            showZerodhaMessage('Please connect to Zerodha first', 'warning');
+            return;
+        }
+
+        showZerodhaMessage('Importing mutual fund holdings from Zerodha...', 'info');
+        
+        const mfResponse = await getMutualFunds();
+        const mfHoldings = Array.isArray(mfResponse.data) ? mfResponse.data : [];
+
+        if (mfHoldings.length === 0) {
+            showZerodhaMessage('No mutual fund holdings found', 'warning');
+            return;
+        }
+
+        let count = 0;
+        
+        // Import MF for Saanvi Pradeep ONLY - UPDATED
+        for (const memberId of ZERODHA_CONFIG.mf_members) {
+            const memberInfo = BROKER_MEMBER_MAPPING[memberId];
+            
+            for (const mf of mfHoldings) {
+                if (!investments.some(inv => 
+                    inv.member_id === memberId && 
+                    inv.folio_number === mf.folio && 
+                    inv.broker_platform.includes('Zerodha') &&
+                    inv.investment_type === 'mutualFunds'
+                )) {
+                    await addInvestmentData({
+                        member_id: memberId,
+                        investment_type: 'mutualFunds',
+                        symbol_or_name: mf.fund || mf.tradingsymbol,
+                        invested_amount: mf.quantity * mf.average_price,
+                        current_value: mf.quantity * mf.last_price,
+                        broker_platform: `Zerodha MF (${memberInfo.name})`,
+                        zerodha_data: mf,
+                        fund_name: mf.fund,
+                        folio_number: mf.folio,
+                        scheme_code: mf.instrument_token ? mf.instrument_token.toString() : '',
+                        fund_house: mf.fund_house || 'Unknown',
+                        mf_quantity: mf.quantity,
+                        mf_nav: mf.last_price,
+                        mf_average_price: mf.average_price,
+                        created_at: new Date().toISOString(),
+                        last_updated: new Date().toISOString()
+                    });
+                    count++;
+                }
+            }
+        }
+
+        localStorage.setItem('zerodha_last_sync', new Date().toISOString());
+        
+        // Now only shows Saanvi Pradeep
+        const memberName = BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.mf_members[0]].name;
+        showZerodhaMessage(`Imported ${count} mutual fund holdings for ${memberName}`, 'success');
+        await loadDashboardData();
+        renderInvestmentTabContent('mutualFunds');
+
+    } catch (error) {
+        console.error('Error importing MF:', error);
+        showZerodhaMessage(`Failed to import mutual funds: ${error.message}`, 'error');
+    }
 }
 
-function connectToZerodha() {
-    window.location.href = generateLoginURL();
+// Enhanced price update function - UPDATED
+async function zerodhaUpdatePrices() {
+    try {
+        if (!localStorage.getItem('zerodha_access_token')) {
+            showZerodhaMessage('Please connect to Zerodha first', 'warning');
+            return;
+        }
+
+        showZerodhaMessage('Updating prices...', 'info');
+        
+        let updatedCount = 0;
+
+        // Update equity prices for Pradeep Kumar V only
+        try {
+            const holdings = await getHoldings();
+            const equityHoldings = Array.isArray(holdings.data) ? holdings.data : [];
+            
+            for (const inv of investments.filter(i => 
+                i.broker_platform.includes('Zerodha') && 
+                i.investment_type === 'equity' &&
+                ZERODHA_CONFIG.equity_members.includes(i.member_id)
+            )) {
+                const matchingHolding = equityHoldings.find(h => h.tradingsymbol === inv.symbol_or_name);
+                if (matchingHolding) {
+                    const invIndex = investments.findIndex(i => i.id === inv.id);
+                    if (invIndex !== -1) {
+                        investments[invIndex].current_value = matchingHolding.quantity * matchingHolding.last_price;
+                        investments[invIndex].equity_quantity = matchingHolding.quantity;
+                        investments[invIndex].last_updated = new Date().toISOString();
+                    }
+
+                    if (typeof updateInvestmentData === 'function') {
+                        await updateInvestmentData(inv.id, {
+                            current_value: matchingHolding.quantity * matchingHolding.last_price,
+                            equity_quantity: matchingHolding.quantity,
+                            last_updated: new Date().toISOString()
+                        });
+                    }
+                    updatedCount++;
+                }
+            }
+        } catch (error) {
+            console.error('Error updating equity prices:', error);
+        }
+
+        // Update MF prices for Saanvi Pradeep ONLY - UPDATED
+        try {
+            const mfHoldings = await getMutualFunds();
+            const mfData = Array.isArray(mfHoldings.data) ? mfHoldings.data : [];
+            
+            for (const inv of investments.filter(i => 
+                i.broker_platform.includes('Zerodha') && 
+                i.investment_type === 'mutualFunds' &&
+                ZERODHA_CONFIG.mf_members.includes(i.member_id)
+            )) {
+                const matchingMF = mfData.find(mf => mf.folio === inv.folio_number);
+                if (matchingMF) {
+                    const invIndex = investments.findIndex(i => i.id === inv.id);
+                    if (invIndex !== -1) {
+                        investments[invIndex].current_value = matchingMF.quantity * matchingMF.last_price;
+                        investments[invIndex].mf_quantity = matchingMF.quantity;
+                        investments[invIndex].mf_nav = matchingMF.last_price;
+                        investments[invIndex].last_updated = new Date().toISOString();
+                    }
+
+                    if (typeof updateInvestmentData === 'function') {
+                        await updateInvestmentData(inv.id, {
+                            current_value: matchingMF.quantity * matchingMF.last_price,
+                            mf_quantity: matchingMF.quantity,
+                            mf_nav: matchingMF.last_price,
+                            last_updated: new Date().toISOString()
+                        });
+                    }
+                    updatedCount++;
+                }
+            }
+        } catch (error) {
+            console.error('Error updating MF prices:', error);
+        }
+
+        localStorage.setItem('zerodha_last_sync', new Date().toISOString());
+        
+        showZerodhaMessage(`Updated ${updatedCount} holdings`, 'success');
+        
+        if (typeof loadDashboardData === 'function') {
+            await loadDashboardData();
+        }
+
+    } catch (error) {
+        console.error('Error updating prices:', error);
+        showZerodhaMessage(`Failed to update prices: ${error.message}`, 'error');
+    }
+}
+
+// Connection management
+async function connectZerodha() {
+    try {
+        const loginUrl = generateLoginURL();
+        showZerodhaMessage('Redirecting to Zerodha login...', 'info');
+        window.open(loginUrl, '_blank');
+    } catch (error) {
+        showZerodhaMessage(`Connection failed: ${error.message}`, 'error');
+    }
 }
 
 function disconnectZerodha() {
     clearStorage();
     showZerodhaMessage('Disconnected from Zerodha', 'info');
-    closeZerodhaModal();
+    
+    const statusEl = document.getElementById('zerodha-connection-status');
+    if (statusEl) {
+        statusEl.textContent = '❌ Not Connected';
+        statusEl.style.color = '#dc3545';
+    }
 }
 
-function handleRefreshChange() {
-    const select = document.getElementById('refresh_interval');
-    if (select) {
-        const minutes = parseInt(select.value) || 0;
-        if (minutes > 0) {
-            startAuto(minutes);
-            showZerodhaMessage(`Auto refresh enabled: every ${minutes} minutes`, 'success');
+// Auto-update functionality
+function setZerodhaAutoUpdate() {
+    const intervalSelect = document.getElementById('zerodha_update_interval');
+    if (!intervalSelect) return;
+
+    const minutes = parseInt(intervalSelect.value);
+    
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+
+    if (minutes > 0) {
+        autoRefreshInterval = setInterval(zerodhaUpdatePrices, minutes * 60 * 1000);
+        localStorage.setItem('zerodha_refresh_interval', minutes.toString());
+        showZerodhaMessage(`Auto-update set to ${minutes} minutes`, 'success');
+    } else {
+        localStorage.removeItem('zerodha_refresh_interval');
+        showZerodhaMessage('Auto-update disabled', 'info');
+    }
+}
+
+// Enhanced settings modal - UPDATED
+function showZerodhaSettings() {
+    const oldModal = document.getElementById('zerodha_settings_modal');
+    if (oldModal) oldModal.remove();
+
+    const equityMembersList = ZERODHA_CONFIG.equity_members.map(id => BROKER_MEMBER_MAPPING[id].name).join(', ');
+    const mfMembersList = ZERODHA_CONFIG.mf_members.map(id => BROKER_MEMBER_MAPPING[id].name).join(', ');
+
+    const modalContent = `
+        <div id="zerodha_settings_modal" class="modal" style="display: flex;">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h3>⚙️ Zerodha Settings</h3>
+                    <button class="btn-close" onclick="closeZerodhaModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-group" style="margin-bottom: 20px;">
+                        <h4>🔗 Connection</h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button onclick="connectZerodha()" class="btn btn-primary">Connect to Zerodha</button>
+                            <button onclick="disconnectZerodha()" class="btn btn-secondary">Disconnect</button>
+                        </div>
+                        <p style="font-size: 12px; color: #718096;">Click Connect to authenticate with your Zerodha account</p>
+                    </div>
+                    
+                    <div class="setting-group" style="margin-bottom: 20px;">
+                        <h4>📊 Account Mapping (from accounts.xlsx) - UPDATED</h4>
+                        <div style="background: #f7fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <p><strong>Equity Holdings:</strong> ${equityMembersList}</p>
+                            <p><strong>Mutual Fund Holdings:</strong> ${mfMembersList} <span style="color: #e53e3e; font-size: 12px;">(UPDATED: Only Saanvi)</span></p>
+                        </div>
+                        <div style="background: #fef5e7; border: 1px solid #f6ad55; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <p style="font-size: 12px; color: #744210; margin: 0;"><strong>Note:</strong> Pradeep Kumar V uses FundsIndia for mutual funds, not Zerodha.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-group" style="margin-bottom: 20px;">
+                        <h4>📥 Import Options</h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button onclick="zerodhaImportAll()" class="btn btn-success" style="background: #805ad5;">📥 Import All (Recommended)</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <button onclick="zerodhaImportEquity()" class="btn btn-success">📈 Import Equity Only</button>
+                            <button onclick="zerodhaImportMF()" class="btn btn-info">📊 Import MF Only</button>
+                        </div>
+                        <p style="font-size: 12px; color: #718096;">Import All will fetch equity for Pradeep and MF for Saanvi</p>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 20px;">
+                        <h4>🔄 Auto Update</h4>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <label>Update Interval:</label>
+                            <select id="zerodha_update_interval" style="padding: 5px;">
+                                <option value="0">Manual Only</option>
+                                <option value="15">Every 15 minutes</option>
+                                <option value="30">Every 30 minutes</option>
+                                <option value="60">Every hour</option>
+                            </select>
+                            <button onclick="setZerodhaAutoUpdate()" class="btn btn-info">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <h4>ℹ️ Status</h4>
+                        <div id="zerodha-modal-status">
+                            <p>Status: <span id="zerodha-modal-connection">Checking...</span></p>
+                            <p>Last Sync: <span id="zerodha-modal-sync">Never</span></p>
+                            <p>API Key: <code>${ZERODHA_CONFIG.api_key}</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    updateModalStatus();
+}
+
+function updateModalStatus() {
+    const connectionSpan = document.getElementById('zerodha-modal-connection');
+    const syncSpan = document.getElementById('zerodha-modal-sync');
+    
+    if (connectionSpan) {
+        const connected = localStorage.getItem('zerodha_access_token');
+        connectionSpan.textContent = connected ? '✅ Connected' : '❌ Disconnected';
+        connectionSpan.style.color = connected ? '#28a745' : '#dc3545';
+    }
+    
+    if (syncSpan) {
+        const lastSync = localStorage.getItem('zerodha_last_sync');
+        if (lastSync) {
+            const syncDate = new Date(lastSync);
+            syncSpan.textContent = syncDate.toLocaleString();
         } else {
-            stopAuto();
-            showZerodhaMessage('Auto refresh disabled', 'info');
+            syncSpan.textContent = 'Never';
         }
     }
 }
 
+function closeZerodhaModal() {
+    const modal = document.getElementById('zerodha_settings_modal');
+    if (modal) modal.remove();
+}
+
+// Make functions globally available
+window.zerodhaImportAll = zerodhaImportAll;
+window.zerodhaImportEquity = zerodhaImportEquity;
+window.zerodhaImportMF = zerodhaImportMF;
+window.zerodhaUpdatePrices = zerodhaUpdatePrices;
+window.connectZerodha = connectZerodha;
+window.disconnectZerodha = disconnectZerodha;
+window.setZerodhaAutoUpdate = setZerodhaAutoUpdate;
+window.showZerodhaSettings = showZerodhaSettings;
+
 // Initialize on load
-document.addEventListener('DOMContentLoaded', async function() {
-    log('Initializing Zerodha integration...', 'info');
+window.addEventListener('load', () => {
+    initFromStorage();
     
-    try {
-        // Check for request token from redirect
-        const requestToken = extractRequestToken();
-        if (requestToken) {
-            const sessionData = await generateSession(requestToken);
-            showZerodhaMessage('Successfully connected to Zerodha!', 'success');
-            
-            // Clean up URL
-            const url = new URL(window.location);
-            url.search = '';
-            window.history.replaceState({}, document.title, url.toString());
-        } else {
-            // Try to initialize from storage
-            await initFromStorage();
-        }
-        
-        // Restore auto refresh setting
-        const savedRefresh = localStorage.getItem('zerodha_refresh');
-        if (savedRefresh && zerodhaAccessToken) {
-            startAuto(parseInt(savedRefresh));
-        }
-        
-    } catch (error) {
-        log(`Initialization failed: ${error.message}`, 'error');
+    const savedInterval = localStorage.getItem('zerodha_refresh_interval');
+    if (savedInterval && parseInt(savedInterval) > 0) {
+        const minutes = parseInt(savedInterval);
+        autoRefreshInterval = setInterval(zerodhaUpdatePrices, minutes * 60 * 1000);
+        log(`Auto-update resumed: ${minutes} minutes`, 'info');
     }
 });
 
-// Make functions globally available
-window.showSettings = showSettings;
-window.zerodhaUpdatePrices = updatePrices;
-window.zerodhaImportHoldings = importHoldings;
-window.closeZerodhaModal = closeZerodhaModal;
-window.connectToZerodha = connectToZerodha;
-window.disconnectZerodha = disconnectZerodha;
-window.handleRefreshChange = handleRefreshChange;
+console.log('✅ Zerodha integration with proper member mapping loaded - MF only for Saanvi Pradeep');
