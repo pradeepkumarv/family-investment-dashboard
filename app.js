@@ -2972,6 +2972,190 @@ async function importAccountRecord(row, rowNumber) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 FamWealth Dashboard DOM loaded');
     
+    // =====  ZERODHA CONNECTION STATUS =====
+    function updateConnectionStatus() {
+        try {
+            const statusEl = document.getElementById('connection-status');
+            const syncEl = document.getElementById('last-sync');
+            
+            if (statusEl) {
+                const connected = localStorage.getItem('zerodha_access_token');
+                const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
+                
+                if (connected) {
+                    statusEl.textContent = `✅ Connected ${userData.user_name ? '(' + userData.user_name + ')' : ''}`;
+                    statusEl.style.color = '#28a745';
+                } else {
+                    statusEl.textContent = '❌ Not Connected';
+                    statusEl.style.color = '#dc3545';
+                }
+            }
+            
+            if (syncEl) {
+                const lastSync = localStorage.getItem('zerodha_last_sync');
+                if (lastSync) {
+                    const syncDate = new Date(lastSync);
+                    syncEl.textContent = `Last sync: ${syncDate.toLocaleString()}`;
+                } else {
+                    syncEl.textContent = 'Last sync: Never';
+                }
+            }
+        } catch (error) {
+            console.error('Error updating Zerodha connection status:', error);
+        }
+    }
+    
+    // ===== ZERODHA FUNCTION AVAILABILITY CHECK =====
+    function checkZerodhaFunctions() {
+        const functionsToCheck = ['showSettings', 'zerodhaUpdatePrices', 'zerodhaImportHoldings'];
+        const missing = [];
+        
+        functionsToCheck.forEach(funcName => {
+            if (typeof window[funcName] !== 'function') {
+                missing.push(funcName);
+            }
+        });
+        
+        if (missing.length > 0) {
+            console.warn('⚠️ Missing Zerodha functions:', missing);
+            // Show a warning in the status
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                statusEl.textContent = '⚠️ Zerodha script not loaded properly';
+                statusEl.style.color = '#ffc107';
+            }
+        } else {
+            console.log('✅ All Zerodha functions are available');
+        }
+    }
+    
+    // ===== ZERODHA SECTION VISIBILITY =====
+    function showZerodhaSection() {
+        const zerodhaSection = document.getElementById('zerodha-section');
+        if (zerodhaSection) {
+            zerodhaSection.style.display = 'block';
+            console.log('✅ Zerodha section is now visible');
+        }
+    }
+    
+    // ===== POPULATE MEMBER DROPDOWN =====
+    function populateMemberDropdown() {
+        const memberSelect = document.getElementById('zerodha-member-select');
+        if (memberSelect && typeof familyMembers !== 'undefined') {
+            memberSelect.innerHTML = '<option value="">Select Member</option>';
+            familyMembers.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = member.name;
+                memberSelect.appendChild(option);
+            });
+        }
+    }
+    
+    // ===== INITIALIZATION =====
+    // Show Zerodha section immediately
+    showZerodhaSection();
+    
+    // Initial status update
+    updateConnectionStatus();
+    
+    // Check if Zerodha functions are available (with delay to allow script loading)
+    setTimeout(checkZerodhaFunctions, 1000);
+    
+    // Update status every 30 seconds
+    setInterval(updateConnectionStatus, 30000);
+    
+    // Populate member dropdown when family data is loaded
+    setTimeout(populateMemberDropdown, 2000);
+    
+    // ===== EXISTING MODAL HANDLERS =====
+    // Add click handlers for modal close buttons
+    document.querySelectorAll('.btn-close').forEach(button => {
+        button.addEventListener('click', function() {
+            const modal = this.closest('.modal');
+            if (modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+
+    // Add click handlers for modal backgrounds
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal(this.id);
+            }
+        });
+    });
+
+    // Add escape key handler for modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const openModal = document.querySelector('.modal:not(.hidden)');
+            if (openModal) {
+                closeModal(openModal.id);
+            }
+        }
+    });
+
+    // ===== FORM SUBMISSION HANDLERS =====
+    const forms = ['member-form', 'investment-form', 'liability-form', 'account-form'];
+    forms.forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (formId === 'member-form') {
+                    saveMember();
+                } else if (formId === 'investment-form') {
+                    saveInvestment();
+                } else if (formId === 'liability-form') {
+                    saveLiability();
+                } else if (formId === 'account-form') {
+                    saveAccount();
+                }
+            });
+        }
+    });
+
+    // ===== PROPERTY VALUE CALCULATION =====
+    const sqftInput = document.getElementById('property-sqft');
+    const rateInput = document.getElementById('cost-per-sqft');
+    if (sqftInput && rateInput) {
+        sqftInput.addEventListener('input', updatePropertyValue);
+        rateInput.addEventListener('input', updatePropertyValue);
+    }
+
+    console.log('✅ Event listeners registered');
+});
+
+// ===== ADDITIONAL ZERODHA HELPER FUNCTIONS =====
+// Add this function to handle portfolio viewing
+function zerodhaViewPortfolio() {
+    try {
+        const connected = localStorage.getItem('zerodha_access_token');
+        if (!connected) {
+            showMessage('Please connect to Zerodha first', 'warning');
+            return;
+        }
+        
+        const portfolioDiv = document.getElementById('zerodha-portfolio');
+        if (portfolioDiv) {
+            portfolioDiv.style.display = 'block';
+            // Call your existing function to render investments
+            if (typeof renderInvestmentsByMember === 'function') {
+                renderInvestmentsByMember('bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'); // Your member ID
+            }
+        }
+    } catch (error) {
+        console.error('Error viewing portfolio:', error);
+        showMessage('Error viewing portfolio: ' + error.message, 'error');
+    }
+}
+
+// Make it globally
+window.zerodhaViewPortfolio = zerodhaViewPortfolio;
+    
     // Add click handlers for modal close buttons
     document.querySelectorAll('.btn-close').forEach(button => {
         button.addEventListener('click', function() {
