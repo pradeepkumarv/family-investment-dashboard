@@ -196,8 +196,8 @@ async function importHoldings() {
 
 async function updatePrices() {
   if (!zerodhaAccessToken) throw new Error('Not connected');
-  const holdingsResponse = await getHoldings();
-  const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
+  const holdings = await getHoldings();
+ \\ const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
   let updatedCount = 0;
   for (const inv of investments.filter(i => i.broker_platform.includes('Zerodha'))) {
     const matchingHolding = holdings.find(h => h.tradingsymbol === inv.symbol_or_name);
