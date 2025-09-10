@@ -1,5 +1,6 @@
 // zerodha-integration-updated-v2.js - Updated with MF only for Saanvi Pradeep
-// Version v2.0.0
+
+// Version 2.1.0
 
 // Account mapping from accounts.xlsx - UPDATED
 const BROKER_MEMBER_MAPPING = {
@@ -724,15 +725,58 @@ window.showZerodhaSettings = showZerodhaSettings;
 
 
 console.log('✅ Zerodha integration with proper member mapping loaded - MF only for Saanvi Pradeep');
-// Initialize on load
-window.addEventListener('load', () => {
-    initFromStorage();
-    updateConnectionStatus(); // Initial status check
+
+// ===== INITIALIZATION AND STATUS UPDATES =====
+// Initialize on page load and set up status monitoring
+window.addEventListener('load', async () => {
+    console.log('🚀 Zerodha integration initializing...');
     
+    // Initialize from storage
+    const tokenExists = await initFromStorage();
+    
+    // Always update status on load
+    updateConnectionStatus();
+    
+    // Check for OAuth callback
+    const requestToken = extractRequestToken();
+    if (requestToken) {
+        console.log('📋 Processing OAuth callback...');
+        try {
+            await generateSession(requestToken);
+            showZerodhaMessage('Successfully connected to Zerodha!', 'success');
+            
+            // Clean up URL
+            const url = new URL(window.location);
+            url.searchParams.delete('request_token');
+            url.searchParams.delete('action');
+            url.searchParams.delete('status');
+            window.history.replaceState({}, document.title, url);
+            
+        } catch (error) {
+            console.error('❌ OAuth callback failed:', error);
+            showZerodhaMessage('Failed to complete Zerodha connection', 'error');
+        }
+    }
+    
+    // Resume auto-refresh if configured
     const savedInterval = localStorage.getItem('zerodha_refresh_interval');
     if (savedInterval && parseInt(savedInterval) > 0) {
         const minutes = parseInt(savedInterval);
         autoRefreshInterval = setInterval(zerodhaUpdatePrices, minutes * 60 * 1000);
         log(`Auto-update resumed: ${minutes} minutes`, 'info');
     }
+    
+    console.log('✅ Zerodha integration ready');
 });
+
+// Monitor storage changes (for multi-tab sync)
+window.addEventListener('storage', (e) => {
+    if (e.key === 'zerodha_access_token') {
+        updateConnectionStatus();
+    }
+});
+
+// Periodic status check every 30 seconds
+setInterval(() => {
+    updateConnectionStatus();
+}, 30000);
