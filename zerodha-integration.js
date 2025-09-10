@@ -1,4 +1,5 @@
 // zerodha-integration-updated-v2.js - Updated with MF only for Saanvi Pradeep
+// Version v2.0.0
 
 // Account mapping from accounts.xlsx - UPDATED
 const BROKER_MEMBER_MAPPING = {
@@ -530,6 +531,47 @@ async function connectZerodha() {
         showZerodhaMessage(`Connection failed: ${error.message}`, 'error');
     }
 }
+// Add these functions to v2
+function updateConnectionStatus() {
+    try {
+        const statusEl = document.getElementById('zerodha-connection-status');
+        if (statusEl) {
+            const connected = localStorage.getItem('zerodha_access_token');
+            const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
+            
+            if (connected) {
+                statusEl.textContent = `✅ Connected ${userData.user_name ? '(' + userData.user_name + ')' : ''}`;
+                statusEl.style.color = '#28a745';
+            } else {
+                statusEl.textContent = '❌ Not Connected';
+                statusEl.style.color = '#dc3545';
+            }
+        }
+    } catch (error) {
+        console.error('Error updating connection status:', error);
+    }
+}
+
+function updateModalStatus() {
+    const connectionSpan = document.getElementById('zerodha-modal-connection');
+    const syncSpan = document.getElementById('zerodha-modal-sync');
+    
+    if (connectionSpan) {
+        const connected = localStorage.getItem('zerodha_access_token');
+        connectionSpan.textContent = connected ? '✅ Connected' : '❌ Disconnected';
+        connectionSpan.style.color = connected ? '#28a745' : '#dc3545';
+    }
+    
+    if (syncSpan) {
+        const lastSync = localStorage.getItem('zerodha_last_sync');
+        if (lastSync) {
+            const syncDate = new Date(lastSync);
+            syncSpan.textContent = syncDate.toLocaleString();
+        } else {
+            syncSpan.textContent = 'Never';
+        }
+    }
+}
 
 function disconnectZerodha() {
     clearStorage();
@@ -679,9 +721,13 @@ window.disconnectZerodha = disconnectZerodha;
 window.setZerodhaAutoUpdate = setZerodhaAutoUpdate;
 window.showZerodhaSettings = showZerodhaSettings;
 
+
+
+console.log('✅ Zerodha integration with proper member mapping loaded - MF only for Saanvi Pradeep');
 // Initialize on load
 window.addEventListener('load', () => {
     initFromStorage();
+    updateConnectionStatus(); // Initial status check
     
     const savedInterval = localStorage.getItem('zerodha_refresh_interval');
     if (savedInterval && parseInt(savedInterval) > 0) {
@@ -690,5 +736,3 @@ window.addEventListener('load', () => {
         log(`Auto-update resumed: ${minutes} minutes`, 'info');
     }
 });
-
-console.log('✅ Zerodha integration with proper member mapping loaded - MF only for Saanvi Pradeep');
