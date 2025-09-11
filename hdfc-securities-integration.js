@@ -336,3 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedToken) hdfcAccessToken = savedToken;
     updateHDFCConnectionStatus();
 });
+window.connectHDFC = connectHDFC;
+window.disconnectHDFC = disconnectHDFC;
+window.testHDFCConnection = testHDFCConnection;
+window.hdfcImportAll = hdfcImportAll;
+window.hdfcUpdatePrices = hdfcUpdatePrices;
+window.showHDFCSettings = showHDFCSettings;
+window.submitHDFCLogin = submitHDFCLogin;
+window.closeHDFCLoginModal = closeHDFCLoginModal;
+window.closeHDFCModal = closeHDFCModal;
+
