@@ -3185,14 +3185,7 @@ window.processImport = processImport;
 // Additional functions
 window.showDashboard = showDashboard;
 window.updateUserInfo = updateUserInfo;
-// ===== HDFC SECURITIES FUNCTIONS =====
-window.hdfcImportAll = hdfcImportAll;
-window.hdfcImportEquity = hdfcImportEquity;
-window.hdfcImportMF = hdfcImportMF;
-window.hdfcUpdatePrices = hdfcUpdatePrices;
-window.showHDFCSettings = showHDFCSettings;
-window.connectHDFC = connectHDFC;
-window.disconnectHDFC = disconnectHDFC;
+
 
 
 // ===== APPLICATION INITIALIZATION =====
