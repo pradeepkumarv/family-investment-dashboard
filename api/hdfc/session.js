@@ -16,12 +16,13 @@ export default async function handler(req, res) {
             if (!username || !password) {
                 return res.status(400).json({ error: 'Missing username or password' });
             }
+            
             const response = await fetch('https://developer.hdfcsec.com/ir-api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    api_key,
-                    api_secret,
+                    client_id: api_key,
+                    client_secret: api_secret,
                     username,
                     password
                 })
@@ -29,30 +30,28 @@ export default async function handler(req, res) {
 
             const text = await response.text();
             let data = {};
-            try { data = JSON.parse(text); } catch (e) { /* fallback */ }
-
-            // Debug logging to capture raw responses
+            try { 
+                data = JSON.parse(text); 
+            } catch (e) { 
+                console.error('Failed to parse HDFC response:', text);
+            }
+            
             console.log('HDFC LOGIN RESPONSE:', data);
 
-            if (
-                response.ok &&
-                data.status &&
-                data.status === 'TO_BE_AUTHENTICATED' &&
-                data.request_token
-            ) {
-                // OTP step required
+            if (response.ok && data.status === 'TO_BE_AUTHENTICATED' && data.request_token) {
                 return res.status(200).json({ otpRequired: true, request_token: data.request_token });
             } else if (response.ok && data.access_token) {
-                // Some accounts may grant access directly
                 return res.status(200).json({ access_token: data.access_token, user_info: data.user_info || {} });
             } else {
                 return res.status(400).json({ error: data.message || data.error || 'Login failed.' });
             }
+
         } else if (step === 'verify') {
             // Step 2: Submit OTP with request_token
             if (!otp || !request_token) {
                 return res.status(400).json({ error: 'Missing OTP or request token' });
             }
+            
             const response = await fetch('https://developer.hdfcsec.com/ir-api/auth/validate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -61,8 +60,12 @@ export default async function handler(req, res) {
 
             const text = await response.text();
             let data = {};
-            try { data = JSON.parse(text); } catch (e) {}
-
+            try { 
+                data = JSON.parse(text); 
+            } catch (e) {
+                console.error('Failed to parse HDFC OTP response:', text);
+            }
+            
             console.log('HDFC OTP VALIDATE RESPONSE:', data);
 
             if (response.ok && data.access_token) {
@@ -70,6 +73,7 @@ export default async function handler(req, res) {
             } else {
                 return res.status(400).json({ error: data.message || data.error || 'OTP validation failed.' });
             }
+
         } else {
             return res.status(400).json({ error: 'Invalid step parameter' });
         }
