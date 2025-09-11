@@ -1,103 +1,140 @@
-// api/hdfc/holdings.js - Backend proxy for HDFC Securities API
-import fetch from 'node-fetch';
+// api/hdfc/holdings.js - Vercel API endpoint for HDFC holdings data
 
 export default async function handler(req, res) {
-    // Set CORS headers
+    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
-
+    
     try {
-        let body = req.body;
-
-        // Handle different request formats
-        if (!body) {
-            const buffers = [];
-            for await (const chunk of req) buffers.push(chunk);
-            body = JSON.parse(Buffer.concat(buffers).toString());
-        }
-
-        if (typeof body === 'string') body = JSON.parse(body);
-
-        const { access_token, api_key, type } = body;
-
+        const { access_token, api_key } = req.body;
+        
         if (!access_token || !api_key) {
             return res.status(400).json({ 
-                error: 'Missing required parameters', 
-                required: ['access_token', 'api_key'] 
+                status: 'error', 
+                error: 'Missing required parameters: access_token, api_key' 
             });
         }
-
-        // HDFC Securities API endpoints
-        let apiUrl = '';
-        let headers = {
-            'Authorization': `Bearer ${access_token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        };
-
-        // Add API key to headers if required by HDFC
-        if (api_key) {
-            headers['x-api-key'] = api_key;
-        }
-
-        // Determine endpoint based on type
-        if (type === 'equity') {
-            // HDFC Securities Holdings API for Equity
-            apiUrl = 'https://developer.hdfcsec.com/oapi/v1/holdings';
-        } else if (type === 'mf' || type === 'mutualfunds') {
-            // HDFC Securities Holdings API for Mutual Funds
-            apiUrl = 'https://developer.hdfcsec.com/oapi/v1/holdings/mf';
-        } else {
-            return res.status(400).json({ 
-                error: 'Invalid type parameter', 
-                message: 'Type must be either "equity" or "mf"',
-                provided: type 
-            });
-        }
-
-        console.log(`Making request to HDFC API: ${apiUrl}`);
         
-        // Make request to HDFC Securities API
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: headers,
-            timeout: 30000 // 30 second timeout
+        // Make request to HDFC Securities Holdings API
+        const response = await fetch('https://developer.hdfcsec.com/oapi/v1/holdings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': access_token,
+                'X-API-Key': api_key
+            },
+            body: JSON.stringify({
+                api_key: api_key
+            })
         });
-
-        const responseBody = await response.text();
-        console.log(`HDFC API Response Status: ${response.status}`);
-        console.log(`HDFC API Response Body: ${responseBody.substring(0, 500)}...`);
-
-        let data;
-        try {
-            data = JSON.parse(responseBody);
-        } catch (parseError) {
-            console.error('Failed to parse HDFC API response:', parseError);
-            data = { 
-                error: 'Invalid JSON response from HDFC Securities', 
-                raw: responseBody.substring(0, 1000),
-                status: response.status
-            };
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Process and normalize the data
+            const normalizedData = normalizeHoldingsData(data);
+            
+            return res.status(200).json({
+                status: 'success',
+                data: normalizedData
+            });
+        } else {
+            return res.status(400).json({
+                status: 'error',
+                error: data.error || 'Failed to fetch holdings'
+            });
         }
-
-        // Return the response with the same status code
-        res.status(response.status).json(data);
-
+        
     } catch (error) {
-        console.error('HDFC Proxy API Error:', error);
-        res.status(500).json({ 
-            error: 'Internal Server Error', 
-            message: error.message,
-            timestamp: new Date().toISOString()
+        console.error('HDFC Holdings Error:', error);
+        return res.status(500).json({
+            status: 'error',
+            error: 'Internal server error: ' + error.message
         });
     }
+}
+
+// Normalize HDFC holdings data to a consistent format
+function normalizeHoldingsData(rawData) {
+    if (!rawData || !Array.isArray(rawData.data)) {
+        return [];
+    }
+    
+    return rawData.data.map(holding => ({
+        // Common fields
+        symbol: holding.symbol || holding.trading_symbol || holding.instrument_name,
+        instrument_type: determineInstrumentType(holding),
+        segment: holding.segment || holding.exchange,
+        
+        // Equity specific
+        quantity: holding.quantity || holding.units || 0,
+        average_price: holding.average_price || holding.avg_price || holding.average_nav || 0,
+        ltp: holding.ltp || holding.last_price || holding.nav || 0,
+        last_price: holding.ltp || holding.last_price || holding.nav || 0,
+        
+        // MF specific
+        units: holding.units || holding.quantity || 0,
+        nav: holding.nav || holding.ltp || holding.last_price || 0,
+        average_nav: holding.average_nav || holding.average_price || holding.avg_price || 0,
+        fund_name: holding.fund_name || holding.instrument_name || holding.symbol,
+        folio: holding.folio || holding.folio_number || '',
+        scheme_code: holding.scheme_code || '',
+        fund_house: holding.fund_house || extractFundHouse(holding.fund_name || holding.symbol),
+        
+        // Additional fields
+        product_type: holding.product_type || '',
+        isin: holding.isin || '',
+        
+        // Raw data for reference
+        raw_data: holding
+    }));
+}
+
+// Determine if holding is equity or mutual fund
+function determineInstrumentType(holding) {
+    if (holding.instrument_type === 'EQUITY' || 
+        holding.segment === 'NSE' || 
+        holding.segment === 'BSE' ||
+        holding.product_type === 'CNC' ||
+        holding.product_type === 'EQ') {
+        return 'EQUITY';
+    } else if (holding.instrument_type === 'MF' || 
+               holding.product_type === 'MF' ||
+               holding.fund_name ||
+               holding.nav ||
+               holding.units) {
+        return 'MF';
+    } else {
+        // Default based on available fields
+        return holding.quantity ? 'EQUITY' : 'MF';
+    }
+}
+
+// Extract fund house from fund name
+function extractFundHouse(fundName) {
+    if (!fundName) return 'Unknown';
+    
+    const commonFundHouses = [
+        'HDFC', 'ICICI', 'SBI', 'Axis', 'Kotak', 'Reliance', 'UTI', 'DSP',
+        'Franklin', 'Aditya Birla', 'Nippon', 'Mirae', 'L&T', 'PGIM'
+    ];
+    
+    for (const house of commonFundHouses) {
+        if (fundName.toUpperCase().includes(house.toUpperCase())) {
+            return house;
+        }
+    }
+    
+    // Extract first word as fund house
+    return fundName.split(' ')[0] || 'Unknown';
 }
