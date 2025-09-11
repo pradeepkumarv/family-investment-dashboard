@@ -1,4 +1,4 @@
-let tempSessions = {}; // Simple in-memory store for session tokens (use DB for production)
+// let tempSessions = {}; // Simple in-memory store for session tokens (use DB for production)
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
