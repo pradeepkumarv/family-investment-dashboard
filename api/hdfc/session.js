@@ -26,6 +26,11 @@ export default async function handler(req, res) {
                 return res.status(400).json({ error: 'Missing username or password for initiation' });
             }
 
+            catch (err) {
+        console.error('HDFC session API error:', err);
+        return res.status(500).json({ error: err.message || 'Internal server error' });
+    }
+}
             const response = await fetch('https://developer.hdfcsec.com/oapi/v1/initiate_session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
