@@ -1281,33 +1281,6 @@ function openAddMemberModal() {
     openModal('member-modal');
 }
 
-function showHDFCSettings() {
-  // Remove existing modal if present
-  const oldModal = document.getElementById('hdfc_settings_modal');
-  if (oldModal) oldModal.remove();
-
-  // Demo member names and config—replace with your actual values if needed
-  const equityMemberName = 'Pradeep Kumar V';
-  const mfMemberName = 'Sanchita Pradeep';
-
-  // Build the modal HTML
-  const modalDiv = document.createElement('div');
-  modalDiv.innerHTML = `
-    <div id="hdfc_settings_modal" class="modal" style="display:block; z-index:3000;">
-      <div class="modal-content">
-        <span class="close btn-close" onclick="document.getElementById('hdfc_settings_modal').remove()" style="cursor:pointer;">&times;</span>
-        <h2>HDFC Securities Integration Settings</h2>
-        <p><strong>Equity Member:</strong> ${equityMemberName}</p>
-        <p><strong>MF Member:</strong> ${mfMemberName}</p>
-        <p>API Key: <input type="text" id="hdfc_api_key_input" value="${window.HDFC_CONFIG ? window.HDFC_CONFIG.api_key : ''}" /></p>
-        <button onclick="connectHDFC()">Connect HDFC Securities</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modalDiv);
-}
-
-
 
 async function saveMember() {
     const name = document.getElementById('member-name').value.trim();
@@ -3212,8 +3185,6 @@ window.processImport = processImport;
 // Additional functions
 window.showDashboard = showDashboard;
 window.updateUserInfo = updateUserInfo;
-// Make it global
-window.showHDFCSettings = showHDFCSettings;
 
 // ===== APPLICATION INITIALIZATION =====
 window.addEventListener('load', async () => {
