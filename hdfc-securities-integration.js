@@ -42,6 +42,10 @@ function openHDFCLoginModal() {
     document.body.insertAdjacentHTML('beforeend', modalContent);
 }
 
+function connectHDFC() {
+    openHDFCLoginModal();
+}
+
 // CLOSE LOGIN MODAL
 function closeHDFCLoginModal() {
     const modal = document.getElementById('hdfc_login_modal');
