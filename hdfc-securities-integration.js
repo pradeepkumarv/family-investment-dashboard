@@ -25,21 +25,149 @@ function showHDFCMessage(msg, type = 'info') {
 function openHDFCLoginModal() {
     const oldModal = document.getElementById('hdfc_login_modal');
     if (oldModal) oldModal.remove();
-
     const modalContent = `
-    <div id="hdfc_login_modal" class="modal-fixed" style="display:block; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
-    <div style="background:#fff; max-width:400px; margin:10% auto; padding:20px; border-radius:10px; position:relative;">
-      <h3>HDFC Securities Login</h3>
-      <label>Username / Client ID<br><input type="text" id="hdfc_username" style="width:100%;" /></label><br><br>
-      <label>Password / MPIN<br><input type="password" id="hdfc_password" style="width:100%;" /></label><br><br>
-      <label>OTP (One Time Password)<br><input type="text" id="hdfc_otp" style="width:100%;" /></label><br><br>
-      <div style="text-align:right;">
-        <button onclick="submitHDFCLogin()">Login</button>
-        <button onclick="closeHDFCLoginModal()" style="margin-left:10px;">Cancel</button>
+    <div id="hdfc_login_modal" class="modal-fixed"
+        style="
+            display:block; position:fixed; top:0; left:0; width:100vw; height:100vh;
+            background:rgba(50,60,65,0.65); z-index:9999;
+        ">
+      <div style="
+            background:#fff; max-width:390px; margin:7% auto; 
+            padding:32px 26px 32px 26px; border-radius:16px; box-shadow:0 6px 24px rgba(40,47,61,0.16);
+            position:relative; font-family:Segoe UI,Arial,sans-serif;
+        ">
+        <button aria-label="Close" onclick="closeHDFCLoginModal()"
+            style="position:absolute; top:13px; right:18px; background:transparent; border:none; font-size:28px; cursor:pointer; color:#888;">&times;</button>
+        <h2 style="margin:0 0 20px 0; font-size:1.32em; color:#355c9c; font-weight:bold;">
+            HDFC Securities Login
+        </h2>
+        <div style="margin-bottom:15px;">
+            <label style="font-size:0.97em; color:#3a4e6b;">Username / Client ID</label>
+            <input type="text" id="hdfc_username"
+                autocomplete="username"
+                style="width:100%; margin-top:3px; padding:10px 12px; border-radius:7px; border:1px solid #ccd7ef; font-size:1em;" />
+        </div>
+        <div style="margin-bottom:15px;">
+            <label style="font-size:0.97em; color:#3a4e6b;">Password / MPIN</label>
+            <input type="password" id="hdfc_password"
+                autocomplete="current-password"
+                style="width:100%; margin-top:3px; padding:10px 12px; border-radius:7px; border:1px solid #ccd7ef; font-size:1em;" />
+        </div>
+        <div style="margin-bottom:18px;">
+            <label style="font-size:0.97em; color:#3a4e6b;">OTP (One Time Password)</label>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="hdfc_otp"
+                    autocomplete="one-time-code"
+                    style="flex:1; padding:10px 12px; border-radius:7px; border:1px solid #ccd7ef; font-size:1em;" />
+                <button onclick="requestHDFCOtp()" id="hdfc_request_otp_btn"
+                    style="
+                        padding:0 13px; border:none; font-size:0.97em; border-radius:6px;
+                        background:#e8f0fe; color:#0355b0; cursor:pointer; height:40px;
+                        box-shadow:0 1px 2px rgba(44,105,187,0.09);
+                        transition: background 0.13s;
+                    ">Request OTP</button>
+            </div>
+            <span id="hdfc_otp_status" style="color:#c43030;font-size:0.91em;display:block;margin-top:4px;"></span>
+        </div>
+        <div style="margin-top:24px; display:flex; justify-content:space-between; gap:10px;">
+            <button onclick="submitHDFCLogin()" id="hdfc_login_btn"
+                style="
+                    padding:9px 28px; border:none; font-size:1em; border-radius:8px;
+                    background:#2c7be5; color:#fff; font-weight:bold;
+                    cursor:pointer;box-shadow:0 1px 4px rgba(44,123,229,0.08);transition:background 0.13s;
+                ">Login</button>
+            <button onclick="closeHDFCLoginModal()"
+                style="
+                    padding:9px 18px; border:none; font-size:1em; border-radius:8px;
+                    background:#eaedf3; color:#212326; cursor:pointer;
+                    box-shadow:0 1px 4px rgba(48,51,72,0.06);transition:background 0.13s;
+                ">Cancel</button>
+        </div>
       </div>
-    </div></div>
+    </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalContent);
+}
+
+window.openHDFCLoginModal = openHDFCLoginModal;
+
+/** Call this to request OTP from the backend */
+function requestHDFCOtp() {
+    const username = document.getElementById('hdfc_username').value.trim();
+    const password = document.getElementById('hdfc_password').value.trim();
+    const otpStatus = document.getElementById('hdfc_otp_status');
+    if (!username || !password) {
+        otpStatus.textContent = 'Please enter username and password first.';
+        return;
+    }
+    otpStatus.textContent = 'Requesting OTP...';
+
+    // Step 1: Request OTP via backend
+    fetch('https://family-investment-dashboard-4hli.vercel.app/api/hdfc/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            step: 'initiate',
+            username,
+            password,
+            api_key: HDFC_CONFIG.api_key,
+            api_secret: HDFC_CONFIG.api_secret
+        })
+    }).then(resp => resp.json()).then(data => {
+        if (data.otpRequired) {
+            otpStatus.textContent = 'OTP sent to your registered mobile/email. Enter it here.';
+            window.hdfcSessionToken = data.session_token; // Save session token for OTP verify step
+        } else if (data.error) {
+            otpStatus.textContent = data.error;
+        } else {
+            otpStatus.textContent = 'Unexpected response from server.';
+        }
+    }).catch(e => {
+        otpStatus.textContent = 'Failed to request OTP.';
+    });
+}
+
+window.requestHDFCOtp = requestHDFCOtp;
+
+/** Login handler updates to use session_token for OTP verify */
+async function submitHDFCLogin() {
+    const username = document.getElementById('hdfc_username').value.trim();
+    const otp = document.getElementById('hdfc_otp').value.trim();
+    const otpStatus = document.getElementById('hdfc_otp_status');
+    if (!otp) {
+        otpStatus.textContent = 'Enter OTP sent by HDFC.';
+        return;
+    }
+    if (!window.hdfcSessionToken) {
+        otpStatus.textContent = 'You must request OTP first.';
+        return;
+    }
+    otpStatus.textContent = 'Logging in with OTP...';
+
+    // Step 2: Submit OTP
+    fetch('https://family-investment-dashboard-4hli.vercel.app/api/hdfc/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            step: 'verify',
+            otp,
+            session_token: window.hdfcSessionToken,
+            api_key: HDFC_CONFIG.api_key,
+            api_secret: HDFC_CONFIG.api_secret
+        })
+    }).then(resp => resp.json()).then(data => {
+        if (data.access_token) {
+            localStorage.setItem('hdfc_access_token', data.access_token);
+            otpStatus.textContent = '';
+            showHDFCMessage('HDFC connected successfully!', 'success');
+            closeHDFCLoginModal();
+            updateHDFCConnectionStatus();
+        } else {
+            otpStatus.textContent = data.error || 'OTP verification failed.';
+        }
+    }).catch(e => {
+        otpStatus.textContent = 'Login failed.';
+    });
 }
 
 function connectHDFC() {
