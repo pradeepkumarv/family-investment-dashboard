@@ -1,34 +1,18 @@
-// hdfc-securities-integration.js - PRODUCTION VERSION with Real API Integration
+// hdfc-securities-integration.js - Full production HDFC Securities integration with login modal and data import
 
 const HDFC_CONFIG = {
     api_key: '5f5de761677a4283bd623e6a1013395b',
-    api_secret: '8ed88c629bc04639afcdca15381bd965', // You need to get this from HDFC Developer Portal
-    
-    // Real HDFC Securities API endpoints
-    base_url: 'https://developer.hdfcsec.com/oapi/v1',
-    login_url: 'https://developer.hdfcsec.com/oapi/v1/login',
-    access_token_url: 'https://developer.hdfcsec.com/oapi/v1/access/token',
-    validate_url: 'https://developer.hdfcsec.com/oapi/v1/validate',
-    holdings_url: 'https://developer.hdfcsec.com/oapi/v1/holdings',
-    profile_url: 'https://developer.hdfcsec.com/oapi/v1/user/profile',
-    
-    // Backend proxy URLs (you need to create these)
+    api_secret: '8ed88c629bc04639afcdca15381bd965', // Your actual secret here
     backend_base: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc',
-    
-    // Member mapping
     members: {
         equity: 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49', // Pradeep Kumar V
         mf: 'd3a4fc84-a94b-494d-915f-60901f16d973', // Sanchita Pradeep
-    },
-    
-    // Redirect URL for OAuth flow
-    redirect_url: window.location.origin
+    }
 };
 
 let hdfcAccessToken = null;
-let hdfcRequestToken = null;
 
-// Utility functions
+// Utility: Show message extraction wrapper
 function showHDFCMessage(msg, type = 'info') {
     if (typeof showMessage === 'function') {
         showMessage(`HDFC Securities: ${msg}`, type);
@@ -37,593 +21,318 @@ function showHDFCMessage(msg, type = 'info') {
     }
 }
 
-// ===== AUTHENTICATION FLOW =====
+// OPEN LOGIN MODAL
+function openHDFCLoginModal() {
+    const oldModal = document.getElementById('hdfc_login_modal');
+    if (oldModal) oldModal.remove();
 
-// Step 1: Generate login URL and redirect user
-function connectHDFC() {
-    try {
-        showHDFCMessage('Redirecting to HDFC Securities login...', 'info');
-        
-        // Generate login URL with proper parameters
-        const loginParams = new URLSearchParams({
-            api_key: HDFC_CONFIG.api_key,
-            redirect_url: HDFC_CONFIG.redirect_url,
-            response_type: 'code',
-            state: 'hdfc_auth_' + Date.now()
-        });
-        
-        const loginUrl = `${HDFC_CONFIG.login_url}?${loginParams.toString()}`;
-        
-        console.log('🔗 HDFC Login URL:', loginUrl);
-        
-        // Store state for verification
-        localStorage.setItem('hdfc_auth_state', loginParams.get('state'));
-        
-        // Redirect to HDFC Securities login
-        window.location.href = loginUrl;
-        
-    } catch (error) {
-        showHDFCMessage(`Connection failed: ${error.message}`, 'error');
-    }
+    const modalContent = `
+    <div id="hdfc_login_modal" class="modal-fixed" style="display:block; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background:#fff; max-width:400px; margin:10% auto; padding:20px; border-radius:10px; position:relative;">
+      <h3>HDFC Securities Login</h3>
+      <label>Username / Client ID<br><input type="text" id="hdfc_username" style="width:100%;" /></label><br><br>
+      <label>Password / MPIN<br><input type="password" id="hdfc_password" style="width:100%;" /></label><br><br>
+      <label>OTP (One Time Password)<br><input type="text" id="hdfc_otp" style="width:100%;" /></label><br><br>
+      <div style="text-align:right;">
+        <button onclick="submitHDFCLogin()">Login</button>
+        <button onclick="closeHDFCLoginModal()" style="margin-left:10px;">Cancel</button>
+      </div>
+    </div></div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalContent);
 }
 
-// Step 2: Handle redirect callback and extract request token
-function handleHDFCCallback() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const requestToken = urlParams.get('request_token');
-    const status = urlParams.get('status');
-    const state = urlParams.get('state');
-    
-    // Verify state parameter
-    const storedState = localStorage.getItem('hdfc_auth_state');
-    if (state && state !== storedState) {
-        showHDFCMessage('Invalid authentication state', 'error');
+// CLOSE LOGIN MODAL
+function closeHDFCLoginModal() {
+    const modal = document.getElementById('hdfc_login_modal');
+    if (modal) modal.remove();
+}
+
+// SUBMIT LOGIN FORM
+async function submitHDFCLogin() {
+    const username = document.getElementById('hdfc_username').value.trim();
+    const password = document.getElementById('hdfc_password').value.trim();
+    const otp = document.getElementById('hdfc_otp').value.trim();
+
+    if (!username || !password || !otp) {
+        showHDFCMessage('Please fill all login fields', 'warning');
         return;
     }
-    
-    if (status === 'success' && requestToken) {
-        console.log('✅ Request token received:', requestToken);
-        hdfcRequestToken = requestToken;
-        
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Generate access token
-        generateHDFCAccessToken(requestToken);
-    } else if (status === 'error') {
-        const error = urlParams.get('error') || 'Authentication failed';
-        showHDFCMessage(`Authentication error: ${error}`, 'error');
-    }
-}
 
-// Step 3: Exchange request token for access token
-async function generateHDFCAccessToken(requestToken) {
     try {
-        showHDFCMessage('Generating access token...', 'info');
-        
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
-                request_token: requestToken,
+                username, password, otp,
                 api_key: HDFC_CONFIG.api_key,
                 api_secret: HDFC_CONFIG.api_secret
             })
         });
-        
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            hdfcAccessToken = data.data.access_token;
-            
-            // Store tokens
+        const data = await resp.json();
+        if (resp.ok) {
+            hdfcAccessToken = data.access_token;
             localStorage.setItem('hdfc_access_token', hdfcAccessToken);
-            localStorage.setItem('hdfc_user_data', JSON.stringify(data.data));
-            localStorage.setItem('hdfc_token_generated_at', Date.now().toString());
-            
-            showHDFCMessage('Successfully connected to HDFC Securities!', 'success');
-            
-            // Update UI
+            showHDFCMessage('HDFC connected successfully!', 'success');
+            closeHDFCLoginModal();
             updateHDFCConnectionStatus();
-            
-            // Fetch user profile
-            await fetchHDFCProfile();
-            
         } else {
-            throw new Error(data.error || 'Failed to generate access token');
+            showHDFCMessage(`Login failed: ${data.error}`, 'error');
         }
-        
-    } catch (error) {
-        console.error('Access token generation failed:', error);
-        showHDFCMessage(`Failed to generate access token: ${error.message}`, 'error');
+    } catch(e) {
+        showHDFCMessage(`Login request failed: ${e.message}`, 'error');
     }
 }
 
-// Step 4: Fetch user profile to verify connection
-async function fetchHDFCProfile() {
+// UPDATE CONNECTION STATUS ON UI
+function updateHDFCConnectionStatus() {
+    const statusEls = document.querySelectorAll('.hdfc-connection-status');
+    const connected = !!localStorage.getItem('hdfc_access_token');
+
+    statusEls.forEach(el => {
+        el.textContent = connected ? '✅ Connected' : '❌ Not Connected';
+        el.style.color = connected ? '#28a745' : '#dc3545';
+    });
+}
+
+// DISCONNECT ACTION
+function disconnectHDFC() {
+    localStorage.removeItem('hdfc_access_token');
+    hdfcAccessToken = null;
+    showHDFCMessage('Disconnected from HDFC Securities', 'info');
+    updateHDFCConnectionStatus();
+}
+
+// TEST CONNECTION ACTION (fetch profile)
+async function testHDFCConnection() {
+    const token = localStorage.getItem('hdfc_access_token');
+    if (!token) {
+        showHDFCMessage('No access token. Please login first.', 'warning');
+        return;
+    }
     try {
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/profile`, {
+        showHDFCMessage('Testing connection...', 'info');
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/profile`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                access_token: hdfcAccessToken,
-                api_key: HDFC_CONFIG.api_key
-            })
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ access_token: token, api_key: HDFC_CONFIG.api_key })
         });
-        
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            console.log('✅ User profile fetched:', data.data);
-            localStorage.setItem('hdfc_profile', JSON.stringify(data.data));
-            showHDFCMessage(`Welcome ${data.data.user_name}!`, 'success');
+        const data = await resp.json();
+        if (resp.ok) {
+            showHDFCMessage(`Connection valid. Welcome ${data.data.user_name}!`, 'success');
+        } else {
+            showHDFCMessage(`Connection test failed: ${data.error}`, 'error');
         }
-        
-    } catch (error) {
-        console.error('Profile fetch failed:', error);
+    } catch (e) {
+        showHDFCMessage(`Connection test error: ${e.message}`, 'error');
     }
 }
 
-// ===== DATA FETCHING FUNCTIONS =====
-
-// Fetch Holdings (Equity + MF)
+// FETCH HOLDINGS FROM BACKEND
 async function fetchHDFCHoldings() {
-    try {
-        if (!hdfcAccessToken) {
-            throw new Error('Not authenticated. Please connect first.');
-        }
-        
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/holdings`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                access_token: hdfcAccessToken,
-                api_key: HDFC_CONFIG.api_key
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-            return data.data;
-        } else {
-            throw new Error(data.error || 'Failed to fetch holdings');
-        }
-        
-    } catch (error) {
-        console.error('Holdings fetch failed:', error);
-        throw error;
-    }
+    if (!hdfcAccessToken) throw new Error('Not authenticated. Please login.');
+    const resp = await fetch(`${HDFC_CONFIG.backend_base}/holdings`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ access_token: hdfcAccessToken, api_key: HDFC_CONFIG.api_key })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Failed to fetch holdings');
+    return data.data;
 }
 
-// ===== IMPORT FUNCTIONS =====
-
-// Import All Holdings (Equity + MF)
+// IMPORT ALL HOLDINGS INTO DASHBOARD DATABASE
 async function hdfcImportAll() {
+    if (!hdfcAccessToken) {
+        showHDFCMessage('Please login to HDFC Securities first', 'warning');
+        return;
+    }
+    showHDFCMessage('Importing all HDFC holdings...', 'info');
     try {
-        if (!hdfcAccessToken) {
-            showHDFCMessage('Please connect to HDFC Securities first', 'warning');
-            return;
-        }
-        
-        showHDFCMessage('Importing all holdings from HDFC Securities...', 'info');
-        
         const holdings = await fetchHDFCHoldings();
         let importCount = 0;
-        
-        // Process holdings data
-        if (holdings && Array.isArray(holdings)) {
-            for (const holding of holdings) {
-                // Determine if it's equity or mutual fund based on instrument type
-                if (holding.instrument_type === 'EQUITY' || holding.segment === 'NSE' || holding.segment === 'BSE') {
-                    // Import as Equity for Pradeep
-                    await importEquityHolding(holding);
-                    importCount++;
-                } else if (holding.instrument_type === 'MF' || holding.product_type === 'MF') {
-                    // Import as Mutual Fund for Sanchita
-                    await importMFHolding(holding);
-                    importCount++;
-                }
+        for (const h of holdings) {
+            if (h.instrument_type === 'EQUITY' || h.segment === 'NSE' || h.segment === 'BSE') {
+                await importEquityHolding(h);
+                importCount++;
+            }
+            else if (h.instrument_type === 'MF' || h.product_type === 'MF') {
+                await importMFHolding(h);
+                importCount++;
             }
         }
-        
         localStorage.setItem('hdfc_last_sync', new Date().toISOString());
-        showHDFCMessage(`Successfully imported ${importCount} holdings!`, 'success');
-        
-        if (typeof loadDashboardData === 'function') {
-            await loadDashboardData();
-        }
-        
-    } catch (error) {
-        console.error('Import failed:', error);
-        showHDFCMessage(`Import failed: ${error.message}`, 'error');
+        showHDFCMessage(`Imported ${importCount} holdings!`, 'success');
+        if (typeof loadDashboardData === 'function') await loadDashboardData();
+    } catch(e) {
+        showHDFCMessage(`Import failed: ${e.message}`, 'error');
     }
 }
 
-// Import individual equity holding
-async function importEquityHolding(holding) {
-    try {
-        // Check if already exists
-        const exists = investments.some(inv => 
-            inv.member_id === HDFC_CONFIG.members.equity &&
-            inv.symbol_or_name === holding.symbol &&
-            inv.broker_platform.includes('HDFC Securities')
-        );
-        
-        if (!exists) {
-            await addInvestmentData({
-                member_id: HDFC_CONFIG.members.equity,
-                investment_type: 'equity',
-                symbol_or_name: holding.symbol || holding.trading_symbol,
-                invested_amount: (holding.quantity || 0) * (holding.average_price || 0),
-                current_value: (holding.quantity || 0) * (holding.ltp || holding.last_price || 0),
-                broker_platform: 'HDFC Securities Equity (Pradeep)',
-                hdfc_data: holding,
-                equity_quantity: holding.quantity || 0,
-                equity_avg_price: holding.average_price || 0,
-                equity_symbol: holding.symbol || holding.trading_symbol,
-                created_at: new Date().toISOString(),
-                last_updated: new Date().toISOString()
-            });
-        }
-    } catch (error) {
-        console.error('Failed to import equity holding:', error);
+// Helper: import equity holding
+async function importEquityHolding(h) {
+    const exists = investments.some(inv => 
+        inv.member_id === HDFC_CONFIG.members.equity && 
+        inv.symbol_or_name === h.symbol && 
+        inv.broker_platform.includes('HDFC Securities'));
+    if (!exists) {
+        await addInvestmentData({
+            member_id: HDFC_CONFIG.members.equity,
+            investment_type: 'equity',
+            symbol_or_name: h.symbol || h.trading_symbol,
+            invested_amount: (h.quantity || 0) * (h.average_price || 0),
+            current_value: (h.quantity || 0) * (h.ltp || h.last_price || 0),
+            broker_platform: 'HDFC Securities Equity (Pradeep)',
+            hdfc_data: h,
+            equity_quantity: h.quantity || 0,
+            equity_avg_price: h.average_price || 0,
+            equity_symbol: h.symbol || h.trading_symbol,
+            created_at: new Date().toISOString(),
+            last_updated: new Date().toISOString()
+        });
     }
 }
 
-// Import individual MF holding
-async function importMFHolding(holding) {
-    try {
-        // Check if already exists
-        const exists = investments.some(inv => 
-            inv.member_id === HDFC_CONFIG.members.mf &&
-            inv.folio_number === holding.folio &&
-            inv.broker_platform.includes('HDFC Securities')
-        );
-        
-        if (!exists) {
-            await addInvestmentData({
-                member_id: HDFC_CONFIG.members.mf,
-                investment_type: 'mutualFunds',
-                symbol_or_name: holding.fund_name || holding.symbol,
-                invested_amount: (holding.units || 0) * (holding.average_nav || 0),
-                current_value: (holding.units || 0) * (holding.nav || holding.ltp || 0),
-                broker_platform: 'HDFC Securities MF (Sanchita)',
-                hdfc_data: holding,
-                mf_quantity: holding.units || 0,
-                mf_nav: holding.nav || holding.ltp || 0,
-                mf_average_price: holding.average_nav || 0,
-                fund_name: holding.fund_name || holding.symbol,
-                folio_number: holding.folio || '',
-                scheme_code: holding.scheme_code || '',
-                fund_house: holding.fund_house || 'HDFC',
-                created_at: new Date().toISOString(),
-                last_updated: new Date().toISOString()
-            });
-        }
-    } catch (error) {
-        console.error('Failed to import MF holding:', error);
+// Helper: import mf holding
+async function importMFHolding(h) {
+    const exists = investments.some(inv => 
+        inv.member_id === HDFC_CONFIG.members.mf && 
+        inv.folio_number === h.folio && 
+        inv.broker_platform.includes('HDFC Securities'));
+    if (!exists) {
+        await addInvestmentData({
+            member_id: HDFC_CONFIG.members.mf,
+            investment_type: 'mutualFunds',
+            symbol_or_name: h.fund_name || h.symbol,
+            invested_amount: (h.units || 0) * (h.average_nav || 0),
+            current_value: (h.units || 0) * (h.nav || h.ltp || 0),
+            broker_platform: 'HDFC Securities MF (Sanchita)',
+            hdfc_data: h,
+            mf_quantity: h.units || 0,
+            mf_nav: h.nav || h.ltp || 0,
+            mf_average_price: h.average_nav || 0,
+            fund_name: h.fund_name || h.symbol,
+            folio_number: h.folio || '',
+            scheme_code: h.scheme_code || '',
+            fund_house: h.fund_house || 'HDFC',
+            created_at: new Date().toISOString(),
+            last_updated: new Date().toISOString()
+        });
     }
 }
 
-// Import only equity
-async function hdfcImportEquity() {
-    try {
-        if (!hdfcAccessToken) {
-            showHDFCMessage('Please connect to HDFC Securities first', 'warning');
-            return;
-        }
-        
-        showHDFCMessage('Importing equity holdings...', 'info');
-        
-        const holdings = await fetchHDFCHoldings();
-        let importCount = 0;
-        
-        if (holdings && Array.isArray(holdings)) {
-            for (const holding of holdings) {
-                if (holding.instrument_type === 'EQUITY' || holding.segment === 'NSE' || holding.segment === 'BSE') {
-                    await importEquityHolding(holding);
-                    importCount++;
-                }
-            }
-        }
-        
-        showHDFCMessage(`Imported ${importCount} equity holdings!`, 'success');
-        if (typeof renderInvestmentTabContent === 'function') {
-            renderInvestmentTabContent('equity');
-        }
-        
-    } catch (error) {
-        showHDFCMessage(`Equity import failed: ${error.message}`, 'error');
-    }
-}
-
-// Import only mutual funds
-async function hdfcImportMF() {
-    try {
-        if (!hdfcAccessToken) {
-            showHDFCMessage('Please connect to HDFC Securities first', 'warning');
-            return;
-        }
-        
-        showHDFCMessage('Importing mutual fund holdings...', 'info');
-        
-        const holdings = await fetchHDFCHoldings();
-        let importCount = 0;
-        
-        if (holdings && Array.isArray(holdings)) {
-            for (const holding of holdings) {
-                if (holding.instrument_type === 'MF' || holding.product_type === 'MF') {
-                    await importMFHolding(holding);
-                    importCount++;
-                }
-            }
-        }
-        
-        showHDFCMessage(`Imported ${importCount} mutual fund holdings!`, 'success');
-        if (typeof renderInvestmentTabContent === 'function') {
-            renderInvestmentTabContent('mutualFunds');
-        }
-        
-    } catch (error) {
-        showHDFCMessage(`MF import failed: ${error.message}`, 'error');
-    }
-}
-
-// Update prices for existing holdings
+// UPDATE prices for existing holdings
 async function hdfcUpdatePrices() {
+    if (!hdfcAccessToken) {
+        showHDFCMessage('Please login to HDFC Securities first', 'warning');
+        return;
+    }
+    showHDFCMessage('Updating holding prices...', 'info');
     try {
-        if (!hdfcAccessToken) {
-            showHDFCMessage('Please connect to HDFC Securities first', 'warning');
-            return;
-        }
-        
-        showHDFCMessage('Updating prices...', 'info');
-        
         const holdings = await fetchHDFCHoldings();
         let updateCount = 0;
-        
-        // Update existing HDFC investments with fresh data
-        const hdfcInvestments = investments.filter(inv => 
-            inv.broker_platform && inv.broker_platform.includes('HDFC Securities')
-        );
-        
-        for (const investment of hdfcInvestments) {
-            // Find matching holding data
-            const matchingHolding = holdings.find(h => 
-                h.symbol === investment.symbol_or_name || 
-                h.trading_symbol === investment.symbol_or_name
-            );
-            
-            if (matchingHolding) {
-                const newValue = (matchingHolding.quantity || 0) * (matchingHolding.ltp || matchingHolding.last_price || 0);
-                
-                // Update in memory
-                const invIndex = investments.findIndex(i => i.id === investment.id);
-                if (invIndex !== -1) {
-                    investments[invIndex].current_value = newValue;
-                    investments[invIndex].last_updated = new Date().toISOString();
-                    
-                    if (investment.investment_type === 'equity') {
-                        investments[invIndex].equity_quantity = matchingHolding.quantity || 0;
-                    } else if (investment.investment_type === 'mutualFunds') {
-                        investments[invIndex].mf_quantity = matchingHolding.units || 0;
-                        investments[invIndex].mf_nav = matchingHolding.nav || matchingHolding.ltp || 0;
+        const hdfcInv = investments.filter(inv => inv.broker_platform?.includes('HDFC Securities'));
+        for (const inv of hdfcInv) {
+            const matched = holdings.find(h => h.symbol === inv.symbol_or_name || h.trading_symbol === inv.symbol_or_name);
+            if (matched) {
+                const newVal = (matched.quantity || 0) * (matched.ltp || matched.last_price || 0);
+                const idx = investments.findIndex(i => i.id === inv.id);
+                if (idx !== -1) {
+                    investments[idx].current_value = newVal;
+                    investments[idx].last_updated = new Date().toISOString();
+                    if (inv.investment_type === 'equity') investments[idx].equity_quantity = matched.quantity || 0;
+                    else if (inv.investment_type === 'mutualFunds') {
+                        investments[idx].mf_quantity = matched.units || 0;
+                        investments[idx].mf_nav = matched.nav || matched.ltp || 0;
                     }
                 }
-                
-                // Update in database
                 if (typeof updateInvestmentData === 'function') {
-                    await updateInvestmentData(investment.id, {
-                        current_value: newValue,
-                        last_updated: new Date().toISOString()
-                    });
+                    await updateInvestmentData(inv.id, { current_value: newVal, last_updated: new Date().toISOString() });
                 }
-                
                 updateCount++;
             }
         }
-        
         localStorage.setItem('hdfc_last_sync', new Date().toISOString());
-        showHDFCMessage(`Updated ${updateCount} holdings!`, 'success');
-        
-        if (typeof loadDashboardData === 'function') {
-            await loadDashboardData();
-        }
-        
-    } catch (error) {
-        showHDFCMessage(`Price update failed: ${error.message}`, 'error');
+        showHDFCMessage(`Updated ${updateCount} holdings`, 'success');
+        if (typeof loadDashboardData === 'function') await loadDashboardData();
+    } catch(e) {
+        showHDFCMessage(`Price update failed: ${e.message}`, 'error');
     }
 }
 
-// ===== UI FUNCTIONS =====
-
+// SHOW HDFC SETTINGS MODAL (including status, actions)
 function showHDFCSettings() {
     const oldModal = document.getElementById('hdfc_settings_modal');
     if (oldModal) oldModal.remove();
 
     const modalContent = `
-        <div id="hdfc_settings_modal" class="modal" style="display: block;">
-            <div class="modal-content" style="max-width: 700px;">
-                <div class="modal-header">
-                    <h3>🏦 HDFC Securities API Settings</h3>
-                    <button class="btn-close" onclick="closeHDFCModal()">&times;</button>
+    <div id="hdfc_settings_modal" class="modal" style="display:block; position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
+        <div style="background:#fff; max-width:700px; margin:5% auto; padding:20px; border-radius:10px; position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>🏦 HDFC Securities Settings</h3>
+                <button onclick="closeHDFCModal()" style="font-size:26px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="connection-status" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <h4>Connection Status</h4>
+                <div id="hdfc-modal-connection">
+                    <span class="hdfc-connection-status">❌ Not Connected</span>
                 </div>
-                <div class="modal-body">
-                    <div class="connection-status" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4>Connection Status</h4>
-                        <div id="hdfc-modal-connection">
-                            <span id="hdfc-connection-indicator">❌ Not Connected</span>
-                        </div>
-                        <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                            Last sync: <span id="hdfc-modal-sync">Never</span>
-                        </div>
-                    </div>
-
-                    <div class="account-mapping" style="background: #e6fffa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4>📋 Account Mapping</h4>
-                        <div style="margin-top: 10px;">
-                            <strong>Equity Holdings:</strong> Pradeep Kumar V<br>
-                            <strong>Mutual Funds:</strong> Sanchita Pradeep
-                        </div>
-                    </div>
-
-                    <div class="api-credentials" style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4>🔐 API Configuration</h4>
-                        <div style="margin-top: 10px;">
-                            <strong>API Key:</strong> ${HDFC_CONFIG.api_key}<br>
-                            <strong>API Secret:</strong> ${HDFC_CONFIG.api_secret ? '***configured***' : '❌ Not configured'}
-                        </div>
-                    </div>
-
-                    <div class="actions" style="margin: 20px 0;">
-                        <h4>Actions</h4>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                            <button class="btn btn-primary" onclick="connectHDFC()">
-                                🔗 Connect to HDFC Securities
-                            </button>
-                            <button class="btn btn-secondary" onclick="disconnectHDFC()">
-                                🔌 Disconnect
-                            </button>
-                            <button class="btn btn-info" onclick="testHDFCConnection()">
-                                🧪 Test Connection
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="setup-instructions" style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4>📋 Setup Instructions</h4>
-                        <ol style="margin-left: 20px; margin-top: 10px;">
-                            <li>Visit <a href="https://developer.hdfcsec.com/" target="_blank">developer.hdfcsec.com</a></li>
-                            <li>Login with your InvestRight credentials</li>
-                            <li>Create new app with these settings:
-                                <ul style="margin-left: 20px;">
-                                    <li><strong>App Name:</strong> Family Wealth Dashboard</li>
-                                    <li><strong>Redirect URL:</strong> ${HDFC_CONFIG.redirect_url}</li>
-                                </ul>
-                            </li>
-                            <li>Copy API Key and Secret to your configuration</li>
-                            <li>Click "Connect to HDFC Securities" above</li>
-                        </ol>
-                    </div>
-
-                    <div class="requirements" style="background: #ffebee; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <h4>⚠️ Requirements</h4>
-                        <ul style="margin-left: 20px; margin-top: 10px;">
-                            <li>Active HDFC Securities InvestRight account</li>
-                            <li>API access enabled (contact HDFC Securities)</li>
-                            <li>Valid API Key and Secret</li>
-                            <li>Backend endpoints deployed for security</li>
-                        </ul>
-                    </div>
+                <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    Last sync: <span id="hdfc-modal-sync">Never</span>
                 </div>
             </div>
+            <div class="account-mapping" style="background: #e6fffa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4>📋 Account Mapping</h4>
+                <div>
+                    <strong>Equity Holdings:</strong> Pradeep Kumar V<br>
+                    <strong>Mutual Funds:</strong> Sanchita Pradeep
+                </div>
+            </div>
+            <div style="margin:20px 0; display:flex; gap:10px; flex-wrap:wrap;">
+                <button onclick="connectHDFC()" class="btn btn-primary">🔗 Connect to HDFC Securities</button>
+                <button onclick="disconnectHDFC()" class="btn btn-secondary">🔌 Disconnect</button>
+                <button onclick="testHDFCConnection()" class="btn btn-info">🧪 Test Connection</button>
+                <button onclick="hdfcImportAll()" class="btn btn-success">📥 Import All Holdings</button>
+                <button onclick="hdfcUpdatePrices()" class="btn btn-warning">🔄 Update Prices</button>
+            </div>
+            <div class="requirements" style="background: #ffebee; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <h4>⚠️ Requirements</h4>
+                <ul>
+                    <li>Active HDFC Securities InvestRight account</li>
+                    <li>API access enabled (contact HDFC Securities)</li>
+                    <li>Valid API Key and Secret</li>
+                    <li>Backend endpoints properly deployed</li>
+                </ul>
+            </div>
         </div>
-    `;
-
+    </div>`;
     document.body.insertAdjacentHTML('beforeend', modalContent);
     updateHDFCModalStatus();
 }
 
+// Close HDFC settings modal
 function closeHDFCModal() {
     const modal = document.getElementById('hdfc_settings_modal');
     if (modal) modal.remove();
 }
 
+// Update modal status info
 function updateHDFCModalStatus() {
-    const connectionSpan = document.getElementById('hdfc-connection-indicator');
+    const statusSpan = document.querySelector('.hdfc-connection-status');
+    if (!statusSpan) return;
+
+    const connected = !!localStorage.getItem('hdfc_access_token');
+    statusSpan.textContent = connected ? '✅ Connected' : '❌ Not Connected';
+    statusSpan.style.color = connected ? '#28a745' : '#dc3545';
+
+    const lastSync = localStorage.getItem('hdfc_last_sync');
     const syncSpan = document.getElementById('hdfc-modal-sync');
-    
-    if (connectionSpan) {
-        const connected = localStorage.getItem('hdfc_access_token');
-        connectionSpan.textContent = connected ? '✅ Connected' : '❌ Not Connected';
-        connectionSpan.style.color = connected ? '#28a745' : '#dc3545';
-    }
-    
-    if (syncSpan) {
-        const lastSync = localStorage.getItem('hdfc_last_sync');
-        if (lastSync) {
-            syncSpan.textContent = new Date(lastSync).toLocaleString();
-        } else {
-            syncSpan.textContent = 'Never';
-        }
-    }
+    if (syncSpan) syncSpan.textContent = lastSync ? new Date(lastSync).toLocaleString() : 'Never';
 }
 
-function updateHDFCConnectionStatus() {
-    const statusEl = document.getElementById('hdfc-connection-status');
-    if (statusEl) {
-        const connected = localStorage.getItem('hdfc_access_token');
-        statusEl.textContent = connected ? '✅ Connected' : '❌ Not Connected';
-        statusEl.style.color = connected ? '#28a745' : '#dc3545';
-    }
-    
-    const syncEl = document.getElementById('hdfc-last-sync');
-    if (syncEl) {
-        const lastSync = localStorage.getItem('hdfc_last_sync');
-        if (lastSync) {
-            syncEl.textContent = `Last sync: ${new Date(lastSync).toLocaleString()}`;
-        } else {
-            syncEl.textContent = 'Last sync: Never';
-        }
-    }
-}
-
-function disconnectHDFC() {
-    localStorage.removeItem('hdfc_access_token');
-    localStorage.removeItem('hdfc_user_data');
-    localStorage.removeItem('hdfc_last_sync');
-    localStorage.removeItem('hdfc_profile');
-    localStorage.removeItem('hdfc_auth_state');
-    
-    hdfcAccessToken = null;
-    hdfcRequestToken = null;
-    
-    showHDFCMessage('Disconnected from HDFC Securities', 'info');
-    updateHDFCConnectionStatus();
-    updateHDFCModalStatus();
-}
-
-async function testHDFCConnection() {
-    try {
-        const token = localStorage.getItem('hdfc_access_token');
-        if (!token) {
-            showHDFCMessage('No access token found. Please connect first.', 'warning');
-            return;
-        }
-        
-        showHDFCMessage('Testing connection...', 'info');
-        hdfcAccessToken = token;
-        await fetchHDFCProfile();
-        showHDFCMessage('Connection test successful!', 'success');
-        
-    } catch (error) {
-        showHDFCMessage(`Connection test failed: ${error.message}`, 'error');
-    }
-}
-
-// ===== INITIALIZATION =====
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Check for saved access token
+// Initialize connection status on page load
+document.addEventListener('DOMContentLoaded', () => {
     const savedToken = localStorage.getItem('hdfc_access_token');
-    if (savedToken) {
-        hdfcAccessToken = savedToken;
-    }
-    
-    // Handle OAuth callback
-    if (window.location.search.includes('request_token') || window.location.search.includes('status=success')) {
-        handleHDFCCallback();
-    }
-    
-    // Update connection status
+    if (savedToken) hdfcAccessToken = savedToken;
     updateHDFCConnectionStatus();
-    
-    console.log('🏦 HDFC Securities integration initialized');
 });
