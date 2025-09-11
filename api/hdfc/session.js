@@ -1,6 +1,4 @@
-// api/hdfc/session.js - Multi-step login with OTP flow for HDFC Securities
-
-let tempSessions = {}; // Simple in-memory to hold session tokens keyed by username (use DB for production)
+let tempSessions = {}; // Simple in-memory store for session tokens (use DB for production)
 
 export default async function handler(req, res) {
     // CORS Headers
@@ -24,12 +22,10 @@ export default async function handler(req, res) {
 
     try {
         if (step === 'initiate') {
-            // Validate required params
             if (!username || !password) {
                 return res.status(400).json({ error: 'Missing username or password for initiation' });
             }
 
-            // Call HDFC initiate session endpoint (example URL, check doc)
             const response = await fetch('https://developer.hdfcsec.com/oapi/v1/initiate_session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -40,26 +36,24 @@ export default async function handler(req, res) {
 
             if (response.ok) {
                 if (data.otp_required) {
-                    // Store session token temporarily
                     tempSessions[username] = data.session_token || null;
                     return res.status(200).json({ otpRequired: true, session_token: data.session_token });
                 } else if (data.access_token) {
-                    // Login completed without OTP
                     return res.status(200).json({ access_token: data.access_token, user_info: data.user_info });
                 } else {
+                    console.error('Unexpected response from initiate_session:', data);
                     return res.status(400).json({ error: 'Unexpected response from initiate session' });
                 }
             } else {
+                console.error('Initiate session failed:', data);
                 return res.status(400).json({ error: data.error || 'Initiate session failed' });
             }
 
         } else if (step === 'verify') {
-            // Validate OTP params
             if (!otp || !session_token) {
                 return res.status(400).json({ error: 'Missing OTP or session token for verification' });
             }
 
-            // Call HDFC OTP verification endpoint (example URL, check doc)
             const response = await fetch('https://developer.hdfcsec.com/oapi/v1/verify_otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -69,7 +63,7 @@ export default async function handler(req, res) {
             const data = await response.json();
 
             if (response.ok && data.access_token) {
-                // Remove stored session token after successful verification
+                // Clean up stored session token
                 for (const key in tempSessions) {
                     if (tempSessions[key] === session_token) {
                         delete tempSessions[key];
@@ -78,6 +72,7 @@ export default async function handler(req, res) {
                 }
                 return res.status(200).json({ access_token: data.access_token, user_info: data.user_info });
             } else {
+                console.error('OTP verification failed:', data);
                 return res.status(400).json({ error: data.error || 'OTP verification failed' });
             }
 
