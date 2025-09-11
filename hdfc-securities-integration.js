@@ -29,10 +29,14 @@ const BROKER_MEMBER_MAPPING = {
     }
 };
 
-const HDFC_CONFIG = {
-    api_key: '5f5de761677a4283bd623e6a1013395b', // You need to replace this with your actual API key
-    base_url: 'https://developer.hdfcsec.com/oapi/v1',
-    proxy_url: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc', // Your backend proxy
+    const HDFC_CONFIG = {
+    api_key: '5f5de761677a4283bd623e6a1013395b',
+    base_url: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc',
+    session_url: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc/session',
+    profile_url: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc/profile',
+    // ... rest of your config
+};
+
     
     // HDFC members mapping based on account mapping
     equity_members: ['bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'], // Only Pradeep has HDFC Demat
