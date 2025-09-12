@@ -25,20 +25,21 @@ export default async function handler(req, res) {
 
             console.log('HDFC: Attempting initial login...');
 
-            const response = await fetch('https://developer.hdfcsec.com/ir-api/auth/login', {
+            const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)'
-                },
+                    'Content-Type': 'application/json'},
+                                 
                 body: JSON.stringify({
-                    user_id: username,
-                    password: password,
-                    api_key: api_key,
-                    api_secret: api_secret
+                    username,
+                    password,
+                    api_key: HDFC_CONFIG.api_key,
+                    api_secret: HDFC_CONFIG.api_secret
                 })
             });
+
+            const data = await resp.json();
+            console.log('OTP Response:', data);
 
             const responseText = await response.text();
             console.log('HDFC Login Response Status:', response.status);
