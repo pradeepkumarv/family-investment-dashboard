@@ -1,68 +1,103 @@
-// api/hdfc/holdings.js
+// api/hdfc/holdings.js - Backend proxy for HDFC Securities API
+import fetch from 'node-fetch';
+
 export default async function handler(req, res) {
-    // CORS Headers
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    const { access_token, api_key } = req.body || {};
-    if (!access_token || !api_key) {
-        return res.status(400).json({ error: 'Missing access_token or api_key' });
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        console.log('HDFC: Fetching holdings...');
+        let body = req.body;
 
-        const response = await fetch('https://developer.hdfcsec.com/oapi/v1/holdings', {
+        // Handle different request formats
+        if (!body) {
+            const buffers = [];
+            for await (const chunk of req) buffers.push(chunk);
+            body = JSON.parse(Buffer.concat(buffers).toString());
+        }
+
+        if (typeof body === 'string') body = JSON.parse(body);
+
+        const { access_token, api_key, type } = body;
+
+        if (!access_token || !api_key) {
+            return res.status(400).json({ 
+                error: 'Missing required parameters', 
+                required: ['access_token', 'api_key'] 
+            });
+        }
+
+        // HDFC Securities API endpoints
+        let apiUrl = '';
+        let headers = {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+
+        // Add API key to headers if required by HDFC
+        if (api_key) {
+            headers['x-api-key'] = api_key;
+        }
+
+        // Determine endpoint based on type
+        if (type === 'equity') {
+            // HDFC Securities Holdings API for Equity
+            apiUrl = 'https://developer.hdfcsec.com/oapi/v1/holdings';
+        } else if (type === 'mf' || type === 'mutualfunds') {
+            // HDFC Securities Holdings API for Mutual Funds
+            apiUrl = 'https://developer.hdfcsec.com/oapi/v1/holdings/mf';
+        } else {
+            return res.status(400).json({ 
+                error: 'Invalid type parameter', 
+                message: 'Type must be either "equity" or "mf"',
+                provided: type 
+            });
+        }
+
+        console.log(`Making request to HDFC API: ${apiUrl}`);
+        
+        // Make request to HDFC Securities API
+        const response = await fetch(apiUrl, {
             method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${access_token}`,
-                'X-API-Key': api_key,
-                'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)'
-            }
+            headers: headers,
+            timeout: 30000 // 30 second timeout
         });
 
-        const responseText = await response.text();
-        console.log('HDFC Holdings Response Status:', response.status);
-        console.log('HDFC Holdings Response:', responseText);
+        const responseBody = await response.text();
+        console.log(`HDFC API Response Status: ${response.status}`);
+        console.log(`HDFC API Response Body: ${responseBody.substring(0, 500)}...`);
 
-        let data = {};
+        let data;
         try {
-            data = responseText ? JSON.parse(responseText) : {};
-        } catch (e) {
-            console.error('Failed to parse HDFC holdings response:', responseText);
-            return res.status(500).json({
-                status: 'error',
-                error: 'Invalid response from HDFC holdings API',
-                details: responseText.substring(0, 500)
-            });
+            data = JSON.parse(responseBody);
+        } catch (parseError) {
+            console.error('Failed to parse HDFC API response:', parseError);
+            data = { 
+                error: 'Invalid JSON response from HDFC Securities', 
+                raw: responseBody.substring(0, 1000),
+                status: response.status
+            };
         }
 
-        if (response.ok) {
-            // Handle different response formats
-            const holdingsData = data.data || data.holdings || data;
-            return res.status(200).json({
-                status: 'success',
-                data: holdingsData
-            });
-        } else {
-            const errorMessage = data.error || data.message || 'Failed to fetch holdings';
-            return res.status(response.status).json({
-                status: 'error',
-                error: errorMessage,
-                details: data
-            });
-        }
+        // Return the response with the same status code
+        res.status(response.status).json(data);
 
     } catch (error) {
-        console.error('HDFC Holdings Error:', error);
-        return res.status(500).json({
-            status: 'error',
-            error: 'Internal server error: ' + error.message
+        console.error('HDFC Proxy API Error:', error);
+        res.status(500).json({ 
+            error: 'Internal Server Error', 
+            message: error.message,
+            timestamp: new Date().toISOString()
         });
     }
 }
