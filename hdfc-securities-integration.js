@@ -107,66 +107,100 @@ function closeHDFCLoginModal() {
     hdfcRequestToken = null;
 }
 
-// Simplified two-step integration
-
-const HDFC_CONFIG = {
-  api_key:'YOUR_API_KEY',
-  api_secret:'YOUR_API_SECRET',
-  backend_base:'https://family-investment-dashboard-4hli.vercel.app/api/hdfc'
-};
-
-let hdfcRequestToken = null;
-
-// Request OTP (initiate)
+// REQUEST OTP - Step 1 & 2 of OAuth flow
+// REQUEST OTP - Simplified flow
 async function requestHDFCOtp() {
-  const u = document.getElementById('hdfc_username').value.trim();
-  const p = document.getElementById('hdfc_password').value.trim();
-  const status = document.getElementById('hdfc_otp_status');
-  if(!u||!p){status.textContent='Enter username & password'; return;}
-  status.textContent='Requesting OTP…';
-  const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({step:'initiate',username:u,password:p,api_key:HDFC_CONFIG.api_key,api_secret:HDFC_CONFIG.api_secret})
-  });
-  const data = await resp.json();
-  if(data.access_token){
-    // no OTP needed
-    localStorage.setItem('hdfc_access_token',data.access_token);
-    status.textContent='Login successful!';
-    closeHDFCLoginModal();
-    updateHDFCConnectionStatus();
-  } else if(data.requires_2fa){
-    hdfcRequestToken=data.request_token;
-    status.textContent='OTP sent. Enter OTP and click Login.';
-  } else {
-    status.textContent=data.error||'Request failed';
-  }
+    const username = document.getElementById('hdfc_username').value.trim();
+    const password = document.getElementById('hdfc_password').value.trim();
+    const otpStatus = document.getElementById('hdfc_otp_status');
+    
+    if (!username || !password) {
+        otpStatus.textContent = 'Please enter username and password first.';
+        return;
+    }
+    
+    otpStatus.textContent = 'Requesting OTP...';
+
+    try {
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                step: 'initiate',
+                username,
+                password,
+                api_key: HDFC_CONFIG.api_key,
+                api_secret: HDFC_CONFIG.api_secret
+            })
+        });
+        
+        const data = await resp.json();
+        console.log('Initiate Response:', data);
+        
+        if (data.access_token) {
+            // Direct login success - no 2FA required
+            hdfcAccessToken = data.access_token;
+            localStorage.setItem('hdfc_access_token', hdfcAccessToken);
+            otpStatus.textContent = 'Login successful!';
+            showHDFCMessage('HDFC connected successfully!', 'success');
+            closeHDFCLoginModal();
+            updateHDFCConnectionStatus();
+        } else if (data.requires_2fa && data.request_token) {
+            // 2FA required
+            hdfcRequestToken = data.request_token;
+            otpStatus.textContent = 'OTP sent to your registered mobile/email. Enter it above and click Login.';
+        } else {
+            otpStatus.textContent = data.error || 'Request failed';
+            console.error('Request failed:', data);
+        }
+    } catch (e) {
+        console.error('Request OTP Error:', e);
+        otpStatus.textContent = 'Connection failed: ' + e.message;
+    }
 }
 
-// Submit OTP (verify)
+// SUBMIT LOGIN - OTP validation
 async function submitHDFCLogin() {
-  const o=document.getElementById('hdfc_otp').value.trim();
-  const status=document.getElementById('hdfc_otp_status');
-  if(!o){status.textContent='Enter OTP'; return;}
-  if(!hdfcRequestToken){status.textContent='Request OTP first'; return;}
-  status.textContent='Verifying OTP…';
-  const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({step:'verify',otp:o,request_token:hdfcRequestToken})
-  });
-  const data=await resp.json();
-  if(data.access_token){
-    localStorage.setItem('hdfc_access_token',data.access_token);
-    status.textContent='Login successful!';
-    closeHDFCLoginModal();
-    updateHDFCConnectionStatus();
-  } else {
-    status.textContent=data.error||'Verification failed';
-  }
-}
+    const otp = document.getElementById('hdfc_otp').value.trim();
+    const otpStatus = document.getElementById('hdfc_otp_status');
+    
+    if (!otp) {
+        otpStatus.textContent = 'Enter OTP sent by HDFC.';
+        return;
+    }
+    
+    if (!hdfcRequestToken) {
+        otpStatus.textContent = 'You must request OTP first.';
+        return;
+    }
+    
+    otpStatus.textContent = 'Validating OTP...';
 
+    try {
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                step: 'verify',
+                otp,
+                request_token: hdfcRequestToken
+            })
+        });
+        
+        const data = await resp.json();
+        console.log('Verify Response:', data);
+        
+        if (data.access_token) {
+            hdfcAccessToken = data.access_token;
+            localStorage.setItem('hdfc_access_token', hdfcAccessToken);
+            otpStatus.textContent = 'Login successful!';
+            showHDFCMessage('HDFC connected successfully!', 'success');
+            closeHDFCLoginModal();
+            updateHDFCConnectionStatus();
+        } else {
+            otpStatus.textContent = data.error || 'OTP validation failed.';
+            console.error('Verify failed:', data);
+        }
     } catch (e) {
         console.error('Submit Login Error:', e);
         otpStatus.textContent = 'Validation failed: ' + e.message;
