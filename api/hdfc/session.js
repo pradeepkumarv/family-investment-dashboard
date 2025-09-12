@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
             console.log('HDFC: Attempting initial login...');
 
-            const response = await fetch('https://developer.hdfcsec.com/oapi/v1/login', {
+            const response = await fetch('https://developer.hdfcsec.com/ir-api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
 
             console.log('HDFC: Validating OTP...');
 
-            const response = await fetch('https://developer.hdfcsec.com/oapi/v1/twofa/validate', {
+            const response = await fetch('https://developer.hdfcsec.com/ir-api/auth/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
