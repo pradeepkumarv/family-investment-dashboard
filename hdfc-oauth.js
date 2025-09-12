@@ -3,7 +3,7 @@
 const HDFC_CONFIG = {
   client_id: '5f5de761677a4283bd623e6a1013395b',         
   client_secret: '8ed88c629bc04639afcdca15381bd965',  
-  redirect_uri: 'https://pradeepkumarv.github.io/family-investment-dashboard/api/hdfc/callback'
+  redirect_uri: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc/callback'
 };
 
 // Open HDFC OAuth authorization URL
