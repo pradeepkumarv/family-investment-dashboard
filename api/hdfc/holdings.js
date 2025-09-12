@@ -1,10 +1,11 @@
-// api/hdfc/holdings.js : Clean, correct structure and CORS for holdings API proxy
+// api/hdfc/holdings.js - Clean, correct structure and CORS for holdings API proxy
 
 export default async function handler(req, res) {
     // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -17,11 +18,12 @@ export default async function handler(req, res) {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'Authorization': access_token,
+                'Authorization': `Bearer ${access_token}`,
                 'X-API-Key': api_key
             },
             body: JSON.stringify({ api_key })
         });
+
         const data = await response.json();
         if (response.ok) {
             return res.status(200).json({ status: 'success', data: data.data });
