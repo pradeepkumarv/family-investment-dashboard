@@ -113,9 +113,14 @@ function showHDFCSettings() {
             </div>
         </div>
     </div>`;
-  document.body.insertAdjacentHTML('beforeend', modalContent);
+    document.body.insertAdjacentHTML('beforeend', modalContent);
   updateHDFCModalStatus();
 }
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-hdfc-settings');
+  if (btn) btn.addEventListener('click', showHDFCSettings);
+});
+
 
 function closeHDFCModal() {
   const modal = document.getElementById('hdfc_settings_modal');
