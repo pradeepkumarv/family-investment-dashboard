@@ -108,6 +108,7 @@ function closeHDFCLoginModal() {
 }
 
 // REQUEST OTP - Step 1 & 2 of OAuth flow
+// REQUEST OTP - Simplified flow
 async function requestHDFCOtp() {
     const username = document.getElementById('hdfc_username').value.trim();
     const password = document.getElementById('hdfc_password').value.trim();
@@ -118,15 +119,14 @@ async function requestHDFCOtp() {
         return;
     }
     
-    otpStatus.textContent = 'Authorizing...';
+    otpStatus.textContent = 'Requesting OTP...';
 
     try {
-        // Step 1: Authorize
-        const authResp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                step: 'authorize',
+                step: 'initiate',
                 username,
                 password,
                 api_key: HDFC_CONFIG.api_key,
@@ -134,45 +134,24 @@ async function requestHDFCOtp() {
             })
         });
         
-        const authData = await authResp.json();
-        console.log('Auth Response:', authData);
+        const data = await resp.json();
+        console.log('Initiate Response:', data);
         
-        if (authData.success && authData.auth_code) {
-            hdfcAuthCode = authData.auth_code;
-            otpStatus.textContent = 'Getting access token...';
-            
-            // Step 2: Get access token
-            const tokenResp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    step: 'access_token',
-                    auth_code: hdfcAuthCode,
-                    api_key: HDFC_CONFIG.api_key,
-                    api_secret: HDFC_CONFIG.api_secret
-                })
-            });
-            
-            const tokenData = await tokenResp.json();
-            console.log('Token Response:', tokenData);
-            
-            if (tokenData.access_token) {
-                // Direct login success - no 2FA required
-                hdfcAccessToken = tokenData.access_token;
-                localStorage.setItem('hdfc_access_token', hdfcAccessToken);
-                otpStatus.textContent = 'Login successful!';
-                showHDFCMessage('HDFC connected successfully!', 'success');
-                closeHDFCLoginModal();
-                updateHDFCConnectionStatus();
-            } else if (tokenData.requires_2fa && tokenData.request_token) {
-                // 2FA required
-                hdfcRequestToken = tokenData.request_token;
-                otpStatus.textContent = 'OTP sent to your registered mobile/email. Enter it above and click Login.';
-            } else {
-                otpStatus.textContent = tokenData.error || 'Failed to get access token';
-            }
+        if (data.access_token) {
+            // Direct login success - no 2FA required
+            hdfcAccessToken = data.access_token;
+            localStorage.setItem('hdfc_access_token', hdfcAccessToken);
+            otpStatus.textContent = 'Login successful!';
+            showHDFCMessage('HDFC connected successfully!', 'success');
+            closeHDFCLoginModal();
+            updateHDFCConnectionStatus();
+        } else if (data.requires_2fa && data.request_token) {
+            // 2FA required
+            hdfcRequestToken = data.request_token;
+            otpStatus.textContent = 'OTP sent to your registered mobile/email. Enter it above and click Login.';
         } else {
-            otpStatus.textContent = authData.error || 'Authorization failed';
+            otpStatus.textContent = data.error || 'Request failed';
+            console.error('Request failed:', data);
         }
     } catch (e) {
         console.error('Request OTP Error:', e);
@@ -180,7 +159,7 @@ async function requestHDFCOtp() {
     }
 }
 
-// SUBMIT LOGIN - Step 3 of OAuth flow (2FA validation)
+// SUBMIT LOGIN - OTP validation
 async function submitHDFCLogin() {
     const otp = document.getElementById('hdfc_otp').value.trim();
     const otpStatus = document.getElementById('hdfc_otp_status');
@@ -202,14 +181,14 @@ async function submitHDFCLogin() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                step: 'validate_2fa',
+                step: 'verify',
                 otp,
                 request_token: hdfcRequestToken
             })
         });
         
         const data = await resp.json();
-        console.log('OTP Validation Response:', data);
+        console.log('Verify Response:', data);
         
         if (data.access_token) {
             hdfcAccessToken = data.access_token;
@@ -220,12 +199,14 @@ async function submitHDFCLogin() {
             updateHDFCConnectionStatus();
         } else {
             otpStatus.textContent = data.error || 'OTP validation failed.';
+            console.error('Verify failed:', data);
         }
     } catch (e) {
         console.error('Submit Login Error:', e);
         otpStatus.textContent = 'Validation failed: ' + e.message;
     }
 }
+
 
 // RESEND OTP
 async function resendHDFCOtp() {
