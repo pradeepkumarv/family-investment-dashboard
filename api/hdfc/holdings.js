@@ -1,34 +1,35 @@
-// api/hdfc/holdings.js
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { access_token } = req.body || {};
-  if (!access_token) {
-    return res.status(400).json({ error: 'Missing access_token' });
+  const { access_token, api_key } = req.body;
+
+  if (!access_token || !api_key) {
+    return res.status(400).json({ error: 'Missing access_token or api_key' });
   }
 
   try {
-    const resp = await fetch('https://developer.hdfcsec.com/ir-api/portfolio/holdings', {
+    const holdingsResponse = await fetch('https://developer.hdfcsec.com/ir-api/portfolio/holdings', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
         'Authorization': `Bearer ${access_token}`,
-        'X-API-Key': process.env.HDFC_CLIENT_ID
-      }
+        'X-API-Key': api_key,
+        'User-Agent': 'YourAppName/1.0',
+      },
     });
 
-    const data = await resp.json();
-    if (!resp.ok) {
-      return res.status(resp.status).json({ error: data.error || data.message || 'Fetch failed' });
+    const data = await holdingsResponse.json();
+
+    if (!holdingsResponse.ok) {
+      return res.status(holdingsResponse.status).json({ error: data.message || 'Failed to fetch holdings' });
     }
 
-    // Return holdings array
-    return res.status(200).json({ data: data.holdings || data.data || data });
-  } catch (e) {
-    console.error('Holdings error', e);
+    return res.status(200).json({ holdings: data.holdings || data });
+
+  } catch (error) {
+    console.error('Fetch holdings error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
