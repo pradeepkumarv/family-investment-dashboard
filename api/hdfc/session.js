@@ -1,236 +1,189 @@
-// api/hdfc/session.js
+// session.js - HDFC Securities Session Management API
+// Backend endpoint for generating access token from request token
+
+import fetch from 'node-fetch';
+
 export default async function handler(req, res) {
-    // CORS Headers
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { step, username, password, otp, api_key, api_secret, request_token } = req.body || {};
-    
-    if (!api_key || !api_secret) {
-        return res.status(400).json({ error: 'Missing API key or secret' });
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    console.log(`HDFC Step: ${step}`);
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ 
+            status: 'error',
+            error: 'Method not allowed. Use POST.' 
+        });
+    }
 
     try {
-        if (step === 'initiate') {
-            // Step 1: Initial login to get request_token for 2FA
-            if (!username || !password) {
-                return res.status(400).json({ error: 'Missing username or password' });
-            }
+        // Parse request body
+        let body = req.body;
+        if (!body) {
+            const buffers = [];
+            for await (const chunk of req) buffers.push(chunk);
+            body = JSON.parse(Buffer.concat(buffers).toString());
+        }
 
-            console.log('HDFC: Attempting initial login...');
+        if (typeof body === 'string') {
+            body = JSON.parse(body);
+        }
 
-            const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'},
-                                 
-                body: JSON.stringify({
-                    username,
-                    password,
-                    api_key: HDFC_CONFIG.api_key,
-                    api_secret: HDFC_CONFIG.api_secret
-                })
-            });
+        const { request_token, api_key, api_secret } = body;
 
-            const data = await resp.json();
-            console.log('OTP Response:', data);
-
-            const responseText = await response.text();
-            console.log('HDFC Login Response Status:', response.status);
-            console.log('HDFC Login Response:', responseText);
-
-            let data = {};
-            try {
-                data = responseText ? JSON.parse(responseText) : {};
-            } catch (e) {
-                console.error('Failed to parse HDFC response:', responseText);
-                return res.status(500).json({
-                    error: 'Invalid response from HDFC API',
-                    details: responseText.substring(0, 500)
-                });
-            }
-
-            if (response.ok) {
-                // Check for different response formats
-                if (data.status === 'success' || data.success) {
-                    const responseData = data.data || data;
-                    
-                    if (responseData.access_token) {
-                        // Direct login success (no 2FA required)
-                        return res.status(200).json({
-                            access_token: responseData.access_token,
-                            user_info: responseData.user_info || {}
-                        });
-                    } else if (responseData.request_token) {
-                        // 2FA required
-                        return res.status(200).json({
-                            requires_2fa: true,
-                            request_token: responseData.request_token,
-                            message: 'OTP sent to your registered mobile/email'
-                        });
-                    }
-                }
-                
-                // Handle direct token response (some APIs return token directly)
-                if (data.request_token) {
-                    return res.status(200).json({
-                        requires_2fa: true,
-                        request_token: data.request_token,
-                        message: 'OTP sent to your registered mobile/email'
-                    });
-                }
-                
-                if (data.access_token) {
-                    return res.status(200).json({
-                        access_token: data.access_token,
-                        user_info: data.user_info || {}
-                    });
-                }
-            }
-
-            // Handle error response
-            const errorMessage = data.error || data.message || data.error_description || 'Login failed';
-            console.error('HDFC Login Error:', errorMessage, data);
-            
+        // Validate required parameters
+        if (!request_token) {
             return res.status(400).json({
-                error: errorMessage,
-                details: data,
-                status_code: response.status
-            });
-
-        } else if (step === 'verify') {
-            // Step 2: Validate OTP
-            if (!otp || !request_token) {
-                return res.status(400).json({ error: 'Missing OTP or request_token' });
-            }
-
-            console.log('HDFC: Validating OTP...');
-
-            const response = await fetch('https://developer.hdfcsec.com/ir-api/auth/validate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)'
-                },
-                body: JSON.stringify({
-                    request_token: request_token,
-                    otp: otp,
-                    api_key: api_key,
-                    api_secret: api_secret
-                })
-            });
-
-            const responseText = await response.text();
-            console.log('HDFC OTP Response Status:', response.status);
-            console.log('HDFC OTP Response:', responseText);
-
-            let data = {};
-            try {
-                data = responseText ? JSON.parse(responseText) : {};
-            } catch (e) {
-                console.error('Failed to parse HDFC OTP response:', responseText);
-                return res.status(500).json({
-                    error: 'Invalid OTP response from HDFC API',
-                    details: responseText.substring(0, 500)
-                });
-            }
-
-            if (response.ok) {
-                if (data.status === 'success' || data.success) {
-                    const responseData = data.data || data;
-                    
-                    if (responseData.access_token) {
-                        return res.status(200).json({
-                            access_token: responseData.access_token,
-                            user_info: responseData.user_info || {}
-                        });
-                    }
-                }
-                
-                // Handle direct token response
-                if (data.access_token) {
-                    return res.status(200).json({
-                        access_token: data.access_token,
-                        user_info: data.user_info || {}
-                    });
-                }
-            }
-
-            // Handle OTP error
-            const errorMessage = data.error || data.message || data.error_description || 'OTP validation failed';
-            console.error('HDFC OTP Error:', errorMessage, data);
-            
-            return res.status(400).json({
-                error: errorMessage,
-                details: data,
-                status_code: response.status
-            });
-
-        } else if (step === 'resend_otp') {
-            // Step 3: Resend OTP
-            if (!request_token) {
-                return res.status(400).json({ error: 'Missing request_token' });
-            }
-
-            console.log('HDFC: Resending OTP...');
-
-            const response = await fetch('https://developer.hdfcsec.com/oapi/v1/twofa/resend', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)'
-                },
-                body: JSON.stringify({
-                    request_token: request_token,
-                    api_key: api_key,
-                    api_secret: api_secret
-                })
-            });
-
-            const responseText = await response.text();
-            console.log('HDFC Resend Response:', responseText);
-
-            let data = {};
-            try {
-                data = responseText ? JSON.parse(responseText) : {};
-            } catch (e) {
-                return res.status(500).json({
-                    error: 'Invalid resend response from HDFC API',
-                    details: responseText.substring(0, 500)
-                });
-            }
-
-            if (response.ok && (data.status === 'success' || data.success)) {
-                return res.status(200).json({
-                    success: true,
-                    message: 'OTP resent successfully'
-                });
-            }
-
-            return res.status(400).json({
-                error: data.error || data.message || 'Failed to resend OTP',
-                details: data
-            });
-
-        } else {
-            return res.status(400).json({
-                error: 'Invalid step. Use "initiate", "verify", or "resend_otp"'
+                status: 'error',
+                error: 'Missing request_token parameter'
             });
         }
 
+        if (!api_key) {
+            return res.status(400).json({
+                status: 'error',
+                error: 'Missing api_key parameter'
+            });
+        }
+
+        if (!api_secret) {
+            return res.status(400).json({
+                status: 'error',
+                error: 'Missing api_secret parameter'
+            });
+        }
+
+        console.log('🔑 Generating HDFC Securities session...');
+        console.log(`📋 Request token: ${request_token.substring(0, 10)}...`);
+        console.log(`🔐 API Key: ${api_key}`);
+
+        // HDFC Securities Access Token endpoint
+        const tokenUrl = 'https://developer.hdfcsec.com/oapi/v1/access/token';
+
+        // Prepare the request payload for HDFC Securities
+        const tokenPayload = {
+            request_token: request_token,
+            api_key: api_key,
+            api_secret: api_secret
+        };
+
+        console.log('🚀 Making request to HDFC Securities...');
+        
+        // Make request to HDFC Securities API
+        const response = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'FamilyWealthDashboard/1.0'
+            },
+            body: JSON.stringify(tokenPayload),
+            timeout: 30000
+        });
+
+        console.log(`📊 HDFC Response Status: ${response.status}`);
+
+        // Get response text first
+        const responseText = await response.text();
+        console.log(`📝 Raw Response: ${responseText.substring(0, 200)}...`);
+
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ JSON Parse Error:', parseError);
+            return res.status(500).json({
+                status: 'error',
+                error: 'Invalid response from HDFC Securities',
+                raw_response: responseText.substring(0, 500)
+            });
+        }
+
+        // Check if the response was successful
+        if (!response.ok) {
+            console.error('❌ HDFC API Error:', data);
+            return res.status(response.status).json({
+                status: 'error',
+                error: data.error || data.message || 'Failed to get access token',
+                details: data
+            });
+        }
+
+        // Check HDFC Securities specific success format
+        if (data.status !== 'success') {
+            console.error('❌ HDFC Session Error:', data);
+            return res.status(400).json({
+                status: 'error',
+                error: data.error || data.message || 'Session creation failed',
+                details: data
+            });
+        }
+
+        console.log('✅ HDFC Session created successfully');
+
+        // Return the session data in a format similar to Zerodha
+        const sessionData = {
+            status: 'success',
+            data: {
+                access_token: data.data.access_token,
+                user_id: data.data.user_id || data.data.client_id,
+                user_name: data.data.user_name || data.data.client_name,
+                user_type: data.data.user_type || 'individual',
+                email: data.data.email || '',
+                broker: 'hdfc_securities',
+                login_time: new Date().toISOString(),
+                token_type: 'Bearer',
+                expires_in: data.data.expires_in || 86400, // 24 hours default
+                refresh_token: data.data.refresh_token || null,
+                // Additional HDFC specific fields
+                api_key: api_key,
+                exchange_enabled: data.data.exchange_enabled || ['NSE', 'BSE'],
+                product_enabled: data.data.product_enabled || ['CNC', 'MIS', 'NRML'],
+                order_types: data.data.order_types || ['MARKET', 'LIMIT', 'SL', 'SL-M']
+            }
+        };
+
+        res.status(200).json(sessionData);
+
     } catch (error) {
-        console.error('HDFC API Handler Error:', error);
-        return res.status(500).json({
-            error: 'Internal server error: ' + error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        console.error('💥 Session creation error:', error);
+        
+        // Check for specific error types
+        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            return res.status(503).json({
+                status: 'error',
+                error: 'HDFC Securities API is currently unavailable',
+                details: error.message
+            });
+        }
+        
+        if (error.name === 'AbortError') {
+            return res.status(408).json({
+                status: 'error',
+                error: 'Request timeout. HDFC Securities API took too long to respond',
+                details: error.message
+            });
+        }
+
+        res.status(500).json({
+            status: 'error',
+            error: 'Internal server error during session creation',
+            details: error.message
         });
     }
+}
+
+// Export configuration for serverless deployment
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '1mb',
+        },
+    },
 }
