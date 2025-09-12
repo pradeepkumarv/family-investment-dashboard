@@ -1,8 +1,8 @@
-// hdfc-securities-integration.js - Full production HDFC Securities integration with login modal and data import
+// hdfc-securities-integration.js - Complete HDFC Securities OAuth integration
 
 const HDFC_CONFIG = {
     api_key: '5f5de761677a4283bd623e6a1013395b',
-    api_secret: '8ed88c629bc04639afcdca15381bd965', // Your actual secret here
+    api_secret: '8ed88c629bc04639afcdca15381bd965',
     backend_base: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc',
     members: {
         equity: 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49', // Pradeep Kumar V
@@ -11,8 +11,10 @@ const HDFC_CONFIG = {
 };
 
 let hdfcAccessToken = null;
+let hdfcAuthCode = null;
+let hdfcRequestToken = null;
 
-// Utility: Show message extraction wrapper
+// Utility: Show message wrapper
 function showHDFCMessage(msg, type = 'info') {
     if (typeof showMessage === 'function') {
         showMessage(`HDFC Securities: ${msg}`, type);
@@ -25,6 +27,7 @@ function showHDFCMessage(msg, type = 'info') {
 function openHDFCLoginModal() {
     const oldModal = document.getElementById('hdfc_login_modal');
     if (oldModal) oldModal.remove();
+    
     const modalContent = `
     <div id="hdfc_login_modal" class="modal-fixed"
         style="
@@ -67,6 +70,12 @@ function openHDFCLoginModal() {
                         transition: background 0.13s;
                     ">Request OTP</button>
             </div>
+            <div style="display:flex; gap:5px; margin-top:5px;">
+                <button onclick="resendHDFCOtp()" id="hdfc_resend_otp_btn" 
+                    style="font-size:0.85em; background:none; border:none; color:#0355b0; cursor:pointer; text-decoration:underline;">
+                    Resend OTP
+                </button>
+            </div>
             <span id="hdfc_otp_status" style="color:#c43030;font-size:0.91em;display:block;margin-top:4px;"></span>
         </div>
         <div style="margin-top:24px; display:flex; justify-content:space-between; gap:10px;">
@@ -89,138 +98,171 @@ function openHDFCLoginModal() {
     document.body.insertAdjacentHTML('beforeend', modalContent);
 }
 
-window.openHDFCLoginModal = openHDFCLoginModal;
-
-/** Call this to request OTP from the backend */
-function requestHDFCOtp() {
-    const username = document.getElementById('hdfc_username').value.trim();
-    const password = document.getElementById('hdfc_password').value.trim();
-    const otpStatus = document.getElementById('hdfc_otp_status');
-    if (!username || !password) {
-        otpStatus.textContent = 'Please enter username and password first.';
-        return;
-    }
-    otpStatus.textContent = 'Requesting OTP...';
-
-    // Step 1: Request OTP via backend
-    fetch('https://family-investment-dashboard-4hli.vercel.app/api/hdfc/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            step: 'initiate',
-            username,
-            password,
-            api_key: HDFC_CONFIG.api_key,
-            api_secret: HDFC_CONFIG.api_secret
-        })
-    }).then(resp => resp.json()).then(data => {
-        if (data.otpRequired) {
-            otpStatus.textContent = 'OTP sent to your registered mobile/email. Enter it here.';
-            window.hdfcSessionToken = data.session_token; // Save session token for OTP verify step
-        } else if (data.error) {
-            otpStatus.textContent = data.error;
-        } else {
-            otpStatus.textContent = 'Unexpected response from server.';
-        }
-    }).catch(e => {
-        otpStatus.textContent = 'Failed to request OTP.';
-    });
-}
-
-window.requestHDFCOtp = requestHDFCOtp;
-
-/** Login handler updates to use session_token for OTP verify */
-async function submitHDFCLogin() {
-    const username = document.getElementById('hdfc_username').value.trim();
-    const otp = document.getElementById('hdfc_otp').value.trim();
-    const otpStatus = document.getElementById('hdfc_otp_status');
-    if (!otp) {
-        otpStatus.textContent = 'Enter OTP sent by HDFC.';
-        return;
-    }
-    if (!window.hdfcSessionToken) {
-        otpStatus.textContent = 'You must request OTP first.';
-        return;
-    }
-    otpStatus.textContent = 'Logging in with OTP...';
-
-    // Step 2: Submit OTP
-    fetch('https://family-investment-dashboard-4hli.vercel.app/api/hdfc/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            step: 'verify',
-            otp,
-            session_token: window.hdfcSessionToken,
-            api_key: HDFC_CONFIG.api_key,
-            api_secret: HDFC_CONFIG.api_secret
-        })
-    }).then(resp => resp.json()).then(data => {
-        if (data.access_token) {
-            localStorage.setItem('hdfc_access_token', data.access_token);
-            otpStatus.textContent = '';
-            showHDFCMessage('HDFC connected successfully!', 'success');
-            closeHDFCLoginModal();
-            updateHDFCConnectionStatus();
-        } else {
-            otpStatus.textContent = data.error || 'OTP verification failed.';
-        }
-    }).catch(e => {
-        otpStatus.textContent = 'Login failed.';
-    });
-}
-
-function connectHDFC() {
-    openHDFCLoginModal();
-}
-
 // CLOSE LOGIN MODAL
 function closeHDFCLoginModal() {
     const modal = document.getElementById('hdfc_login_modal');
     if (modal) modal.remove();
+    // Reset tokens
+    hdfcAuthCode = null;
+    hdfcRequestToken = null;
 }
 
-// SUBMIT LOGIN FORM
-async function submitHDFCLogin() {
+// REQUEST OTP - Step 1 & 2 of OAuth flow
+async function requestHDFCOtp() {
     const username = document.getElementById('hdfc_username').value.trim();
     const password = document.getElementById('hdfc_password').value.trim();
-    const otp = document.getElementById('hdfc_otp').value.trim();
-
-    if (!username || !password || !otp) {
-        showHDFCMessage('Please fill all login fields', 'warning');
+    const otpStatus = document.getElementById('hdfc_otp_status');
+    
+    if (!username || !password) {
+        otpStatus.textContent = 'Please enter username and password first.';
         return;
     }
+    
+    otpStatus.textContent = 'Authorizing...';
 
     try {
-        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+        // Step 1: Authorize
+        const authResp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
             method: 'POST',
-            headers: {'Content-Type':'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username, password, otp,
+                step: 'authorize',
+                username,
+                password,
                 api_key: HDFC_CONFIG.api_key,
                 api_secret: HDFC_CONFIG.api_secret
             })
         });
+        
+        const authData = await authResp.json();
+        console.log('Auth Response:', authData);
+        
+        if (authData.success && authData.auth_code) {
+            hdfcAuthCode = authData.auth_code;
+            otpStatus.textContent = 'Getting access token...';
+            
+            // Step 2: Get access token
+            const tokenResp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    step: 'access_token',
+                    auth_code: hdfcAuthCode,
+                    api_key: HDFC_CONFIG.api_key,
+                    api_secret: HDFC_CONFIG.api_secret
+                })
+            });
+            
+            const tokenData = await tokenResp.json();
+            console.log('Token Response:', tokenData);
+            
+            if (tokenData.access_token) {
+                // Direct login success - no 2FA required
+                hdfcAccessToken = tokenData.access_token;
+                localStorage.setItem('hdfc_access_token', hdfcAccessToken);
+                otpStatus.textContent = 'Login successful!';
+                showHDFCMessage('HDFC connected successfully!', 'success');
+                closeHDFCLoginModal();
+                updateHDFCConnectionStatus();
+            } else if (tokenData.requires_2fa && tokenData.request_token) {
+                // 2FA required
+                hdfcRequestToken = tokenData.request_token;
+                otpStatus.textContent = 'OTP sent to your registered mobile/email. Enter it above and click Login.';
+            } else {
+                otpStatus.textContent = tokenData.error || 'Failed to get access token';
+            }
+        } else {
+            otpStatus.textContent = authData.error || 'Authorization failed';
+        }
+    } catch (e) {
+        console.error('Request OTP Error:', e);
+        otpStatus.textContent = 'Connection failed: ' + e.message;
+    }
+}
+
+// SUBMIT LOGIN - Step 3 of OAuth flow (2FA validation)
+async function submitHDFCLogin() {
+    const otp = document.getElementById('hdfc_otp').value.trim();
+    const otpStatus = document.getElementById('hdfc_otp_status');
+    
+    if (!otp) {
+        otpStatus.textContent = 'Enter OTP sent by HDFC.';
+        return;
+    }
+    
+    if (!hdfcRequestToken) {
+        otpStatus.textContent = 'You must request OTP first.';
+        return;
+    }
+    
+    otpStatus.textContent = 'Validating OTP...';
+
+    try {
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                step: 'validate_2fa',
+                otp,
+                request_token: hdfcRequestToken
+            })
+        });
+        
         const data = await resp.json();
-        if (resp.ok) {
+        console.log('OTP Validation Response:', data);
+        
+        if (data.access_token) {
             hdfcAccessToken = data.access_token;
             localStorage.setItem('hdfc_access_token', hdfcAccessToken);
+            otpStatus.textContent = 'Login successful!';
             showHDFCMessage('HDFC connected successfully!', 'success');
             closeHDFCLoginModal();
             updateHDFCConnectionStatus();
         } else {
-            showHDFCMessage(`Login failed: ${data.error}`, 'error');
+            otpStatus.textContent = data.error || 'OTP validation failed.';
         }
-    } catch(e) {
-        showHDFCMessage(`Login request failed: ${e.message}`, 'error');
+    } catch (e) {
+        console.error('Submit Login Error:', e);
+        otpStatus.textContent = 'Validation failed: ' + e.message;
     }
+}
+
+// RESEND OTP
+async function resendHDFCOtp() {
+    if (!hdfcRequestToken) {
+        document.getElementById('hdfc_otp_status').textContent = 'No active session to resend OTP.';
+        return;
+    }
+    
+    document.getElementById('hdfc_otp_status').textContent = 'Resending OTP...';
+    
+    try {
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                step: 'resend_otp',
+                request_token: hdfcRequestToken
+            })
+        });
+        
+        const data = await resp.json();
+        document.getElementById('hdfc_otp_status').textContent = 
+            data.success ? 'OTP resent successfully!' : (data.error || 'Failed to resend OTP');
+    } catch (e) {
+        document.getElementById('hdfc_otp_status').textContent = 'Failed to resend OTP: ' + e.message;
+    }
+}
+
+// CONNECT HDFC
+function connectHDFC() {
+    openHDFCLoginModal();
 }
 
 // UPDATE CONNECTION STATUS ON UI
 function updateHDFCConnectionStatus() {
     const statusEls = document.querySelectorAll('.hdfc-connection-status');
     const connected = !!localStorage.getItem('hdfc_access_token');
-
     statusEls.forEach(el => {
         el.textContent = connected ? '✅ Connected' : '❌ Not Connected';
         el.style.color = connected ? '#28a745' : '#dc3545';
@@ -235,39 +277,32 @@ function disconnectHDFC() {
     updateHDFCConnectionStatus();
 }
 
-// TEST CONNECTION ACTION (fetch profile)
+// TEST CONNECTION ACTION
 async function testHDFCConnection() {
     const token = localStorage.getItem('hdfc_access_token');
     if (!token) {
         showHDFCMessage('No access token. Please login first.', 'warning');
         return;
     }
-    try {
-        showHDFCMessage('Testing connection...', 'info');
-        const resp = await fetch(`${HDFC_CONFIG.backend_base}/profile`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ access_token: token, api_key: HDFC_CONFIG.api_key })
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            showHDFCMessage(`Connection valid. Welcome ${data.data.user_name}!`, 'success');
-        } else {
-            showHDFCMessage(`Connection test failed: ${data.error}`, 'error');
-        }
-    } catch (e) {
-        showHDFCMessage(`Connection test error: ${e.message}`, 'error');
-    }
+    
+    showHDFCMessage('Testing connection...', 'info');
+    // You can implement a test API call here if HDFC provides one
+    showHDFCMessage('Connection test not implemented yet', 'info');
 }
 
 // FETCH HOLDINGS FROM BACKEND
 async function fetchHDFCHoldings() {
     if (!hdfcAccessToken) throw new Error('Not authenticated. Please login.');
+    
     const resp = await fetch(`${HDFC_CONFIG.backend_base}/holdings`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ access_token: hdfcAccessToken, api_key: HDFC_CONFIG.api_key })
+        body: JSON.stringify({ 
+            access_token: hdfcAccessToken, 
+            api_key: HDFC_CONFIG.api_key 
+        })
     });
+    
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Failed to fetch holdings');
     return data.data;
@@ -279,10 +314,12 @@ async function hdfcImportAll() {
         showHDFCMessage('Please login to HDFC Securities first', 'warning');
         return;
     }
+    
     showHDFCMessage('Importing all HDFC holdings...', 'info');
     try {
         const holdings = await fetchHDFCHoldings();
         let importCount = 0;
+        
         for (const h of holdings) {
             if (h.instrument_type === 'EQUITY' || h.segment === 'NSE' || h.segment === 'BSE') {
                 await importEquityHolding(h);
@@ -293,6 +330,7 @@ async function hdfcImportAll() {
                 importCount++;
             }
         }
+        
         localStorage.setItem('hdfc_last_sync', new Date().toISOString());
         showHDFCMessage(`Imported ${importCount} holdings!`, 'success');
         if (typeof loadDashboardData === 'function') await loadDashboardData();
@@ -301,12 +339,13 @@ async function hdfcImportAll() {
     }
 }
 
-// Helper: import equity holding
+// Helper functions (keep your existing implementation)
 async function importEquityHolding(h) {
     const exists = investments.some(inv => 
         inv.member_id === HDFC_CONFIG.members.equity && 
         inv.symbol_or_name === h.symbol && 
         inv.broker_platform.includes('HDFC Securities'));
+    
     if (!exists) {
         await addInvestmentData({
             member_id: HDFC_CONFIG.members.equity,
@@ -325,12 +364,12 @@ async function importEquityHolding(h) {
     }
 }
 
-// Helper: import mf holding
 async function importMFHolding(h) {
     const exists = investments.some(inv => 
         inv.member_id === HDFC_CONFIG.members.mf && 
         inv.folio_number === h.folio && 
         inv.broker_platform.includes('HDFC Securities'));
+    
     if (!exists) {
         await addInvestmentData({
             member_id: HDFC_CONFIG.members.mf,
@@ -359,11 +398,13 @@ async function hdfcUpdatePrices() {
         showHDFCMessage('Please login to HDFC Securities first', 'warning');
         return;
     }
+    
     showHDFCMessage('Updating holding prices...', 'info');
     try {
         const holdings = await fetchHDFCHoldings();
         let updateCount = 0;
         const hdfcInv = investments.filter(inv => inv.broker_platform?.includes('HDFC Securities'));
+        
         for (const inv of hdfcInv) {
             const matched = holdings.find(h => h.symbol === inv.symbol_or_name || h.trading_symbol === inv.symbol_or_name);
             if (matched) {
@@ -384,6 +425,7 @@ async function hdfcUpdatePrices() {
                 updateCount++;
             }
         }
+        
         localStorage.setItem('hdfc_last_sync', new Date().toISOString());
         showHDFCMessage(`Updated ${updateCount} holdings`, 'success');
         if (typeof loadDashboardData === 'function') await loadDashboardData();
@@ -392,11 +434,11 @@ async function hdfcUpdatePrices() {
     }
 }
 
-// SHOW HDFC SETTINGS MODAL (including status, actions)
+// SHOW HDFC SETTINGS MODAL
 function showHDFCSettings() {
     const oldModal = document.getElementById('hdfc_settings_modal');
     if (oldModal) oldModal.remove();
-
+    
     const modalContent = `
     <div id="hdfc_settings_modal" class="modal" style="display:block; position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
         <div style="background:#fff; max-width:700px; margin:5% auto; padding:20px; border-radius:10px; position:relative;">
@@ -452,11 +494,11 @@ function closeHDFCModal() {
 function updateHDFCModalStatus() {
     const statusSpan = document.querySelector('.hdfc-connection-status');
     if (!statusSpan) return;
-
+    
     const connected = !!localStorage.getItem('hdfc_access_token');
     statusSpan.textContent = connected ? '✅ Connected' : '❌ Not Connected';
     statusSpan.style.color = connected ? '#28a745' : '#dc3545';
-
+    
     const lastSync = localStorage.getItem('hdfc_last_sync');
     const syncSpan = document.getElementById('hdfc-modal-sync');
     if (syncSpan) syncSpan.textContent = lastSync ? new Date(lastSync).toLocaleString() : 'Never';
@@ -468,13 +510,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedToken) hdfcAccessToken = savedToken;
     updateHDFCConnectionStatus();
 });
+
+// Export functions to window
 window.connectHDFC = connectHDFC;
 window.disconnectHDFC = disconnectHDFC;
 window.testHDFCConnection = testHDFCConnection;
 window.hdfcImportAll = hdfcImportAll;
 window.hdfcUpdatePrices = hdfcUpdatePrices;
 window.showHDFCSettings = showHDFCSettings;
+window.requestHDFCOtp = requestHDFCOtp;
 window.submitHDFCLogin = submitHDFCLogin;
+window.resendHDFCOtp = resendHDFCOtp;
 window.closeHDFCLoginModal = closeHDFCLoginModal;
 window.closeHDFCModal = closeHDFCModal;
-
