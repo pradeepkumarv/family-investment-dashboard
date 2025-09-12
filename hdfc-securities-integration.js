@@ -522,9 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     updateHDFCConnectionStatus();
 });
-const status = document.getElementById('hdfc-otp-status');
-if (status) status.textContent = '...'; // Check before using
-
 
 // Export functions to window
 window.connectHDFC = connectHDFC;
