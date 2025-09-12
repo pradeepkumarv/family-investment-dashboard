@@ -117,7 +117,7 @@ function showHDFCSettings() {
   updateHDFCModalStatus();
 }
 document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('btn-hdfc-settings');
+  const btn = document.getElementById('btn btn-primary');
   if (btn) btn.addEventListener('click', showHDFCSettings);
 });
 
