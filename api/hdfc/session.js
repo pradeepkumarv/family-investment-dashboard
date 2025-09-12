@@ -45,7 +45,7 @@ export default async function handler(req, res) {
             try {
                 data = JSON.parse(responseText);
             } catch (e) {
-                return res.status(500).json({ 
+                return res.status(500).json({
                     error: 'Invalid response from HDFC authorize API',
                     details: responseText.substring(0, 200)
                 });
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
             try {
                 data = JSON.parse(responseText);
             } catch (e) {
-                return res.status(500).json({ 
+                return res.status(500).json({
                     error: 'Invalid response from HDFC access token API',
                     details: responseText.substring(0, 200)
                 });
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
             try {
                 data = JSON.parse(responseText);
             } catch (e) {
-                return res.status(500).json({ 
+                return res.status(500).json({
                     error: 'Invalid response from HDFC 2FA validation API',
                     details: responseText.substring(0, 200)
                 });
@@ -189,7 +189,7 @@ export default async function handler(req, res) {
             try {
                 data = JSON.parse(responseText);
             } catch (e) {
-                return res.status(500).json({ 
+                return res.status(500).json({
                     error: 'Invalid response from HDFC resend OTP API',
                     details: responseText.substring(0, 200)
                 });
@@ -207,8 +207,8 @@ export default async function handler(req, res) {
             });
 
         } else {
-            return res.status(400).json({ 
-                error: 'Invalid step. Use: authorize, access_token, validate_2fa, or resend_otp' 
+            return res.status(400).json({
+                error: 'Invalid step. Use: authorize, access_token, validate_2fa, or resend_otp'
             });
         }
 
