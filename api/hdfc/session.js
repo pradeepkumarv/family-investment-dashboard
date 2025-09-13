@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       console.log('Validating HDFC OTP...');
 
       // CORRECT HDFC OTP Validation Endpoint
-      const otpUrl = `https://developer.hdfcsec.com/oapi/v1/twofa/validate?api_key=${encodeURIComponent(api_key)}&token_id=${encodeURIComponent(token_id)}`;
+      const otpUrl = `https://api.hdfcsec.com/Token/api/authenticate/validate?api_key=${encodeURIComponent(api_key)}&token_id=${encodeURIComponent(token_id)}``;
       
       const otpResponse = await fetch(otpUrl, {
         method: 'POST',
