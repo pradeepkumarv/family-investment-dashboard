@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       console.log('Initiating HDFC login with correct endpoint...');
       
       // CORRECT HDFC Login Endpoint
-      const loginResponse = await fetch('https://developer.hdfcsec.com/oapi/v1/login', {
+      const loginResponse = await fetch('https://api.hdfcsec.com/Token/api/authenticate/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
           });
         } else if (otpData.data && otpData.data.request_token) {
           // Need to exchange for access token
-          const tokenResponse = await fetch('https://developer.hdfcsec.com/oapi/v1/access/token', {
+          const tokenResponse = await fetch('https://api.hdfcsec.com/Token/api/authenticate/validatetoken', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
