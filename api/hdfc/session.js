@@ -14,8 +14,6 @@ export default async function handler(req, res) {
   }
 
   console.log(`HDFC Session Step: ${step}`);
-  console.log(`Username: ${username}`);
-  console.log(`API Key: ${api_key}`);
 
   try {
     if (step === 'initiate') {
@@ -23,45 +21,145 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing username or password' });
       }
 
-      console.log('Making request to HDFC login endpoint...');
+      console.log('Initiating HDFC login with correct endpoint...');
       
-      // Try the correct HDFC endpoint based on their documentation
-      const loginResponse = await fetch('https://developer.hdfcsec.com/ir-api/auth/login', {
+      // CORRECT HDFC Login Endpoint
+      const loginResponse = await fetch('https://developer.hdfcsec.com/oapi/v1/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)',
-          'X-API-Key': api_key,
-          'X-API-Secret': api_secret
+          'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)'
         },
         body: JSON.stringify({
-          userId: username,
+          api_key: api_key,
+          api_secret: api_secret,
+          username: username,
           password: password
         })
       });
 
-      console.log(`HDFC Response Status: ${loginResponse.status}`);
-      console.log(`HDFC Response Headers:`, Object.fromEntries(loginResponse.headers));
+      console.log(`HDFC Login Response Status: ${loginResponse.status}`);
       
       const loginText = await loginResponse.text();
-      console.log(`HDFC Response Body (first 1000 chars):`, loginText.substring(0, 1000));
+      console.log(`HDFC Login Response Body: ${loginText}`);
       
-      // Return debug information to frontend
-      return res.status(200).json({
-        debug: true,
-        status: loginResponse.status,
-        headers: Object.fromEntries(loginResponse.headers),
-        body: loginText,
-        bodyLength: loginText.length,
-        isJSON: loginText.trim().startsWith('{') || loginText.trim().startsWith('[')
+      // Check if response is empty (like your logs show)
+      if (!loginText || loginText.trim() === '') {
+        return res.status(400).json({
+          error: 'Empty response from HDFC API',
+          details: `Status: ${loginResponse.status}, Headers: ${JSON.stringify(Object.fromEntries(loginResponse.headers))}`
+        });
+      }
+
+      let loginData;
+      try {
+        loginData = JSON.parse(loginText);
+      } catch (e) {
+        return res.status(500).json({
+          error: 'Invalid JSON response from HDFC API',
+          details: loginText.substring(0, 500),
+          status: loginResponse.status
+        });
+      }
+
+      if (loginResponse.ok && loginData.status === 'success') {
+        if (loginData.data && loginData.data.request_token) {
+          return res.status(200).json({
+            token_id: loginData.data.request_token,
+            message: 'OTP sent to registered mobile/email'
+          });
+        } else if (loginData.data && loginData.data.access_token) {
+          return res.status(200).json({
+            access_token: loginData.data.access_token,
+            user_info: loginData.data.user_info || {}
+          });
+        }
+      }
+
+      return res.status(400).json({
+        error: loginData.error || loginData.message || 'Login failed',
+        details: loginData,
+        status: loginResponse.status
       });
 
     } else if (step === 'verify') {
-      // For now, just return debug info for verify step too
-      return res.status(200).json({
-        debug: true,
-        message: 'Verify step - not implemented yet in debug mode'
+      if (!otp || !token_id) {
+        return res.status(400).json({ error: 'Missing OTP or token_id' });
+      }
+
+      console.log('Validating HDFC OTP...');
+
+      // CORRECT HDFC OTP Validation Endpoint
+      const otpUrl = `https://developer.hdfcsec.com/oapi/v1/twofa/validate?api_key=${encodeURIComponent(api_key)}&token_id=${encodeURIComponent(token_id)}`;
+      
+      const otpResponse = await fetch(otpUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; FamilyDashboard/1.0)'
+        },
+        body: JSON.stringify({
+          answer: otp
+        })
+      });
+
+      const otpText = await otpResponse.text();
+      console.log(`HDFC OTP Response: ${otpText}`);
+
+      if (!otpText || otpText.trim() === '') {
+        return res.status(400).json({
+          error: 'Empty OTP response from HDFC API',
+          status: otpResponse.status
+        });
+      }
+
+      let otpData;
+      try {
+        otpData = JSON.parse(otpText);
+      } catch (e) {
+        return res.status(500).json({
+          error: 'Invalid OTP JSON response from HDFC API',
+          details: otpText.substring(0, 500)
+        });
+      }
+
+      if (otpResponse.ok && otpData.status === 'success') {
+        if (otpData.data && otpData.data.access_token) {
+          return res.status(200).json({
+            access_token: otpData.data.access_token,
+            user_info: otpData.data.user_info || {}
+          });
+        } else if (otpData.data && otpData.data.request_token) {
+          // Need to exchange for access token
+          const tokenResponse = await fetch('https://developer.hdfcsec.com/oapi/v1/access/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              api_key: api_key,
+              api_secret: api_secret,
+              request_token: otpData.data.request_token
+            })
+          });
+
+          const tokenData = await tokenResponse.json();
+          
+          if (tokenResponse.ok && tokenData.status === 'success' && tokenData.data.access_token) {
+            return res.status(200).json({
+              access_token: tokenData.data.access_token,
+              user_info: tokenData.data.user_info || {}
+            });
+          }
+        }
+      }
+
+      return res.status(400).json({
+        error: otpData.error || otpData.message || 'OTP validation failed',
+        details: otpData
       });
 
     } else {
@@ -73,7 +171,7 @@ export default async function handler(req, res) {
     return res.status(500).json({
       error: 'Network or server error',
       details: error.message,
-      stack: error.stack
+      stack: error.stack?.substring(0, 1000)
     });
   }
 }
