@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     // Determine the correct endpoint based on type
     let endpoint = 'https://api.hdfcsec.com/Token/api/portfolio/GetHoldings';
     if (type === 'mf' || type === 'mutualfunds') {
-      endpoint = 'https://developer.hdfcsec.com/oapi/v1/holdings/mf';
+      endpoint = 'https://api.hdfcsec.com/Token/api/portfolio/holdings/mf';
     }
 
     console.log(`Fetching HDFC holdings from: ${endpoint}`);
