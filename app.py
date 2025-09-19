@@ -1,19 +1,10 @@
 from flask import Flask, request, render_template, jsonify, session, redirect, url_for
 from flask_cors import CORS
 import hdfc_investright
-import redis
 import os
 import json
-from flask_session import Session, sessions
 
-# Monkey-patch to decode bytes session IDs
-_orig_save = sessions.SessionInterface.save_session
-def save_session_str(self, app, session, response):
-    sid = session.sid
-    if isinstance(sid, (bytes, bytearray)):
-        session.sid = sid.decode('utf-8')
-    return _orig_save(self, app, session, response)
-sessions.SessionInterface.save_session = save_session_str
+
 
 
 app = Flask(__name__)
@@ -24,12 +15,6 @@ CORS(app, origins=["https://family-investment-dashboard.onrender.com",
                    "http://localhost:3000", 
                    "https://pradeepkumarv.github.io"])
 
-# Session configuration (for Redis)
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_USE_SIGNER"] = True
-app.config["SESSION_KEY_PREFIX"] = "hdfc:"
-Session(app)
 
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
