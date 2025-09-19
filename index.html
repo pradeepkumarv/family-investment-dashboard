@@ -2375,32 +2375,26 @@
             <span id="zerodha-last-sync">Last sync: Never</span>
         </div>
     </div>
-
-    <!-- HDFC Securities Integration -->
+    <!-- HDFC Securities Integration - Updated for Render Authentication -->
     <div class="broker-card">
         <h3>🏦 HDFC Securities</h3>
         <div class="account-mapping">
             <small>Equity: Pradeep Kumar V | MF: Sanchita Pradeep</small>
         </div>
         <div class="broker-buttons">
-                 <button class="btn btn-primary" onclick="showHDFCSettings()" title="Configure HDFC Securities settings"> 
+            <button class="btn btn-primary" onclick="showHDFCSettings()" title="Configure HDFC Securities settings and authenticate"> 
                 ⚙️ HDFC Settings
             </button>
-            <button class="btn btn-success" onclick="hdfcImportAll()" title="Import both equity and MF from HDFC Securities" style="background: #805ad5;">
-                📥 Import All 
+            <button class="btn btn-success" onclick="importHDFCHoldings()" title="Import all holdings from HDFC Securities (after authentication)" style="background: #805ad5;">
+                📥 Import All
             </button>
-            <button class="btn btn-success" onclick="hdfcImportEquity()" title="Import equity holdings from HDFC Securities">
-                📈 EQ-HDFC
+            <button class="btn btn-info" onclick="testHDFCConnection()" title="Test HDFC Securities connection">
+                🔗 Test Connection
             </button>
-            <button class="btn btn-info" onclick="hdfcImportMF()" title="Import mutual fund holdings from HDFC Securities">
-                📊 MF-HDFC
+            <button class="btn btn-secondary" onclick="disconnectHDFC()" title="Disconnect from HDFC Securities">
+                🔌 Disconnect
             </button>
-            <button class="btn btn-secondary" onclick="hdfcUpdatePrices()" title="Update prices ">
-                🔄 Update Prices
-            </button>
-            <div id="hdfc-otp-status"></div>
-           </div>
-
+            <div id="hdfc-otp-status" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
         </div>
         <div id="hdfc-status" class="status-display">
             <span id="hdfc-connection-status">❌ Not Connected</span>
