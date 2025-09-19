@@ -160,4 +160,13 @@ def resend_2fa(token_id: str) -> dict:
     Resends the OTP to the registered mobile/email.
     """
     url = f"{BASE}/twofa/resend"
-    params = {"api_key": API_KEY
+    params = {"api_key": API_KEY, "token_id": token_id}
+
+    print("🔁 Resending 2FA OTP")
+    print(f"  URL: {url}")
+    print(f"  Params: {params}")
+
+    r = requests.post(url, params=params, headers=HEADERS_JSON)
+    print(f"  Response: {r.status_code} {r.text}")
+    r.raise_for_status()
+    return r.json()
