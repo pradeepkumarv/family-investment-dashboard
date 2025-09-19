@@ -1,10 +1,21 @@
 from flask import Flask, request, render_template, jsonify, session, redirect, url_for
 from flask_session import Session
+_orig_save = sessions.SessionInterface.save_session
 from flask_cors import CORS
 import hdfc_investright
 import redis
 import os
 import json
+
+def save_session_str(self, app, session, response):
+    # Intercept the session_id and force to string
+    sid = session.sid
+    if isinstance(sid, (bytes, bytearray)):
+        session.sid = sid.decode('utf-8')
+    return _orig_save(self, app, session, response)
+
+sessions.SessionInterface.save_session = save_session_str
+
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
