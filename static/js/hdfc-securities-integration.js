@@ -94,8 +94,7 @@ async function testHDFCConnection() {
     }
 }
 
-// Import holdings automatically after OTP & callback
-// Import holdings after OTP callback with full debug + alerts
+// Import holdings after OTP callback (no Supabase auth required)
 async function fetchAndImportHoldings() {
     console.log(">>> fetchAndImportHoldings START");
     alert("✅ fetchAndImportHoldings triggered!");
@@ -115,55 +114,54 @@ async function fetchAndImportHoldings() {
             throw new Error(result.error || "Failed to fetch holdings");
         }
 
-        // Supabase user info
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        console.log(">>> Supabase user:", user, "error:", userError);
-
-        if (userError || !user) {
-            alert("❌ No Supabase user found!");
-            throw new Error("No authenticated Supabase user found");
-        }
-        const currentUserId = user.id;
-
         if (Array.isArray(result.data)) {
             let insertedCount = 0;
 
             for (const holding of result.data) {
                 console.log(">>> Preparing holding:", holding);
-                alert("🔹 Inserting holding: " + (holding.company_name || holding.symbol_or_name || "unknown"));
 
+                // Map to correct member
+                let memberId = HDFC_CONFIG.members.equity; // default Pradeep
+                if (holding.investment_type === "mutualFunds") {
+                    memberId = HDFC_CONFIG.members.mf; // Sanchita
+                }
+
+                // Prepare row for Supabase
+                const row = {
+                    member_id: memberId,
+                    investment_type: holding.investment_type,
+                    company_name: holding.company_name || holding.symbol || null,
+                    authorised_quantity: holding.authorised_quantity || 0,
+                    average_price: holding.average_price || 0,
+                    brokerplatform: 'HDFC Securities',
+                    close_price: holding.close_price || 0,
+                    collateral_quantity: holding.collateral_quantity || 0,
+                    corporate_action_indicator: holding.corporate_action_indicator || null,
+                    corporate_action_message: holding.corporate_action_message || null,
+                    createdat: new Date().toISOString(),
+                    day_change: holding.day_change || 0,
+                    day_change_percentage: holding.day_change_percentage || 0,
+                    discrepancy: holding.discrepancy || false,
+                    hdfcdata: JSON.stringify(holding),
+                    instrument_token: holding.instrument_token || null,
+                    investment_value: holding.investment_value || 0,
+                    isin: holding.isin || null,
+                    ltcg_quantity: holding.ltcg_quantity || 0,
+                    mtf_indicator: holding.mtf_indicator || null,
+                    pnl: holding.pnl || 0,
+                    quantity: holding.quantity || 0,
+                    realised: holding.realised || 0,
+                    sector_name: holding.sector_name || null,
+                    security_id: holding.security_id || null,
+                    sip_indicator: holding.sip_indicator || null,
+                    t1_quantity: holding.t1_quantity || 0,
+                    used_quantity: holding.used_quantity || 0
+                };
+
+                // Insert into Supabase
                 const { data, error } = await supabaseClient
                     .from('investments')
-                    .insert({
-                        member_id: currentUserId,
-                        investment_type: holding.investment_type,
-                        company_name: holding.company_name || null,
-                        authorised_quantity: holding.authorised_quantity || 0,
-                        average_price: holding.average_price || 0,
-                        brokerplatform: 'HDFC Securities',
-                        close_price: holding.close_price || 0,
-                        collateral_quantity: holding.collateral_quantity || 0,
-                        corporate_action_indicator: holding.corporate_action_indicator || null,
-                        corporate_action_message: holding.corporate_action_message || null,
-                        createdat: new Date().toISOString(),
-                        day_change: holding.day_change || 0,
-                        day_change_percentage: holding.day_change_percentage || 0,
-                        discrepancy: holding.discrepancy || false,
-                        hdfcdata: JSON.stringify(holding),
-                        instrument_token: holding.instrument_token || null,
-                        investment_value: holding.investment_value || 0,
-                        isin: holding.isin || null,
-                        ltcg_quantity: holding.ltcg_quantity || 0,
-                        mtf_indicator: holding.mtf_indicator || null,
-                        pnl: holding.pnl || 0,
-                        quantity: holding.quantity || 0,
-                        realised: holding.realised || 0,
-                        sector_name: holding.sector_name || null,
-                        security_id: holding.security_id || null,
-                        sip_indicator: holding.sip_indicator || null,
-                        t1_quantity: holding.t1_quantity || 0,
-                        used_quantity: holding.used_quantity || 0
-                    });
+                    .insert(row);
 
                 console.log(">>> Insert result:", { data, error });
 
@@ -193,6 +191,7 @@ async function fetchAndImportHoldings() {
     console.log(">>> fetchAndImportHoldings END");
     alert("🏁 fetchAndImportHoldings finished");
 }
+
 
 
 // Helper to get current Supabase user
