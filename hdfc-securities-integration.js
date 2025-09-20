@@ -1,4 +1,4 @@
-// HDFC Securities Integration - Cleaned for Automatic Post-OTP Import
+// HDFC Securities Integration - Final Clean Version
 const HDFC_CONFIG = {
     api_key: '5f5de761677a4283bd623e6a1013395b',
     api_secret: '8ed88c629bc04639afcdca15381bd965',
@@ -49,7 +49,12 @@ function showHDFCSettings() {
                 </div>
                 
                 <div class="hdfc-info" style="font-size:0.9em; color:#666;">
-                    <p><strong>Automatic Import:</strong> After you log in and validate OTP, your holdings will be imported automatically into the dashboard.</p>
+                    <p><strong>Automatic Import:</strong></p>
+                    <p>After you log in and validate OTP, your HDFC holdings will be imported automatically into your dashboard.</p>
+                    <ul style="margin:10px 0; padding-left:20px;">
+                        <li>Equity Holdings → mapped to <strong>Pradeep Kumar V</strong></li>
+                        <li>Mutual Fund Holdings → mapped to <strong>Sanchita Pradeep</strong></li>
+                    </ul>
                 </div>
             </div>
         </div>
