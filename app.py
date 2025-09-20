@@ -8,8 +8,13 @@ from datetime import datetime
 
 # Supabase config (set these in Render env variables)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://tqjwhbwcteuvmreldgae.supabase.co")
-SUPABASE_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTYwNDA4OSwiZXhwIjoyMDcxMTgwMDg5fQ.vzUzbdgf0cyJlXTVEHkqnsj4OtF6xdPCplBLDPEwA78")  # MUST be service_role key
+SUPABASE_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTYwNDA4OSwiZXhwIjoyMDcxMTgwMDg5fQ.vzUzbdgf0cyJlXTVEHkqnsj4OtF6xdPCplBLDPEwA78")  or os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MDQwODksImV4cCI6MjA3MTE4MDA4OX0.g4ksBnP-IjpIdu6l0zaiOTJGMTCDoh32kNG9GFGzdTw")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_KEY/SUPABASE_SERVICE_ROLE_KEY")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 
 # -------------------------
 # CALLBACK
