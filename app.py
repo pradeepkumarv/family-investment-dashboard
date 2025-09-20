@@ -2,20 +2,32 @@ from supabase import create_client, Client
 from flask import Flask, request, render_template, jsonify, session, redirect
 from flask_cors import CORS
 import hdfc_investright
-import os  # ✅ make sure this is here before you use os
+import os
 from datetime import datetime
 
+# -------------------------
+# Flask app setup
+# -------------------------
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
 
-# Supabase config (set these in Render env variables)
+# Allow frontend (GitHub Pages + local dev)
+CORS(app, resources={r"/api/hdfc/*": {"origins": [
+    "https://pradeepkumarv.github.io",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+]}})
 
+# -------------------------
+# Supabase config
+# -------------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("Missing SUPABASE_URL or SUPABASE_KEY")
+    raise RuntimeError("❌ Missing SUPABASE_URL or SUPABASE_KEY in environment variables")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 
 # -------------------------
 # CALLBACK
@@ -64,7 +76,6 @@ def callback():
         print(f"💥 Error in callback: {e}")
         print(error_trace)
         return jsonify({"error": str(e), "trace": error_trace}), 500
-
 
 # -------------------------
 # PROCESS HOLDINGS SUCCESS
@@ -135,3 +146,9 @@ def process_holdings_success(holdings_data):
         print("❌ Error in process_holdings_success:", e)
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
+
+# -------------------------
+# MAIN
+# -------------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
