@@ -3,7 +3,7 @@ const HDFC_CONFIG = {
     api_key: '5f5de761677a4283bd623e6a1013395b',
     api_secret: '8ed88c629bc04639afcdca15381bd965',
     // Updated backend base - keeping your Vercel backend for API calls
-    backend_base: 'https://family-investment-dashboard-4hli.vercel.app/api/hdfc',
+    backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc',
     // Render website for authentication
     render_auth_url: 'https://family-investment-dashboard.onrender.com/',
     members: {
