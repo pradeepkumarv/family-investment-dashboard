@@ -61,13 +61,8 @@ async function testHDFCConnection() {
             return;
         }
 
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/status`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${supabaseUser.access_token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+       backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc'
+
         const data = await response.json();
         console.log("Connection test response:", data);
 
