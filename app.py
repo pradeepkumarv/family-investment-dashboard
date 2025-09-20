@@ -1,4 +1,10 @@
 from supabase import create_client, Client
+from flask import Flask, request, render_template, jsonify, session, redirect
+from flask_cors import CORS
+import hdfc_investright
+import os  # ✅ make sure this is here before you use os
+from datetime import datetime
+
 
 # Supabase config (set these in Render env variables)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://tqjwhbwcteuvmreldgae.supabase.co")
