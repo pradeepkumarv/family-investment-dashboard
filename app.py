@@ -6,6 +6,23 @@ import os
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
+# Allow your front-end origin (use '*' only for testing)
+CORS(app, resources={r"/api/hdfc/*": {"origins": "https://pradeepkumarv.github.io"}})
+
+@app.route("/api/hdfc/auth-url", methods=["GET"])
+def get_auth_url():
+    # ... build HDFC auth URL ...
+    return jsonify({"url": auth_url})
+
+@app.route("/api/hdfc/status", methods=["GET"])
+def status():
+    # ... return connected status + access token ...
+    return jsonify({"connected": True, "accessToken": token, "lastSync": last_sync})
+
+@app.route("/api/hdfc/holdings", methods=["POST"])
+def holdings():
+    # ... fetch and return holdings ...
+    return jsonify({"data": holdings_data})
 
 
 API_KEY = os.getenv("HDFC_API_KEY")
