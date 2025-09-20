@@ -134,6 +134,7 @@ async function testHDFCConnection() {
 }
 
 // Import holdings after OTP callback
+// Import holdings after OTP callback
 async function fetchAndImportHoldings() {
     try {
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
@@ -147,20 +148,27 @@ async function fetchAndImportHoldings() {
         if (Array.isArray(result.data)) {
             let insertedCount = 0;
             for (const holding of result.data) {
-                await addInvestmentData({
-                    memberid: holding.member_id,
-                    investmenttype: holding.investment_type,
-                    symbolorname: holding.tradingsymbol || holding.symbol || holding.schemename || 'Unknown',
-                    investedamount: parseFloat(holding.quantity || holding.units) || 0,
-                    averageprice: parseFloat(holding.averageprice || holding.averagenav) || 0,
-                    currentvalue: (parseFloat(holding.quantity || holding.units) || 0) *
-                                  (parseFloat(holding.lastprice || holding.nav) || 0),
-                    lastprice: parseFloat(holding.lastprice || holding.nav) || 0,
-                    brokerplatform: 'HDFC Securities',
-                    hdfcdata: JSON.stringify(holding),
-                    createdat: new Date().toISOString()
-                });
-                insertedCount++;
+                const { error } = await supabaseClient
+                  .from('investments')   // 👈 use your actual Supabase table name
+                  .insert({
+                      memberid: holding.member_id,
+                      investmenttype: holding.investment_type,
+                      symbolorname: holding.tradingsymbol || holding.symbol || holding.schemename || 'Unknown',
+                      investedamount: parseFloat(holding.quantity || holding.units) || 0,
+                      averageprice: parseFloat(holding.averageprice || holding.averagenav) || 0,
+                      currentvalue: (parseFloat(holding.quantity || holding.units) || 0) *
+                                    (parseFloat(holding.lastprice || holding.nav) || 0),
+                      lastprice: parseFloat(holding.lastprice || holding.nav) || 0,
+                      brokerplatform: 'HDFC Securities',
+                      hdfcdata: JSON.stringify(holding),
+                      createdat: new Date().toISOString()
+                  });
+
+                if (error) {
+                    console.error("Supabase insert error:", error);
+                } else {
+                    insertedCount++;
+                }
             }
             showHDFCMessage(`✅ Imported ${insertedCount} holdings from callback`, 'success');
         } else {
@@ -186,3 +194,4 @@ window.showHDFCSettings = showHDFCSettings;
 window.authorizeHDFC = authorizeHDFC;
 window.testHDFCConnection = testHDFCConnection;
 window.fetchAndImportHoldings = fetchAndImportHoldings;
+
