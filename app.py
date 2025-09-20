@@ -1,37 +1,82 @@
 from flask import Flask, request, render_template, jsonify, session, redirect
 from flask_cors import CORS
 import hdfc_investright
-
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
-# Allow your front-end origin (use '*' only for testing)
+
+# Allow your GitHub Pages front-end origin
 CORS(app, resources={r"/api/hdfc/*": {"origins": "https://pradeepkumarv.github.io"}})
-
-@app.route("/api/hdfc/auth-url", methods=["GET"])
-def get_auth_url():
-    # ... build HDFC auth URL ...
-    return jsonify({"url": auth_url})
-
-@app.route("/api/hdfc/status", methods=["GET"])
-def status():
-    # ... return connected status + access token ...
-    return jsonify({"connected": True, "accessToken": token, "lastSync": last_sync})
-
-@app.route("/api/hdfc/holdings", methods=["POST"])
-def api_holdings():
-    # ... fetch and return holdings ...
-    return jsonify({"data": holdings_data})
-
 
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
 
+# -------------------------
+# AUTH URL
+# -------------------------
+@app.route("/api/hdfc/auth-url", methods=["GET"])
+def get_auth_url():
+    """
+    Build and return the authorization URL for HDFC Securities
+    """
+    # For now just return your Render hosted login page
+    auth_url = "https://family-investment-dashboard.onrender.com/"
+    return jsonify({"url": auth_url})
+
+# -------------------------
+# STATUS
+# -------------------------
+@app.route("/api/hdfc/status", methods=["GET"])
+def status():
+    """
+    Return connection status, last sync, and stored access token
+    """
+    token = session.get("access_token")
+    last_sync = session.get("last_sync")
+    connected = token is not None
+
+    return jsonify({
+        "connected": connected,
+        "accessToken": token,
+        "lastSync": last_sync
+    })
+
+# -------------------------
+# HOLDINGS
+# -------------------------
+@app.route("/api/hdfc/holdings", methods=["POST"])
+def api_holdings():
+    """
+    Fetch holdings from HDFC using the provided access token
+    """
+    data = request.json or {}
+    access_token = data.get("accesstoken")
+
+    if not access_token:
+        return jsonify({"error": "Missing access token"}), 400
+
+    try:
+        holdings_data = hdfc_investright.get_holdings(access_token)
+        # Store sync time + token for frontend
+        session["last_sync"] = datetime.utcnow().isoformat()
+        session["access_token"] = access_token
+
+        return jsonify({"data": holdings_data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# -------------------------
+# LANDING
+# -------------------------
 @app.route("/", methods=["GET"])
 def home():
     return render_template("login.html")
 
+# -------------------------
+# REQUEST OTP
+# -------------------------
 @app.route("/request-otp", methods=["POST"])
 def request_otp():
     username = request.form.get("username")
@@ -50,6 +95,9 @@ def request_otp():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# -------------------------
+# VALIDATE OTP
+# -------------------------
 @app.route("/validate-otp", methods=["POST"])
 def validate_otp():
     otp = request.form.get("otp")
@@ -59,22 +107,18 @@ def validate_otp():
         return jsonify({"error": "Session expired. Please login again."}), 401
     
     try:
-        # Validate OTP
         otp_result = hdfc_investright.validate_otp(token_id, otp)
         
         if not otp_result.get("authorised"):
             return jsonify({"error": "OTP validation failed!"}), 400
 
-        # Get callback URL for redirect
         callback_url = otp_result.get("callbackUrl")
         if not callback_url:
             return jsonify({"error": "No callback URL received"}), 400
 
-        # Store request_token in session for use in callback
         request_token = otp_result.get("requestToken")
         session["request_token"] = request_token
 
-        # Return redirect response to frontend
         return jsonify({
             "status": "redirect_required",
             "redirect_url": callback_url,
@@ -86,6 +130,9 @@ def validate_otp():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+# -------------------------
+# CALLBACK
+# -------------------------
 @app.route("/api/callback", methods=["GET", "POST"])
 def callback():
     print("📞 Callback received!")
@@ -97,32 +144,26 @@ def callback():
         return "Session expired", 400
     
     try:
-        # SKIP Step 1: Authorization is already done (authorised=true in OTP response)
-        print("✅ Authorization already completed during OTP validation")
-        
-        # Step 2: Try using request_token directly for holdings
-        print("🔄 Using request_token directly for holdings...")
+        # First try with request_token directly
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
             return process_holdings_success(holdings_data)
         except Exception as direct_error:
             print(f"Direct request_token failed: {direct_error}")
         
-        # Step 3: Try getting access_token (corrected endpoint)
-        print("🔄 Attempting to get access_token...")
+        # Then try with access_token
         try:
             access_token = hdfc_investright.fetch_access_token(token_id, request_token)
             print("Access token received:", access_token[:50] + "..." if access_token else None)
             
-            # Get holdings with access_token
             holdings_data = hdfc_investright.get_holdings(access_token)
+            session["access_token"] = access_token
+            session["last_sync"] = datetime.utcnow().isoformat()
             return process_holdings_success(holdings_data)
-            
         except Exception as token_error:
             print(f"Access token method failed: {token_error}")
         
-        # Step 4: Last resort - try different auth methods
-        print("🔄 Trying fallback authentication methods...")
+        # Last resort fallback
         holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
         return process_holdings_success(holdings_data)
         
@@ -143,137 +184,21 @@ def callback():
         </html>
         """, 500
 
+# -------------------------
+# PROCESS HOLDINGS SUCCESS
+# -------------------------
 def process_holdings_success(holdings_data):
     """
     Helper function to process successful holdings retrieval
     """
-    print(f"✅ Holdings retrieved successfully: {len(holdings_data) if isinstance(holdings_data, list) else 'Unknown count'}")
-    
-    # Handle different response formats
-    if isinstance(holdings_data, dict):
-        if 'data' in holdings_data:
-            holdings = holdings_data['data']
-        else:
-            holdings = [holdings_data]
-    elif isinstance(holdings_data, list):
-        holdings = holdings_data
-    else:
-        holdings = []
+    print(f"✅ Holdings retrieved successfully")
 
-    # Map to member_id as per your config
-    mapped = []
-    member_counts = {"equity": 0, "mf": 0, "other": 0}
-    
-    for h in holdings:
-        try:
-            # Determine investment type and assign member
-            if h.get("exchange") in ["BSE", "NSE"]:
-                h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
-                h["member_name"] = "Pradeep Kumar V"
-                h["investment_type"] = "equity"
-                member_counts["equity"] += 1
-            elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
-                h["member_id"] = "d3a4fc84-a94b-494d-915c-60901f16d973"
-                h["member_name"] = "Sanchita Pradeep"
-                h["investment_type"] = "mutualFunds"
-                member_counts["mf"] += 1
-            else:
-                h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
-                h["member_name"] = "Pradeep Kumar V"
-                h["investment_type"] = "other"
-                member_counts["other"] += 1
-            
-            mapped.append(h)
-            
-        except Exception as mapping_error:
-            print(f"⚠️ Error mapping holding: {mapping_error}")
-            h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
-            h["member_name"] = "Pradeep Kumar V"
-            h["investment_type"] = "unknown"
-            mapped.append(h)
-    
-    # Clear session data
-    session.pop("token_id", None)
-    session.pop("request_token", None)
-    
-    # Return success page with detailed breakdown
-    return f"""
-    <html>
-        <head>
-            <title>HDFC Holdings Imported Successfully</title>
-            <style>
-                body {{ 
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    text-align: center; 
-                    padding: 50px; 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
-                    margin: 0;
-                }}
-                .success-container {{
-                    background: white;
-                    border-radius: 15px;
-                    padding: 40px;
-                    max-width: 500px;
-                    margin: 0 auto;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-                }}
-                .stats {{
-                    background: #f8f9fa;
-                    border-radius: 10px;
-                    padding: 20px;
-                    margin: 20px 0;
-                }}
-                .btn {{
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 12px 24px;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    display: inline-block;
-                    margin: 10px;
-                }}
-                .countdown {{ color: #666; margin-top: 20px; }}
-            </style>
-        </head>
-        <body>
-            <div class="success-container">
-                <h2>🎉 Holdings Import Successful!</h2>
-                
-                <div class="stats">
-                    <h3>📊 Import Summary</h3>
-                    <p><strong>Total Holdings:</strong> {len(mapped)}</p>
-                    <p><strong>Equity (Pradeep):</strong> {member_counts['equity']}</p>
-                    <p><strong>Mutual Funds (Sanchita):</strong> {member_counts['mf']}</p>
-                    <p><strong>Other:</strong> {member_counts['other']}</p>
-                </div>
-                
-                <p>Your HDFC Securities holdings have been successfully imported and mapped to the appropriate family members.</p>
-                
-                <a href="/" class="btn">🏠 Return to Dashboard</a>
-                
-                <div class="countdown">
-                    <p>Automatically redirecting in <span id="countdown">5</span> seconds...</p>
-                </div>
-            </div>
-            
-            <script>
-                let timeLeft = 5;
-                const countdownEl = document.getElementById('countdown');
-                
-                const timer = setInterval(() => {{
-                    timeLeft--;
-                    countdownEl.textContent = timeLeft;
-                    
-                    if (timeLeft <= 0) {{
-                        clearInterval(timer);
-                        window.location.href = '/';
-                    }}
-                }}, 1000);
-            </script>
-        </body>
-    </html>
-    """
+    # Save last sync time
+    session["last_sync"] = datetime.utcnow().isoformat()
+
+    # For now just return JSON
+    return jsonify({"data": holdings_data})
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
