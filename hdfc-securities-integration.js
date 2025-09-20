@@ -267,6 +267,45 @@ async function getCurrentUser() {
     }
     return null;
 }
+// Import holdings after OTP callback
+async function fetchAndImportHoldings() {
+    try {
+        const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
+            method: 'GET',
+            credentials: 'include'  // keep session cookies for Flask
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Failed to fetch holdings');
+
+        if (Array.isArray(result.data)) {
+            let insertedCount = 0;
+            for (const holding of result.data) {
+                await addInvestmentData({
+                    memberid: holding.member_id,
+                    investmenttype: holding.investment_type,
+                    symbolorname: holding.tradingsymbol || holding.symbol || holding.schemename || 'Unknown',
+                    investedamount: parseFloat(holding.quantity || holding.units) || 0,
+                    averageprice: parseFloat(holding.averageprice || holding.averagenav) || 0,
+                    currentvalue: (parseFloat(holding.quantity || holding.units) || 0) *
+                                  (parseFloat(holding.lastprice || holding.nav) || 0),
+                    lastprice: parseFloat(holding.lastprice || holding.nav) || 0,
+                    brokerplatform: 'HDFC Securities',
+                    hdfcdata: JSON.stringify(holding),
+                    createdat: new Date().toISOString()
+                });
+                insertedCount++;
+            }
+            showHDFCMessage(`✅ Imported ${insertedCount} holdings from callback`, 'success');
+        } else {
+            showHDFCMessage('⚠️ No holdings found in callback response', 'warning');
+        }
+    } catch (err) {
+        console.error('Error importing holdings:', err);
+        showHDFCMessage(`Import failed: ${err.message}`, 'error');
+    }
+}
+
 
 // Expose functions globally for button onclick handlers
 window.showHDFCSettings = showHDFCSettings;
