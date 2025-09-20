@@ -126,25 +126,82 @@
           messageBox.style.display = 'block';
 
           // 🔑 Import holdings into Supabase
-          await fetchAndImportHoldings();
 
-          // ✅ Redirect to dashboard with success flag
-          window.location.href = redirectURL;
+async function fetchAndImportHoldings() {
+    try {
+        const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
+            method: 'GET',
+            credentials: 'include'  // keep session cookies for Flask
+        });
 
-        } else if (responseData.status === 'redirect_required') {
-          // Avoid raw JSON redirect → still fetch holdings & go to dashboard
-          await fetchAndImportHoldings();
-          window.location.href = redirectURL;
-        } else {
-          throw new Error(responseData.error || 'OTP validation failed');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Failed to fetch holdings');
+
+        console.log("Callback result:", result);  // 👈 Debug log
+
+        // ✅ Get current logged-in Supabase user
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        if (userError || !user) {
+            throw new Error("No authenticated Supabase user found");
         }
+        const currentUserId = user.id; // This is a UUID
 
-      } catch (err) {
-        messageBox.textContent = `❌ Request failed: ${err.message}`;
-        messageBox.className = 'message error';
-        messageBox.style.display = 'block';
-      }
-    });
+        if (Array.isArray(result.data)) {
+            let insertedCount = 0;
+
+            for (const holding of result.data) {
+                console.log("Inserting holding for user:", currentUserId, holding);
+
+                const { error } = await supabaseClient
+                  .from('investments')
+                  .insert({
+                      // 🔑 member_id comes from auth.uid()
+                      member_id: currentUserId,
+                      investment_type: holding.investment_type,
+                      company_name: holding.company_name || null,
+                      authorised_quantity: holding.authorised_quantity || 0,
+                      average_price: holding.average_price || 0,
+                      brokerplatform: 'HDFC Securities',
+                      close_price: holding.close_price || 0,
+                      collateral_quantity: holding.collateral_quantity || 0,
+                      corporate_action_indicator: holding.corporate_action_indicator || null,
+                      corporate_action_message: holding.corporate_action_message || null,
+                      createdat: new Date().toISOString(),
+                      day_change: holding.day_change || 0,
+                      day_change_percentage: holding.day_change_percentage || 0,
+                      discrepancy: holding.discrepancy || false,
+                      hdfcdata: JSON.stringify(holding),
+                      instrument_token: holding.instrument_token || null,
+                      investment_value: holding.investment_value || 0,
+                      isin: holding.isin || null,
+                      ltcg_quantity: holding.ltcg_quantity || 0,
+                      mtf_indicator: holding.mtf_indicator || null,
+                      pnl: holding.pnl || 0,
+                      quantity: holding.quantity || 0,
+                      realised: holding.realised || 0,
+                      sector_name: holding.sector_name || null,
+                      security_id: holding.security_id || null,
+                      sip_indicator: holding.sip_indicator || null,
+                      t1_quantity: holding.t1_quantity || 0,
+                      used_quantity: holding.used_quantity || 0
+                  });
+
+                if (error) {
+                    console.error("Supabase insert error:", error);
+                } else {
+                    insertedCount++;
+                }
+            }
+
+            showHDFCMessage(`✅ Imported ${insertedCount} holdings from callback`, 'success');
+        } else {
+            showHDFCMessage('⚠️ No holdings found in callback response', 'warning');
+        }
+    } catch (err) {
+        console.error('Error importing holdings:', err);
+        showHDFCMessage(`Import failed: ${err.message}`, 'error');
+    }
+}
   </script>
 </body>
 </html>
