@@ -5,35 +5,54 @@ import hdfc_investright
 import os
 from datetime import datetime
 
-# -------------------------
-# Flask app setup (must be FIRST before routes)
-# -------------------------
+# ---------------------------------------------------
+# Flask App
+# ---------------------------------------------------
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
+CORS(app)
 
-# Allow frontend (GitHub Pages + local dev)
-CORS(app, resources={r"/api/hdfc/*": {"origins": [
-    "https://pradeepkumarv.github.io",
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
-]}})
-
-# -------------------------
-# Supabase config
-# -------------------------
+# ---------------------------------------------------
+# Supabase config (loaded from Render env variables)
+# ---------------------------------------------------
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("❌ Missing SUPABASE_URL or SUPABASE_KEY in environment variables")
+    raise RuntimeError("❌ Missing SUPABASE_URL or SUPABASE_KEY/SUPABASE_SERVICE_ROLE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# -------------------------
-# CALLBACK
-# -------------------------
+
+# ---------------------------------------------------
+# HDFC - Get Authorization URL
+# ---------------------------------------------------
+@app.route("/api/hdfc/auth-url", methods=["GET"])
+def get_hdfc_auth_url():
+    try:
+        base_url = os.getenv("HDFC_AUTH_URL")
+        api_key = os.getenv("HDFC_API_KEY")
+        frontend_url = os.getenv("FRONTEND_URL")
+
+        if not base_url or not api_key or not frontend_url:
+            return jsonify({"error": "Missing HDFC_AUTH_URL, HDFC_API_KEY or FRONTEND_URL"}), 500
+
+        # Redirect URL must match frontend callback page
+        redirect_url = f"{frontend_url}callback"
+
+        auth_url = f"{base_url}?apiKey={api_key}&redirect_url={redirect_url}"
+        print("✅ Generated HDFC auth_url:", auth_url)
+        return jsonify({"auth_url": auth_url})
+
+    except Exception as e:
+        import traceback
+        print("❌ Error in get_hdfc_auth_url:", e)
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 
+# ---------------------------------------------------
+# HDFC - Callback handler
+# ---------------------------------------------------
 @app.route("/api/callback", methods=["GET", "POST"])
 def callback():
     print("📞 Callback received!")
@@ -79,21 +98,26 @@ def callback():
         print(error_trace)
         return jsonify({"error": str(e), "trace": error_trace}), 500
 
-# -------------------------
-# PROCESS HOLDINGS SUCCESS
-# -------------------------
+
+# ---------------------------------------------------
+# Process Holdings - Save to Supabase
+# ---------------------------------------------------
 def process_holdings_success(holdings_data):
+    """
+    Process HDFC holdings and insert into Supabase investments table.
+    """
     try:
         if not isinstance(holdings_data, list):
             holdings_data = holdings_data.get("data", [])
 
         inserted_count = 0
         for h in holdings_data:
+            # Map member_id & investment_type
             if h.get("exchange") in ["BSE", "NSE"]:
-                member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
+                member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"  # Pradeep
                 investment_type = "equity"
             elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
-                member_id = "d3a4fc84-a94b-494d-915f-60901f16d973"
+                member_id = "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita
                 investment_type = "mutualFunds"
             else:
                 member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
@@ -114,7 +138,7 @@ def process_holdings_success(holdings_data):
                 "day_change": h.get("day_change", 0),
                 "day_change_percentage": h.get("day_change_percentage", 0),
                 "discrepancy": h.get("discrepancy", False),
-                "hdfcdata": h,
+                "hdfcdata": h,  # raw JSON
                 "instrument_token": h.get("instrument_token"),
                 "investment_value": h.get("investment_value", 0),
                 "isin": h.get("isin"),
@@ -144,22 +168,3 @@ def process_holdings_success(holdings_data):
         print("❌ Error in process_holdings_success:", e)
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
-
-@app.route("/api/hdfc/auth-url", methods=["GET"])
-def get_hdfc_auth_url():
-    try:
-        base_url = os.getenv("HDFC_AUTH_URL")
-        api_key = os.getenv("HDFC_API_KEY")
-        redirect_url = os.getenv("FRONTEND_URL") + "callback"
-
-        auth_url = f"{base_url}?apiKey={api_key}&redirect_url={redirect_url}"
-        return jsonify({"auth_url": auth_url})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# -------------------------
-# MAIN
-# -------------------------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
