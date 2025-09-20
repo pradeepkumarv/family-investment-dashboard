@@ -1,4 +1,4 @@
-// HDFC Securities Integration - Final Clean Version
+// HDFC Securities Integration - Final Secure Version
 const HDFC_CONFIG = {
     api_key: '5f5de761677a4283bd623e6a1013395b',
     api_secret: '8ed88c629bc04639afcdca15381bd965',
@@ -132,25 +132,37 @@ async function testHDFCConnection() {
         showHDFCMessage(`Connection test failed: ${error.message}`, 'error');
     }
 }
-// Import holdings after OTP callback
+
+// Import holdings after OTP callback with secure member_id mapping
 async function fetchAndImportHoldings() {
     try {
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
-            credentials: 'include'  // keep session cookies for Flask
+            credentials: 'include'
         });
 
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Failed to fetch holdings');
 
+        console.log("Callback result:", result);
+
+        // ✅ Get current Supabase user
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        if (userError || !user) {
+            throw new Error("No authenticated Supabase user found");
+        }
+        const currentUserId = user.id;
+
         if (Array.isArray(result.data)) {
             let insertedCount = 0;
 
             for (const holding of result.data) {
+                console.log("Inserting holding for user:", currentUserId, holding);
+
                 const { error } = await supabaseClient
-                  .from('investments')   // 👈 your Supabase table
+                  .from('investments')
                   .insert({
-                      member_id: holding.member_id,
+                      member_id: currentUserId,
                       investment_type: holding.investment_type,
                       company_name: holding.company_name || null,
                       authorised_quantity: holding.authorised_quantity || 0,
@@ -197,7 +209,6 @@ async function fetchAndImportHoldings() {
     }
 }
 
-
 // Helper function to get current Supabase user
 async function getCurrentUser() {
     if (typeof supabaseClient !== 'undefined') {
@@ -212,4 +223,3 @@ window.showHDFCSettings = showHDFCSettings;
 window.authorizeHDFC = authorizeHDFC;
 window.testHDFCConnection = testHDFCConnection;
 window.fetchAndImportHoldings = fetchAndImportHoldings;
-
