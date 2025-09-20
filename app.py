@@ -7,8 +7,12 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
 
-# Allow your GitHub Pages front-end origin
-CORS(app, resources={r"/api/hdfc/*": {"origins": "https://pradeepkumarv.github.io"}})
+# Allow GitHub Pages frontend (and localhost for testing if needed)
+CORS(app, resources={r"/api/hdfc/*": {"origins": [
+    "https://pradeepkumarv.github.io",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+]} })
 
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
@@ -18,10 +22,7 @@ API_SECRET = os.getenv("HDFC_API_SECRET")
 # -------------------------
 @app.route("/api/hdfc/auth-url", methods=["GET"])
 def get_auth_url():
-    """
-    Build and return the authorization URL for HDFC Securities
-    """
-    # For now just return your Render hosted login page
+    # For now return your Render hosted login page
     auth_url = "https://family-investment-dashboard.onrender.com/"
     return jsonify({"url": auth_url})
 
@@ -30,13 +31,9 @@ def get_auth_url():
 # -------------------------
 @app.route("/api/hdfc/status", methods=["GET"])
 def status():
-    """
-    Return connection status, last sync, and stored access token
-    """
     token = session.get("access_token")
     last_sync = session.get("last_sync")
     connected = token is not None
-
     return jsonify({
         "connected": connected,
         "accessToken": token,
@@ -48,9 +45,6 @@ def status():
 # -------------------------
 @app.route("/api/hdfc/holdings", methods=["POST"])
 def api_holdings():
-    """
-    Fetch holdings from HDFC using the provided access token
-    """
     data = request.json or {}
     access_token = data.get("accesstoken")
 
@@ -58,14 +52,51 @@ def api_holdings():
         return jsonify({"error": "Missing access token"}), 400
 
     try:
-        holdings_data = hdfc_investright.get_holdings(access_token)
-        # Store sync time + token for frontend
+        raw_holdings = hdfc_investright.get_holdings(access_token)
+        mapped = map_holdings(raw_holdings)
+
+        # Save sync info in session
         session["last_sync"] = datetime.utcnow().isoformat()
         session["access_token"] = access_token
 
-        return jsonify({"data": holdings_data})
+        return jsonify({"data": mapped})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback_str = traceback.format_exc()
+        print("💥 Error in /api/hdfc/holdings:", e)
+        print(traceback_str)
+        return jsonify({"error": str(e), "trace": traceback_str}), 500
+
+# -------------------------
+# HELPER: MAP HOLDINGS
+# -------------------------
+def map_holdings(holdings):
+    mapped = []
+    if isinstance(holdings, dict) and "data" in holdings:
+        holdings_list = holdings["data"]
+    elif isinstance(holdings, list):
+        holdings_list = holdings
+    else:
+        holdings_list = []
+
+    for h in holdings_list:
+        try:
+            if h.get("exchange") in ["BSE", "NSE"]:
+                h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"  # Pradeep
+                h["investment_type"] = "equity"
+            elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
+                h["member_id"] = "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita
+                h["investment_type"] = "mutualFunds"
+            else:
+                h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
+                h["investment_type"] = "other"
+            mapped.append(h)
+        except Exception as e:
+            print("⚠️ Mapping error:", e)
+            h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
+            h["investment_type"] = "unknown"
+            mapped.append(h)
+    return mapped
 
 # -------------------------
 # LANDING
@@ -144,26 +175,26 @@ def callback():
         return "Session expired", 400
     
     try:
-        # First try with request_token directly
+        # Step 1: Try request_token directly
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
             return process_holdings_success(holdings_data)
         except Exception as direct_error:
-            print(f"Direct request_token failed: {direct_error}")
+            print(f"❌ Direct request_token failed: {direct_error}")
         
-        # Then try with access_token
+        # Step 2: Try with access_token
         try:
             access_token = hdfc_investright.fetch_access_token(token_id, request_token)
-            print("Access token received:", access_token[:50] + "..." if access_token else None)
+            print("✅ Access token received:", access_token[:50] + "..." if access_token else None)
             
             holdings_data = hdfc_investright.get_holdings(access_token)
             session["access_token"] = access_token
             session["last_sync"] = datetime.utcnow().isoformat()
             return process_holdings_success(holdings_data)
         except Exception as token_error:
-            print(f"Access token method failed: {token_error}")
+            print(f"❌ Access token method failed: {token_error}")
         
-        # Last resort fallback
+        # Step 3: Last resort fallback
         holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
         return process_holdings_success(holdings_data)
         
@@ -189,16 +220,19 @@ def callback():
 # -------------------------
 def process_holdings_success(holdings_data):
     """
-    Helper function to process successful holdings retrieval
+    Handle successful holdings retrieval
     """
-    print(f"✅ Holdings retrieved successfully")
+    print("✅ Holdings retrieved successfully")
 
-    # Save last sync time
+    mapped = map_holdings(holdings_data)
+
+    # Save last sync
     session["last_sync"] = datetime.utcnow().isoformat()
 
-    # For now just return JSON
-    return jsonify({"data": holdings_data})
+    return jsonify({"data": mapped})
 
-
+# -------------------------
+# MAIN
+# -------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
