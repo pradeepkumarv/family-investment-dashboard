@@ -164,7 +164,7 @@ def validate_otp():
 # -------------------------
 # CALLBACK
 # -------------------------
-@app.route("/api/callback", methods=["GET", "POST"])
+@app.route("/api/hdfc/callback", methods=["GET", "POST"])
 def callback():
     print("📞 Callback received!")
 
