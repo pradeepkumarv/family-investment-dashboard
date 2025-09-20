@@ -1,180 +1,160 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+    <title>Enter OTP - HDFC Securities</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HDFC Securities - OTP Verification</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 20px;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0;
         }
-        .container {
+        .otp-container {
             background: white;
             padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 450px;
-            width: 100%;
-        }
-        .header {
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
             text-align: center;
-            margin-bottom: 30px;
+            max-width: 400px;
+            width: 90%;
         }
-        .logo {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        h1 {
-            color: #2c5aa0;
-            margin: 0;
-            font-size: 28px;
-            font-weight: 600;
-        }
-        .subtitle {
-            color: #64748b;
-            margin-top: 8px;
-            font-size: 16px;
+        h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
         }
         .form-group {
             margin-bottom: 20px;
+            text-align: left;
         }
         label {
             display: block;
-            font-weight: 500;
-            color: #374151;
             margin-bottom: 8px;
-            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
         }
         input[type="text"] {
             width: 100%;
             padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 18px;
-            text-align: center;
-            letter-spacing: 4px;
-            transition: border-color 0.2s;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
             box-sizing: border-box;
         }
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #3b82f6;
-        }
-        .button {
-            width: 100%;
-            padding: 14px;
-            background: #059669;
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            padding: 14px 20px;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            width: 100%;
         }
-        .button:hover {
-            background: #047857;
+        button:hover {
+            transform: translateY(-2px);
         }
-        .button:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-        }
-        .button-secondary {
-            background: #6b7280;
-        }
-        .button-secondary:hover {
-            background: #4b5563;
-        }
-        .otp-notice {
-            background: #ecfdf5;
-            border: 1px solid #10b981;
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
             border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
             font-size: 14px;
-            color: #047857;
-            text-align: center;
         }
-        .return-info {
-            background: #fffbeb;
-            border: 1px solid #f59e0b;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #92400e;
+        .status-info {
+            background: #e6fffa;
+            color: #234e52;
+            border: 1px solid #38b2ac;
+        }
+        .status-error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 1px solid #e53e3e;
+        }
+        .status-success {
+            background: #c6f6d5;
+            color: #2f855a;
+            border: 1px solid #38a169;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">📱</div>
-            <h1>OTP Verification</h1>
-            <p class="subtitle">Enter the OTP sent to your mobile</p>
-        </div>
-
-        {% if return_url %}
-        <div class="return-info">
-            <strong>🔗 Dashboard Integration</strong><br>
-            You will be redirected back to your Family Wealth Dashboard after successful verification.
-        </div>
-        {% endif %}
-
-        <div class="otp-notice">
-            <strong>📲 OTP Sent!</strong><br>
-            Please check your registered mobile number for the OTP from HDFC Securities.
-        </div>
-
-        <form action="/holdings" method="POST" id="otpForm">
-            <input type="hidden" name="tokenid" value="{{ tokenid }}">
-            <input type="hidden" name="return_url" value="{{ return_url }}">
-            
+    <div class="otp-container">
+        <h2>📱 Enter OTP</h2>
+        <form id="otp-form">
             <div class="form-group">
-                <label for="otp">One-Time Password (OTP)</label>
-                <input type="text" id="otp" name="otp" maxlength="6" required 
-                       placeholder="000000" pattern="[0-9]{6}">
+                <label for="otp">Enter OTP received on your registered device:</label>
+                <input type="text" id="otp" name="otp" required maxlength="10" autocomplete="one-time-code">
+                <input type="hidden" id="tokenid" name="tokenid" value="{{ tokenid }}">
             </div>
-
-            <button type="submit" class="button" id="verifyBtn">
-                ✅ Verify OTP & Continue
-            </button>
-            
-            <button type="button" class="button button-secondary" onclick="window.history.back()">
-                ← Back to Login
-            </button>
+            <button type="submit">🔓 Verify OTP & Continue</button>
         </form>
-
-        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: #64748b;">
-            <p>Token ID: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">{{ tokenid[:8] }}...</code></p>
+        
+        <div id="status-message" class="status-message status-info" style="display: none;">
+            Processing your request...
         </div>
+        
+        <p style="font-size: 0.9rem; color: #718096; margin-top: 20px;">
+            After OTP verification, you'll be redirected to HDFC Securities for final authorization.
+        </p>
     </div>
 
     <script>
-        // Auto-focus on OTP field
-        document.getElementById('otp').focus();
-
-        // Handle form submission
-        document.getElementById('otpForm').addEventListener('submit', function(e) {
-            const verifyBtn = document.getElementById('verifyBtn');
-            verifyBtn.disabled = true;
-            verifyBtn.textContent = '🔄 Verifying OTP...';
-        });
-
-    
-
-        // Only allow numbers
-        document.getElementById('otp').addEventListener('keypress', function(e) {
-            if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete') {
-                e.preventDefault();
+        document.getElementById('otp-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const statusDiv = document.getElementById('status-message');
+            const submitBtn = document.querySelector('button[type="submit"]');
+            
+            // Show processing message
+            statusDiv.textContent = 'Verifying OTP...';
+            statusDiv.className = 'status-message status-info';
+            statusDiv.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            try {
+                const formData = new FormData(this);
+                
+                const response = await fetch('/holdings', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'redirect_required') {
+                    // Show redirect message
+                    statusDiv.textContent = '✅ OTP verified! Redirecting to HDFC for authorization...';
+                    statusDiv.className = 'status-message status-success';
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 2000);
+                    
+                } else if (data.status === 'success') {
+                    // Direct success (shouldn't happen with new flow, but handle it)
+                    statusDiv.textContent = '✅ Holdings imported successfully!';
+                    statusDiv.className = 'status-message status-success';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                    
+                } else {
+                    // Error response
+                    statusDiv.textContent = `❌ Error: ${data.error}`;
+                    statusDiv.className = 'status-message status-error';
+                    submitBtn.disabled = false;
+                }
+                
+            } catch (error) {
+                statusDiv.textContent = `❌ Request failed: ${error.message}`;
+                statusDiv.className = 'status-message status-error';
+                submitBtn.disabled = false;
             }
         });
     </script>
