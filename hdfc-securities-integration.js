@@ -83,25 +83,24 @@ function showHDFCSettings() {
     testHDFCConnection();
 }
 
-// Authorization function - redirects to Render authentication
 async function authorizeHDFC() {
-    try {
-        const supabaseUser = await getCurrentUser();
-        if (!supabaseUser) {
-            showHDFCMessage('Please log in to your dashboard first', 'error');
-            return;
-        }
-
-        showHDFCMessage('Redirecting to HDFC Securities authorization...', 'info');
-        
-        // Redirect to your Render website for HDFC authentication
-        window.location.href = HDFC_CONFIG.render_auth_url;
-        
-    } catch (error) {
-        console.error('HDFC Authorization Error:', error);
-        showHDFCMessage(`Authorization failed: ${error.message}`, 'error');
-    }
+  try {
+    showHDFCMessage('Redirecting to HDFC Securities authorization...', 'info');
+    // 1. Ask your backend to build the proper OAuth URL
+    const resp = await fetch(
+      `${HDFC_CONFIG.backend_base}/auth-url`,
+      { method: 'GET' }
+    );
+    const { url } = await resp.json();
+    if (!url) throw new Error('No URL returned');
+    // 2. Redirect the browser there
+    window.location.href = url;
+  } catch (err) {
+    console.error('HDFC Authorization Error:', err);
+    showHDFCMessage(`Authorization failed: ${err.message}`, 'error');
+  }
 }
+
 
 // Test HDFC connection
 async function testHDFCConnection() {
