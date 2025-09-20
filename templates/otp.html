@@ -93,7 +93,8 @@
   </div>
 
   <!-- Load your integration logic -->
-  <script src="hdfc-securities-integration.js"></script>
+ <script src="{{ url_for('static', filename='js/hdfc-securities-integration.js') }}"></script>
+
   <script>
     const otpForm = document.getElementById('otpForm');
     const messageBox = document.getElementById('message');
