@@ -118,13 +118,13 @@
             try {
                 const formData = new FormData(this);
                 
-                const response = await fetch('/holdings', {
+                const response = await fetch('/validate-otp', {
                     method: 'POST',
                     body: formData
                 });
                 
                 const data = await response.json();
-                
+            
                 if (data.status === 'redirect_required') {
                     // Show redirect message
                     statusDiv.textContent = '✅ OTP verified! Redirecting to HDFC for authorization...';
