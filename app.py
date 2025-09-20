@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 # -------------------------
-# Flask app setup
+# Flask app setup (must be FIRST before routes)
 # -------------------------
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
@@ -81,21 +81,17 @@ def callback():
 # PROCESS HOLDINGS SUCCESS
 # -------------------------
 def process_holdings_success(holdings_data):
-    """
-    Process HDFC holdings and insert into Supabase investments table.
-    """
     try:
         if not isinstance(holdings_data, list):
             holdings_data = holdings_data.get("data", [])
 
         inserted_count = 0
         for h in holdings_data:
-            # Map member_id & investment_type
             if h.get("exchange") in ["BSE", "NSE"]:
-                member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"  # Pradeep
+                member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
                 investment_type = "equity"
             elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
-                member_id = "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita
+                member_id = "d3a4fc84-a94b-494d-915f-60901f16d973"
                 investment_type = "mutualFunds"
             else:
                 member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
@@ -116,7 +112,7 @@ def process_holdings_success(holdings_data):
                 "day_change": h.get("day_change", 0),
                 "day_change_percentage": h.get("day_change_percentage", 0),
                 "discrepancy": h.get("discrepancy", False),
-                "hdfcdata": h,  # raw JSON
+                "hdfcdata": h,
                 "instrument_token": h.get("instrument_token"),
                 "investment_value": h.get("investment_value", 0),
                 "isin": h.get("isin"),
