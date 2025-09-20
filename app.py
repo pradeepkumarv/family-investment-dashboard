@@ -20,7 +20,7 @@ def status():
     return jsonify({"connected": True, "accessToken": token, "lastSync": last_sync})
 
 @app.route("/api/hdfc/holdings", methods=["POST"])
-def holdings():
+def api_holdings():
     # ... fetch and return holdings ...
     return jsonify({"data": holdings_data})
 
@@ -50,8 +50,8 @@ def request_otp():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/holdings", methods=["POST"])
-def holdings():
+@app.route("/validate-otp", methods=["POST"])
+def validate_otp():
     otp = request.form.get("otp")
     token_id = request.form.get("tokenid") or session.get("token_id")
     
