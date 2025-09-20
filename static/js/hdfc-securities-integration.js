@@ -100,19 +100,27 @@ async function testHDFCConnection() {
 }
 
 // Import holdings automatically after OTP & callback
+// Import holdings after OTP callback with full debug logging
 async function fetchAndImportHoldings() {
-    console.log("🚀 fetchAndImportHoldings() called");
+    console.log(">>> fetchAndImportHoldings START");
+
     try {
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
             credentials: 'include'
         });
+
+        console.log(">>> Callback raw response:", response);
+
         const result = await response.json();
-        console.log("Callback holdings result:", result);
+        console.log(">>> Callback parsed JSON:", result);
 
         if (!response.ok) throw new Error(result.error || 'Failed to fetch holdings');
 
+        // ✅ Get current Supabase user
         const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        console.log(">>> Supabase user:", user, "error:", userError);
+
         if (userError || !user) {
             throw new Error("No authenticated Supabase user found");
         }
@@ -120,9 +128,11 @@ async function fetchAndImportHoldings() {
 
         if (Array.isArray(result.data)) {
             let insertedCount = 0;
+
             for (const holding of result.data) {
-                console.log(`Inserting holding for user ${currentUserId}:`, holding.symbolorname || holding.company_name);
-                const { error } = await supabaseClient
+                console.log(">>> Preparing to insert holding:", holding);
+
+                const { data, error } = await supabaseClient
                   .from('investments')
                   .insert({
                       member_id: currentUserId,
@@ -154,20 +164,28 @@ async function fetchAndImportHoldings() {
                       t1_quantity: holding.t1_quantity || 0,
                       used_quantity: holding.used_quantity || 0
                   });
+
+                console.log(">>> Insert result:", { data, error });
+
                 if (error) {
                     console.error("Supabase insert error:", error);
                 } else {
                     insertedCount++;
                 }
             }
+
             showHDFCMessage(`✅ Imported ${insertedCount} holdings from callback`, 'success');
+            console.log(`>>> DONE: Inserted ${insertedCount} holdings`);
         } else {
+            console.warn(">>> No holdings found in callback result");
             showHDFCMessage('⚠️ No holdings found in callback response', 'warning');
         }
     } catch (err) {
-        console.error('Error importing holdings:', err);
+        console.error('❌ Error importing holdings:', err);
         showHDFCMessage(`Import failed: ${err.message}`, 'error');
     }
+
+    console.log(">>> fetchAndImportHoldings END");
 }
 
 // Helper to get current Supabase user
