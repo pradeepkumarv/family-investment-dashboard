@@ -12,7 +12,7 @@ CORS(app, resources={r"/api/hdfc/*": {"origins": [
     "https://pradeepkumarv.github.io",
     "http://localhost:5000",
     "http://127.0.0.1:5000",
-]} })
+]}})
 
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
@@ -167,69 +167,71 @@ def validate_otp():
 @app.route("/api/callback", methods=["GET", "POST"])
 def callback():
     print("📞 Callback received!")
-    
+
     token_id = session.get("token_id")
     request_token = session.get("request_token")
-    
+
     if not token_id or not request_token:
-        return "Session expired", 400
-    
+        return jsonify({"error": "Session expired"}), 400
+
     try:
+        holdings_data = None
+
         # Step 1: Try request_token directly
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
-            return process_holdings_success(holdings_data)
         except Exception as direct_error:
             print(f"❌ Direct request_token failed: {direct_error}")
-        
+
         # Step 2: Try with access_token
-        try:
-            access_token = hdfc_investright.fetch_access_token(token_id, request_token)
-            print("✅ Access token received:", access_token[:50] + "..." if access_token else None)
-            
-            holdings_data = hdfc_investright.get_holdings(access_token)
-            session["access_token"] = access_token
-            session["last_sync"] = datetime.utcnow().isoformat()
-            return process_holdings_success(holdings_data)
-        except Exception as token_error:
-            print(f"❌ Access token method failed: {token_error}")
-        
-        # Step 3: Last resort fallback
-        holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
+        if not holdings_data:
+            try:
+                access_token = hdfc_investright.fetch_access_token(token_id, request_token)
+                print("✅ Access token received:", access_token[:50] + "..." if access_token else None)
+
+                holdings_data = hdfc_investright.get_holdings(access_token)
+                session["access_token"] = access_token
+                session["last_sync"] = datetime.utcnow().isoformat()
+            except Exception as token_error:
+                print(f"❌ Access token method failed: {token_error}")
+
+        # Step 3: Fallback
+        if not holdings_data:
+            holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
+
+        # ✅ Always return JSON now
         return process_holdings_success(holdings_data)
-        
+
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
         print(f"💥 Error in callback: {e}")
         print(error_trace)
-        
-        return f"""
-        <html>
-            <body>
-                <h2>❌ Error</h2>
-                <p>Failed to import holdings: {str(e)}</p>
-                <p><a href="/">Try Again</a></p>
-                <pre>{error_trace}</pre>
-            </body>
-        </html>
-        """, 500
+        return jsonify({"error": str(e), "trace": error_trace}), 500
 
 # -------------------------
 # PROCESS HOLDINGS SUCCESS
 # -------------------------
 def process_holdings_success(holdings_data):
     """
-    Handle successful holdings retrieval
+    Process HDFC holdings and return JSON for frontend fetch calls.
     """
-    print("✅ Holdings retrieved successfully")
+    try:
+        # Make sure holdings_data is always a list
+        if not isinstance(holdings_data, list):
+            print("⚠️ holdings_data is not a list, wrapping it")
+            holdings_data = [holdings_data]
 
-    mapped = map_holdings(holdings_data)
+        # Debug: Print number of holdings + sample
+        print(f"✅ Holdings count: {len(holdings_data)}")
+        if holdings_data:
+            print("✅ Holdings sample:", holdings_data[0])
 
-    # Save last sync
-    session["last_sync"] = datetime.utcnow().isoformat()
+        return jsonify({"data": holdings_data}), 200
 
-    return jsonify({"data": mapped})
+    except Exception as e:
+        print(f"❌ Error in process_holdings_success: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # -------------------------
 # MAIN
