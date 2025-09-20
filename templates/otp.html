@@ -74,26 +74,6 @@
       background: #f8d7da;
       color: #721c24;
     }
-    #summary {
-      margin-top: 20px;
-      display: none;
-      text-align: left;
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      padding: 15px;
-      border-radius: 6px;
-    }
-    #summary h3 {
-      margin: 0 0 10px 0;
-      font-size: 1.1em;
-      color: #333;
-    }
-    #summary ul {
-      margin: 0;
-      padding: 0 0 0 20px;
-      font-size: 0.9em;
-      color: #444;
-    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
@@ -110,7 +90,6 @@
       <button type="submit">Verify OTP & Continue</button>
     </form>
     <div id="message" class="message"></div>
-    <div id="summary"></div>
   </div>
 
   <!-- Load your integration logic -->
@@ -118,12 +97,11 @@
   <script>
     const otpForm = document.getElementById('otpForm');
     const messageBox = document.getElementById('message');
-    const summaryBox = document.getElementById('summary');
+    const redirectURL = 'https://pradeepkumarv.github.io/family-investment-dashboard/?import=success';
 
     otpForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       messageBox.style.display = 'none';
-      summaryBox.style.display = 'none';
 
       const formData = new FormData(otpForm);
 
@@ -139,51 +117,16 @@
           messageBox.className = 'message success';
           messageBox.style.display = 'block';
 
-          // 🔑 Fetch mapped holdings
-          const holdingsResponse = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
-            method: 'GET',
-            credentials: 'include'
-          });
-          const holdingsData = await holdingsResponse.json();
+          // 🔑 Import holdings into Supabase
+          await fetchAndImportHoldings();
 
-          if (Array.isArray(holdingsData.data)) {
-            let equityCount = 0, mfCount = 0, otherCount = 0;
-
-            for (const h of holdingsData.data) {
-              if (h.investment_type === 'equity') equityCount++;
-              else if (h.investment_type === 'mutualFunds') mfCount++;
-              else otherCount++;
-
-              // insert into Supabase
-              await addInvestmentData({
-                memberid: h.member_id,
-                investmenttype: h.investment_type,
-                symbolorname: h.tradingsymbol || h.symbol || h.schemename || 'Unknown',
-                investedamount: parseFloat(h.quantity || h.units) || 0,
-                averageprice: parseFloat(h.averageprice || h.averagenav) || 0,
-                currentvalue: (parseFloat(h.quantity || h.units) || 0) *
-                              (parseFloat(h.lastprice || h.nav) || 0),
-                lastprice: parseFloat(h.lastprice || h.nav) || 0,
-                brokerplatform: 'HDFC Securities',
-                hdfcdata: JSON.stringify(h),
-                createdat: new Date().toISOString()
-              });
-            }
-
-            // ✅ Show summary
-            summaryBox.innerHTML = `
-              <h3>Holdings Imported</h3>
-              <ul>
-                <li>Equity: ${equityCount}</li>
-                <li>Mutual Funds: ${mfCount}</li>
-                <li>Other: ${otherCount}</li>
-              </ul>
-            `;
-            summaryBox.style.display = 'block';
-          }
+          // ✅ Redirect to dashboard with success flag
+          window.location.href = redirectURL;
 
         } else if (responseData.status === 'redirect_required') {
-          window.location.href = responseData.redirect_url;
+          // Avoid raw JSON redirect → still fetch holdings & go to dashboard
+          await fetchAndImportHoldings();
+          window.location.href = redirectURL;
         } else {
           throw new Error(responseData.error || 'OTP validation failed');
         }
