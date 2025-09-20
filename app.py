@@ -61,55 +61,38 @@ def request_otp():
 
 @app.route("/holdings", methods=["POST"])
 def holdings():
-    """Validate OTP and redirect to callback"""
-    otp = request.form.get("otp")
-    token_id_from_form = request.form.get("tokenid")
-    token_id_from_session = session.get("token_id")
+    otp = request.form["otp"]
+    token_id = session.get("token_id")
     return_url = session.get("return_url", "")
-    
-    # Use token_id from session (most reliable)
-    token_id = token_id_from_session or token_id_from_form
-    
+
     if not token_id:
         return jsonify({"error": "Session expired. Please login again."}), 401
-    
-    print(f"🔍 OTP Validation Debug:")
+
+    print("🔍 OTP Validation Debug:")
     print(f"  OTP: {otp}")
-    print(f"  Token from form: {token_id_from_form}")
-    print(f"  Token from session: {token_id_from_session}")
     print(f"  Using token_id: {token_id}")
-    
+
     try:
-        # CRITICAL: Use the EXACT SAME token_id from the session
+        # SINGLE OTP VALIDATION CALL
         otp_result = hdfc_investright.validate_otp(token_id, otp)
-        
+
         if not otp_result.get("authorised"):
-            return jsonify({"error": "OTP validation failed!"}), 400
-        
-        # Get callback URL for redirect
-        callback_url = otp_result.get("callbackUrl")
-        if not callback_url:
-            return jsonify({"error": "No callback URL received"}), 400
-        
-        # Store request_token in session for use in callback
+            return jsonify({"error": "OTP validation failed"}), 400
+
+        # Store request_token and get callback URL
         request_token = otp_result.get("requestToken")
         session["request_token"] = request_token
-        
-        print(f"✅ OTP validation successful!")
-        print(f"  Request token: {request_token[:50]}..." if request_token else None)
-        print(f"  Callback URL: {callback_url}")
-        
-        # Return redirect response to frontend
+        callback_url = otp_result.get("callbackUrl")
+
         return jsonify({
             "status": "redirect_required",
             "redirect_url": callback_url,
             "message": "Please complete authorization"
         })
-        
+
     except Exception as e:
         print(f"❌ Error in holdings (OTP validation): {e}")
-        import traceback
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/callback", methods=["GET", "POST"])
