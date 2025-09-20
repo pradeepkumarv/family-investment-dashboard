@@ -32,6 +32,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # -------------------------
 # CALLBACK
 # -------------------------
+
+
 @app.route("/api/callback", methods=["GET", "POST"])
 def callback():
     print("📞 Callback received!")
@@ -142,6 +144,19 @@ def process_holdings_success(holdings_data):
         print("❌ Error in process_holdings_success:", e)
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/hdfc/auth-url", methods=["GET"])
+def get_hdfc_auth_url():
+    try:
+        base_url = os.getenv("HDFC_AUTH_URL")
+        api_key = os.getenv("HDFC_API_KEY")
+        redirect_url = os.getenv("FRONTEND_URL") + "callback"
+
+        auth_url = f"{base_url}?apiKey={api_key}&redirect_url={redirect_url}"
+        return jsonify({"auth_url": auth_url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # -------------------------
 # MAIN
