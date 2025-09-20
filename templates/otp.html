@@ -169,16 +169,7 @@
             verifyBtn.textContent = '🔄 Verifying OTP...';
         });
 
-        // Auto-submit when 6 digits are entered
-        document.getElementById('otp').addEventListener('input', function(e) {
-            const value = e.target.value;
-            if (value.length === 6) {
-                // Small delay to show the complete OTP
-                setTimeout(() => {
-                    document.getElementById('otpForm').submit();
-                }, 500);
-            }
-        });
+    
 
         // Only allow numbers
         document.getElementById('otp').addEventListener('keypress', function(e) {
