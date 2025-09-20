@@ -1,170 +1,14 @@
-from flask import Flask, request, render_template, jsonify, session, redirect
-from flask_cors import CORS
-import hdfc_investright
-import os
-from datetime import datetime
+from supabase import create_client, Client
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
-
-# Allow GitHub Pages frontend (and localhost for testing if needed)
-CORS(app, resources={r"/api/hdfc/*": {"origins": [
-    "https://pradeepkumarv.github.io",
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
-]}})
-
-API_KEY = os.getenv("HDFC_API_KEY")
-API_SECRET = os.getenv("HDFC_API_SECRET")
-
-# -------------------------
-# AUTH URL
-# -------------------------
-@app.route("/api/hdfc/auth-url", methods=["GET"])
-def get_auth_url():
-    # For now return your Render hosted login page
-    auth_url = "https://family-investment-dashboard.onrender.com/"
-    return jsonify({"url": auth_url})
-
-# -------------------------
-# STATUS
-# -------------------------
-@app.route("/api/hdfc/status", methods=["GET"])
-def status():
-    token = session.get("access_token")
-    last_sync = session.get("last_sync")
-    connected = token is not None
-    return jsonify({
-        "connected": connected,
-        "accessToken": token,
-        "lastSync": last_sync
-    })
-
-# -------------------------
-# HOLDINGS
-# -------------------------
-@app.route("/api/hdfc/holdings", methods=["POST"])
-def api_holdings():
-    data = request.json or {}
-    access_token = data.get("accesstoken")
-
-    if not access_token:
-        return jsonify({"error": "Missing access token"}), 400
-
-    try:
-        raw_holdings = hdfc_investright.get_holdings(access_token)
-        mapped = map_holdings(raw_holdings)
-
-        # Save sync info in session
-        session["last_sync"] = datetime.utcnow().isoformat()
-        session["access_token"] = access_token
-
-        return jsonify({"data": mapped})
-    except Exception as e:
-        import traceback
-        traceback_str = traceback.format_exc()
-        print("💥 Error in /api/hdfc/holdings:", e)
-        print(traceback_str)
-        return jsonify({"error": str(e), "trace": traceback_str}), 500
-
-# -------------------------
-# HELPER: MAP HOLDINGS
-# -------------------------
-def map_holdings(holdings):
-    mapped = []
-    if isinstance(holdings, dict) and "data" in holdings:
-        holdings_list = holdings["data"]
-    elif isinstance(holdings, list):
-        holdings_list = holdings
-    else:
-        holdings_list = []
-
-    for h in holdings_list:
-        try:
-            if h.get("exchange") in ["BSE", "NSE"]:
-                h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"  # Pradeep
-                h["investment_type"] = "equity"
-            elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
-                h["member_id"] = "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita
-                h["investment_type"] = "mutualFunds"
-            else:
-                h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
-                h["investment_type"] = "other"
-            mapped.append(h)
-        except Exception as e:
-            print("⚠️ Mapping error:", e)
-            h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
-            h["investment_type"] = "unknown"
-            mapped.append(h)
-    return mapped
-
-# -------------------------
-# LANDING
-# -------------------------
-@app.route("/", methods=["GET"])
-def home():
-    return render_template("login.html")
-
-# -------------------------
-# REQUEST OTP
-# -------------------------
-@app.route("/request-otp", methods=["POST"])
-def request_otp():
-    username = request.form.get("username")
-    password = request.form.get("password")
-    try:
-        token_id = hdfc_investright.get_token_id()
-        session["token_id"] = token_id
-        session["username"] = username
-        session["password"] = password
-        
-        result = hdfc_investright.login_validate(token_id, username, password)
-        print("Login validate response:", result)
-        
-        return render_template("otp.html", tokenid=token_id)
-       
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# -------------------------
-# VALIDATE OTP
-# -------------------------
-@app.route("/validate-otp", methods=["POST"])
-def validate_otp():
-    otp = request.form.get("otp")
-    token_id = request.form.get("tokenid") or session.get("token_id")
-    
-    if not token_id:
-        return jsonify({"error": "Session expired. Please login again."}), 401
-    
-    try:
-        otp_result = hdfc_investright.validate_otp(token_id, otp)
-        
-        if not otp_result.get("authorised"):
-            return jsonify({"error": "OTP validation failed!"}), 400
-
-        callback_url = otp_result.get("callbackUrl")
-        if not callback_url:
-            return jsonify({"error": "No callback URL received"}), 400
-
-        request_token = otp_result.get("requestToken")
-        session["request_token"] = request_token
-
-        return jsonify({
-            "status": "redirect_required",
-            "redirect_url": callback_url,
-            "message": "Please complete authorization"
-        })
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+# Supabase config (set these in Render env variables)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://tqjwhbwcteuvmreldgae.supabase.co")
+SUPABASE_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxandoYndjdGV1dm1yZWxkZ2FlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTYwNDA4OSwiZXhwIjoyMDcxMTgwMDg5fQ.vzUzbdgf0cyJlXTVEHkqnsj4OtF6xdPCplBLDPEwA78")  # MUST be service_role key
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # -------------------------
 # CALLBACK
 # -------------------------
-@app.route("/api/hdfc/callback", methods=["GET", "POST"])
+@app.route("/api/callback", methods=["GET", "POST"])
 def callback():
     print("📞 Callback received!")
 
@@ -199,7 +43,7 @@ def callback():
         if not holdings_data:
             holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
-        # ✅ Always return JSON now
+        # ✅ Save to Supabase and return result
         return process_holdings_success(holdings_data)
 
     except Exception as e:
@@ -209,32 +53,73 @@ def callback():
         print(error_trace)
         return jsonify({"error": str(e), "trace": error_trace}), 500
 
+
 # -------------------------
 # PROCESS HOLDINGS SUCCESS
 # -------------------------
 def process_holdings_success(holdings_data):
     """
-    Process HDFC holdings and return JSON for frontend fetch calls.
+    Process HDFC holdings and insert into Supabase investments table.
     """
     try:
-        # Make sure holdings_data is always a list
         if not isinstance(holdings_data, list):
-            print("⚠️ holdings_data is not a list, wrapping it")
-            holdings_data = [holdings_data]
+            holdings_data = holdings_data.get("data", [])
 
-        # Debug: Print number of holdings + sample
-        print(f"✅ Holdings count: {len(holdings_data)}")
-        if holdings_data:
-            print("✅ Holdings sample:", holdings_data[0])
+        inserted_count = 0
+        for h in holdings_data:
+            # Map member_id & investment_type
+            if h.get("exchange") in ["BSE", "NSE"]:
+                member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"  # Pradeep
+                investment_type = "equity"
+            elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
+                member_id = "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita
+                investment_type = "mutualFunds"
+            else:
+                member_id = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
+                investment_type = "other"
 
-        return jsonify({"data": holdings_data}), 200
+            data = {
+                "member_id": member_id,
+                "investment_type": investment_type,
+                "company_name": h.get("company_name"),
+                "authorised_quantity": h.get("authorised_quantity", 0),
+                "average_price": h.get("average_price", 0),
+                "brokerplatform": "HDFC Securities",
+                "close_price": h.get("close_price", 0),
+                "collateral_quantity": h.get("collateral_quantity", 0),
+                "corporate_action_indicator": h.get("corporate_action_indicator"),
+                "corporate_action_message": h.get("corporate_action_message"),
+                "createdat": datetime.utcnow().isoformat(),
+                "day_change": h.get("day_change", 0),
+                "day_change_percentage": h.get("day_change_percentage", 0),
+                "discrepancy": h.get("discrepancy", False),
+                "hdfcdata": h,  # raw JSON
+                "instrument_token": h.get("instrument_token"),
+                "investment_value": h.get("investment_value", 0),
+                "isin": h.get("isin"),
+                "ltcg_quantity": h.get("ltcg_quantity", 0),
+                "mtf_indicator": h.get("mtf_indicator"),
+                "pnl": h.get("pnl", 0),
+                "quantity": h.get("quantity", 0),
+                "realised": h.get("realised", 0),
+                "sector_name": h.get("sector_name"),
+                "security_id": h.get("security_id"),
+                "sip_indicator": h.get("sip_indicator"),
+                "t1_quantity": h.get("t1_quantity", 0),
+                "used_quantity": h.get("used_quantity", 0),
+            }
+
+            resp = supabase.table("investments").insert(data).execute()
+            if resp.data:
+                inserted_count += 1
+            else:
+                print("⚠️ Insert error:", resp)
+
+        print(f"✅ Inserted {inserted_count} holdings into Supabase")
+        return jsonify({"status": "success", "inserted": inserted_count}), 200
 
     except Exception as e:
-        print(f"❌ Error in process_holdings_success: {e}")
+        import traceback
+        print("❌ Error in process_holdings_success:", e)
+        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
-
-# -------------------------
-# MAIN
-# -------------------------
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
