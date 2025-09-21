@@ -2,7 +2,7 @@ const HDFC_CONFIG = {
     api_key: '5f5de761677a4283bd623e6a1013395b',
     api_secret: '8ed88c629bc04639afcdca15381bd965',
     backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc',
-    render_auth_url: 'https://family-investment-dashboard.onrender.com/'
+    render_auth_url: 'https://family-investment-dashboard.onrender.com/',
     members: {
         equity: 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49',  // Pradeep
         mf: 'd3a4fc84-a94b-494d-915f-60901f16d973',      // Sanchita
@@ -67,9 +67,7 @@ async function testHDFCConnection() {
             return;
         }
 
-       backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc'
-
-        const data = await response.json();
+              const data = await response.json();
         console.log("Connection test response:", data);
 
         if (response.ok && data.connected) {
