@@ -102,6 +102,7 @@ async function testHDFCConnection() {
 
 // Import holdings after OTP callback (no Supabase auth required)
 async function fetchAndImportHoldings() {
+    console.log('fetchAndImportHoldings triggered...')
     try {
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
