@@ -226,6 +226,8 @@ def process_holdings_success(holdings_data):
         print(f"✅ Holdings count: {len(holdings_data)}")
         if holdings_data:
             print("✅ Holdings sample:", holdings_data[0])
+            print("📤 Sending holdings back to frontend for DB insert")
+
 
         return jsonify({"data": holdings_data}), 200
 
