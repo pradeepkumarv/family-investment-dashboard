@@ -101,6 +101,7 @@ async function testHDFCConnection() {
 // Import holdings after OTP callback (no Supabase auth required)
 async function fetchAndImportHoldings() {
     console.log('fetchAndImportHoldings triggered...')
+    console.log("✅ OTP validated! Starting holdings import...");
     try {
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
@@ -156,6 +157,8 @@ async function fetchAndImportHoldings() {
                         sip_indicator: holding.sip_indicator || null,
                         t1_quantity: holding.t1_quantity || 0,
                         used_quantity: holding.used_quantity || 0
+                        console.log(`📥 Inserting holding: ${holding.company_name || holding.schemename || holding.isin}`);
+
                     });
 
                 if (error) {
@@ -168,12 +171,17 @@ async function fetchAndImportHoldings() {
             showHDFCMessage(`✅ Imported ${insertedCount} holdings into Supabase`, 'success');
         } else {
             showHDFCMessage('⚠️ No holdings found in callback response', 'warning');
+            console.log(`✅ Inserted into Supabase: ${holding.company_name || holding.schemename || holding.isin}`);
+
         }
     } catch (err) {
         console.error('Error importing holdings:', err);
+        console.error("❌ Import failed at holdings stage:", err);
         showHDFCMessage(`Import failed: ${err.message}`, 'error');
     }
 }
+console.log(`✅ Total holdings inserted into DB: ${insertedCount}`);
+
 
 
 
