@@ -48,6 +48,8 @@
         const response = await fetch('/validate-otp', { method: 'POST', body: formData });
         const responseData = await response.json();
         console.log("🔹 OTP validation response:", responseData);
+        console.log("✅ OTP validated! Starting holdings import...");
+
 
         if (response.ok && responseData.status === 'success') {
           messageBox.textContent = '✅ OTP validated! Fetching holdings...';
