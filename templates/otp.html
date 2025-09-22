@@ -80,5 +80,38 @@
       }
     });
   </script>
+  <script>
+function submitOTP() {
+    const otp = document.getElementById('otp').value;
+    if (!otp) {
+        document.getElementById('error-message').textContent = 'Please enter OTP';
+        return;
+    }
+    
+    fetch('/validate-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer: otp })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // ✅ AUTO-TRIGGER HOLDINGS IMPORT AFTER SUCCESSFUL OTP
+            if (typeof fetchAndImportHoldings === 'function') {
+                fetchAndImportHoldings();
+            } else {
+                // Redirect to dashboard with import trigger
+                window.location.href = 'https://pradeepkumarv.github.io/?import=hdfc';
+            }
+        } else {
+            document.getElementById('error-message').textContent = 'Invalid OTP';
+        }
+    })
+    .catch(err => {
+        document.getElementById('error-message').textContent = 'Request failed';
+    });
+}
+</script>
+
 </body>
 </html>
