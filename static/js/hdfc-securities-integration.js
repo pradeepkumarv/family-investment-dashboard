@@ -157,10 +157,10 @@ async function fetchAndImportHoldings() {
                         sip_indicator: holding.sip_indicator || null,
                         t1_quantity: holding.t1_quantity || 0,
                         used_quantity: holding.used_quantity || 0
-                        console.log(`📥 Inserting holding: ${holding.company_name || holding.schemename || holding.isin}`);
-
-                    });
-
+                        });
+                        console.log(`📥 Inserting holding: ${holding.company_name}`);
+                     
+                    
                 if (error) {
                     console.error("Supabase insert error:", error);
                 } else {
