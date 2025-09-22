@@ -212,24 +212,35 @@ def callback():
 # -------------------------
 # PROCESS HOLDINGS SUCCESS
 # -------------------------
+# -------------------------
+# PROCESS HOLDINGS SUCCESS
+# -------------------------
 def process_holdings_success(holdings_data):
     """
     Process HDFC holdings and return JSON for frontend fetch calls.
+    Ensures we always return a flat list of holdings.
     """
     try:
-        # Make sure holdings_data is always a list
-        if not isinstance(holdings_data, list):
-            print("⚠️ holdings_data is not a list, wrapping it")
-            holdings_data = [holdings_data]
+        # Case 1: If API response is a dict with a "data" field
+        if isinstance(holdings_data, dict):
+            if "data" in holdings_data:
+                holdings_list = holdings_data["data"]
+            else:
+                holdings_list = [holdings_data]  # wrap single dict
+        # Case 2: Already a list
+        elif isinstance(holdings_data, list):
+            holdings_list = holdings_data
+        else:
+            holdings_list = []
 
-        # Debug: Print number of holdings + sample
-        print(f"✅ Holdings count: {len(holdings_data)}")
-        if holdings_data:
-            print("✅ Holdings sample:", holdings_data[0])
+        # Debug logs
+        print(f"✅ Holdings count: {len(holdings_list)}")
+        if holdings_list:
+            print("✅ Holdings sample:", holdings_list[0])
             print("📤 Sending holdings back to frontend for DB insert")
 
-
-        return jsonify({"data": holdings_data}), 200
+        # Always return consistent JSON
+        return jsonify({"data": holdings_list}), 200
 
     except Exception as e:
         print(f"❌ Error in process_holdings_success: {e}")
