@@ -9,7 +9,6 @@ const HDFC_CONFIG = {
     }
 };
 
-
 let hdfcAccessToken = null;
 let hdfcTokenId = null;
 
@@ -26,13 +25,43 @@ function showHDFCMessage(msg, type = 'info') {
 function showHDFCSettings() {
     const oldModal = document.getElementById('hdfc-settings-modal');
     if (oldModal) oldModal.remove();
+    
     const modalContent = `
-        <div id="hdfc-settings-modal" class="modal" ...>
-            ...
-            <button id="hdfc-test-connection" onclick="testHDFCConnection()" ...>Test Connection</button>
-            <button id="hdfc-authorize-btn" onclick="authorizeHDFC()" ...>Authorize HDFC</button>
-            ...
-        </div>`;
+        <div id="hdfc-settings-modal" class="modal" style="display:block; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4);">
+            <div class="modal-content" style="background-color:#fefefe; margin:10% auto; padding:20px; border:1px solid #888; width:90%; max-width:500px; border-radius:10px;">
+                <span class="close" onclick="document.getElementById('hdfc-settings-modal').remove()" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+                
+                <h2 style="color:#333; margin-bottom:20px;">HDFC Securities Settings</h2>
+                
+                <div class="hdfc-status-section" style="margin-bottom:25px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9;">
+                    <h3 style="margin-bottom:15px; color:#555;">Connection Status</h3>
+                    <div id="hdfc-status" style="margin-bottom:15px;">
+                        <span id="hdfc-connection-status" style="font-weight:bold;">Checking...</span>
+                        <div id="hdfc-last-sync" style="font-size:0.9em; color:#666; margin-top:5px;"></div>
+                    </div>
+                    
+                    <button id="hdfc-test-connection" onclick="testHDFCConnection()" 
+                            style="background:#007bff; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-right:10px;">
+                        Test Connection
+                    </button>
+                    
+                    <button id="hdfc-authorize-btn" onclick="authorizeHDFC()" 
+                            style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
+                        Authorize HDFC
+                    </button>
+                </div>
+                
+                <div class="hdfc-info" style="font-size:0.9em; color:#666;">
+                    <p><strong>Automatic Import:</strong></p>
+                    <p>After you log in and validate OTP, your HDFC holdings will be imported automatically into your dashboard.</p>
+                    <ul style="margin:10px 0; padding-left:20px;">
+                        <li>Equity Holdings → mapped to <strong>Pradeep Kumar V</strong></li>
+                        <li>Mutual Fund Holdings → mapped to <strong>Sanchita Pradeep</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
     document.body.insertAdjacentHTML('beforeend', modalContent);
     testHDFCConnection();
 }
@@ -58,8 +87,9 @@ async function testHDFCConnection() {
     console.log("🔗 testHDFCConnection() called");
     const statusElement = document.getElementById('hdfc-connection-status');
     const lastSyncElement = document.getElementById('hdfc-last-sync');
+    
     if (statusElement) statusElement.textContent = 'Testing...';
-
+    
     try {
         const supabaseUser = await getCurrentUser();
         if (!supabaseUser) {
@@ -67,7 +97,15 @@ async function testHDFCConnection() {
             return;
         }
 
-              const data = await response.json();
+        const response = await fetch(`${HDFC_CONFIG.backend_base}/status`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${supabaseUser.access_token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
         console.log("Connection test response:", data);
 
         if (response.ok && data.connected) {
@@ -98,92 +136,101 @@ async function testHDFCConnection() {
     }
 }
 
-// Import holdings after OTP callback (no Supabase auth required)
+// Import holdings after OTP callback (fixed version)
 async function fetchAndImportHoldings() {
-    console.log('fetchAndImportHoldings triggered...')
+    console.log('🚀 fetchAndImportHoldings triggered...');
     console.log("✅ OTP validated! Starting holdings import...");
+    
     try {
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
-            credentials: 'include'  // keep session cookies for Flask
+            credentials: 'include'
         });
-
+        
         const result = await response.json();
+        console.log("📊 Callback result:", result);
+        
         if (!response.ok) throw new Error(result.error || 'Failed to fetch holdings');
-
+        
         if (Array.isArray(result.data)) {
             let insertedCount = 0;
-
+            
             for (const holding of result.data) {
-                // 🔑 Auto-map member IDs based on type
+                console.log(`📥 Processing holding:`, holding.company_name || holding.schemename || holding.security_id);
+                
+                // Auto-map member IDs based on type
                 let memberId;
                 if (holding.investment_type === "equity") {
-                    memberId = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"; // Pradeep
+                    memberId = HDFC_CONFIG.members.equity; // Pradeep
                 } else if (holding.investment_type === "mutualFunds") {
-                    memberId = "d3a4fc84-a94b-494d-915f-60901f16d973"; // Sanchita
+                    memberId = HDFC_CONFIG.members.mf; // Sanchita
                 } else {
-                    memberId = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"; // default → Pradeep
+                    memberId = HDFC_CONFIG.members.equity; // default → Pradeep
                 }
-
+                
+                // Create clean record object (no functions/callbacks)
+                const record = {
+                    member_id: memberId,
+                    investment_type: holding.investment_type || "other",
+                    company_name: holding.company_name || holding.schemename || null,
+                    authorised_quantity: Number(holding.authorised_quantity) || 0,
+                    average_price: Number(holding.average_price) || 0,
+                    brokerplatform: 'HDFC Securities',
+                    close_price: Number(holding.close_price) || 0,
+                    collateral_quantity: Number(holding.collateral_quantity) || 0,
+                    corporate_action_indicator: holding.corporate_action_indicator || null,
+                    corporate_action_message: holding.corporate_action_message || null,
+                    day_change: Number(holding.day_change) || 0,
+                    day_change_percentage: Number(holding.day_change_percentage) || 0,
+                    discrepancy: Boolean(holding.discrepancy),
+                    hdfcdata: holding, // Store as JSONB, don't stringify
+                    instrument_token: holding.instrument_token || null,
+                    investment_value: Number(holding.investment_value) || 0,
+                    isin: holding.isin || null,
+                    ltcg_quantity: Number(holding.ltcg_quantity) || 0,
+                    mtf_indicator: holding.mtf_indicator || null,
+                    pnl: Number(holding.pnl) || 0,
+                    quantity: Number(holding.quantity) || Number(holding.units) || 0,
+                    realised: Number(holding.realised) || 0,
+                    sector_name: holding.sector_name || null,
+                    security_id: holding.security_id || null,
+                    sip_indicator: holding.sip_indicator || null,
+                    t1_quantity: Number(holding.t1_quantity) || 0,
+                    used_quantity: Number(holding.used_quantity) || 0
+                };
+                
+                console.log(`📤 Inserting record for ${record.company_name}:`, record);
+                
                 // Insert into Supabase
-                const { error } = await supabaseClient
+                const { data: insertResult, error } = await supabaseClient
                     .from('investments')
-                    .insert({
-                        member_id: memberId,
-                        investment_type: holding.investment_type || "other",
-                        company_name: holding.company_name || holding.schemename || null,
-                        authorised_quantity: holding.authorised_quantity || 0,
-                        average_price: holding.average_price || 0,
-                        brokerplatform: 'HDFC Securities',
-                        close_price: holding.close_price || 0,
-                        collateral_quantity: holding.collateral_quantity || 0,
-                        corporate_action_indicator: holding.corporate_action_indicator || null,
-                        corporate_action_message: holding.corporate_action_message || null,
-                        createdat: new Date().toISOString(),
-                        day_change: holding.day_change || 0,
-                        day_change_percentage: holding.day_change_percentage || 0,
-                        discrepancy: holding.discrepancy || false,
-                        hdfcdata: JSON.stringify(holding),
-                        instrument_token: holding.instrument_token || null,
-                        investment_value: holding.investment_value || 0,
-                        isin: holding.isin || null,
-                        ltcg_quantity: holding.ltcg_quantity || 0,
-                        mtf_indicator: holding.mtf_indicator || null,
-                        pnl: holding.pnl || 0,
-                        quantity: holding.quantity || holding.units || 0,
-                        realised: holding.realised || 0,
-                        sector_name: holding.sector_name || null,
-                        security_id: holding.security_id || null,
-                        sip_indicator: holding.sip_indicator || null,
-                        t1_quantity: holding.t1_quantity || 0,
-                        used_quantity: holding.used_quantity || 0
-                        });
-                        console.log(`📥 Inserting holding: ${holding.company_name}`);
-                     
-                    
+                    .insert(record);
+                
                 if (error) {
-                    console.error("Supabase insert error:", error);
+                    console.error("❌ Supabase insert error:", error);
+                    console.error("Failed record:", record);
                 } else {
+                    console.log(`✅ Successfully inserted: ${record.company_name}`);
                     insertedCount++;
                 }
             }
-
+            
+            console.log(`🎉 Total holdings inserted into DB: ${insertedCount}/${result.data.length}`);
             showHDFCMessage(`✅ Imported ${insertedCount} holdings into Supabase`, 'success');
+            
+            // Refresh the dashboard after successful import
+            if (typeof loadInvestmentData === 'function') {
+                loadInvestmentData();
+            }
         } else {
+            console.warn('⚠️ No holdings found in callback response');
             showHDFCMessage('⚠️ No holdings found in callback response', 'warning');
-            console.log(`✅ Inserted into Supabase: ${holding.company_name || holding.schemename || holding.isin}`);
-
         }
     } catch (err) {
-        console.error('Error importing holdings:', err);
-        console.error("❌ Import failed at holdings stage:", err);
+        console.error('❌ Error importing holdings:', err);
         showHDFCMessage(`Import failed: ${err.message}`, 'error');
     }
 }
-console.log(`✅ Total holdings inserted into DB: ${insertedCount}`);
-
-
-
 
 // Helper to get current Supabase user
 async function getCurrentUser() {
@@ -199,3 +246,5 @@ window.showHDFCSettings = showHDFCSettings;
 window.authorizeHDFC = authorizeHDFC;
 window.testHDFCConnection = testHDFCConnection;
 window.fetchAndImportHoldings = fetchAndImportHoldings;
+
+console.log('🔧 HDFC Securities integration loaded successfully');
