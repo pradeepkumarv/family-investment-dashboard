@@ -212,39 +212,42 @@ def callback():
 # -------------------------
 # PROCESS HOLDINGS SUCCESS
 # -------------------------
-# -------------------------
-# PROCESS HOLDINGS SUCCESS
-# -------------------------
 def process_holdings_success(holdings_data):
-    """
-    Process HDFC holdings and return JSON for frontend fetch calls.
-    Ensures we always return a flat list of holdings.
-    """
+    """Process HDFC holdings and return JSON for frontend fetch calls."""
     try:
-        # Case 1: If API response is a dict with a "data" field
-        if isinstance(holdings_data, dict):
-            if "data" in holdings_data:
-                holdings_list = holdings_data["data"]
-            else:
-                holdings_list = [holdings_data]  # wrap single dict
-        # Case 2: Already a list
+        print("📊 Holdings data type:", type(holdings_data))
+        print("📊 Holdings data keys:", holdings_data.keys() if isinstance(holdings_data, dict) else "Not a dict")
+        
+        # Case 1: API response is a dict with a "data" field containing the holdings array
+        if isinstance(holdings_data, dict) and "data" in holdings_data:
+            holdings_list = holdings_data["data"]  # Extract the actual array
+            print(f"✅ Extracted holdings array with {len(holdings_list)} items")
+        
+        # Case 2: Already a list  
         elif isinstance(holdings_data, list):
             holdings_list = holdings_data
+            print(f"✅ Holdings already a list with {len(holdings_list)} items")
+            
+        # Case 3: Single dict (shouldn't happen with HDFC API, but handle it)
+        elif isinstance(holdings_data, dict):
+            holdings_list = [holdings_data]
+            print("⚠️ Single holding dict, wrapping in array")
+            
         else:
             holdings_list = []
-
-        # Debug logs
-        print(f"✅ Holdings count: {len(holdings_list)}")
+            print("❌ Unknown holdings data format, returning empty array")
+        
+        print(f"📤 Sending {len(holdings_list)} holdings back to frontend for DB insert")
+        
         if holdings_list:
-            print("✅ Holdings sample:", holdings_list[0])
-            print("📤 Sending holdings back to frontend for DB insert")
-
-        # Always return consistent JSON
+            print("📊 Sample holding:", holdings_list[0])
+            
         return jsonify({"data": holdings_list}), 200
-
+        
     except Exception as e:
         print(f"❌ Error in process_holdings_success: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 # -------------------------
 # MAIN
