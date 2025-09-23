@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, jsonify, session, redirect
 from flask_cors import CORS
 import hdfc_investright
+import traceback
 import os
 from datetime import datetime
 
@@ -211,7 +212,6 @@ def callback():
             return jsonify({"error": "No holdings received"}), 400
 
     except Exception as e:
-        import traceback
         error_trace = traceback.format_exc()
         print(f"💥 Error in callback: {e}")
         print(error_trace)
