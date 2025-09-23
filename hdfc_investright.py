@@ -1,5 +1,7 @@
+from supabase import create_client
 import os
 import requests
+from datetime import datetime
 
 # -----------------------------
 # Config
@@ -12,6 +14,15 @@ PASSWORD = os.getenv("HDFC_PASSWORD")
 HEADERS_JSON = {
     "Content-Type": "application/json",
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+}
+# Initialize Supabase client
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_KEY")
+supabase = create_client(url, key)
+
+MEMBERS = {
+    "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
+    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
 }
 
 # -----------------------------
@@ -185,3 +196,66 @@ def resend_2fa(token_id):
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
+def process_holdings_success(holdings, broker_platform="HDFC Securities"):
+    """
+    Process HDFC holdings and insert into Supabase investments table.
+    - holdings: list of dicts from HDFC API
+    """
+    inserted_count = 0
+    errors = []
+
+    for h in holdings:
+        try:
+            is_mf = h.get("sip_indicator") == "Y"
+            inv_type = "mutualFunds" if is_mf else "equity"
+            member_id = MEMBERS[inv_type]
+
+            # Common fields
+            new_row = {
+                "member_id": member_id,
+                "investment_type": inv_type,
+                "broker_platform": broker_platform,
+                "company_name": h.get("company_name"),
+                "symbol_or_name": h.get("company_name"),
+                "sector_name": h.get("sector_name"),
+                "isin": h.get("isin"),
+                "security_id": h.get("security_id"),
+                "instrument_token": h.get("instrument_token"),
+                "investment_value": h.get("investment_value", 0),
+                "created_at": datetime.utcnow().isoformat(),
+                "last_updated": datetime.utcnow().isoformat()
+            }
+
+            if inv_type == "equity":
+                new_row.update({
+                    "quantity": h.get("quantity", 0),
+                    "average_price": h.get("average_price", 0),
+                    "close_price": h.get("close_price"),
+                    "pnl": h.get("pnl", 0),
+                    "realised": h.get("realised", 0),
+                    "ltcg_quantity": h.get("ltcg_quantity", 0),
+                    "t1_quantity": h.get("t1_quantity", 0),
+                    "used_quantity": h.get("used_quantity", 0),
+                    "mtf_indicator": h.get("mtf_indicator"),
+                    "sip_indicator": h.get("sip_indicator")
+                })
+            else:  # Mutual funds
+                new_row.update({
+                    "fund_name": h.get("company_name"),
+                    "mf_quantity": h.get("quantity", 0),
+                    "mf_average_price": h.get("average_price", 0),
+                    "isin": h.get("isin"),
+                    "sip_indicator": h.get("sip_indicator"),
+                    "ltcg_quantity": h.get("ltcg_quantity", 0)
+                })
+
+            # Insert into Supabase
+            response = supabase.table("investments").insert(new_row).execute()
+            if response.data:
+                inserted_count += 1
+        except Exception as e:
+            errors.append(str(e))
+
+    print(f"✅ Inserted {inserted_count} holdings into Supabase")
+    if errors:
+        print("⚠️ Errors:", errors)
