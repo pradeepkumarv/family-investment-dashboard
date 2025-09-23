@@ -164,31 +164,22 @@ def validate_otp():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-from hdfc_investright import process_holdings_success  # if kept separate
 
-# Inside your OTP success / holdings fetch route
-if response.status_code == 200:
-    data = response.json()
-    holdings = data.get("data", [])
-    if holdings:
-        process_holdings_success(holdings)
 
 
 # -------------------------
 # CALLBACK
 # -------------------------
+      
+# -------------------------
+# CALLBACK
+# -------------------------
 @app.route("/api/hdfc/callback", methods=["GET", "POST"])
 def callback():
-    print("📞 Callback received!")
-
-    token_id = session.get("token_id")
-    request_token = session.get("request_token")
-
-    if not token_id or not request_token:
-        return jsonify({"error": "Session expired"}), 400
-
     try:
         holdings_data = None
+        request_token = session.get("request_token")
+        token_id = session.get("token_id")
 
         # Step 1: Try request_token directly
         try:
@@ -212,12 +203,12 @@ def callback():
         if not holdings_data:
             holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
-        # ✅ Always return JSON now
-       import hdfc_investright
-...
-hdfc_investright.process_holdings_success(holdings_data["data"])
-return jsonify({"status": "success", "count": len(holdings_data["data"])})
-
+        # ✅ Save holdings into Supabase and return response
+        if holdings_data and "data" in holdings_data:
+            hdfc_investright.process_holdings_success(holdings_data["data"])
+            return jsonify({"status": "success", "count": len(holdings_data["data"])})
+        else:
+            return jsonify({"error": "No holdings received"}), 400
 
     except Exception as e:
         import traceback
@@ -225,6 +216,8 @@ return jsonify({"status": "success", "count": len(holdings_data["data"])})
         print(f"💥 Error in callback: {e}")
         print(error_trace)
         return jsonify({"error": str(e), "trace": error_trace}), 500
+
+
 
 # -------------------------
 # PROCESS HOLDINGS SUCCESS
