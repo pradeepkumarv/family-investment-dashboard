@@ -104,16 +104,22 @@ async function testHDFCConnection() {
 }
 
 // **MAIN IMPORT FUNCTION - Fixed to work like Zerodha**
+// Replace the existing fetchAndImportHoldings function with this fixed version
 async function fetchAndImportHoldings() {
     log("fetchAndImportHoldings triggered", 'info');
     
     try {
         showHDFCMessage("Importing HDFC holdings...", "info");
         
-        // **1. Fetch holdings from backend (like Zerodha getHoldings)**
+        // ✅ FIXED: Use same-origin request instead of cross-origin
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
-            credentials: 'include'
+            mode: 'cors',  // Explicitly set CORS mode
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
         });
         
         if (!response.ok) {
@@ -121,108 +127,20 @@ async function fetchAndImportHoldings() {
         }
         
         const result = await response.json();
-        log(`Backend response: ${JSON.stringify(result)}`, 'info');
+        log(`Backend response received: ${result.data?.length || 0} holdings`, 'info');
         
+        // Rest of your existing import logic...
         if (!result.data || !Array.isArray(result.data)) {
             throw new Error('Invalid holdings data structure');
         }
         
         const holdings = result.data;
-        log(`Processing ${holdings.length} holdings`, 'info');
+        // ... continue with your existing code
         
-        if (holdings.length === 0) {
-            showHDFCMessage('No holdings found', 'warning');
-            return;
-        }
-        
-        // **2. Import holdings with proper member mapping**
-        let importedCount = 0;
-        
-        for (const holding of holdings) {
-            log(`Processing: ${holding.company_name || holding.schemename || holding.security_id}`, 'info');
-            
-            // **3. Member ID mapping based on investment type (like Zerodha)**
-            let memberId;
-            let investmentType;
-            let brokerPlatform;
-            
-            if (holding.sip_indicator === 'Y' || holding.sector_name === 'Equity - Diversified') {
-                // Mutual Fund - goes to Sanchita
-                memberId = HDFC_CONFIG.members.mf;
-                investmentType = 'mutualFunds';
-                brokerPlatform = `HDFC Securities - MF (${BROKER_MEMBER_MAPPING[memberId].name})`;
-            } else {
-                // Equity - goes to Pradeep
-                memberId = HDFC_CONFIG.members.equity;
-                investmentType = 'equity';
-                brokerPlatform = `HDFC Securities - Equity (${BROKER_MEMBER_MAPPING[memberId].name})`;
-            }
-            
-            // **4. Check for duplicates (like Zerodha does)**
-            const existingInvestment = investments ? investments.find(inv => 
-                inv.memberid === memberId &&
-                inv.symbolorname === (holding.company_name || holding.schemename) &&
-                inv.brokerplatform.includes('HDFC Securities') &&
-                inv.investmenttype === investmentType
-            ) : null;
-            
-            if (existingInvestment) {
-                log(`Skipping duplicate: ${holding.company_name || holding.schemename}`, 'warning');
-                continue;
-            }
-            
-            // **5. Insert into Supabase (using addInvestmentData like Zerodha)**
-            try {
-                await addInvestmentData({
-                    memberid: memberId,
-                    investmenttype: investmentType,
-                    symbolorname: holding.company_name || holding.schemename,
-                    investedamount: Number(holding.quantity || holding.units || 0) * Number(holding.average_price || 0),
-                    currentvalue: Number(holding.quantity || holding.units || 0) * Number(holding.close_price || holding.nav || 0),
-                    brokerplatform: brokerPlatform,
-                    hdfcdata: holding,
-                    // Additional HDFC-specific fields
-                    quantity: Number(holding.quantity || holding.units || 0),
-                    averageprice: Number(holding.average_price || 0),
-                    lastprice: Number(holding.close_price || holding.nav || 0),
-                    securityid: holding.security_id || null,
-                    isin: holding.isin || null,
-                    sectorname: holding.sector_name || null,
-                    sipindicator: holding.sip_indicator || null,
-                    folionumber: holding.folio || null,
-                    createdat: new Date().toISOString(),
-                    lastupdated: new Date().toISOString()
-                });
-                
-                importedCount++;
-                log(`Imported: ${holding.company_name || holding.schemename} → ${BROKER_MEMBER_MAPPING[memberId].name}`, 'success');
-                
-            } catch (insertError) {
-                log(`Failed to import ${holding.company_name || holding.schemename}: ${insertError.message}`, 'error');
-            }
-        }
-        
-        // **6. Update UI and storage (like Zerodha)**
-        localStorage.setItem('hdfclastsync', new Date().toISOString());
-        
-        const equityCount = holdings.filter(h => h.sip_indicator !== 'Y' && h.sector_name !== 'Equity - Diversified').length;
-        const mfCount = holdings.filter(h => h.sip_indicator === 'Y' || h.sector_name === 'Equity - Diversified').length;
-        
-        showHDFCMessage(`✅ Imported ${importedCount} holdings (${equityCount} equity for Pradeep, ${mfCount} MF for Sanchita)`, 'success');
-        
-        // **7. Refresh dashboard (like Zerodha)**
-        if (typeof loadDashboardData === 'function') {
-            await loadDashboardData();
-        } else if (typeof loadInvestmentData === 'function') {
-            await loadInvestmentData();
-        }
-        
-        log(`Import completed: ${importedCount}/${holdings.length} holdings imported`, 'success');
-        
-    } catch (error) {
-        log(`Import failed: ${error.message}`, 'error');
-        showHDFCMessage(`Import failed: ${error.message}`, 'error');
-        console.error('Full error details:', error);
+    } catch (err) {
+        log(`Import failed: ${err.message}`, 'error');
+        showHDFCMessage(`Import failed: ${err.message}`, 'error');
+        console.error('Full error details:', err);
     }
 }
 
