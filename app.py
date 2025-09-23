@@ -164,6 +164,15 @@ def validate_otp():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+from hdfc_investright import process_holdings_success  # if kept separate
+
+# Inside your OTP success / holdings fetch route
+if response.status_code == 200:
+    data = response.json()
+    holdings = data.get("data", [])
+    if holdings:
+        process_holdings_success(holdings)
+
 
 # -------------------------
 # CALLBACK
