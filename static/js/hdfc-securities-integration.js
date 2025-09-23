@@ -137,99 +137,73 @@ async function testHDFCConnection() {
 }
 
 // Import holdings after OTP callback (fixed version)
+
+// ✅ Final fetchAndImportHoldings with member mapping
 async function fetchAndImportHoldings() {
-    console.log('🚀 fetchAndImportHoldings triggered...');
-    console.log("✅ OTP validated! Starting holdings import...");
-    
-    try {
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
-            method: 'GET',
-            credentials: 'include'
+  try {
+    // Fetch holdings from backend
+    const response = await fetch('/api/hdfc/holdings');
+    const result = await response.json();
+    const holdings = result.data || [];
+
+    console.log(`📊 Processing ${holdings.length} holdings`);
+
+    // Define member IDs
+    const pradeepId = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49";   // <-- replace with real ID
+    const sanchitaId = "d3a4fc84-a94b-494d-915f-60901f16d973"; // <-- replace with real ID
+
+   
+    // Insert each holding
+    for (const holding of holdings) {
+      // Choose member based on type
+      const memberId = holding.sip_indicator === "Y" 
+        ? sanchitaId   // Mutual fund (SIP = Yes)
+        : pradeepId;   // Equity
+
+      const { error } = await supabaseClient
+        .from('investments')
+        .insert({
+          member_id: memberId,
+          investment_type: holding.investment_type || (holding.sip_indicator === "Y" ? "mutual_fund" : "equity"),
+          company_name: holding.company_name || holding.schemename || null,
+          authorised_quantity: holding.authorised_quantity || 0,
+          average_price: holding.average_price || 0,
+          brokerplatform: 'HDFC Securities',
+          close_price: holding.close_price || 0,
+          collateral_quantity: holding.collateral_quantity || 0,
+          corporate_action_indicator: holding.corporate_action_indicator || null,
+          corporate_action_message: holding.corporate_action_message || null,
+          createdat: new Date().toISOString(),
+          day_change: holding.day_change || 0,
+          day_change_percentage: holding.day_change_percentage || 0,
+          discrepancy: holding.discrepancy || false,
+          hdfcdata: JSON.stringify(holding),
+          instrument_token: holding.instrument_token || null,
+          investment_value: holding.investment_value || 0,
+          isin: holding.isin || null,
+          ltcg_quantity: holding.ltcg_quantity || 0,
+          mtf_indicator: holding.mtf_indicator || null,
+          pnl: holding.pnl || 0,
+          quantity: holding.quantity || holding.units || 0,
+          realised: holding.realised || 0,
+          sector_name: holding.sector_name || null,
+          security_id: holding.security_id || null,
+          sip_indicator: holding.sip_indicator || null,
+          t1_quantity: holding.t1_quantity || 0,
+          used_quantity: holding.used_quantity || 0
         });
-        
-        const result = await response.json();
-        console.log("📊 Callback result:", result);
-        
-        if (!response.ok) throw new Error(result.error || 'Failed to fetch holdings');
-        
-        if (Array.isArray(result.data)) {
-            let insertedCount = 0;
-            
-            for (const holding of result.data) {
-                console.log(`📥 Processing holding:`, holding.company_name || holding.schemename || holding.security_id);
-                
-                // Auto-map member IDs based on type
-                let memberId;
-                if (holding.investment_type === "equity") {
-                    memberId = HDFC_CONFIG.members.equity; // Pradeep
-                } else if (holding.investment_type === "mutualFunds") {
-                    memberId = HDFC_CONFIG.members.mf; // Sanchita
-                } else {
-                    memberId = HDFC_CONFIG.members.equity; // default → Pradeep
-                }
-                
-                // Create clean record object (no functions/callbacks)
-                const record = {
-                    member_id: memberId,
-                    investment_type: holding.investment_type || "other",
-                    company_name: holding.company_name || holding.schemename || null,
-                    authorised_quantity: Number(holding.authorised_quantity) || 0,
-                    average_price: Number(holding.average_price) || 0,
-                    brokerplatform: 'HDFC Securities',
-                    close_price: Number(holding.close_price) || 0,
-                    collateral_quantity: Number(holding.collateral_quantity) || 0,
-                    corporate_action_indicator: holding.corporate_action_indicator || null,
-                    corporate_action_message: holding.corporate_action_message || null,
-                    day_change: Number(holding.day_change) || 0,
-                    day_change_percentage: Number(holding.day_change_percentage) || 0,
-                    discrepancy: Boolean(holding.discrepancy),
-                    hdfcdata: holding, // Store as JSONB, don't stringify
-                    instrument_token: holding.instrument_token || null,
-                    investment_value: Number(holding.investment_value) || 0,
-                    isin: holding.isin || null,
-                    ltcg_quantity: Number(holding.ltcg_quantity) || 0,
-                    mtf_indicator: holding.mtf_indicator || null,
-                    pnl: Number(holding.pnl) || 0,
-                    quantity: Number(holding.quantity) || Number(holding.units) || 0,
-                    realised: Number(holding.realised) || 0,
-                    sector_name: holding.sector_name || null,
-                    security_id: holding.security_id || null,
-                    sip_indicator: holding.sip_indicator || null,
-                    t1_quantity: Number(holding.t1_quantity) || 0,
-                    used_quantity: Number(holding.used_quantity) || 0
-                };
-                
-                console.log(`📤 Inserting record for ${record.company_name}:`, record);
-                
-                // Insert into Supabase
-                const { data: insertResult, error } = await supabaseClient
-                    .from('investments')
-                    .insert(record);
-                
-                if (error) {
-                    console.error("❌ Supabase insert error:", error);
-                    console.error("Failed record:", record);
-                } else {
-                    console.log(`✅ Successfully inserted: ${record.company_name}`);
-                    insertedCount++;
-                }
-            }
-            
-            console.log(`🎉 Total holdings inserted into DB: ${insertedCount}/${result.data.length}`);
-            showHDFCMessage(`✅ Imported ${insertedCount} holdings into Supabase`, 'success');
-            
-            // Refresh the dashboard after successful import
-            if (typeof loadInvestmentData === 'function') {
-                loadInvestmentData();
-            }
-        } else {
-            console.warn('⚠️ No holdings found in callback response');
-            showHDFCMessage('⚠️ No holdings found in callback response', 'warning');
-        }
-    } catch (err) {
-        console.error('❌ Error importing holdings:', err);
-        showHDFCMessage(`Import failed: ${err.message}`, 'error');
+
+      if (error) {
+        console.error(`❌ Supabase insert error for ${holding.company_name}:`, error);
+      } else {
+        console.log(`📥 Inserted holding: ${holding.company_name} → Member: ${memberId}`);
+      }
     }
+
+    console.log("✅ All holdings processed and inserted!");
+  } catch (err) {
+    console.error("❌ fetchAndImportHoldings error:", err);
+  }
 }
 
 // Helper to get current Supabase user
