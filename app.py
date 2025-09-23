@@ -3,11 +3,11 @@ from flask_cors import CORS
 import hdfc_investright
 import os
 from datetime import datetime
-from flask_cors import CORS
 
-# Add this after creating your Flask app
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
+# ✅ CREATE FLASK APP FIRST
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
+
 CORS(app, resources={
     r"/api/hdfc/*": {
         "origins": ["https://pradeepkumarv.github.io", "http://localhost:5000"],
