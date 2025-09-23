@@ -3,16 +3,20 @@ from flask_cors import CORS
 import hdfc_investright
 import os
 from datetime import datetime
+from flask_cors import CORS
 
-app = Flask(__name__)
+# Add this after creating your Flask app
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
+app = Flask(__name__)
+CORS(app, resources={
+    r"/api/hdfc/*": {
+        "origins": ["https://pradeepkumarv.github.io", "http://localhost:5000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    }
+})
 
-# Allow GitHub Pages frontend (and localhost for testing if needed)
-CORS(app, resources={r"/api/hdfc/*": {"origins": [
-    "https://pradeepkumarv.github.io",
-    "http://localhost:5000",
-    "http://127.0.0.1:5000",
-]}})
 
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
