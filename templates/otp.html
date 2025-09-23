@@ -95,19 +95,16 @@ function submitOTP() {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
-            // ✅ AUTO-TRIGGER HOLDINGS IMPORT AFTER SUCCESSFUL OTP
-            if (typeof fetchAndImportHoldings === 'function') {
-                fetchAndImportHoldings();
-            } else {
-                // Redirect to dashboard with import trigger
-                window.location.href = 'https://pradeepkumarv.github.io/?import=hdfc';
-            }
+        if (data.status === 'success' || data.authorised === true) {
+            // ✅ AUTO-REDIRECT WITH IMPORT TRIGGER
+            console.log('OTP validated, redirecting to dashboard for import...');
+            window.location.href = 'https://pradeepkumarv.github.io/?autoImportHDFC=true';
         } else {
             document.getElementById('error-message').textContent = 'Invalid OTP';
         }
     })
     .catch(err => {
+        console.error('OTP validation error:', err);
         document.getElementById('error-message').textContent = 'Request failed';
     });
 }
