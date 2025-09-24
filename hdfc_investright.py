@@ -198,7 +198,9 @@ def resend_2fa(token_id):
     return resp.json()
     
  def process_holdings_success(holdings, broker_platform="HDFC Securities"):
-    """Process HDFC holdings and insert into Supabase investments table."""
+    """
+    Process HDFC holdings and insert into Supabase investments table.
+    """
     inserted_count = 0
     errors = []
     print(f"🔄 Processing {len(holdings)} HDFC holdings...")
