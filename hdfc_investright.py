@@ -245,14 +245,16 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
             }
 
          
-            resp = (supabase.table("investments")
-            .upsert(new_row, on_conflict=["symbolorname", "brokerplatform"])
-            .execute()
-                )
- 
-           
-            else:
-                print(f"❌ Insert failed for {company_name}: {resp.error}")
+          resp = (
+    supabase.table("investments")
+    .upsert(new_row, on_conflict=["symbolorname", "brokerplatform"])
+    .execute()
+)
+
+if resp.data:
+    print(f"✅ Inserted {company_name}: {investedamount:.2f} → {currentvalue:.2f}")
+else:
+    print(f"❌ Insert failed for {company_name}: {resp.error}")
 
         except Exception as e:
             msg = f"{company_name} error: {e}"
