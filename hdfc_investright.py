@@ -196,6 +196,7 @@ def resend_2fa(token_id):
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
+    
 def process_holdings_success(holdings, broker_platform="HDFC Securities"):
     """Process HDFC holdings and insert into Supabase investments table."""
     inserted_count = 0
@@ -226,18 +227,18 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
             print(f"   💰 Invested={invested_amount}, Current={current_value}")
 
             new_row = {
-                "memberid": member_id,
-                "investmenttype": inv_type,
-                "brokerplatform": broker_platform,
-                "symbolorname": company_name,
-                "investedamount": round(invested_amount, 2),
-                "currentvalue": round(current_value, 2),
+                "member_id": member_id,
+                "investment_type": inv_type,
+                "broker_platform": broker_platform,
+                "symbol_or_name": company_name,
+                "invested_amount": round(invested_amount, 2),
+                "current_value": round(current_value, 2),
                 "quantity": quantity,
-                "averageprice": avg_price,
+                "average_price": avg_price,
                 "lastprice": close_price,
-                "sectorname": h.get("sector_name"),
+                "sector_name": h.get("sector_name"),
                 "isin": h.get("isin"),
-                "securityid": h.get("security_id"),
+                "security_id": h.get("security_id"),
                 "createdat": datetime.utcnow().isoformat(),
                 "lastupdated": datetime.utcnow().isoformat(),
                 "hdfcdata": h,
@@ -259,4 +260,3 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
 
     print(f"📈 Summary: {inserted_count}/{len(holdings)} inserted")
     return {"inserted": inserted_count, "errors": errors}
-    
