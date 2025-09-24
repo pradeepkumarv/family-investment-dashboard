@@ -197,65 +197,78 @@ def resend_2fa(token_id):
     resp.raise_for_status()
     return resp.json()
     
-  def process_holdings_success(holdings, broker_platform="HDFC Securities"):
+ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
     """Process HDFC holdings and insert into Supabase investments table."""
     inserted_count = 0
     errors = []
-    print("➡️ Row being inserted/updated:", new_row.keys())
     print(f"🔄 Processing {len(holdings)} HDFC holdings...")
-    
+
     for h in holdings:
         try:
             # Extract data with fallbacks
-            company_name = h.get('company_name') or h.get('scheme_name', 'Unknown')
-            quantity = float(h.get('quantity', 0) or h.get('units', 0) or 0)
-            avg_price = float(h.get('average_price', 0) or h.get('avg_price', 0) or 0)
-            close_price = float(h.get('close_price', 0) or h.get('ltp', 0) or h.get('nav', 0) or 0)
-            
+            company_name = h.get("company_name") or h.get("scheme_name", "Unknown")
+            quantity = float(h.get("quantity", 0) or h.get("units", 0) or 0)
+            avg_price = float(h.get("average_price", 0) or h.get("avg_price", 0) or 0)
+            close_price = float(
+                h.get("close_price", 0) or h.get("ltp", 0) or h.get("nav", 0) or 0
+            )
+
             # Calculate values properly
-            invested_amount = quantity * avg_price if (quantity > 0 and avg_price > 0) else 0
-            current_value = quantity * close_price if (quantity > 0 and close_price > 0) else invested_amount
-            
+            invested_amount = (
+                quantity * avg_price if (quantity > 0 and avg_price > 0) else 0
+            )
+            current_value = (
+                quantity * close_price
+                if (quantity > 0 and close_price > 0)
+                else invested_amount
+            )
+
             # Determine member and type
-            is_mf = (h.get('sip_indicator') == 'Y' or 'fund' in company_name.lower())
+            is_mf = (h.get("sip_indicator") == "Y" or "fund" in company_name.lower())
             inv_type = "mutualFunds" if is_mf else "equity"
             member_id = MEMBERS[inv_type]
-            
-            print(f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}")
+
+            print(
+                f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}"
+            )
             print(f"   💰 Invested: {invested_amount}, Current: {current_value}")
-            
+
             # ✅ FIXED: Use correct Supabase column names
             new_row = {
-                'memberid': member_id,
-                'investmenttype': inv_type,
-                'brokerplatform': broker_platform,
-                'symbolorname': company_name,
-                'investedamount': round(invested_amount, 2),
-                'currentvalue': round(current_value, 2),
-                'quantity': quantity,
-                'averageprice': avg_price,
-                'lastprice': close_price,
-                'sectorname': h.get('sector_name'),
-                'isin': h.get('isin'),
-                'securityid': h.get('security_id'),
-                'createdat': datetime.utcnow().isoformat(),
-                'lastupdated': datetime.utcnow().isoformat(),
-                'hdfcdata': h
+                "member_id": member_id,
+                "investment_type": inv_type,
+                "broker_platform": broker_platform,
+                "symbol_or_name": company_name,
+                "invested_amount": round(invested_amount, 2),
+                "current_value": round(current_value, 2),
+                "quantity": quantity,
+                "average_price": avg_price,
+                "last_price": close_price,
+                "sector_name": h.get("sector_name"),
+                "isin": h.get("isin"),
+                "security_id": h.get("security_id"),
+                "created_at": datetime.utcnow().isoformat(),
+                "last_updated": datetime.utcnow().isoformat(),
+                "hdfc_data": h,
             }
-            
+
+            print("➡️ Row being inserted/updated:", new_row.keys())
+
             # Insert to Supabase
-            response = supabase.table('investments').insert(new_row).execute()
-            
+            response = supabase.table("investments").insert(new_row).execute()
+
             if response.data:
                 inserted_count += 1
-                print(f"✅ {company_name} inserted: ₹{invested_amount} → ₹{current_value}")
+                print(
+                    f"✅ {company_name} inserted: ₹{invested_amount} → ₹{current_value}"
+                )
             else:
                 print(f"❌ Failed to insert {company_name}: No data returned")
-                
+
         except Exception as e:
             error_msg = f"Failed {h.get('company_name', 'Unknown')}: {str(e)}"
             errors.append(error_msg)
             print(f"❌ {error_msg}")
-    
+
     print(f"📈 Summary: {inserted_count}/{len(holdings)} holdings inserted")
-    return {'inserted': inserted_count, 'errors': errors}
+    return {"inserted": inserted_count, "errors": errors}
