@@ -196,6 +196,7 @@ def resend_2fa(token_id):
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
+
 def process_holdings_success(holdings, broker_platform="HDFC Securities"):
     """
     Process HDFC holdings and insert into Supabase investments table.
@@ -221,41 +222,40 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                 "isin": h.get("isin"),
                 "security_id": h.get("security_id"),
                 "instrument_token": h.get("instrument_token"),
-                "investment_value": h.get("investment_value", 0),
                 "created_at": datetime.utcnow().isoformat(),
                 "last_updated": datetime.utcnow().isoformat()
             }
 
-            if inv_type == "equity":
-                new_row.update({
-                    "quantity": h.get("quantity", 0),
-                    "average_price": h.get("average_price", 0),
-                    "close_price": h.get("close_price"),
-                    "pnl": h.get("pnl", 0),
-                    "realised": h.get("realised", 0),
-                    "ltcg_quantity": h.get("ltcg_quantity", 0),
-                    "t1_quantity": h.get("t1_quantity", 0),
-                    "used_quantity": h.get("used_quantity", 0),
-                    "mtf_indicator": h.get("mtf_indicator"),
-                    "sip_indicator": h.get("sip_indicator")
-                })
-            else:  # Mutual funds
-                new_row.update({
-                    "fund_name": h.get("company_name"),
-                    "mf_quantity": h.get("quantity", 0),
-                    "mf_average_price": h.get("average_price", 0),
-                    "isin": h.get("isin"),
-                    "sip_indicator": h.get("sip_indicator"),
-                    "ltcg_quantity": h.get("ltcg_quantity", 0)
-                })
+            # Financial calculations
+            quantity = h.get("quantity", 0) or h.get("mf_quantity", 0) or 0
+            avg_price = h.get("average_price", 0) or h.get("mf_average_price", 0) or 0
+            close_price = h.get("close_price", 0) or 0
+
+            invested_amount = round(quantity * avg_price, 2)
+            current_value = round(quantity * close_price, 2)
+            gain_loss = round(current_value - invested_amount, 2)
+
+            # Add computed fields
+            new_row.update({
+                "quantity": quantity,
+                "average_price": avg_price,
+                "close_price": close_price,
+                "invested_amount": invested_amount,
+                "current_value": current_value,
+                "gain_loss": gain_loss,
+                "sip_indicator": h.get("sip_indicator"),
+                "mtf_indicator": h.get("mtf_indicator")
+            })
 
             # Insert into Supabase
             response = supabase.table("investments").insert(new_row).execute()
             if response.data:
                 inserted_count += 1
+
         except Exception as e:
             errors.append(str(e))
 
     print(f"✅ Inserted {inserted_count} holdings into Supabase")
     if errors:
         print("⚠️ Errors:", errors)
+
