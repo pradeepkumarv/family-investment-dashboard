@@ -197,79 +197,66 @@ def resend_2fa(token_id):
     resp.raise_for_status()
     return resp.json()
     
-def process_holdings_success(holdings, broker_platform="HDFC Securities"):
+    def process_holdings_success(holdings, broker_platform="HDFC Securities"):
     """Process HDFC holdings and insert into Supabase investments table."""
     inserted_count = 0
     errors = []
     
+    print(f"🔄 Processing {len(holdings)} HDFC holdings...")
+    
     for h in holdings:
         try:
-            # Determine investment type and member
-            is_mf = h.get('sip_indicator') == 'Y' or 'folio' in str(h).lower()
+            # Extract data with fallbacks
+            company_name = h.get('company_name') or h.get('scheme_name', 'Unknown')
+            quantity = float(h.get('quantity', 0) or h.get('units', 0) or 0)
+            avg_price = float(h.get('average_price', 0) or h.get('avg_price', 0) or 0)
+            close_price = float(h.get('close_price', 0) or h.get('ltp', 0) or h.get('nav', 0) or 0)
+            
+            # Calculate values properly
+            invested_amount = quantity * avg_price if (quantity > 0 and avg_price > 0) else 0
+            current_value = quantity * close_price if (quantity > 0 and close_price > 0) else invested_amount
+            
+            # Determine member and type
+            is_mf = (h.get('sip_indicator') == 'Y' or 'fund' in company_name.lower())
             inv_type = "mutualFunds" if is_mf else "equity"
             member_id = MEMBERS[inv_type]
             
-            # ✅ FIXED: Calculate invested amount and current value properly
-            quantity = float(h.get('quantity', 0) or h.get('units', 0) or 0)
-            average_price = float(h.get('average_price', 0) or h.get('avg_price', 0) or 0)
-            close_price = float(h.get('close_price', 0) or h.get('ltp', 0) or h.get('nav', 0) or 0)
-            
-            # Calculate values
-            invested_amount = quantity * average_price
-            current_value = quantity * close_price
-            
-            print(f"📊 {h.get('company_name', 'Unknown')}: qty={quantity}, avg_price={average_price}, close_price={close_price}")
+            print(f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}")
             print(f"   💰 Invested: {invested_amount}, Current: {current_value}")
             
-            # Base record structure (matching your dashboard expectations)
+            # ✅ FIXED: Use correct Supabase column names
             new_row = {
-                'memberid': member_id,  # ✅ Note: use 'memberid' not 'member_id'
+                'memberid': member_id,
                 'investmenttype': inv_type,
                 'brokerplatform': broker_platform,
-                'companyname': h.get('company_name') or h.get('scheme_name'),
-                'symbolorname': h.get('company_name') or h.get('scheme_name'),
+                'symbolorname': company_name,
+                'investedamount': round(invested_amount, 2),
+                'currentvalue': round(current_value, 2),
+                'quantity': quantity,
+                'averageprice': avg_price,
+                'lastprice': close_price,
                 'sectorname': h.get('sector_name'),
                 'isin': h.get('isin'),
                 'securityid': h.get('security_id'),
-                'instrumenttoken': h.get('instrument_token'),
-                
-                # ✅ FIXED: Properly calculated values
-                'investedamount': invested_amount,
-                'currentvalue': current_value,
-                'quantity': quantity,
-                'averageprice': average_price,
-                'lastprice': close_price,
-                
-                # Additional HDFC-specific fields
-                'pnl': float(h.get('pnl', 0) or 0),
-                'realised': float(h.get('realised', 0) or 0),
-                'ltcgquantity': float(h.get('ltcg_quantity', 0) or 0),
-                't1quantity': float(h.get('t1_quantity', 0) or 0),
-                'usedquantity': float(h.get('used_quantity', 0) or 0),
-                'mtfindicator': h.get('mtf_indicator'),
-                'sipindicator': h.get('sip_indicator'),
-                
-                # Timestamps
                 'createdat': datetime.utcnow().isoformat(),
                 'lastupdated': datetime.utcnow().isoformat(),
-                
-                # Store raw HDFC data
                 'hdfcdata': h
             }
             
-            # ✅ Insert into Supabase
+            # Insert to Supabase
             response = supabase.table('investments').insert(new_row).execute()
+            
             if response.data:
                 inserted_count += 1
-                print(f"✅ Inserted: {new_row['symbolorname']} (₹{invested_amount:.2f} → ₹{current_value:.2f})")
-            
+                print(f"✅ {company_name} inserted: ₹{invested_amount} → ₹{current_value}")
+            else:
+                print(f"❌ Failed to insert {company_name}: No data returned")
+                
         except Exception as e:
-            error_msg = f"Failed to process holding {h.get('company_name', 'Unknown')}: {str(e)}"
+            error_msg = f"Failed {h.get('company_name', 'Unknown')}: {str(e)}"
             errors.append(error_msg)
             print(f"❌ {error_msg}")
-            
-    print(f"📈 Inserted {inserted_count} holdings into Supabase")
-    if errors:
-        print("Errors:", errors)
     
+    print(f"📈 Summary: {inserted_count}/{len(holdings)} holdings inserted")
     return {'inserted': inserted_count, 'errors': errors}
+
