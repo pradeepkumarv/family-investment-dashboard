@@ -201,7 +201,7 @@ def resend_2fa(token_id):
     """Process HDFC holdings and insert into Supabase investments table."""
     inserted_count = 0
     errors = []
-    
+    print("➡️ Row being inserted/updated:", new_row.keys())
     print(f"🔄 Processing {len(holdings)} HDFC holdings...")
     
     for h in holdings:
