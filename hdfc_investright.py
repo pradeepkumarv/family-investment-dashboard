@@ -198,15 +198,11 @@ def resend_2fa(token_id):
     return resp.json()
 def process_holdings_success(holdings, broker_platform="HDFC Securities"):
     """
-    Hybrid sync: Upsert holdings into Supabase and remove missing ones.
-    Keeps portfolio fully in sync with broker.
+    Process HDFC holdings and insert into Supabase investments table.
+    - holdings: list of dicts from HDFC API
     """
-    inserted_count, updated_count, deleted_count = 0, 0, 0
+    inserted_count = 0
     errors = []
-
-    # Step 1: Build new snapshot set
-    new_keys = set()
-    new_rows = []
 
     for h in holdings:
         try:
@@ -214,20 +210,7 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
             inv_type = "mutualFunds" if is_mf else "equity"
             member_id = MEMBERS[inv_type]
 
-            # Financial calculations
-            quantity = h.get("quantity", 0) or h.get("mf_quantity", 0) or 0
-            avg_price = h.get("average_price", 0) or h.get("mf_average_price", 0) or 0
-            close_price = h.get("close_price", 0) or 0
-
-            invested_amount = round(quantity * avg_price, 2)
-            current_value = round(quantity * close_price, 2)
-            gain_loss = round(current_value - invested_amount, 2)
-
-            # Unique key
-            key = (member_id, h.get("isin"), inv_type)
-            new_keys.add(key)
-
-            # Common row data
+            # Common fields
             new_row = {
                 "member_id": member_id,
                 "investment_type": inv_type,
@@ -238,68 +221,41 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                 "isin": h.get("isin"),
                 "security_id": h.get("security_id"),
                 "instrument_token": h.get("instrument_token"),
-                "quantity": quantity,
-                "average_price": avg_price,
-                "close_price": close_price,
-                "invested_amount": invested_amount,
-                "current_value": current_value,
-                "gain_loss": gain_loss,
-                "sip_indicator": h.get("sip_indicator"),
-                "mtf_indicator": h.get("mtf_indicator"),
+                "investment_value": h.get("investment_value", 0),
+                "created_at": datetime.utcnow().isoformat(),
                 "last_updated": datetime.utcnow().isoformat()
             }
 
-            new_rows.append((key, new_row))
+            if inv_type == "equity":
+                new_row.update({
+                    "quantity": h.get("quantity", 0),
+                    "average_price": h.get("average_price", 0),
+                    "close_price": h.get("close_price"),
+                    "pnl": h.get("pnl", 0),
+                    "realised": h.get("realised", 0),
+                    "ltcg_quantity": h.get("ltcg_quantity", 0),
+                    "t1_quantity": h.get("t1_quantity", 0),
+                    "used_quantity": h.get("used_quantity", 0),
+                    "mtf_indicator": h.get("mtf_indicator"),
+                    "sip_indicator": h.get("sip_indicator")
+                })
+            else:  # Mutual funds
+                new_row.update({
+                    "fund_name": h.get("company_name"),
+                    "mf_quantity": h.get("quantity", 0),
+                    "mf_average_price": h.get("average_price", 0),
+                    "isin": h.get("isin"),
+                    "sip_indicator": h.get("sip_indicator"),
+                    "ltcg_quantity": h.get("ltcg_quantity", 0)
+                })
 
+            # Insert into Supabase
+            response = supabase.table("investments").insert(new_row).execute()
+            if response.data:
+                inserted_count += 1
         except Exception as e:
-            errors.append(f"Parse error: {e}")
+            errors.append(str(e))
 
-    # Step 2: Fetch existing holdings from Supabase
-    existing = supabase.table("investments") \
-        .select("id, member_id, isin, investment_type") \
-        .eq("broker_platform", broker_platform) \
-        .execute()
-
-    existing_map = {}
-    for row in existing.data or []:
-        key = (row["member_id"], row["isin"], row["investment_type"])
-        existing_map[key] = row["id"]
-
-    # Step 3: Upsert (insert or update)
-    for key, new_row in new_rows:
-        try:
-            if key in existing_map:
-                # Update existing
-                record_id = existing_map[key]
-                response = supabase.table("investments") \
-                    .update(new_row) \
-                    .eq("id", record_id) \
-                    .execute()
-                if response.data:
-                    updated_count += 1
-            else:
-                # Insert new
-                new_row["created_at"] = datetime.utcnow().isoformat()
-                response = supabase.table("investments") \
-                    .insert(new_row) \
-                    .execute()
-                if response.data:
-                    inserted_count += 1
-        except Exception as e:
-            errors.append(f"Upsert error: {e}")
-
-    # Step 4: Delete missing ones
-    for key, record_id in existing_map.items():
-        if key not in new_keys:
-            try:
-                supabase.table("investments").delete().eq("id", record_id).execute()
-                deleted_count += 1
-            except Exception as e:
-                errors.append(f"Delete error: {e}")
-
-    # Final log
-    print(f"✅ Inserted {inserted_count}, Updated {updated_count}, Deleted {deleted_count} holdings")
+    print(f"✅ Inserted {inserted_count} holdings into Supabase")
     if errors:
         print("⚠️ Errors:", errors)
-
-
