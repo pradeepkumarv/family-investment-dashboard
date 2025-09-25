@@ -293,56 +293,89 @@
             </a>
         </div>
     </div>
-
-    <script>
-        document.getElementById('hdfcLoginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+<script>
+    document.getElementById('hdfcLoginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const loginBtn = document.getElementById('loginBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const loginText = document.getElementById('loginText');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Hide previous messages
+        successMessage.style.display = 'none';
+        errorMessage.style.display = 'none';
+        
+        // Show loading state
+        loginBtn.disabled = true;
+        loadingSpinner.style.display = 'inline-block';
+        loginText.innerHTML = 'Connecting...';
+        
+        const formData = new FormData(this);
+        const username = formData.get('username');
+        const password = formData.get('password');
+        
+        try {
+            const response = await fetch('/hdfc/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
             
-            const loginBtn = document.getElementById('loginBtn');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            const loginText = document.getElementById('loginText');
-            const successMessage = document.getElementById('successMessage');
-            const errorMessage = document.getElementById('errorMessage');
-            
-            // Hide previous messages
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none';
-            
-            // Show loading state
-            loginBtn.disabled = true;
-            loadingSpinner.style.display = 'inline-block';
-            loginText.innerHTML = 'Connecting...';
-            
-            const formData = new FormData(this);
-            
-            try {
-                const response = await fetch('/api/hdfc/login', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    successMessage.textContent = 'Login successful! Redirecting to OTP verification...';
-                    successMessage.style.display = 'block';
-                    
-                    setTimeout(() => {
-                        window.location.href = result.redirect_url || '/otp.html';
-                    }, 1500);
-                } else {
-                    throw new Error(result.error || 'Login failed');
-                }
-            } catch (error) {
-                errorMessage.textContent = error.message || 'Connection failed. Please try again.';
-                errorMessage.style.display = 'block';
-            } finally {
-                // Reset button state
-                loginBtn.disabled = false;
-                loadingSpinner.style.display = 'none';
-                loginText.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect Account';
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const htmlText = await response.text();
+                console.error('Server returned HTML instead of JSON:', htmlText.substring(0, 200));
+                throw new Error('Server configuration error. Please check if HDFC API endpoint exists.');
             }
-        });
-    </script>
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                successMessage.textContent = 'Login successful! Redirecting to OTP verification...';
+                successMessage.style.display = 'block';
+                
+                // Store session info if needed
+                if (result.token_id) {
+                    sessionStorage.setItem('hdfc_token_id', result.token_id);
+                }
+                
+                setTimeout(() => {
+                    window.location.href = result.redirect_url || '/otp.html';
+                }, 1500);
+            } else {
+                throw new Error(result.error || result.message || 'Login failed');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            let errorMsg = 'Connection failed. Please try again.';
+            
+            if (error.message.includes('Failed to fetch')) {
+                errorMsg = 'Cannot connect to server. Please check your internet connection.';
+            } else if (error.message.includes('Server configuration error')) {
+                errorMsg = 'Server setup issue. Please contact administrator.';
+            } else if (error.message) {
+                errorMsg = error.message;
+            }
+            
+            errorMessage.textContent = errorMsg;
+            errorMessage.style.display = 'block';
+        } finally {
+            // Reset button state
+            loginBtn.disabled = false;
+            loadingSpinner.style.display = 'none';
+            loginText.innerHTML = '<i class="fas fa-sign-in-alt"></i> Connect Account';
+        }
+    });
+</script>
+
+    
 </body>
 </html>
