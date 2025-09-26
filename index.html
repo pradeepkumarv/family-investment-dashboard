@@ -1166,16 +1166,24 @@
     border-radius: 12px;
     margin: 20px 0;
 }
-
+        
+.broker-container {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 16px;            /* space between cards */
+    overflow-x: auto;     /* horizontal scroll if viewport is narrow */
+    padding: 16px 0;
+  }
+        
 .broker-card {
-    border: 1px solid #e2e8f0;
+    flex: 0 0 auto;       /* prevent shrinking */
+    width: 260px;         /* set desired card width */
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-300);
     border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    background: white;
+    padding: 16px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-}
+  }
 
 .broker-card:hover {
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -1183,20 +1191,18 @@
 }
 
 .broker-card h3 {
-    margin: 0 0 15px 0;
-    color: #2d3748;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1.2em;
-}
+    margin-top: 0;
+    font-size: 1.25rem;
+  }
 
-.broker-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
+.account-mapping small {
+    color: var(--color-gray-400);
+  }
+
+  .broker-buttons {
+    margin: 12px 0;
+  }
+
 
 .broker-buttons .btn {
     padding: 8px 16px;
@@ -1268,20 +1274,15 @@
     border-color: #cbd5e0; 
 }
 
-.status-display {
-    display: flex;
-    gap: 20px;
-    font-size: 13px;
-    color: #718096;
-    flex-wrap: wrap;
-}
 
-.status-display span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
+  .status-display {
+    font-size: 0.875rem;
+    color: var(--color-slate-500);
+  }
 
+  .status-display span {
+    display: block;
+  }
 .portfolio-view {
     border: 2px solid #e2e8f0;
     border-radius: 8px;
@@ -2346,8 +2347,9 @@
     </div>
    <section id="broker-integration-section" class="section">
     <h2>🔗 Broker Integration</h2>
-    
-   <!-- Wrap all brokers in a single flex container -->
+
+xml
+<!-- Add this to your index.html where you want the broker section -->
 <div class="broker-container">
   <!-- Zerodha -->
   <div class="broker-card">
@@ -2356,7 +2358,6 @@
       <small>Equity: Pradeep Kumar V | MF: Saanvi Pradeep</small>
     </div>
     <div class="broker-buttons">
-      <!-- keep only Settings -->
       <button class="btn btn-primary"
               onclick="showZerodhaSettings()"
               title="Configure Zerodha settings">
@@ -2426,7 +2427,7 @@
     </div>
   </div>
 </div>
-
+       
     
     <!-- Updated Account Summary -->
     <div class="account-summary-card" style="background: #e6fffa; border: 1px solid #38b2ac; border-radius: 8px; padding: 15px; margin-top: 20px;">
