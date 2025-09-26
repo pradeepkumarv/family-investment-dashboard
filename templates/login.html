@@ -1,108 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HDFC Securities Login</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
-  <style>
-    body {margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
-          background:linear-gradient(135deg,#667eea,#764ba2);
-          display:flex;align-items:center;justify-content:center;min-height:100vh;}
-    .card {background:#fff;border-radius:16px;box-shadow:0 16px 32px rgba(0,0,0,0.1);
-           width:100%;max-width:380px;padding:32px;position:relative;overflow:hidden;}
-    .card::before {content:"";position:absolute;top:0;left:0;width:100%;height:6px;
-                   background:linear-gradient(90deg,#007bff,#28a745,#ffc107,#dc3545);}
-    .logo {width:72px;height:72px;margin:0 auto 16px;border-radius:16px;
-           background:linear-gradient(135deg,#007bff,#0056b3);
-           display:flex;align-items:center;justify-content:center;
-           box-shadow:0 8px 20px rgba(0,123,255,0.3);}
-    .logo i {color:#fff;font-size:32px;}
-    h1 {text-align:center;font-size:24px;color:#2c3e50;margin-bottom:8px;}
-    p.subtitle {text-align:center;color:#6c757d;font-size:14px;margin-bottom:24px;}
-    .form-group {margin-bottom:20px;}
-    .form-group label {display:block;font-size:13px;color:#495057;margin-bottom:6px;}
-    .input-icon {position:relative;}
-    .input-icon i {position:absolute;left:12px;top:50%;transform:translateY(-50%);
-                   color:#adb5bd;}
-    input[type=text],input[type=password] {
-      width:100%;padding:12px 12px 12px 40px;border:2px solid #e9ecef;
-      border-radius:8px;font-size:15px;transition:border-color .3s;background:#f8f9fa;
-    }
-    input:focus {outline:none;border-color:#007bff;background:#fff;
-                 box-shadow:0 0 0 3px rgba(0,123,255,0.1);}
-    button {width:100%;padding:12px;background:linear-gradient(135deg,#007bff,#0056b3);
-            border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;
-            cursor:pointer;transition:transform .2s,box-shadow .2s;}
-    button:hover {transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,123,255,0.3);}
-    button:disabled {opacity:.6;cursor:not-allowed;}
-    .message {margin-top:16px;text-align:center;font-size:14px;display:none;}
-    .message.error {color:#dc3545;}
-    .message.success {color:#28a745;}
-  </style>
+  <!-- Meta & Title -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login • MyApp</title>
+
+  <!-- Inherit CSS from index.html -->
+  <link href="css/bootstrap.min.css" rel="stylesheet" />
+  <link href="css/main.css" rel="stylesheet" />
+
+  <!-- Inherit any needed JS libraries -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/app.js"></script>
 </head>
 <body>
-  <div class="card">
-    <div class="logo"><i class="fas fa-chart-line"></i></div>
-    <h1>HDFC Securities</h1>
-    <p class="subtitle">Securely connect your account</p>
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="username">Client ID</label>
-        <div class="input-icon">
-          <i class="fas fa-user"></i>
-          <input id="username" name="username" type="text" required/>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <div class="input-icon">
-          <i class="fas fa-lock"></i>
-          <input id="password" name="password" type="password" required/>
-        </div>
-      </div>
-      <button type="submit" id="loginBtn">
-        <i class="fas fa-sign-in-alt"></i> Connect Account
-      </button>
-    </form>
-    <p id="loginError" class="message error"></p>
-    <p id="loginSuccess" class="message success"></p>
-  </div>
+  <!-- Navbar (copied from index.html) -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="index.html">MyApp</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNav" aria-controls="navbarNav"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="features.html">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="pricing.html">Pricing</a></li>
+        <li class="nav-item"><a class="nav-link active" href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
 
+  <!-- Main Content -->
+  <main class="container my-5">
+    <div class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="card-title mb-4 text-center">Sign In</h2>
+            <form id="loginForm" method="POST" action="otp.html">
+              <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username"
+                       class="form-control" required autofocus />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password"
+                       class="form-control" required />
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Continue</button>
+              </div>
+            </form>
+            <div id="loginError" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer (copied from index.html) -->
+  <footer class="footer py-4 bg-light">
+    <div class="container text-center">
+      <small>&copy; 2025 MyApp. All rights reserved.</small>
+    </div>
+  </footer>
+
+  <!-- Page-specific JS -->
   <script>
-    const loginForm = document.getElementById('loginForm');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginError = document.getElementById('loginError');
-    const loginSuccess = document.getElementById('loginSuccess');
-
-    loginForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      loginError.style.display = 'none';
-      loginSuccess.style.display = 'none';
-      loginBtn.disabled = true;
-
-      const data = new URLSearchParams(new FormData(loginForm));
-      try {
-        const res = await fetch('/request-otp', {
+    $(function(){
+      $('#loginForm').on('submit', function(e){
+        e.preventDefault();
+        $.ajax({
+          url: 'api/login',            // your backend endpoint
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: data
+          contentType: 'application/json',
+          dataType: 'json',            // ensure response is parsed as JSON
+          data: JSON.stringify({
+            username: $('#username').val(),
+            password: $('#password').val()
+          }),
+          success: function(resp){
+            if(resp.success){
+              window.location.href = 'otp.html?token=' + encodeURIComponent(resp.token);
+            } else {
+              $('#loginError').text(resp.message)
+                              .removeClass('d-none');
+            }
+          },
+          error: function(xhr){
+            $('#loginError').text('Server error. Please try again.')
+                            .removeClass('d-none');
+          }
         });
-        const json = await res.json();
-        if (res.ok && json.success) {
-          loginSuccess.textContent = 'OTP sent! Redirecting...';
-          loginSuccess.style.display = 'block';
-          sessionStorage.setItem('hdfc_token_id', json.token_id);
-          setTimeout(() => location.href = 'otp.html', 1200);
-        } else {
-          throw new Error(json.error || 'Request OTP failed');
-        }
-      } catch (err) {
-        loginError.textContent = err.message;
-        loginError.style.display = 'block';
-      } finally {
-        loginBtn.disabled = false;
-      }
+      });
     });
   </script>
 </body>
