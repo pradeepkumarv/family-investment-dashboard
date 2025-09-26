@@ -1,16 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>HDFC Securities Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HDFC Securities Login</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <h2>🔑 Login to Request OTP</h2>
-  <form action="/request-otp" method="post">
-    <label>Username:</label><br>
-    <input type="text" name="username" required><br><br>
-    <label>Password:</label><br>
-    <input type="password" name="password" required><br><br>
-    <button type="submit">Request OTP</button>
-  </form>
+<body class="main-landing">
+    <div class="landing-container">
+        <div class="landing-hero">
+            <h1 class="hero-title">🔑 Login to Request OTP</h1>
+            <div class="landing-description">
+                <p>Please enter your HDFC Securities credentials to continue</p>
+            </div>
+        </div>
+        
+        <div class="login-section">
+            <div class="login-form">
+                <form id="loginForm" action="/request-otp" method="post">
+                    <div class="form-group">
+                        <label class="form-label" for="username">Username:</label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            class="form-control" 
+                            required 
+                            autofocus
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password:</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-control" 
+                            required
+                        >
+                    </div>
+                    
+                    <button type="submit" class="btn btn--primary btn--lg">
+                        Request OTP
+                    </button>
+                </form>
+                
+                <div id="errorMessage" class="status status--error hidden" style="margin-top: var(--space-16);"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced form submission with proper JSON handling
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.add('hidden');
+            
+            fetch('/request-otp', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
+                    // Handle non-JSON responses (like redirects)
+                    if (response.ok) {
+                        window.location.href = 'otp.html';
+                        return;
+                    }
+                    throw new Error('Invalid response format');
+                }
+            })
+            .then(data => {
+                if (data && data.status === 'success') {
+                    window.location.href = 'otp.html';
+                } else if (data && data.error) {
+                    errorDiv.textContent = data.error;
+                    errorDiv.classList.remove('hidden');
+                } else {
+                    // Fallback for successful non-JSON responses
+                    window.location.href = 'otp.html';
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'Login failed. Please try again.';
+                errorDiv.classList.remove('hidden');
+            });
+        });
+    </script>
 </body>
 </html>
