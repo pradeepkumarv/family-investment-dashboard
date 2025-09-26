@@ -1,154 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>OTP Verification</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
-  <style>
-    body {margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
-          background:linear-gradient(135deg,#667eea,#764ba2);
-          display:flex;align-items:center;justify-content:center;min-height:100vh;}
-    .card {background:#fff;border-radius:16px;box-shadow:0 16px 32px rgba(0,0,0,0.1);
-           width:100%;max-width:380px;padding:32px;position:relative;text-align:center;}
-    .card::before {content:"";position:absolute;top:0;left:0;width:100%;height:6px;
-                   background:linear-gradient(90deg,#28a745,#20c997,#17a2b8,#007bff);}
-    .icon {width:72px;height:72px;margin:0 auto 16px;border-radius:16px;
-           background:linear-gradient(135deg,#28a745,#20c997);
-           display:flex;align-items:center;justify-content:center;
-           box-shadow:0 8px 20px rgba(40,167,69,0.3);}
-    .icon i {color:#fff;font-size:32px;}
-    h1 {font-size:24px;color:#2c3e50;margin-bottom:8px;}
-    p.subtitle {color:#6c757d;font-size:14px;margin-bottom:20px;}
-    .otp-group {display:flex;justify-content:center;gap:12px;margin-bottom:24px;}
-    .otp-group input {
-      width:48px;height:48px;font-size:18px;text-align:center;
-      border:2px solid #e9ecef;border-radius:8px;transition:border-color .3s;
-      background:#f8f9fa;
-    }
-    .otp-group input:focus {
-      outline:none;border-color:#28a745;background:#fff;
-      box-shadow:0 0 0 3px rgba(40,167,69,0.1);
-    }
-    button {
-      width:100%;padding:12px;background:linear-gradient(135deg,#28a745,#20c997);
-      border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;
-      cursor:pointer;transition:transform .2s,box-shadow .2s;margin-bottom:16px;
-    }
-    button:hover {transform:translateY(-2px);box-shadow:0 8px 20px rgba(40,167,69,0.3);}
-    button:disabled {opacity:.6;cursor:not-allowed;}
-    .resend {font-size:13px;color:#6c757d;display:flex;justify-content:center;
-             gap:8px;align-items:center;margin-bottom:16px;}
-    .resend button {
-      background:none;border:none;color:#007bff;text-decoration:underline;
-      cursor:pointer;padding:0;font-size:13px;
-    }
-    .resend button:disabled {color:#adb5bd;text-decoration:none;cursor:not-allowed;}
-    .message {margin-top:12px;font-size:14px;display:none;}
-    .message.error {color:#dc3545;}
-    .message.success {color:#28a745;}
-  </style>
+  <!-- Meta & Title -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OTP Verification • MyApp</title>
+
+  <!-- Inherit CSS & JS -->
+  <link href="css/bootstrap.min.css" rel="stylesheet" />
+  <link href="css/main.css" rel="stylesheet" />
+  <script src="js/jquery.min.js"></script>
+  <script src="js/bootstrap.bundle.min.js"></script>
+  <script src="js/app.js"></script>
 </head>
 <body>
-  <div class="card">
-    <div class="icon"><i class="fas fa-mobile-alt"></i></div>
-    <h1>Enter OTP</h1>
-    <p class="subtitle">Check your registered mobile for the 6-digit code</p>
-    <form id="otpForm">
-      <div class="otp-group">
-        <input type="text" maxlength="1" required/>
-        <input type="text" maxlength="1" required/>
-        <input type="text" maxlength="1" required/>
-        <input type="text" maxlength="1" required/>
-        <input type="text" maxlength="1" required/>
-        <input type="text" maxlength="1" required/>
-      </div>
-      <button type="submit" id="verifyBtn">Verify & Continue</button>
-    </form>
-    <div class="resend">
-      <span id="timer">Resend in 60s</span>
-      <button id="resendBtn" disabled>Resend OTP</button>
-    </div>
-    <p id="otpError" class="message error"></p>
-    <p id="otpSuccess" class="message success"></p>
-  </div>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="index.html">MyApp</a>
+  </nav>
 
+  <!-- Main Content -->
+  <main class="container my-5">
+    <div class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="card-title mb-4 text-center">Enter OTP</h2>
+            <form id="otpForm">
+              <div class="mb-3">
+                <label for="otp" class="form-label">OTP Code</label>
+                <input type="text" id="otp" name="otp"
+                       class="form-control" required autofocus />
+              </div>
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary">Verify</button>
+              </div>
+            </form>
+            <div id="otpError" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer py-4 bg-light">
+    <div class="container text-center">
+      <small>&copy; 2025 MyApp. All rights reserved.</small>
+    </div>
+  </footer>
+
+  <!-- Page-specific JS -->
   <script>
-    const otpForm = document.getElementById('otpForm');
-    const inputs = otpForm.querySelectorAll('input');
-    const verifyBtn = document.getElementById('verifyBtn');
-    const otpError = document.getElementById('otpError');
-    const otpSuccess = document.getElementById('otpSuccess');
-    const resendBtn = document.getElementById('resendBtn');
-    const timerSpan = document.getElementById('timer');
-    let timeLeft = 60;
-    // Auto-advance
-    inputs.forEach((input,i) => {
-      input.addEventListener('input', ()=> {
-        if(input.value && i < inputs.length-1) inputs[i+1].focus();
-      });
-      input.addEventListener('keydown',e => {
-        if(e.key==='Backspace' && !input.value && i>0) {
-          inputs[i-1].focus();
-        }
-      });
-    });
-    // Countdown
-    const interval = setInterval(()=>{
-      timeLeft--;
-      timerSpan.textContent=`Resend in ${timeLeft}s`;
-      if(timeLeft<=0){
-        clearInterval(interval);
-        timerSpan.textContent='OTP expired';
-        resendBtn.disabled=false;
-      }
-    },1000);
-    // Resend
-    resendBtn.addEventListener('click',async()=>{
-      resendBtn.disabled=true;
-      fetch('/resend-otp',{method:'POST'})
-        .then(r=>r.json()).then(j=>{
-          if(j.success){
-            otpSuccess.textContent='OTP resent!';
-            otpSuccess.style.display='block';
+    $(function(){
+      // Extract token from query param
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token') || '';
+
+      $('#otpForm').on('submit', function(e){
+        e.preventDefault();
+        $.ajax({
+          url: 'api/verify-otp',
+          method: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify({
+            otp: $('#otp').val(),
+            token: token
+          }),
+          success: function(resp){
+            if(resp.success){
+              window.location.href = 'dashboard.html';
+            } else {
+              $('#otpError').text(resp.message)
+                            .removeClass('d-none');
+            }
+          },
+          error: function(xhr){
+            $('#otpError').text('Verification failed. Try again.')
+                          .removeClass('d-none');
           }
-          setTimeout(()=>otpSuccess.style.display='none',3000);
-        })
-        .catch(()=>{otpError.textContent='Resend failed';otpError.style.display='block';});
-    });
-    // Submit
-    otpForm.addEventListener('submit',async e=>{
-      e.preventDefault();
-      otpError.style.display='none'; otpSuccess.style.display='none';
-      verifyBtn.disabled=true;
-      const otp = Array.from(inputs).map(i=>i.value).join('');
-      if(otp.length!==6){
-        otpError.textContent='Enter all 6 digits';
-        otpError.style.display='block';
-        verifyBtn.disabled=false;
-        return;
-      }
-      fetch('/validate-otp',{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:new URLSearchParams({otp,tokenid:sessionStorage.getItem('hdfc_token_id')})
-      })
-        .then(r=>r.json())
-        .then(j=>{
-          if(j.success){
-            otpSuccess.textContent='Verified! Importing...';
-            otpSuccess.style.display='block';
-            setTimeout(()=>location.href='/?import=success',1500);
-          } else {
-            throw new Error(j.error||'Invalid OTP');
-          }
-        })
-        .catch(err=>{
-          otpError.textContent=err.message;otpError.style.display='block';
-          inputs.forEach(i=>i.value='');
-          inputs[0].focus();
-        })
-        .finally(()=>verifyBtn.disabled=false);
+        });
+      });
     });
   </script>
 </body>
