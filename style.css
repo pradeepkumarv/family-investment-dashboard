@@ -3026,3 +3026,17 @@ body {
     background: white !important;
     z-index: 10 !important;
 }
+.broker-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-16);
+  overflow-x: auto;
+  padding: var(--space-16) 0;
+}
+
+.broker-card {
+  flex: 0 0 auto;
+  width: 260px;           /* adjust as needed */
+  margin: 0;
+}
+
