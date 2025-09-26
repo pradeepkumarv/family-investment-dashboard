@@ -4,19 +4,95 @@
   <meta charset="UTF-8">
   <title>Enter OTP</title>
   <style>
-    /* (same styles as before) */
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0a3d62, #3c6382);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .otp-container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0px 8px 20px rgba(0,0,0,0.15);
+      width: 360px;
+      text-align: center;
+    }
+    .otp-container h2 {
+      margin-bottom: 15px;
+      color: #0a3d62;
+    }
+    .otp-container p {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .otp-container input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      letter-spacing: 4px;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      transition: 0.3s;
+    }
+    .otp-container input[type="text"]:focus {
+      border-color: #0a3d62;
+      box-shadow: 0px 0px 4px #0a3d62;
+      outline: none;
+    }
+    .otp-container button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      background: #0a3d62;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .otp-container button:hover {
+      background: #1e5f88;
+    }
+    .message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    .message.success {
+      background: #e9f9ee;
+      color: #2d7a32;
+      border: 1px solid #2d7a32;
+    }
+    .message.error {
+      background: #fdeaea;
+      color: #b20000;
+      border: 1px solid #b20000;
+    }
   </style>
 </head>
 <body>
   <div class="otp-container">
     <h2>🔐 Enter OTP</h2>
     <p>Please enter the One-Time Password (OTP) sent to your registered device.</p>
+    
     <form id="otpForm">
       <input type="hidden" id="tokenid" name="tokenid" value="{{ tokenid }}">
-      <input type="text" id="otp" name="otp" placeholder="Enter OTP received" required>
+      <input type="text" id="otp" name="otp" placeholder="Enter OTP" required>
       <button type="submit">Verify OTP & Continue</button>
     </form>
+    
     <div id="message" class="message"></div>
+    <div id="error-message" class="message error"></div>
   </div>
 
   <!-- Supabase client -->
@@ -30,7 +106,7 @@
   </script>
 
   <!-- Integration logic -->
- <script src="https://pradeepkumarv.github.io/family-investment-dashboard/static/js/hdfc-securities-integration.js"></script>
+  <script src="https://pradeepkumarv.github.io/family-investment-dashboard/static/js/hdfc-securities-integration.js"></script>
 
   <script>
     const otpForm = document.getElementById('otpForm');
@@ -50,22 +126,15 @@
         console.log("🔹 OTP validation response:", responseData);
         console.log("✅ OTP validated! Starting holdings import...");
 
-
         if (response.ok && responseData.status === 'success') {
           messageBox.textContent = '✅ OTP validated! Fetching holdings...';
           messageBox.className = 'message success';
           messageBox.style.display = 'block';
 
-          // 🔑 Import holdings into Supabase
-          console.log("🔹 Calling fetchAndImportHoldings...");
           await fetchAndImportHoldings();
-          console.log("✅ fetchAndImportHoldings finished.");
-
-          // ✅ Redirect to dashboard
           window.location.href = redirectURL;
 
         } else if (responseData.status === 'redirect_required') {
-          console.log("🔹 Redirect required from backend");
           await fetchAndImportHoldings();
           window.location.href = redirectURL;
         } else {
@@ -80,35 +149,37 @@
       }
     });
   </script>
+
   <script>
-function submitOTP() {
-    const otp = document.getElementById('otp').value;
-    if (!otp) {
+    function submitOTP() {
+      const otp = document.getElementById('otp').value;
+      if (!otp) {
         document.getElementById('error-message').textContent = 'Please enter OTP';
+        document.getElementById('error-message').style.display = 'block';
         return;
-    }
-    
-    fetch('/validate-otp', {
+      }
+
+      fetch('/validate-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answer: otp })
-    })
-    .then(response => response.json())
-    .then(data => {
+      })
+      .then(response => response.json())
+      .then(data => {
         if (data.status === 'success' || data.authorised === true) {
-            // ✅ AUTO-REDIRECT WITH IMPORT TRIGGER
-            console.log('OTP validated, redirecting to dashboard for import...');
-            window.location.href = 'https://pradeepkumarv.github.io/?autoImportHDFC=true';
+          console.log('OTP validated, redirecting to dashboard for import...');
+          window.location.href = 'https://pradeepkumarv.github.io/?autoImportHDFC=true';
         } else {
-            document.getElementById('error-message').textContent = 'Invalid OTP';
+          document.getElementById('error-message').textContent = 'Invalid OTP';
+          document.getElementById('error-message').style.display = 'block';
         }
-    })
-    .catch(err => {
+      })
+      .catch(err => {
         console.error('OTP validation error:', err);
         document.getElementById('error-message').textContent = 'Request failed';
-    });
-}
-</script>
-
+        document.getElementById('error-message').style.display = 'block';
+      });
+    }
+  </script>
 </body>
 </html>
