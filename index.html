@@ -1033,6 +1033,19 @@
         .fade-in {
             animation: fadeIn 0.3s ease;
         }
+
+        /* ===== REPORTS SECTION ===== */
+        .report-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .report-tab.active {
+            background: #667eea;
+            color: white;
+        }
         /* ===== REMINDERS STYLING ===== */
 .reminders-list {
     display: flex;
@@ -1588,6 +1601,27 @@
                 </div>
             </div>
 
+            <!-- Reports Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">📊 Reports</h2>
+                    <div class="section-actions">
+                        <button onclick="openReportsSection()" class="btn">📈 View Reports</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <p style="color: #718096; margin-bottom: 20px;">
+                        Generate detailed reports for Equity, Mutual Funds, Fixed Deposits, Gold, Insurance, and more with export options.
+                    </p>
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">📊</div>
+                        <button onclick="openReportsSection()" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 30px;">
+                            Open Reports Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Accounts Section -->
             <div class="section">
                 <div class="section-header">
@@ -1673,6 +1707,51 @@
             <!-- Last Updated -->
             <div class="last-updated">
                 Data last synchronized: <span id="last-updated-display">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== REPORTS SECTION ===== -->
+    <div id="reports-section" class="main-dashboard" style="display: none;">
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div>
+                    <h1 class="dashboard-title">📊 Financial Reports</h1>
+                </div>
+                <div class="user-info">
+                    <button onclick="closeReportsSection()" class="btn btn-secondary">← Back to Dashboard</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            <div id="report-summary" class="section" style="margin-bottom: 30px;">
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Select Report Category</h2>
+                    <div class="section-actions">
+                        <button onclick="exportReport('csv')" class="btn">📊 Export CSV</button>
+                        <button onclick="exportReport('json')" class="btn">📋 Export JSON</button>
+                        <button onclick="exportReport('pdf')" class="btn">🖨️ Print PDF</button>
+                    </div>
+                </div>
+                <div class="section-content">
+                    <div class="tabs">
+                        <div class="tab report-tab active" onclick="renderReportCategory('equity')">Equity</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('mutualFunds')">Mutual Funds</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('fixedDeposits')">Fixed Deposits</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('gold')">Gold</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('insurance')">Insurance</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('bankBalances')">Bank Balances</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('immovable')">Immovable Assets</div>
+                        <div class="tab report-tab" onclick="renderReportCategory('others')">Others</div>
+                    </div>
+
+                    <div id="report-content-container" class="tab-content">
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2526,6 +2605,7 @@ xml
 </section>
     <!-- FIXED: Load app.js (your actual JavaScript file) -->
     <script src="app.js" defer></script>
+    <script src="reports.js" defer></script>
     <script src="zerodha-integration.js" defer></script>
     <script src="hdfc-securities-integration.js" defer></script>
     <script src="icici-securities-integration.js" defer></script>
