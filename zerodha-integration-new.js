@@ -189,8 +189,15 @@ async function zerodhaImportAll() {
             return;
         }
 
-        if (!window.dbHelpers || !currentUser) {
-            showZerodhaMessage('Database not initialized', 'error');
+        if (!window.dbHelpers) {
+            showZerodhaMessage('Database helpers not initialized', 'error');
+            return;
+        }
+
+        // Get current user from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showZerodhaMessage('Please log in first', 'error');
             return;
         }
 
@@ -209,14 +216,14 @@ async function zerodhaImportAll() {
 
                 // DELETE existing Zerodha equity holdings for this member
                 await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
-                    currentUser.id,
+                    user.id,
                     'Zerodha',
                     memberId
                 );
 
                 // INSERT fresh data
                 const equityRecords = holdings.map(holding => ({
-                    user_id: currentUser.id,
+                    user_id: user.id,
                     member_id: memberId,
                     broker_platform: 'Zerodha',
                     symbol: holding.tradingsymbol,
@@ -244,14 +251,14 @@ async function zerodhaImportAll() {
 
                 // DELETE existing Zerodha MF holdings for this member
                 await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
-                    currentUser.id,
+                    user.id,
                     'Zerodha',
                     memberId
                 );
 
                 // INSERT fresh data
                 const mfRecords = mfHoldings.map(mf => ({
-                    user_id: currentUser.id,
+                    user_id: user.id,
                     member_id: memberId,
                     broker_platform: 'Zerodha',
                     scheme_name: mf.fund || mf.tradingsymbol,
@@ -295,8 +302,15 @@ async function zerodhaImportEquity() {
             return;
         }
 
-        if (!window.dbHelpers || !currentUser) {
-            showZerodhaMessage('Database not initialized', 'error');
+        if (!window.dbHelpers) {
+            showZerodhaMessage('Database helpers not initialized', 'error');
+            return;
+        }
+
+        // Get current user from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showZerodhaMessage('Please log in first', 'error');
             return;
         }
 
@@ -318,14 +332,14 @@ async function zerodhaImportEquity() {
 
             // DELETE existing Zerodha equity holdings for this member
             await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
-                currentUser.id,
+                user.id,
                 'Zerodha',
                 memberId
             );
 
             // INSERT fresh data
             const equityRecords = holdings.map(holding => ({
-                user_id: currentUser.id,
+                user_id: user.id,
                 member_id: memberId,
                 broker_platform: 'Zerodha',
                 symbol: holding.tradingsymbol,
@@ -364,8 +378,15 @@ async function zerodhaImportMF() {
             return;
         }
 
-        if (!window.dbHelpers || !currentUser) {
-            showZerodhaMessage('Database not initialized', 'error');
+        if (!window.dbHelpers) {
+            showZerodhaMessage('Database helpers not initialized', 'error');
+            return;
+        }
+
+        // Get current user from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showZerodhaMessage('Please log in first', 'error');
             return;
         }
 
@@ -387,14 +408,14 @@ async function zerodhaImportMF() {
 
             // DELETE existing Zerodha MF holdings for this member
             await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
-                currentUser.id,
+                user.id,
                 'Zerodha',
                 memberId
             );
 
             // INSERT fresh data
             const mfRecords = mfHoldings.map(mf => ({
-                user_id: currentUser.id,
+                user_id: user.id,
                 member_id: memberId,
                 broker_platform: 'Zerodha',
                 scheme_name: mf.fund || mf.tradingsymbol,

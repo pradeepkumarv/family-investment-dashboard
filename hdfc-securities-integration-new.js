@@ -142,8 +142,15 @@ async function testHDFCConnection() {
 
 async function fetchAndImportHoldings() {
     try {
-        if (!window.dbHelpers || !currentUser) {
-            showHDFCMessage('Database not initialized', 'error');
+        if (!window.dbHelpers) {
+            showHDFCMessage('Database helpers not initialized', 'error');
+            return;
+        }
+
+        // Get current user from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showHDFCMessage('Please log in first', 'error');
             return;
         }
 
@@ -168,7 +175,7 @@ async function fetchAndImportHoldings() {
             for (const holding of result.data) {
                 if (holding.investment_type === 'equity') {
                     equityRecords.push({
-                        user_id: currentUser.id,
+                        user_id: user.id,
                         member_id: HDFC_MEMBER_MAPPING.equity_member,
                         broker_platform: 'HDFC Securities',
                         symbol: holding.tradingsymbol || holding.symbol || 'UNKNOWN',
@@ -182,7 +189,7 @@ async function fetchAndImportHoldings() {
                     });
                 } else if (holding.investment_type === 'mutualFunds') {
                     mfRecords.push({
-                        user_id: currentUser.id,
+                        user_id: user.id,
                         member_id: HDFC_MEMBER_MAPPING.mf_member,
                         broker_platform: 'HDFC Securities',
                         scheme_name: holding.schemename || 'Unknown',
@@ -202,7 +209,7 @@ async function fetchAndImportHoldings() {
             // DELETE old equity holdings for HDFC Securities and Pradeep Kumar V
             if (equityRecords.length > 0) {
                 await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
-                    currentUser.id,
+                    user.id,
                     'HDFC Securities',
                     HDFC_MEMBER_MAPPING.equity_member
                 );
@@ -215,7 +222,7 @@ async function fetchAndImportHoldings() {
             // DELETE old MF holdings for HDFC Securities and Sanchita Pradeep
             if (mfRecords.length > 0) {
                 await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
-                    currentUser.id,
+                    user.id,
                     'HDFC Securities',
                     HDFC_MEMBER_MAPPING.mf_member
                 );
