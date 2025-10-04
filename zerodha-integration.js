@@ -193,7 +193,7 @@ async function getMutualFunds() {
     }
 }
 
-// OPTION 1: Single connect for equity (Pradeep) and MF (Saanvi) - UPDATED
+// OPTION 1: Single connect for equity (Pradeep) and MF (Saanvi) - UPDATED WITH NEW DB STRUCTURE
 async function zerodhaImportAll() {
     try {
         if (!localStorage.getItem('zerodha_access_token')) {
@@ -201,96 +201,130 @@ async function zerodhaImportAll() {
             return;
         }
 
+        // Get current user from Supabase
+        if (!supabase) {
+            showZerodhaMessage('Database not initialized', 'error');
+            return;
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showZerodhaMessage('Please log in first', 'error');
+            return;
+        }
+
         showZerodhaMessage('Importing all holdings from Zerodha...', 'info');
-        
+
         let totalImported = 0;
-        
+        const importDate = new Date().toISOString().split('T')[0];
+
         // Import Equity for Pradeep Kumar V only
         const holdingsResponse = await getHoldings();
         const holdings = Array.isArray(holdingsResponse.data) ? holdingsResponse.data : [];
-        
+
         if (holdings.length > 0) {
-            const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-            
             // Import equity for Pradeep Kumar V only
             for (const memberId of ZERODHA_CONFIG.equity_members) {
                 const memberInfo = BROKER_MEMBER_MAPPING[memberId];
-                
-                for (const holding of holdings) {
-                    if (!investments.some(inv => 
-                        inv.member_id === memberId && 
-                        inv.symbol_or_name === holding.tradingsymbol && 
-                        inv.broker_platform.includes('Zerodha') &&
-                        inv.investment_type === 'equity'
-                    )) {
-                        await addInvestmentData({
-                            member_id: memberId,
-                            investment_type: 'equity',
-                            symbol_or_name: holding.tradingsymbol,
-                            invested_amount: holding.quantity * holding.average_price,
-                            current_value: holding.quantity * holding.last_price,
-                            broker_platform: `Zerodha Equity (${memberInfo.name})`,
-                            zerodha_data: holding,
-                            equity_quantity: holding.quantity,
-                            equity_avg_price: holding.average_price,
-                            equity_symbol: holding.tradingsymbol,
-                            created_at: new Date().toISOString(),
-                            last_updated: new Date().toISOString()
-                        });
-                        totalImported++;
-                    }
+
+                // DELETE existing Zerodha equity holdings for this member
+                const { error: deleteError } = await supabase
+                    .from('equity_holdings')
+                    .delete()
+                    .eq('user_id', user.id)
+                    .eq('broker_platform', 'Zerodha')
+                    .eq('member_id', memberId);
+
+                if (deleteError) {
+                    console.error('Delete error:', deleteError);
                 }
+
+                // INSERT fresh data
+                const equityRecords = holdings.map(holding => ({
+                    user_id: user.id,
+                    member_id: memberId,
+                    broker_platform: 'Zerodha',
+                    symbol: holding.tradingsymbol,
+                    company_name: holding.tradingsymbol,
+                    quantity: holding.quantity,
+                    average_price: holding.average_price,
+                    current_price: holding.last_price,
+                    invested_amount: holding.quantity * holding.average_price,
+                    current_value: holding.quantity * holding.last_price,
+                    import_date: importDate
+                }));
+
+                const { error: insertError } = await supabase
+                    .from('equity_holdings')
+                    .insert(equityRecords);
+
+                if (insertError) {
+                    throw insertError;
+                }
+
+                totalImported += equityRecords.length;
             }
         }
-        
+
         // Import Mutual Funds for Saanvi Pradeep ONLY - UPDATED
         const mfResponse = await getMutualFunds();
         const mfHoldings = Array.isArray(mfResponse.data) ? mfResponse.data : [];
-        
+
         if (mfHoldings.length > 0) {
-            const userData = JSON.parse(localStorage.getItem('zerodha_user_data') || '{}');
-            
             // Import MF for Saanvi Pradeep ONLY
             for (const memberId of ZERODHA_CONFIG.mf_members) {
                 const memberInfo = BROKER_MEMBER_MAPPING[memberId];
-                
-                for (const mf of mfHoldings) {
-                    if (!investments.some(inv => 
-                        inv.member_id === memberId && 
-                        inv.folio_number === mf.folio && 
-                        inv.broker_platform.includes('Zerodha') &&
-                        inv.investment_type === 'mutualFunds'
-                    )) {
-                        await addInvestmentData({
-                            member_id: memberId,
-                            investment_type: 'mutualFunds',
-                            symbol_or_name: mf.fund || mf.tradingsymbol,
-                            invested_amount: mf.quantity * mf.average_price,
-                            current_value: mf.quantity * mf.last_price,
-                            broker_platform: `Zerodha MF (${memberInfo.name})`,
-                            zerodha_data: mf,
-                            fund_name: mf.fund,
-                            folio_number: mf.folio,
-                            scheme_code: mf.instrument_token ? mf.instrument_token.toString() : '',
-                            fund_house: mf.fund_house || 'Unknown',
-                            mf_quantity: mf.quantity,
-                            mf_nav: mf.last_price,
-                            mf_average_price: mf.average_price,
-                            created_at: new Date().toISOString(),
-                            last_updated: new Date().toISOString()
-                        });
-                        totalImported++;
-                    }
+
+                // DELETE existing Zerodha MF holdings for this member
+                const { error: deleteError } = await supabase
+                    .from('mutual_fund_holdings')
+                    .delete()
+                    .eq('user_id', user.id)
+                    .eq('broker_platform', 'Zerodha')
+                    .eq('member_id', memberId);
+
+                if (deleteError) {
+                    console.error('Delete error:', deleteError);
                 }
+
+                // INSERT fresh data
+                const mfRecords = mfHoldings.map(mf => ({
+                    user_id: user.id,
+                    member_id: memberId,
+                    broker_platform: 'Zerodha',
+                    scheme_name: mf.fund || mf.tradingsymbol,
+                    scheme_code: mf.instrument_token ? mf.instrument_token.toString() : '',
+                    folio_number: mf.folio,
+                    fund_house: mf.fund_house || 'Unknown',
+                    units: mf.quantity,
+                    average_nav: mf.average_price,
+                    current_nav: mf.last_price,
+                    invested_amount: mf.quantity * mf.average_price,
+                    current_value: mf.quantity * mf.last_price,
+                    import_date: importDate
+                }));
+
+                const { error: insertError } = await supabase
+                    .from('mutual_fund_holdings')
+                    .insert(mfRecords);
+
+                if (insertError) {
+                    throw insertError;
+                }
+
+                totalImported += mfRecords.length;
             }
         }
 
         localStorage.setItem('zerodha_last_sync', new Date().toISOString());
-        
+
         const equityMember = BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.equity_members[0]].name;
         const mfMember = BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.mf_members[0]].name;
         showZerodhaMessage(`Imported ${totalImported} total holdings (Equity: ${holdings.length} for ${equityMember}, MF: ${mfHoldings.length} for ${mfMember})`, 'success');
-        await loadDashboardData();
+
+        if (typeof loadDashboardData === 'function') {
+            await loadDashboardData();
+        }
 
     } catch (error) {
         console.error('Error importing all holdings:', error);
