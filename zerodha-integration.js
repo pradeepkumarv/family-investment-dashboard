@@ -383,9 +383,14 @@ async function zerodhaImportEquity() {
         }
 
         localStorage.setItem('zerodha_last_sync', new Date().toISOString());
-        
+
         showZerodhaMessage(`Imported ${count} equity holdings for ${BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.equity_members[0]].name}`, 'success');
-        await loadDashboardData();
+
+        // Refresh data from new tables
+        if (typeof refreshHoldingsFromNewTables === 'function') {
+            await refreshHoldingsFromNewTables();
+        }
+
         renderInvestmentTabContent('equity');
 
     } catch (error) {
@@ -449,11 +454,16 @@ async function zerodhaImportMF() {
         }
 
         localStorage.setItem('zerodha_last_sync', new Date().toISOString());
-        
+
         // Now only shows Saanvi Pradeep
         const memberName = BROKER_MEMBER_MAPPING[ZERODHA_CONFIG.mf_members[0]].name;
         showZerodhaMessage(`Imported ${count} mutual fund holdings for ${memberName}`, 'success');
-        await loadDashboardData();
+
+        // Refresh data from new tables
+        if (typeof refreshHoldingsFromNewTables === 'function') {
+            await refreshHoldingsFromNewTables();
+        }
+
         renderInvestmentTabContent('mutualFunds');
 
     } catch (error) {

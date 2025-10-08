@@ -427,4 +427,14 @@ window.dbHelpers = {
     getLatestAssetsByType
 };
 
+// Also export commonly used functions globally for easier access
+window.initializeSupabaseClient = initializeSupabaseClient;
+window.getEquityHoldings = getEquityHoldings;
+window.getMutualFundHoldings = getMutualFundHoldings;
+window.getFixedDeposits = getFixedDeposits;
+window.getInsurancePolicies = getInsurancePolicies;
+window.getGoldHoldings = getGoldHoldings;
+window.getBankAccounts = getBankAccounts;
+window.getOtherAssets = getOtherAssets;
+
 console.log('Database helpers loaded successfully');

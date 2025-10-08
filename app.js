@@ -105,16 +105,22 @@ async function initializeSupabase() {
             console.warn('⚠️ Supabase not loaded, running in demo mode');
             return false;
         }
-        
+
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+
+        // Initialize db-helpers with supabase client
+        if (typeof initializeSupabaseClient === 'function') {
+            initializeSupabaseClient(supabase);
+            console.log('✅ DB Helpers initialized with Supabase client');
+        }
+
         // Test connection
         const { data, error } = await supabase.from('users').select('*').limit(1);
         if (error && error.code !== 'PGRST116') {
             console.warn('⚠️ Supabase connection failed, running in demo mode');
             return false;
         }
-        
+
         console.log('✅ Supabase initialized successfully');
         return true;
     } catch (error) {
@@ -299,8 +305,8 @@ async function loadDashboardData() {
             console.log(`✅ Loaded ${familyMembers.length} members`);
             const memberIds = familyMembers.map(member => member.id);
             
-            // STEP 2: Load investments for all members
-            console.log('💰 Loading investments...');
+            // STEP 2: Load investments from OLD table (for FD, insurance, gold, etc.)
+            console.log('💰 Loading investments from old table...');
             let investmentsData = [];
             if (memberIds.length > 0) {
                 const { data, error } = await supabase
@@ -308,7 +314,7 @@ async function loadDashboardData() {
                     .select('*')
                     .in('member_id', memberIds)
                     .order('created_at', { ascending: false });
-                    
+
                 if (error) {
                     console.error('❌ Error fetching investments:', error);
                     showMessage(`Failed to load investments: ${error.message}`, 'error');
@@ -318,7 +324,35 @@ async function loadDashboardData() {
                 investmentsData = data || [];
             }
             investments = investmentsData;
-            console.log(`✅ Loaded ${investments.length} investments`);
+            console.log(`✅ Loaded ${investments.length} old investments`);
+
+            // STEP 2b: Load equity holdings from NEW table
+            console.log('📈 Loading equity holdings from new table...');
+            let equityHoldings = [];
+            if (typeof getEquityHoldings === 'function') {
+                try {
+                    equityHoldings = await getEquityHoldings(currentUser.id);
+                    console.log(`✅ Loaded ${equityHoldings.length} equity holdings`);
+                } catch (err) {
+                    console.error('❌ Error loading equity holdings:', err);
+                }
+            }
+
+            // STEP 2c: Load mutual fund holdings from NEW table
+            console.log('📊 Loading mutual fund holdings from new table...');
+            let mutualFundHoldings = [];
+            if (typeof getMutualFundHoldings === 'function') {
+                try {
+                    mutualFundHoldings = await getMutualFundHoldings(currentUser.id);
+                    console.log(`✅ Loaded ${mutualFundHoldings.length} mutual fund holdings`);
+                } catch (err) {
+                    console.error('❌ Error loading mutual fund holdings:', err);
+                }
+            }
+
+            // Store equity and mutual funds separately for rendering
+            window.equityHoldings = equityHoldings;
+            window.mutualFundHoldings = mutualFundHoldings;
             
             // STEP 3: Load liabilities for all members
             console.log('📉 Loading liabilities...');
@@ -551,10 +585,25 @@ async function saveRemindersToDatabase(newReminders) {
 }
 // ===== CALCULATION FUNCTIONS =====
 function calculateMemberAssets(memberId) {
-    return investments
+    // Calculate from old investments table
+    let total = investments
         .filter(inv => inv.member_id === memberId)
-        .reduce((total, inv) => total + (inv.current_value || inv.invested_amount || 0), 0);
-} 
+        .reduce((sum, inv) => sum + (inv.current_value || inv.invested_amount || 0), 0);
+
+    // Add equity holdings from new table
+    const equityHoldings = window.equityHoldings || [];
+    total += equityHoldings
+        .filter(h => h.member_id === memberId)
+        .reduce((sum, h) => sum + (parseFloat(h.current_value) || 0), 0);
+
+    // Add mutual fund holdings from new table
+    const mutualFundHoldings = window.mutualFundHoldings || [];
+    total += mutualFundHoldings
+        .filter(h => h.member_id === memberId)
+        .reduce((sum, h) => sum + (parseFloat(h.current_value) || 0), 0);
+
+    return total;
+}
 
 function calculateMemberLiabilities(memberId) {
     return liabilities
@@ -563,7 +612,18 @@ function calculateMemberLiabilities(memberId) {
 }
 
 function getMemberInvestmentCount(memberId) {
-    return investments.filter(inv => inv.member_id === memberId).length;
+    // Count from old investments table
+    let count = investments.filter(inv => inv.member_id === memberId).length;
+
+    // Add equity holdings count
+    const equityHoldings = window.equityHoldings || [];
+    count += equityHoldings.filter(h => h.member_id === memberId).length;
+
+    // Add mutual fund holdings count
+    const mutualFundHoldings = window.mutualFundHoldings || [];
+    count += mutualFundHoldings.filter(h => h.member_id === memberId).length;
+
+    return count;
 }
 
 function getMemberLiabilityCount(memberId) {
@@ -734,12 +794,12 @@ function renderInvestmentTabContent(type) {
     // Find and activate the clicked tab
     const typeMap = {
         'equity': 'Equity',
-        'mutualFunds': 'Mutual Funds', 
+        'mutualFunds': 'Mutual Funds',
         'fixedDeposits': 'Fixed Deposits',
         'insurance': 'Insurance',
         'bankBalances': 'Bank Balances',
-        'gold': 'Gold',           
-        'immovable': 'Immovable Assets', 
+        'gold': 'Gold',
+        'immovable': 'Immovable Assets',
         'others': 'Others'
     };
 
@@ -750,7 +810,42 @@ function renderInvestmentTabContent(type) {
     });
 
     const tabContent = document.getElementById('investment-tab-content');
-    const filteredInvestments = investments.filter(inv => inv.investment_type === type || inv.type === type);
+
+    let filteredInvestments = [];
+
+    // Use NEW tables for equity and mutual funds
+    if (type === 'equity') {
+        const equityHoldings = window.equityHoldings || [];
+        filteredInvestments = equityHoldings.map(holding => ({
+            id: holding.id,
+            member_id: holding.member_id,
+            symbol_or_name: holding.company_name || holding.symbol,
+            invested_amount: parseFloat(holding.invested_amount) || 0,
+            current_value: parseFloat(holding.current_value) || 0,
+            broker_platform: holding.broker_platform,
+            investment_type: 'equity',
+            import_date: holding.import_date,
+            quantity: holding.quantity,
+            symbol: holding.symbol
+        }));
+    } else if (type === 'mutualFunds') {
+        const mutualFundHoldings = window.mutualFundHoldings || [];
+        filteredInvestments = mutualFundHoldings.map(holding => ({
+            id: holding.id,
+            member_id: holding.member_id,
+            symbol_or_name: holding.scheme_name,
+            invested_amount: parseFloat(holding.invested_amount) || 0,
+            current_value: parseFloat(holding.current_value) || 0,
+            broker_platform: holding.broker_platform,
+            investment_type: 'mutualFunds',
+            import_date: holding.import_date,
+            units: holding.units,
+            scheme_code: holding.scheme_code
+        }));
+    } else {
+        // Use OLD table for other investment types
+        filteredInvestments = investments.filter(inv => inv.investment_type === type || inv.type === type);
+    }
 
     if (filteredInvestments.length === 0) {
         tabContent.innerHTML = `
@@ -774,6 +869,7 @@ function renderInvestmentTabContent(type) {
                         <th onclick="sortTable('investments-table', 3)">Current Value <span class="sort-indicator"></span></th>
                         <th onclick="sortTable('investments-table', 4)">Gain/Loss <span class="sort-indicator"></span></th>
                         <th onclick="sortTable('investments-table', 5)">Platform <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable('investments-table', 6)">Import Date <span class="sort-indicator"></span></th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -787,6 +883,7 @@ function renderInvestmentTabContent(type) {
 
                         const invName = inv.symbol_or_name || inv.name || 'Unknown';
                         const invPlatform = inv.broker_platform || inv.platform || '-';
+                        const importDate = inv.import_date ? new Date(inv.import_date).toLocaleDateString() : '-';
 
                         return `
                             <tr>
@@ -798,6 +895,7 @@ function renderInvestmentTabContent(type) {
                                     ${formatCurrency(gain)} (${gain >= 0 ? '+' : ''}${gainPercentage}%)
                                 </td>
                                 <td>${invPlatform}</td>
+                                <td>${importDate}</td>
                                 <td>
                                     <button onclick="editInvestment('${inv.id}')" class="btn btn-sm btn-edit">Edit</button>
                                     <button onclick="deleteInvestment('${inv.id}')" class="btn btn-sm btn-delete">Delete</button>
@@ -3143,7 +3241,42 @@ function renderInvestmentsByMember(memberId) {
 }
 
 
+// ===== HELPER FUNCTION TO REFRESH HOLDINGS =====
+async function refreshHoldingsFromNewTables() {
+    if (!currentUser) {
+        console.warn('No user logged in, cannot refresh holdings');
+        return;
+    }
+
+    try {
+        console.log('🔄 Refreshing equity and mutual fund holdings from new tables...');
+
+        // Refresh equity holdings
+        if (typeof getEquityHoldings === 'function') {
+            const equityHoldings = await getEquityHoldings(currentUser.id);
+            window.equityHoldings = equityHoldings;
+            console.log(`✅ Refreshed ${equityHoldings.length} equity holdings`);
+        }
+
+        // Refresh mutual fund holdings
+        if (typeof getMutualFundHoldings === 'function') {
+            const mutualFundHoldings = await getMutualFundHoldings(currentUser.id);
+            window.mutualFundHoldings = mutualFundHoldings;
+            console.log(`✅ Refreshed ${mutualFundHoldings.length} mutual fund holdings`);
+        }
+
+        // Refresh the dashboard
+        renderStatsOverview();
+        renderFamilyMembers();
+
+        console.log('✅ Dashboard refreshed successfully');
+    } catch (error) {
+        console.error('❌ Error refreshing holdings:', error);
+    }
+}
+
 // ===== MAKE FUNCTIONS GLOBALLY AVAILABLE =====
+window.refreshHoldingsFromNewTables = refreshHoldingsFromNewTables;
 window.openAddMemberModal = openAddMemberModal;
 window.saveMember = saveMember;
 window.editMember = editMember;
