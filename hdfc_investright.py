@@ -16,8 +16,9 @@ HEADERS_JSON = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 }
 # Initialize Supabase client
+# IMPORTANT: Use SERVICE_ROLE_KEY for backend operations (bypasses RLS)
 url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
 # Get user_id from environment or query from family_members table
