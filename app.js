@@ -585,9 +585,13 @@ async function saveRemindersToDatabase(newReminders) {
 }
 // ===== CALCULATION FUNCTIONS =====
 function calculateMemberAssets(memberId) {
-    // Calculate from old investments table
+    // Calculate from old investments table (exclude equity and mutualFunds as they're in new tables)
     let total = investments
-        .filter(inv => inv.member_id === memberId)
+        .filter(inv =>
+            inv.member_id === memberId &&
+            inv.investment_type !== 'equity' &&
+            inv.investment_type !== 'mutualFunds'
+        )
         .reduce((sum, inv) => sum + (inv.current_value || inv.invested_amount || 0), 0);
 
     // Add equity holdings from new table
@@ -612,8 +616,12 @@ function calculateMemberLiabilities(memberId) {
 }
 
 function getMemberInvestmentCount(memberId) {
-    // Count from old investments table
-    let count = investments.filter(inv => inv.member_id === memberId).length;
+    // Count from old investments table (exclude equity and mutualFunds as they're in new tables)
+    let count = investments.filter(inv =>
+        inv.member_id === memberId &&
+        inv.investment_type !== 'equity' &&
+        inv.investment_type !== 'mutualFunds'
+    ).length;
 
     // Add equity holdings count
     const equityHoldings = window.equityHoldings || [];
