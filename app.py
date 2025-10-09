@@ -9,14 +9,12 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
 
-CORS(app, resources={
-    r"/api/hdfc/*": {
-        "origins": ["https://pradeepkumarv.github.io", "http://localhost:5000"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
-    }
-})
+# Enable CORS for all routes with specific origins
+CORS(app,
+     origins=["https://pradeepkumarv.github.io", "http://localhost:5000"],
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
 
 
 API_KEY = os.getenv("HDFC_API_KEY")
