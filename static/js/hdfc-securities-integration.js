@@ -104,43 +104,182 @@ async function testHDFCConnection() {
 }
 
 // **MAIN IMPORT FUNCTION - Fixed to work like Zerodha**
-// Replace the existing fetchAndImportHoldings function with this fixed version
 async function fetchAndImportHoldings() {
+    console.log('═══════════════════════════════════════════');
+    console.log('🚀 HDFC IMPORT STARTED');
+    console.log('═══════════════════════════════════════════');
     log("fetchAndImportHoldings triggered", 'info');
-    
+
     try {
         showHDFCMessage("Importing HDFC holdings...", "info");
-        
-        // ✅ FIXED: Use same-origin request instead of cross-origin
+
+        // STEP 1: Fetch holdings from backend
+        console.log('📡 STEP 1: Fetching from backend');
+        console.log('   URL:', `${HDFC_CONFIG.backend_base}/callback`);
+
         const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
             method: 'GET',
-            mode: 'cors',  // Explicitly set CORS mode
+            mode: 'cors',
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             }
         });
-        
+
+        console.log('📥 Response received:');
+        console.log('   Status:', response.status, response.statusText);
+        console.log('   OK:', response.ok);
+
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Response not OK. Body:', errorText);
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        log(`Backend response received: ${result.data?.length || 0} holdings`, 'info');
-        
-        // Rest of your existing import logic...
+        console.log('📦 Parsed response:', result);
+        console.log('   Status:', result.status);
+        console.log('   Count:', result.count);
+        console.log('   Data length:', result.data?.length || 0);
+
+        // STEP 2: Validate response
+        console.log('✅ STEP 2: Validating response');
         if (!result.data || !Array.isArray(result.data)) {
+            console.error('❌ Invalid data structure:', result);
             throw new Error('Invalid holdings data structure');
         }
-        
+
         const holdings = result.data;
-        // ... continue with your existing code
-        
+        console.log(`✅ Received ${holdings.length} holdings`);
+
+        if (holdings.length === 0) {
+            console.warn('⚠️ No holdings returned from API');
+            showHDFCMessage('No holdings found', 'warning');
+            return;
+        }
+
+        // STEP 3: Get current user
+        console.log('👤 STEP 3: Getting current user');
+        const user = await getCurrentUser();
+        console.log('   User ID:', user?.id || 'NOT LOGGED IN');
+
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        // STEP 4: Process and save holdings
+        console.log('💾 STEP 4: Processing and saving holdings');
+        let savedCount = 0;
+        let errorCount = 0;
+
+        for (let i = 0; i < holdings.length; i++) {
+            const holding = holdings[i];
+            console.log(`\n   [${i+1}/${holdings.length}] Processing:`, holding.company_name || holding.scheme_name);
+
+            try {
+                // Determine if it's equity or mutual fund
+                const isEquity = holding.exchange === 'BSE' || holding.exchange === 'NSE';
+                const isMF = holding.asset_class === 'MUTUAL_FUND' || holding.sip_indicator === 'Y';
+
+                console.log('      Type:', isEquity ? 'EQUITY' : (isMF ? 'MUTUAL FUND' : 'UNKNOWN'));
+                console.log('      Member ID:', isEquity ? HDFC_CONFIG.members.equity : HDFC_CONFIG.members.mf);
+
+                if (isEquity) {
+                    // Save to equity_holdings
+                    const equityData = {
+                        user_id: user.id,
+                        member_id: HDFC_CONFIG.members.equity,
+                        broker_platform: 'HDFC Securities',
+                        symbol: holding.security_id || holding.isin,
+                        company_name: holding.company_name,
+                        quantity: parseFloat(holding.quantity) || 0,
+                        average_price: parseFloat(holding.average_price) || 0,
+                        current_price: parseFloat(holding.close_price) || 0,
+                        invested_amount: parseFloat(holding.quantity) * parseFloat(holding.average_price),
+                        current_value: parseFloat(holding.quantity) * parseFloat(holding.close_price),
+                        import_date: new Date().toISOString().split('T')[0]
+                    };
+
+                    console.log('      💰 Equity data:', equityData);
+
+                    const { error } = await supabase
+                        .from('equity_holdings')
+                        .upsert(equityData, { onConflict: 'user_id,member_id,symbol,import_date' });
+
+                    if (error) {
+                        console.error('      ❌ Equity save error:', error);
+                        errorCount++;
+                    } else {
+                        console.log('      ✅ Equity saved');
+                        savedCount++;
+                    }
+
+                } else if (isMF) {
+                    // Save to mutual_fund_holdings
+                    const mfData = {
+                        user_id: user.id,
+                        member_id: HDFC_CONFIG.members.mf,
+                        broker_platform: 'HDFC Securities',
+                        scheme_name: holding.scheme_name || holding.company_name,
+                        scheme_code: holding.security_id,
+                        folio_number: holding.folio_number,
+                        fund_house: holding.fund_house,
+                        units: parseFloat(holding.units) || parseFloat(holding.quantity) || 0,
+                        average_nav: parseFloat(holding.avg_price) || parseFloat(holding.average_price) || 0,
+                        current_nav: parseFloat(holding.nav) || parseFloat(holding.close_price) || 0,
+                        invested_amount: (parseFloat(holding.units) || 0) * (parseFloat(holding.avg_price) || 0),
+                        current_value: (parseFloat(holding.units) || 0) * (parseFloat(holding.nav) || 0),
+                        import_date: new Date().toISOString().split('T')[0]
+                    };
+
+                    console.log('      📊 MF data:', mfData);
+
+                    const { error } = await supabase
+                        .from('mutual_fund_holdings')
+                        .upsert(mfData, { onConflict: 'user_id,member_id,scheme_name,import_date' });
+
+                    if (error) {
+                        console.error('      ❌ MF save error:', error);
+                        errorCount++;
+                    } else {
+                        console.log('      ✅ MF saved');
+                        savedCount++;
+                    }
+                } else {
+                    console.warn('      ⚠️ Unknown holding type, skipping');
+                }
+
+            } catch (err) {
+                console.error(`      ❌ Error processing holding:`, err);
+                errorCount++;
+            }
+        }
+
+        // STEP 5: Summary
+        console.log('\n═══════════════════════════════════════════');
+        console.log('✅ HDFC IMPORT COMPLETED');
+        console.log('   Total holdings:', holdings.length);
+        console.log('   Saved:', savedCount);
+        console.log('   Errors:', errorCount);
+        console.log('═══════════════════════════════════════════');
+
+        showHDFCMessage(`Import completed: ${savedCount} saved, ${errorCount} errors`, savedCount > 0 ? 'success' : 'warning');
+
+        // Reload the page to show new data
+        if (savedCount > 0) {
+            console.log('🔄 Reloading page to show new data...');
+            setTimeout(() => window.location.reload(), 2000);
+        }
+
     } catch (err) {
+        console.error('═══════════════════════════════════════════');
+        console.error('💥 HDFC IMPORT FAILED');
+        console.error('   Error:', err.message);
+        console.error('   Stack:', err.stack);
+        console.error('═══════════════════════════════════════════');
         log(`Import failed: ${err.message}`, 'error');
         showHDFCMessage(`Import failed: ${err.message}`, 'error');
-        console.error('Full error details:', err);
     }
 }
 

@@ -177,49 +177,93 @@ def validate_otp():
 # -------------------------
 @app.route("/api/hdfc/callback", methods=["GET", "POST"])
 def callback():
+    print("\n" + "="*80)
+    print("🚀 HDFC CALLBACK ENDPOINT CALLED")
+    print("="*80)
+
     try:
         holdings_data = None
         request_token = session.get("request_token")
         token_id = session.get("token_id")
 
+        print(f"🔑 Session data:")
+        print(f"   request_token: {request_token[:50] + '...' if request_token else 'MISSING'}")
+        print(f"   token_id: {token_id[:50] + '...' if token_id else 'MISSING'}")
+
+        if not request_token or not token_id:
+            print("❌ Missing session data - user needs to authorize first")
+            return jsonify({"error": "Not authorized. Please click 'Authorize HDFC' button first."}), 401
+
         # Step 1: Try request_token directly
+        print("\n📡 STEP 1: Trying request_token directly...")
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
+            print("✅ SUCCESS with request_token")
         except Exception as direct_error:
             print(f"❌ Direct request_token failed: {direct_error}")
 
         # Step 2: Try with access_token
         if not holdings_data:
+            print("\n🔐 STEP 2: Fetching access_token...")
             try:
                 access_token = hdfc_investright.fetch_access_token(token_id, request_token)
-                print("✅ Access token received:", access_token[:50] + "..." if access_token else None)
+                print(f"✅ Access token received: {access_token[:50] + '...' if access_token else None}")
 
+                print("📡 Fetching holdings with access_token...")
                 holdings_data = hdfc_investright.get_holdings(access_token)
+                print("✅ SUCCESS with access_token")
+
                 session["access_token"] = access_token
                 session["last_sync"] = datetime.utcnow().isoformat()
             except Exception as token_error:
                 print(f"❌ Access token method failed: {token_error}")
+                traceback.print_exc()
 
         # Step 3: Fallback
         if not holdings_data:
+            print("\n🔄 STEP 3: Trying fallback methods...")
             holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
-        # ✅ Save holdings into Supabase and return response
+        # ✅ Process and return holdings
+        print("\n📦 Processing holdings data...")
         if holdings_data and "data" in holdings_data:
-            hdfc_investright.process_holdings_success(holdings_data["data"])
+            holdings_list = holdings_data["data"]
+            print(f"✅ Received {len(holdings_list)} holdings from HDFC API")
+
+            # Log first holding as sample
+            if holdings_list:
+                print("\n📊 Sample holding:")
+                print(f"   {holdings_list[0]}")
+
+            print("\n💾 Saving to Supabase...")
+            hdfc_investright.process_holdings_success(holdings_list)
+            print("✅ Saved to Supabase successfully")
+
             # Return data for frontend to process
+            print("\n" + "="*80)
+            print("✅ CALLBACK SUCCESS")
+            print(f"   Holdings count: {len(holdings_list)}")
+            print("="*80 + "\n")
+
             return jsonify({
                 "status": "success",
-                "count": len(holdings_data["data"]),
-                "data": holdings_data["data"]
+                "count": len(holdings_list),
+                "data": holdings_list
             })
         else:
-            return jsonify({"error": "No holdings received"}), 400
+            print("❌ No holdings data received from API")
+            print(f"   holdings_data: {holdings_data}")
+            return jsonify({"error": "No holdings received from HDFC API"}), 400
 
     except Exception as e:
         error_trace = traceback.format_exc()
-        print(f"💥 Error in callback: {e}")
+        print("\n" + "="*80)
+        print("💥 CALLBACK ERROR")
+        print("="*80)
+        print(f"Error: {e}")
+        print(f"\nFull traceback:")
         print(error_trace)
+        print("="*80 + "\n")
         return jsonify({"error": str(e), "trace": error_trace}), 500
 
 
