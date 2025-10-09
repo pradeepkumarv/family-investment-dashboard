@@ -192,10 +192,20 @@ def get_holdings(access_token):
     print("📊 Fetching holdings")
     print("  URL:", url)
     print("  Headers:", headers)
-    resp = requests.get(url, params={"api_key": API_KEY}, headers=headers, timeout=30)
-    print("  Response:", resp.status_code, resp.text)
-    resp.raise_for_status()
-    return resp.json()
+    print("  Params:", {"api_key": API_KEY})
+
+    try:
+        resp = requests.get(url, params={"api_key": API_KEY}, headers=headers, timeout=30)
+        print(f"  ✅ Response received: Status={resp.status_code}")
+        print(f"  Response body (first 500 chars): {resp.text[:500]}")
+        resp.raise_for_status()
+        return resp.json()
+    except requests.Timeout:
+        print("  ❌ Request timed out after 30 seconds")
+        raise Exception("HDFC API request timed out")
+    except requests.RequestException as e:
+        print(f"  ❌ Request failed: {e}")
+        raise
 
 def get_holdings_with_fallback(request_token, token_id):
     """

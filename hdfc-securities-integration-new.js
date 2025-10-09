@@ -48,8 +48,13 @@ function showHDFCSettings() {
                     </button>
 
                     <button id="hdfc-authorize-btn" onclick="authorizeHDFC()"
-                            style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
+                            style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-right:10px;">
                         Authorize HDFC
+                    </button>
+
+                    <button id="hdfc-import-btn" onclick="fetchAndImportHoldings()"
+                            style="background:#17a2b8; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
+                        Import Holdings
                     </button>
                 </div>
 
