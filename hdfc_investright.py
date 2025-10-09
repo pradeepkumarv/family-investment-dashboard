@@ -31,25 +31,30 @@ MEMBERS = {
 }
 
 def get_user_id():
-    """Get a valid user_id from family_members table or environment"""
+    """Get a valid user_id from auth.users table or environment"""
     global USER_ID
 
     if USER_ID:
+        print(f"✅ Using user_id from environment: {USER_ID}")
         return USER_ID
 
     try:
-        # Try to get user_id from any existing family member
+        # CRITICAL: Get user_id from family_members table which references auth.users
+        # The equity_holdings.user_id must match an ID in auth.users
         response = supabase.table("family_members").select("user_id").limit(1).execute()
         if response.data and len(response.data) > 0:
             USER_ID = response.data[0]["user_id"]
-            print(f"✅ Using user_id from database: {USER_ID}")
+            print(f"✅ Using user_id from family_members.user_id: {USER_ID}")
             return USER_ID
+        else:
+            print("⚠️ No family members found in database")
     except Exception as e:
         print(f"⚠️ Could not fetch user_id from database: {e}")
 
-    # Use a placeholder - this will fail but with a clear error
+    # Fallback: This should match your auth.users ID
     print("❌ No valid user_id found. Please set DEFAULT_USER_ID environment variable")
-    return "00000000-0000-0000-0000-000000000000"
+    print("   or ensure family_members table has at least one record with valid user_id")
+    return None
 
 def get_members():
     """Get member IDs from family_members table"""
