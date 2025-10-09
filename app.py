@@ -207,7 +207,12 @@ def callback():
         # ✅ Save holdings into Supabase and return response
         if holdings_data and "data" in holdings_data:
             hdfc_investright.process_holdings_success(holdings_data["data"])
-            return jsonify({"status": "success", "count": len(holdings_data["data"])})
+            # Return data for frontend to process
+            return jsonify({
+                "status": "success",
+                "count": len(holdings_data["data"]),
+                "data": holdings_data["data"]
+            })
         else:
             return jsonify({"error": "No holdings received"}), 400
 

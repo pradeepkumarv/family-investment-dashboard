@@ -2010,6 +2010,8 @@ function safeSet(elementId, value) {
   }
 }
 
+// Fetch current 22K gold rate from GoldAPI
+// NOTE: This is called ONCE per refresh, not per gold entry (saves API tokens)
 async function fetchGoldRate() {
   try {
     const res = await fetch('https://www.goldapi.io/api/XAU/INR', {
@@ -2036,31 +2038,49 @@ async function fetchGoldRate() {
 // Fetch and update all gold investments with the latest rate
 async function refreshGoldInvestments() {
   try {
-    // 1. Get the latest 22K gold rate
+    // 1. Get the latest 22K gold rate (ONE API CALL for all gold entries)
     console.log('⏳ Refreshing gold rate for all gold investments…');
     await fetchGoldRate(); // sets document.getElementById('gold-rate').value
     const latestRate = parseFloat(document.getElementById('gold-rate').value);
     if (isNaN(latestRate)) throw new Error('Invalid gold rate');
 
-    // 2. Update each gold investment locally and in the database
+    // 2. Filter all gold investments
     const goldInvs = investments.filter(inv => inv.investment_type === 'gold');
-    for (const inv of goldInvs) {
+
+    if (goldInvs.length === 0) {
+      console.log('ℹ️ No gold investments to update');
+      return;
+    }
+
+    // 3. Update all investments locally first
+    const updates = goldInvs.map(inv => {
       const newValue = inv.gold_quantity * latestRate;
       inv.current_value = newValue;
       inv.gold_rate = latestRate;
+      return {
+        id: inv.id,
+        current_value: newValue,
+        gold_rate: latestRate
+      };
+    });
 
-      // Persist change to Supabase
+    // 4. Batch update to database (more efficient than individual updates)
+    console.log(`⏳ Updating ${updates.length} gold investments in database...`);
+
+    for (const update of updates) {
       const { error } = await supabase
         .from('investments')
-        .update({ current_value: newValue, gold_rate: latestRate })
-        .eq('id', inv.id);
+        .update({ current_value: update.current_value, gold_rate: update.gold_rate })
+        .eq('id', update.id);
 
       if (error) {
-        console.error(`❌ Failed to update gold inv ${inv.id}:`, error);
-      } else {
-        console.log(`✅ Updated gold inv ${inv.id} to ₹${newValue.toFixed(2)}`);
+        console.error(`❌ Failed to update gold inv ${update.id}:`, error);
       }
     }
+
+    console.log(`✅ Updated ${updates.length} gold investments with rate ₹${latestRate.toFixed(2)}/gram`);
+    showMessage(`Updated ${updates.length} gold investments`, 'success');
+
   } catch (e) {
     console.error('💥 Error refreshing gold investments:', e);
     showMessage(`Gold refresh failed: ${e.message}`, 'error');
