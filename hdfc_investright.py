@@ -41,19 +41,28 @@ def get_user_id():
     try:
         # CRITICAL: Get user_id from family_members table which references auth.users
         # The equity_holdings.user_id must match an ID in auth.users
+        print("🔍 Querying family_members table for user_id...")
         response = supabase.table("family_members").select("user_id").limit(1).execute()
+        print(f"   Response: {response}")
+        print(f"   Data: {response.data}")
+
         if response.data and len(response.data) > 0:
             USER_ID = response.data[0]["user_id"]
             print(f"✅ Using user_id from family_members.user_id: {USER_ID}")
             return USER_ID
         else:
             print("⚠️ No family members found in database")
+            print(f"   SUPABASE_URL: {os.getenv('SUPABASE_URL')}")
+            print(f"   Using SERVICE_ROLE_KEY: {bool(os.getenv('SUPABASE_SERVICE_ROLE_KEY'))}")
     except Exception as e:
         print(f"⚠️ Could not fetch user_id from database: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Fallback: This should match your auth.users ID
     print("❌ No valid user_id found. Please set DEFAULT_USER_ID environment variable")
     print("   or ensure family_members table has at least one record with valid user_id")
+    print("   Expected user_id: 5f2db789-657d-48cf-a84d-8d3395f5b01d")
     return None
 
 def get_members():
