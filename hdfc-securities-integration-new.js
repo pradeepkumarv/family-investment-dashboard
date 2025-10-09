@@ -76,14 +76,45 @@ function showHDFCSettings() {
 }
 
 async function authorizeHDFC() {
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('🚀 HDFC AUTHORIZATION STARTED');
+    console.log('═══════════════════════════════════════════════════════');
+
     try {
         showHDFCMessage('Redirecting to HDFC Securities authorization...', 'info');
-        const resp = await fetch(`${HDFC_CONFIG.backend_base}/auth-url`, { method: 'GET' });
-        const { url } = await resp.json();
-        if (!url) throw new Error('No URL returned');
+
+        const authUrl = `${HDFC_CONFIG.backend_base}/auth-url`;
+        console.log('📡 Fetching auth URL from:', authUrl);
+
+        const resp = await fetch(authUrl, { method: 'GET' });
+        console.log('📥 Response received:', resp.status, resp.statusText);
+
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error('❌ Response not OK:', errorText);
+            throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+        }
+
+        const data = await resp.json();
+        console.log('📦 Parsed response:', data);
+
+        const { url } = data;
+        if (!url) {
+            console.error('❌ No URL in response');
+            throw new Error('No URL returned');
+        }
+
+        console.log('✅ Redirecting to:', url);
+        showHDFCMessage('Opening HDFC login page...', 'info');
+
         window.location.href = url;
+
     } catch (err) {
-        console.error('HDFC Authorization Error:', err);
+        console.error('═══════════════════════════════════════════════════════');
+        console.error('💥 HDFC AUTHORIZATION FAILED');
+        console.error('Error:', err.message);
+        console.error('Stack:', err.stack);
+        console.error('═══════════════════════════════════════════════════════');
         showHDFCMessage(`Authorization failed: ${err.message}`, 'error');
     }
 }

@@ -27,8 +27,13 @@ API_SECRET = os.getenv("HDFC_API_SECRET")
 # -------------------------
 @app.route("/api/hdfc/auth-url", methods=["GET"])
 def get_auth_url():
-    # For now return your Render hosted login page
+    """
+    Returns the URL to initiate HDFC login flow.
+    The frontend will redirect the user to this URL to enter credentials.
+    """
+    # Direct user to the Render backend's login page
     auth_url = "https://family-investment-dashboard.onrender.com/"
+    print(f"🔗 Providing auth URL: {auth_url}")
     return jsonify({"url": auth_url})
 
 # -------------------------
