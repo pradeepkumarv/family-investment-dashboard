@@ -23,10 +23,8 @@ supabase = create_client(url, key)
 # Get user_id from environment or query from family_members table
 USER_ID = os.getenv("DEFAULT_USER_ID")
 
-MEMBERS = {
-    "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
-    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
-}
+# Member IDs will be fetched from database
+MEMBERS = None
 
 def get_user_id():
     """Get a valid user_id from family_members table or environment"""
@@ -48,6 +46,45 @@ def get_user_id():
     # Use a placeholder - this will fail but with a clear error
     print("❌ No valid user_id found. Please set DEFAULT_USER_ID environment variable")
     return "00000000-0000-0000-0000-000000000000"
+
+def get_members():
+    """Get member IDs from family_members table"""
+    global MEMBERS
+
+    if MEMBERS:
+        return MEMBERS
+
+    try:
+        # Fetch all family members
+        response = supabase.table("family_members").select("id, name, relationship").execute()
+        if response.data and len(response.data) > 0:
+            MEMBERS = {}
+            # Try to find members by relationship or name
+            for member in response.data:
+                name = member.get("name", "").lower()
+                rel = member.get("relationship", "").lower()
+
+                # Map members based on name or relationship
+                # You can customize this logic
+                if "pradeep" in name or "self" in rel:
+                    MEMBERS["equity"] = member["id"]
+                elif "sanchita" in name or "spouse" in rel:
+                    MEMBERS["mutualFunds"] = member["id"]
+
+            # If we have at least one member, use it for both if needed
+            if MEMBERS:
+                if "equity" not in MEMBERS and response.data:
+                    MEMBERS["equity"] = response.data[0]["id"]
+                if "mutualFunds" not in MEMBERS and response.data:
+                    MEMBERS["mutualFunds"] = response.data[0]["id"]
+
+                print(f"✅ Using member IDs from database: {MEMBERS}")
+                return MEMBERS
+    except Exception as e:
+        print(f"⚠️ Could not fetch member IDs from database: {e}")
+
+    print("❌ No family members found in database")
+    return {}
 
 # -----------------------------
 # Helper Functions
@@ -151,7 +188,7 @@ def get_holdings(access_token):
     print("📊 Fetching holdings")
     print("  URL:", url)
     print("  Headers:", headers)
-    resp = requests.get(url, params={"api_key": API_KEY}, headers=headers)
+    resp = requests.get(url, params={"api_key": API_KEY}, headers=headers, timeout=30)
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
@@ -196,7 +233,7 @@ def get_holdings_with_fallback(request_token, token_id):
     for i, method in enumerate(auth_methods, 1):
         try:
             print(f"  Method {i}: {method}")
-            resp = requests.get(url, headers=method["headers"], params=method["params"])
+            resp = requests.get(url, headers=method["headers"], params=method["params"], timeout=30)
             print(f"  Response {i}: {resp.status_code} - {resp.text[:100]}")
             
             if resp.status_code == 200:
@@ -246,7 +283,17 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
             current_value = quantity * close_price if quantity and close_price else invested_amount
 
             is_mf = h.get("sip_indicator") == "Y" or "fund" in company_name.lower()
-            member_id = MEMBERS["mutualFunds" if is_mf else "equity"]
+
+            # Get member IDs from database
+            members = get_members()
+            if not members:
+                print("❌ No member IDs available, skipping...")
+                continue
+
+            member_id = members.get("mutualFunds" if is_mf else "equity")
+            if not member_id:
+                print(f"❌ No member_id for {'mutual fund' if is_mf else 'equity'}, skipping...")
+                continue
 
             print(f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}")
             print(f"   💰 Invested={invested_amount}, Current={current_value}")
