@@ -20,10 +20,34 @@ url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
+# Get user_id from environment or query from family_members table
+USER_ID = os.getenv("DEFAULT_USER_ID")
+
 MEMBERS = {
     "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
     "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
 }
+
+def get_user_id():
+    """Get a valid user_id from family_members table or environment"""
+    global USER_ID
+
+    if USER_ID:
+        return USER_ID
+
+    try:
+        # Try to get user_id from any existing family member
+        response = supabase.table("family_members").select("user_id").limit(1).execute()
+        if response.data and len(response.data) > 0:
+            USER_ID = response.data[0]["user_id"]
+            print(f"✅ Using user_id from database: {USER_ID}")
+            return USER_ID
+    except Exception as e:
+        print(f"⚠️ Could not fetch user_id from database: {e}")
+
+    # Use a placeholder - this will fail but with a clear error
+    print("❌ No valid user_id found. Please set DEFAULT_USER_ID environment variable")
+    return "00000000-0000-0000-0000-000000000000"
 
 # -----------------------------
 # Helper Functions
@@ -198,11 +222,18 @@ def resend_2fa(token_id):
     return resp.json()
     
 def process_holdings_success(holdings, broker_platform="HDFC Securities"):
-    """Process HDFC holdings and insert/update Supabase investments table."""
+    """Process HDFC holdings and insert into equity_holdings and mutual_fund_holdings tables."""
     inserted_count = 0
     errors = []
 
+    # Get valid user_id
+    user_id = get_user_id()
+
+    # Get today's date for import tracking
+    import_date = datetime.utcnow().date().isoformat()
+
     print(f"🔄 Processing {len(holdings)} HDFC holdings...")
+    print(f"📋 Using user_id: {user_id}, import_date: {import_date}")
 
     for h in holdings:
         try:
@@ -215,41 +246,88 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
             current_value = quantity * close_price if quantity and close_price else invested_amount
 
             is_mf = h.get("sip_indicator") == "Y" or "fund" in company_name.lower()
-            inv_type = "mutualFunds" if is_mf else "equity"
-            member_id = MEMBERS[inv_type]
+            member_id = MEMBERS["mutualFunds" if is_mf else "equity"]
 
             print(f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}")
             print(f"   💰 Invested={invested_amount}, Current={current_value}")
 
-            new_row = {
-                "memberid": member_id,
-                "investmenttype": inv_type,
-                "brokerplatform": broker_platform,
-                "symbolorname": company_name,
-                "investedamount": round(invested_amount, 2),
-                "currentvalue": round(current_value, 2),
-                "quantity": quantity,
-                "averageprice": avg_price,
-                "lastprice": close_price,
-                "sectorname": h.get("sector_name"),
-                "isin": h.get("isin"),
-                "securityid": h.get("security_id"),
-                "createdat": datetime.utcnow().isoformat(),
-                "lastupdated": datetime.utcnow().isoformat(),
-                "hdfcdata": h,
-            }
+            if is_mf:
+                # Insert into mutual_fund_holdings table
+                new_row = {
+                    "user_id": user_id,
+                    "member_id": member_id,
+                    "broker_platform": broker_platform,
+                    "scheme_name": company_name,
+                    "scheme_code": h.get("security_id"),
+                    "folio_number": None,
+                    "fund_house": None,
+                    "units": quantity,
+                    "average_nav": avg_price,
+                    "current_nav": close_price,
+                    "invested_amount": round(invested_amount, 2),
+                    "current_value": round(current_value, 2),
+                    "import_date": import_date
+                }
 
-            resp = (
-                supabase.table("investments")
-                .upsert(new_row, on_conflict=["symbolorname", "brokerplatform"])
-                .execute()
-            )
+                # First try to update existing record
+                resp = (
+                    supabase.table("mutual_fund_holdings")
+                    .update(new_row)
+                    .eq("user_id", user_id)
+                    .eq("broker_platform", broker_platform)
+                    .eq("scheme_name", company_name)
+                    .eq("import_date", import_date)
+                    .execute()
+                )
+
+                # If no rows updated, insert new record
+                if not resp.data:
+                    resp = (
+                        supabase.table("mutual_fund_holdings")
+                        .insert(new_row)
+                        .execute()
+                    )
+            else:
+                # Insert into equity_holdings table
+                new_row = {
+                    "user_id": user_id,
+                    "member_id": member_id,
+                    "broker_platform": broker_platform,
+                    "symbol": h.get("security_id", company_name[:20]),
+                    "company_name": company_name,
+                    "quantity": quantity,
+                    "average_price": avg_price,
+                    "current_price": close_price,
+                    "invested_amount": round(invested_amount, 2),
+                    "current_value": round(current_value, 2),
+                    "import_date": import_date
+                }
+
+                # First try to update existing record
+                resp = (
+                    supabase.table("equity_holdings")
+                    .update(new_row)
+                    .eq("user_id", user_id)
+                    .eq("broker_platform", broker_platform)
+                    .eq("symbol", h.get("security_id", company_name[:20]))
+                    .eq("import_date", import_date)
+                    .execute()
+                )
+
+                # If no rows updated, insert new record
+                if not resp.data:
+                    resp = (
+                        supabase.table("equity_holdings")
+                        .insert(new_row)
+                        .execute()
+                    )
 
             if resp.data:
                 inserted_count += 1
                 print(f"✅ Upserted {company_name}: ₹{invested_amount:.2f} → ₹{current_value:.2f}")
             else:
-                print(f"❌ Insert failed for {company_name}: {resp.error}")
+                error_msg = resp.error if hasattr(resp, 'error') else 'Unknown error'
+                print(f"❌ Insert failed for {company_name}: {error_msg}")
 
         except Exception as e:
             msg = f"{company_name} error: {e}"
