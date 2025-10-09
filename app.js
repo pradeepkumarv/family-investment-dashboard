@@ -1115,7 +1115,39 @@ function showMemberDetails(memberId) {
     const memberAssets = calculateMemberAssets(member.id);
     const memberLiabilities = calculateMemberLiabilities(member.id);
     const netWorth = memberAssets - memberLiabilities;
-    const memberInvestments = investments.filter(inv => inv.member_id === memberId);
+
+    // Get equity holdings from NEW table
+    const equityHoldings = window.equityHoldings || [];
+    const memberEquityHoldings = equityHoldings.filter(h => h.member_id === memberId).map(h => ({
+        symbol_or_name: h.company_name || h.symbol,
+        investment_type: 'equity',
+        invested_amount: parseFloat(h.invested_amount) || 0,
+        current_value: parseFloat(h.current_value) || 0,
+        broker_platform: h.broker_platform,
+        import_date: h.import_date
+    }));
+
+    // Get mutual fund holdings from NEW table
+    const mutualFundHoldings = window.mutualFundHoldings || [];
+    const memberMutualFundHoldings = mutualFundHoldings.filter(h => h.member_id === memberId).map(h => ({
+        symbol_or_name: h.scheme_name,
+        investment_type: 'mutualFunds',
+        invested_amount: parseFloat(h.invested_amount) || 0,
+        current_value: parseFloat(h.current_value) || 0,
+        broker_platform: h.broker_platform,
+        import_date: h.import_date
+    }));
+
+    // Get other investments from OLD table (FD, insurance, gold, etc.)
+    const otherInvestments = investments.filter(inv =>
+        inv.member_id === memberId &&
+        inv.investment_type !== 'equity' &&
+        inv.investment_type !== 'mutualFunds'
+    );
+
+    // Combine all investments
+    const memberInvestments = [...memberEquityHoldings, ...memberMutualFundHoldings, ...otherInvestments];
+
     const memberLiabilityRecords = liabilities.filter(lib => lib.member_id === memberId);
     const memberAccounts = accounts.filter(acc => acc.holder_id === memberId);
 
@@ -3210,8 +3242,35 @@ function renderInvestmentsByMember(memberId) {
   const container = document.getElementById('investment-list-container');
   if (!container) return;
 
-  // Filter investments for the given member.
-  const memberInvestments = investments.filter(inv => inv.member_id === memberId);
+  // Get equity holdings from NEW table
+  const equityHoldings = window.equityHoldings || [];
+  const memberEquityHoldings = equityHoldings.filter(h => h.member_id === memberId).map(h => ({
+    symbol_or_name: h.company_name || h.symbol,
+    quantity: h.quantity,
+    invested_amount: parseFloat(h.invested_amount) || 0,
+    current_value: parseFloat(h.current_value) || 0,
+    broker_platform: h.broker_platform
+  }));
+
+  // Get mutual fund holdings from NEW table
+  const mutualFundHoldings = window.mutualFundHoldings || [];
+  const memberMutualFundHoldings = mutualFundHoldings.filter(h => h.member_id === memberId).map(h => ({
+    symbol_or_name: h.scheme_name,
+    quantity: h.units,
+    invested_amount: parseFloat(h.invested_amount) || 0,
+    current_value: parseFloat(h.current_value) || 0,
+    broker_platform: h.broker_platform
+  }));
+
+  // Get other investments from OLD table
+  const otherInvestments = investments.filter(inv =>
+    inv.member_id === memberId &&
+    inv.investment_type !== 'equity' &&
+    inv.investment_type !== 'mutualFunds'
+  );
+
+  // Combine all investments
+  const memberInvestments = [...memberEquityHoldings, ...memberMutualFundHoldings, ...otherInvestments];
 
   // Clear current list.
   container.innerHTML = '';
@@ -3222,11 +3281,11 @@ function renderInvestmentsByMember(memberId) {
   }
 
   // Create a simple table
-  let html = '<table class="data-table"><thead><tr>' + 
+  let html = '<table class="data-table"><thead><tr>' +
     '<th>Symbol</th><th>Quantity</th><th>Invested Amount (₹)</th><th>Current Value (₹)</th><th>Platform</th></tr></thead><tbody>';
 
   memberInvestments.forEach(inv => {
-    html += '<tr>' + 
+    html += '<tr>' +
       `<td>${inv.symbol_or_name}</td>` +
       `<td>${inv.quantity || '-'}</td>` +
       `<td>${inv.invested_amount.toFixed(2)}</td>` +

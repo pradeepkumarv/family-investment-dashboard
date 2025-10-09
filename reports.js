@@ -32,7 +32,57 @@ function closeReportsSection() {
 function generateReportData() {
     initializeReports();
 
+    // Process equity holdings from NEW table
+    const equityHoldings = window.equityHoldings || [];
+    equityHoldings.forEach(holding => {
+        const member = familyMembers.find(m => m.id === holding.member_id);
+        const memberName = member ? member.name : 'Unknown';
+
+        reportData.equity.push({
+            id: holding.id,
+            memberName: memberName,
+            name: holding.company_name || holding.symbol,
+            investedAmount: parseFloat(holding.invested_amount) || 0,
+            currentValue: parseFloat(holding.current_value) || 0,
+            gain: (parseFloat(holding.current_value) || 0) - (parseFloat(holding.invested_amount) || 0),
+            gainPercent: holding.invested_amount ?
+                (((parseFloat(holding.current_value) || 0) - parseFloat(holding.invested_amount)) / parseFloat(holding.invested_amount) * 100) : 0,
+            platform: holding.broker_platform || 'N/A',
+            date: holding.import_date ? new Date(holding.import_date).toLocaleDateString() : 'N/A',
+            ...holding
+        });
+    });
+
+    // Process mutual fund holdings from NEW table
+    const mutualFundHoldings = window.mutualFundHoldings || [];
+    mutualFundHoldings.forEach(holding => {
+        const member = familyMembers.find(m => m.id === holding.member_id);
+        const memberName = member ? member.name : 'Unknown';
+
+        reportData.mutualFunds.push({
+            id: holding.id,
+            memberName: memberName,
+            name: holding.scheme_name,
+            investedAmount: parseFloat(holding.invested_amount) || 0,
+            currentValue: parseFloat(holding.current_value) || 0,
+            gain: (parseFloat(holding.current_value) || 0) - (parseFloat(holding.invested_amount) || 0),
+            gainPercent: holding.invested_amount ?
+                (((parseFloat(holding.current_value) || 0) - parseFloat(holding.invested_amount)) / parseFloat(holding.invested_amount) * 100) : 0,
+            platform: holding.broker_platform || 'N/A',
+            date: holding.import_date ? new Date(holding.import_date).toLocaleDateString() : 'N/A',
+            ...holding
+        });
+    });
+
+    // Process OTHER investment types from OLD table (FD, insurance, gold, etc.)
     investments.forEach(investment => {
+        const type = investment.investment_type;
+
+        // Skip equity and mutual funds as they're already processed from new tables
+        if (type === 'equity' || type === 'mutualFunds') {
+            return;
+        }
+
         const member = familyMembers.find(m => m.id === investment.member_id);
         const memberName = member ? member.name : (investment.member_name || 'Unknown');
 
@@ -50,7 +100,6 @@ function generateReportData() {
             ...investment
         };
 
-        const type = investment.investment_type;
         if (reportData[type]) {
             reportData[type].push(reportItem);
         } else {
