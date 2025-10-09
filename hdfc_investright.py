@@ -23,8 +23,11 @@ supabase = create_client(url, key)
 # Get user_id from environment or query from family_members table
 USER_ID = os.getenv("DEFAULT_USER_ID")
 
-# Member IDs will be fetched from database
-MEMBERS = None
+# Member IDs - will use these if database fetch fails
+MEMBERS = {
+    "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",  # Pradeep Kumar V
+    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita Pradeep
+}
 
 def get_user_id():
     """Get a valid user_id from family_members table or environment"""
