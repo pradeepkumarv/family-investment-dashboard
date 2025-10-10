@@ -29,7 +29,7 @@ USER_ID = os.getenv("DEFAULT_USER_ID")
 # Member IDs - will use these if database fetch fails
 MEMBERS = {
     "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",  # Pradeep Kumar V
-    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita Pradeep
+    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"  # Sanchita Pradeep (HDFC MF)
 }
 
 def get_user_id():
@@ -37,7 +37,7 @@ def get_user_id():
     global USER_ID
     
     # Force use the environment variable - this should match what's in users table
-    USER_ID = "5691346a-da1f-464f-b008-d91dece51979"
+    USER_ID = "5f2db789-657d-48cf-a84d-8d3395f5b01d"
     print(f"✅ Using user_id from environment: {USER_ID}")
     return USER_ID
 
