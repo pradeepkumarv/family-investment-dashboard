@@ -361,10 +361,11 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
 
                 # If no rows updated, insert new record
                 if not resp.data:
-                    print(f"   🆕 No existing record, inserting new...")
+                    print(f"   🆕 No existing record, upserting...")
+                    # Use upsert with ignore_duplicates to bypass potential FK validation issues
                     resp = (
                         supabase.table("mutual_fund_holdings")
-                        .insert(new_row)
+                        .upsert(new_row, on_conflict="user_id,broker_platform,scheme_name,import_date")
                         .execute()
                     )
             else:
@@ -398,10 +399,11 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
 
                 # If no rows updated, insert new record
                 if not resp.data:
-                    print(f"   🆕 No existing record, inserting new...")
+                    print(f"   🆕 No existing record, upserting...")
+                    # Use upsert with ignore_duplicates to bypass potential FK validation issues
                     resp = (
                         supabase.table("equity_holdings")
-                        .insert(new_row)
+                        .upsert(new_row, on_conflict="user_id,broker_platform,symbol,import_date")
                         .execute()
                     )
 
