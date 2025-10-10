@@ -346,6 +346,8 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                     "import_date": import_date
                 }
 
+                print(f"   🔍 Inserting MF: user_id={user_id}, member_id={member_id}")
+
                 # First try to update existing record
                 resp = (
                     supabase.table("mutual_fund_holdings")
@@ -359,6 +361,7 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
 
                 # If no rows updated, insert new record
                 if not resp.data:
+                    print(f"   🆕 No existing record, inserting new...")
                     resp = (
                         supabase.table("mutual_fund_holdings")
                         .insert(new_row)
@@ -380,6 +383,8 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                     "import_date": import_date
                 }
 
+                print(f"   🔍 Inserting Equity: user_id={user_id}, member_id={member_id}")
+
                 # First try to update existing record
                 resp = (
                     supabase.table("equity_holdings")
@@ -393,6 +398,7 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
 
                 # If no rows updated, insert new record
                 if not resp.data:
+                    print(f"   🆕 No existing record, inserting new...")
                     resp = (
                         supabase.table("equity_holdings")
                         .insert(new_row)
