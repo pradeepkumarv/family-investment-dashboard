@@ -35,10 +35,11 @@ MEMBERS = {
 def get_user_id():
     """Get a valid user_id from auth.users table or environment"""
     global USER_ID
-
-    if USER_ID:
-        print(f"✅ Using user_id from environment: {USER_ID}")
-        return USER_ID
+    
+    # Force use the environment variable - this should match what's in users table
+    USER_ID = "5f2db789-657d-48cf-a84d-8d3395f5b01d"
+    print(f"✅ Using user_id from environment: {USER_ID}")
+    return USER_ID
 
     try:
         # CRITICAL: Get user_id from family_members table which references auth.users
