@@ -12,7 +12,7 @@ const BROKER_MEMBER_MAPPING = {
         demat: ['ICICI Securities'],
         mutualFunds: ['ICICI Securities']
     },
-    '4c732501-0995-4355-9587-9d8ddec729d0': {
+    'c2f4b3d8-bb69-4516-b107-dffbde92c77c': {
         name: 'Saanvi Pradeep',
         demat: [],
         mutualFunds: ['Zerodha']
@@ -29,7 +29,7 @@ const ZERODHA_CONFIG = {
     base_url: 'https://api.kite.trade',
     login_url: 'https://kite.zerodha.com/connect/login',
     equity_members: ['bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'],
-    mf_members: ['4c732501-0995-4355-9587-9d8ddec729d0']
+    mf_members: ['c2f4b3d8-bb69-4516-b107-dffbde92c77c']
 };
 
 let zerodhaAccessToken = null;
