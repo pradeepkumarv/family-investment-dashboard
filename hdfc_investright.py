@@ -299,6 +299,15 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
     # Get today's date for import tracking
     import_date = datetime.utcnow().date().isoformat()
 
+    # Delete existing records for today to avoid duplicates
+    print(f"🗑️ Deleting existing records for {import_date}...")
+    try:
+        supabase.table("equity_holdings").delete().eq("import_date", import_date).eq("broker_platform", broker_platform).execute()
+        supabase.table("mutual_fund_holdings").delete().eq("import_date", import_date).eq("broker_platform", broker_platform).execute()
+        print(f"✅ Cleared old records")
+    except Exception as e:
+        print(f"⚠️ Error clearing old records: {e}")
+
     print(f"🔄 Processing {len(holdings)} HDFC holdings...")
     print(f"📋 Using user_id: {user_id}, import_date: {import_date}")
 
@@ -347,36 +356,14 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                 }
 
                 print(f"   🔍 Inserting MF: user_id={user_id}, member_id={member_id}")
+                print(f"   🆕 Inserting new record...")
 
-                # First try to update existing record
+                # Insert directly (old records already deleted)
                 resp = (
                     supabase.table("mutual_fund_holdings")
-                    .update(new_row)
-                    .eq("user_id", user_id)
-                    .eq("broker_platform", broker_platform)
-                    .eq("scheme_name", company_name)
-                    .eq("import_date", import_date)
+                    .insert(new_row)
                     .execute()
                 )
-
-                # If no rows updated, insert new record via database function
-                if not resp.data:
-                    print(f"   🆕 No existing record, inserting via DB function...")
-                    resp = supabase.rpc('insert_mutual_fund_holding', {
-                        'p_user_id': user_id,
-                        'p_member_id': member_id,
-                        'p_broker_platform': broker_platform,
-                        'p_scheme_name': company_name,
-                        'p_scheme_code': h.get("security_id"),
-                        'p_folio_number': None,
-                        'p_fund_house': None,
-                        'p_units': quantity,
-                        'p_average_nav': avg_price,
-                        'p_current_nav': close_price,
-                        'p_invested_amount': round(invested_amount, 2),
-                        'p_current_value': round(current_value, 2),
-                        'p_import_date': import_date
-                    }).execute()
             else:
                 # Insert into equity_holdings table
                 new_row = {
@@ -394,34 +381,14 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                 }
 
                 print(f"   🔍 Inserting Equity: user_id={user_id}, member_id={member_id}")
+                print(f"   🆕 Inserting new record...")
 
-                # First try to update existing record
+                # Insert directly (old records already deleted)
                 resp = (
                     supabase.table("equity_holdings")
-                    .update(new_row)
-                    .eq("user_id", user_id)
-                    .eq("broker_platform", broker_platform)
-                    .eq("symbol", h.get("security_id", company_name[:20]))
-                    .eq("import_date", import_date)
+                    .insert(new_row)
                     .execute()
                 )
-
-                # If no rows updated, insert new record via database function
-                if not resp.data:
-                    print(f"   🆕 No existing record, inserting via DB function...")
-                    resp = supabase.rpc('insert_equity_holding', {
-                        'p_user_id': user_id,
-                        'p_member_id': member_id,
-                        'p_broker_platform': broker_platform,
-                        'p_symbol': h.get("security_id", company_name[:20]),
-                        'p_company_name': company_name,
-                        'p_quantity': quantity,
-                        'p_average_price': avg_price,
-                        'p_current_price': close_price,
-                        'p_invested_amount': round(invested_amount, 2),
-                        'p_current_value': round(current_value, 2),
-                        'p_import_date': import_date
-                    }).execute()
 
             if resp.data:
                 inserted_count += 1
