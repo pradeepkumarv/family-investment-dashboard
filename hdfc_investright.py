@@ -37,7 +37,7 @@ def get_user_id():
     global USER_ID
     
     # Force use the environment variable - this should match what's in users table
-    USER_ID = "5f2db789-657d-48cf-a84d-8d3395f5b01d"
+    USER_ID = "5691346a-da1f-464f-b008-d91dece51979"
     print(f"✅ Using user_id from environment: {USER_ID}")
     return USER_ID
 
