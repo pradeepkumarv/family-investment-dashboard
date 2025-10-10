@@ -19,6 +19,8 @@ HEADERS_JSON = {
 # IMPORTANT: Use SERVICE_ROLE_KEY for backend operations (bypasses RLS)
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+print(f"🔌 Connecting to Supabase: {url}")
+print(f"🔑 Using key type: {'SERVICE_ROLE' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'ANON'}")
 supabase = create_client(url, key)
 
 # Get user_id from environment or query from family_members table
