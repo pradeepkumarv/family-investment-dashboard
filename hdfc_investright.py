@@ -359,15 +359,24 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                     .execute()
                 )
 
-                # If no rows updated, insert new record
+                # If no rows updated, insert new record via database function
                 if not resp.data:
-                    print(f"   🆕 No existing record, upserting...")
-                    # Use upsert with ignore_duplicates to bypass potential FK validation issues
-                    resp = (
-                        supabase.table("mutual_fund_holdings")
-                        .upsert(new_row, on_conflict="user_id,broker_platform,scheme_name,import_date")
-                        .execute()
-                    )
+                    print(f"   🆕 No existing record, inserting via DB function...")
+                    resp = supabase.rpc('insert_mutual_fund_holding', {
+                        'p_user_id': user_id,
+                        'p_member_id': member_id,
+                        'p_broker_platform': broker_platform,
+                        'p_scheme_name': company_name,
+                        'p_scheme_code': h.get("security_id"),
+                        'p_folio_number': None,
+                        'p_fund_house': None,
+                        'p_units': quantity,
+                        'p_average_nav': avg_price,
+                        'p_current_nav': close_price,
+                        'p_invested_amount': round(invested_amount, 2),
+                        'p_current_value': round(current_value, 2),
+                        'p_import_date': import_date
+                    }).execute()
             else:
                 # Insert into equity_holdings table
                 new_row = {
@@ -397,15 +406,22 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
                     .execute()
                 )
 
-                # If no rows updated, insert new record
+                # If no rows updated, insert new record via database function
                 if not resp.data:
-                    print(f"   🆕 No existing record, upserting...")
-                    # Use upsert with ignore_duplicates to bypass potential FK validation issues
-                    resp = (
-                        supabase.table("equity_holdings")
-                        .upsert(new_row, on_conflict="user_id,broker_platform,symbol,import_date")
-                        .execute()
-                    )
+                    print(f"   🆕 No existing record, inserting via DB function...")
+                    resp = supabase.rpc('insert_equity_holding', {
+                        'p_user_id': user_id,
+                        'p_member_id': member_id,
+                        'p_broker_platform': broker_platform,
+                        'p_symbol': h.get("security_id", company_name[:20]),
+                        'p_company_name': company_name,
+                        'p_quantity': quantity,
+                        'p_average_price': avg_price,
+                        'p_current_price': close_price,
+                        'p_invested_amount': round(invested_amount, 2),
+                        'p_current_value': round(current_value, 2),
+                        'p_import_date': import_date
+                    }).execute()
 
             if resp.data:
                 inserted_count += 1
