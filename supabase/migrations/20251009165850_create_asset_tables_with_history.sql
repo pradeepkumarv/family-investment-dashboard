@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS family_members (
 -- Create equity_holdings table
 CREATE TABLE IF NOT EXISTS equity_holdings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid NOT NULL,
   member_id uuid REFERENCES family_members(id) ON DELETE CASCADE NOT NULL,
   broker_platform text NOT NULL,
   symbol text NOT NULL,
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS equity_holdings (
 -- Create mutual_fund_holdings table
 CREATE TABLE IF NOT EXISTS mutual_fund_holdings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid NOT NULL,
   member_id uuid REFERENCES family_members(id) ON DELETE CASCADE NOT NULL,
   broker_platform text NOT NULL,
   scheme_name text NOT NULL,
