@@ -1,9 +1,14 @@
 // HDFC Securities Integration - Updated for New Database Structure
 // Uses separate tables with delete-then-insert logic
 
-const HDFC_MEMBER_MAPPING = {
-    equity_member: 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49',
-    mf_member: 'd3a4fc84-a94b-494d-915f-60901f16d973'
+const HDFC_MEMBER_NAMES = {
+    equity_member: 'pradeep kumar v',
+    mf_member: 'sanchita pradeep'
+};
+
+let hdfcMemberIds = {
+    equity_member: null,
+    mf_member: null
 };
 
 const HDFC_CONFIG = {
@@ -140,6 +145,51 @@ async function testHDFCConnection() {
     }
 }
 
+async function lookupMemberIds(userId) {
+    try {
+        console.log('🔍 Looking up member IDs for HDFC import...');
+
+        const { data: members, error } = await supabase
+            .from('family_members')
+            .select('id, name')
+            .eq('user_id', userId);
+
+        if (error) throw error;
+
+        if (!members || members.length === 0) {
+            console.warn('⚠️ No family members found. Please add family members first.');
+            return false;
+        }
+
+        for (const member of members) {
+            const nameLower = member.name.toLowerCase().trim();
+
+            if (nameLower === HDFC_MEMBER_NAMES.equity_member) {
+                hdfcMemberIds.equity_member = member.id;
+                console.log(`✅ Found equity member: ${member.name} (${member.id})`);
+            }
+
+            if (nameLower === HDFC_MEMBER_NAMES.mf_member) {
+                hdfcMemberIds.mf_member = member.id;
+                console.log(`✅ Found MF member: ${member.name} (${member.id})`);
+            }
+        }
+
+        if (!hdfcMemberIds.equity_member) {
+            console.warn(`⚠️ Member "${HDFC_MEMBER_NAMES.equity_member}" not found for equity holdings`);
+        }
+
+        if (!hdfcMemberIds.mf_member) {
+            console.warn(`⚠️ Member "${HDFC_MEMBER_NAMES.mf_member}" not found for mutual fund holdings`);
+        }
+
+        return hdfcMemberIds.equity_member || hdfcMemberIds.mf_member;
+    } catch (error) {
+        console.error('❌ Error looking up member IDs:', error);
+        return false;
+    }
+}
+
 async function fetchAndImportHoldings() {
     try {
         console.log('🔵 HDFC Import: Starting import process...');
@@ -151,7 +201,6 @@ async function fetchAndImportHoldings() {
         }
         console.log('✅ HDFC Import: Database helpers available');
 
-        // Get current user from Supabase
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             console.error('❌ HDFC Import: No user logged in');
@@ -159,6 +208,12 @@ async function fetchAndImportHoldings() {
             return;
         }
         console.log('✅ HDFC Import: User authenticated:', user.id);
+
+        const membersFound = await lookupMemberIds(user.id);
+        if (!membersFound) {
+            showHDFCMessage('Please add family members "pradeep kumar v" and "sanchita pradeep" first', 'error');
+            return;
+        }
 
         showHDFCMessage('Importing HDFC holdings...', 'info');
 
@@ -181,10 +236,10 @@ async function fetchAndImportHoldings() {
             const mfRecords = [];
 
             for (const holding of result.data) {
-                if (holding.investment_type === 'equity') {
+                if (holding.investment_type === 'equity' && hdfcMemberIds.equity_member) {
                     equityRecords.push({
                         user_id: user.id,
-                        member_id: HDFC_MEMBER_MAPPING.equity_member,
+                        member_id: hdfcMemberIds.equity_member,
                         broker_platform: 'HDFC Securities',
                         symbol: holding.tradingsymbol || holding.symbol || 'UNKNOWN',
                         company_name: holding.tradingsymbol || holding.symbol || 'UNKNOWN',
@@ -195,10 +250,10 @@ async function fetchAndImportHoldings() {
                         current_value: (parseFloat(holding.quantity) || 0) * (parseFloat(holding.lastprice) || 0),
                         import_date: importDate
                     });
-                } else if (holding.investment_type === 'mutualFunds') {
+                } else if (holding.investment_type === 'mutualFunds' && hdfcMemberIds.mf_member) {
                     mfRecords.push({
                         user_id: user.id,
-                        member_id: HDFC_MEMBER_MAPPING.mf_member,
+                        member_id: hdfcMemberIds.mf_member,
                         broker_platform: 'HDFC Securities',
                         scheme_name: holding.schemename || 'Unknown',
                         scheme_code: holding.schemecode || '',
@@ -214,34 +269,30 @@ async function fetchAndImportHoldings() {
                 }
             }
 
-            // DELETE old equity holdings for HDFC Securities and Pradeep Kumar V
             if (equityRecords.length > 0) {
-                console.log(`🗑️ HDFC Import: Deleting old equity holdings for user ${user.id}, broker HDFC Securities, member ${HDFC_MEMBER_MAPPING.equity_member}`);
+                console.log(`🗑️ HDFC Import: Deleting old equity holdings for user ${user.id}, broker HDFC Securities, member ${hdfcMemberIds.equity_member}`);
                 await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
                     user.id,
                     'HDFC Securities',
-                    HDFC_MEMBER_MAPPING.equity_member
+                    hdfcMemberIds.equity_member
                 );
                 console.log('✅ HDFC Import: Old equity holdings deleted');
 
-                // INSERT fresh equity holdings
                 console.log(`📥 HDFC Import: Inserting ${equityRecords.length} equity holdings`, equityRecords);
                 const insertedEquity = await window.dbHelpers.insertEquityHoldings(equityRecords);
                 console.log('✅ HDFC Import: Equity holdings inserted:', insertedEquity);
                 equityCount = equityRecords.length;
             }
 
-            // DELETE old MF holdings for HDFC Securities and Sanchita Pradeep
             if (mfRecords.length > 0) {
-                console.log(`🗑️ HDFC Import: Deleting old MF holdings for user ${user.id}, broker HDFC Securities, member ${HDFC_MEMBER_MAPPING.mf_member}`);
+                console.log(`🗑️ HDFC Import: Deleting old MF holdings for user ${user.id}, broker HDFC Securities, member ${hdfcMemberIds.mf_member}`);
                 await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
                     user.id,
                     'HDFC Securities',
-                    HDFC_MEMBER_MAPPING.mf_member
+                    hdfcMemberIds.mf_member
                 );
                 console.log('✅ HDFC Import: Old MF holdings deleted');
 
-                // INSERT fresh MF holdings
                 console.log(`📥 HDFC Import: Inserting ${mfRecords.length} MF holdings`, mfRecords);
                 const insertedMF = await window.dbHelpers.insertMutualFundHoldings(mfRecords);
                 console.log('✅ HDFC Import: MF holdings inserted:', insertedMF);
