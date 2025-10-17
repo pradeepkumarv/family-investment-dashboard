@@ -217,7 +217,7 @@ async function fetchAndImportHoldings() {
 
         showHDFCMessage('Importing HDFC holdings...', 'info');
 
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/callback`, {
+        const response = await fetch(`${HDFC_CONFIG.backend_base}/callback?user_id=${user.id}`, {
             method: 'GET',
             credentials: 'include'
         });

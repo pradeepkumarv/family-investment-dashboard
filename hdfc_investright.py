@@ -20,10 +20,21 @@ url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
 
-MEMBERS = {
-    "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
-    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
+MEMBER_NAMES = {
+    "equity": "pradeep kumar v",
+    "mutualFunds": "sanchita pradeep"
 }
+
+def get_member_id_by_name(name, user_id):
+    """Look up member ID by name"""
+    try:
+        result = supabase.table("family_members").select("id").eq("user_id", user_id).ilike("name", name).execute()
+        if result.data and len(result.data) > 0:
+            return result.data[0]["id"]
+        return None
+    except Exception as e:
+        print(f"Error looking up member {name}: {e}")
+        return None
 
 # -----------------------------
 # Helper Functions
@@ -197,12 +208,31 @@ def resend_2fa(token_id):
     resp.raise_for_status()
     return resp.json()
     
-def process_holdings_success(holdings, broker_platform="HDFC Securities"):
-    """Process HDFC holdings and insert/update Supabase investments table."""
+def process_holdings_success(holdings, user_id, broker_platform="HDFC Securities"):
+    """Process HDFC holdings and insert into new equity_holdings and mutual_fund_holdings tables."""
     inserted_count = 0
     errors = []
 
     print(f"🔄 Processing {len(holdings)} HDFC holdings...")
+
+    # Get member IDs
+    equity_member_id = get_member_id_by_name(MEMBER_NAMES["equity"], user_id)
+    mf_member_id = get_member_id_by_name(MEMBER_NAMES["mutualFunds"], user_id)
+
+    print(f"📋 Member IDs: Equity={equity_member_id}, MF={mf_member_id}")
+
+    if not equity_member_id and not mf_member_id:
+        print("❌ No members found. Please add 'pradeep kumar v' and 'sanchita pradeep' first.")
+        return {"inserted": 0, "errors": ["No members found"]}
+
+    # Delete old holdings first
+    if equity_member_id:
+        print(f"🗑️ Deleting old equity holdings for {MEMBER_NAMES['equity']}")
+        supabase.table("equity_holdings").delete().eq("user_id", user_id).eq("broker_platform", broker_platform).eq("member_id", equity_member_id).execute()
+
+    if mf_member_id:
+        print(f"🗑️ Deleting old MF holdings for {MEMBER_NAMES['mutualFunds']}")
+        supabase.table("mutual_fund_holdings").delete().eq("user_id", user_id).eq("broker_platform", broker_platform).eq("member_id", mf_member_id).execute()
 
     for h in holdings:
         try:
@@ -215,41 +245,56 @@ def process_holdings_success(holdings, broker_platform="HDFC Securities"):
             current_value = quantity * close_price if quantity and close_price else invested_amount
 
             is_mf = h.get("sip_indicator") == "Y" or "fund" in company_name.lower()
-            inv_type = "mutualFunds" if is_mf else "equity"
-            member_id = MEMBERS[inv_type]
 
             print(f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}")
             print(f"   💰 Invested={invested_amount}, Current={current_value}")
 
-            new_row = {
-                "memberid": member_id,
-                "investmenttype": inv_type,
-                "brokerplatform": broker_platform,
-                "symbolorname": company_name,
-                "investedamount": round(invested_amount, 2),
-                "currentvalue": round(current_value, 2),
-                "quantity": quantity,
-                "averageprice": avg_price,
-                "lastprice": close_price,
-                "sectorname": h.get("sector_name"),
-                "isin": h.get("isin"),
-                "securityid": h.get("security_id"),
-                "createdat": datetime.utcnow().isoformat(),
-                "lastupdated": datetime.utcnow().isoformat(),
-                "hdfcdata": h,
-            }
+            if is_mf and mf_member_id:
+                # Insert into mutual_fund_holdings
+                new_row = {
+                    "user_id": user_id,
+                    "member_id": mf_member_id,
+                    "broker_platform": broker_platform,
+                    "scheme_name": company_name,
+                    "scheme_code": h.get("security_id") or "",
+                    "folio_number": "",
+                    "fund_house": "",
+                    "units": quantity,
+                    "average_nav": avg_price,
+                    "current_nav": close_price,
+                    "invested_amount": round(invested_amount, 2),
+                    "current_value": round(current_value, 2),
+                    "import_date": datetime.utcnow().date().isoformat()
+                }
 
-            resp = (
-                supabase.table("investments")
-                .upsert(new_row, on_conflict=["symbolorname", "brokerplatform"])
-                .execute()
-            )
+                resp = supabase.table("mutual_fund_holdings").insert(new_row).execute()
+
+            elif not is_mf and equity_member_id:
+                # Insert into equity_holdings
+                new_row = {
+                    "user_id": user_id,
+                    "member_id": equity_member_id,
+                    "broker_platform": broker_platform,
+                    "symbol": h.get("security_id") or company_name[:10].upper(),
+                    "company_name": company_name,
+                    "quantity": quantity,
+                    "average_price": avg_price,
+                    "current_price": close_price,
+                    "invested_amount": round(invested_amount, 2),
+                    "current_value": round(current_value, 2),
+                    "import_date": datetime.utcnow().date().isoformat()
+                }
+
+                resp = supabase.table("equity_holdings").insert(new_row).execute()
+            else:
+                print(f"⚠️ Skipping {company_name} - no member ID available")
+                continue
 
             if resp.data:
                 inserted_count += 1
-                print(f"✅ Upserted {company_name}: ₹{invested_amount:.2f} → ₹{current_value:.2f}")
+                print(f"✅ Inserted {company_name}: ₹{invested_amount:.2f} → ₹{current_value:.2f}")
             else:
-                print(f"❌ Insert failed for {company_name}: {resp.error}")
+                print(f"❌ Insert failed for {company_name}: {resp}")
 
         except Exception as e:
             msg = f"{company_name} error: {e}"

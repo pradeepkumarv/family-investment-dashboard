@@ -182,6 +182,11 @@ def callback():
         request_token = session.get("request_token")
         token_id = session.get("token_id")
 
+        # Get user_id from query parameter or session
+        user_id = request.args.get("user_id") or session.get("user_id")
+        if not user_id:
+            return jsonify({"error": "user_id required"}), 400
+
         # Step 1: Try request_token directly
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
@@ -206,7 +211,7 @@ def callback():
 
         # ✅ Save holdings into Supabase and return response
         if holdings_data and "data" in holdings_data:
-            hdfc_investright.process_holdings_success(holdings_data["data"])
+            hdfc_investright.process_holdings_success(holdings_data["data"], user_id)
             return jsonify({"status": "success", "count": len(holdings_data["data"])})
         else:
             return jsonify({"error": "No holdings received"}), 400
