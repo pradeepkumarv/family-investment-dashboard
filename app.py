@@ -112,61 +112,72 @@ def home():
 
 # -------------------------
 # REQUEST OTP
-# -------------------------
 @app.route("/request-otp", methods=["POST"])
 def request_otp():
-    username = request.form.get("username")
-    password = request.form.get("password")
+    username = request.form.get("username") or request.json.get("username")
+    password = request.form.get("password") or request.json.get("password")
+    
+    if not username or not password:
+        return jsonify({"error": "Username and password required"}), 400
+    
     try:
+        # Step 1: Get token_id
         token_id = hdfc_investright.get_token_id()
         session["token_id"] = token_id
         session["username"] = username
         session["password"] = password
         
+        # Step 2: Validate credentials
         result = hdfc_investright.login_validate(token_id, username, password)
-        print("Login validate response:", result)
+        print(f"Login validate response: {result}")
         
-        return render_template("otp.html", tokenid=token_id)
-       
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# -------------------------
-# VALIDATE OTP
-# -------------------------
-@app.route("/validate-otp", methods=["POST"])
-def validate_otp():
-    otp = request.form.get("otp")
-    token_id = request.form.get("tokenid") or session.get("token_id")
-    
-    if not token_id:
-        return jsonify({"error": "Session expired. Please login again."}), 401
-    
-    try:
-        otp_result = hdfc_investright.validate_otp(token_id, otp)
-        
-        if not otp_result.get("authorised"):
-            return jsonify({"error": "OTP validation failed!"}), 400
-
-        callback_url = otp_result.get("callbackUrl")
-        if not callback_url:
-            return jsonify({"error": "No callback URL received"}), 400
-
-        request_token = otp_result.get("requestToken")
-        session["request_token"] = request_token
-
+        # Step 3: Return JSON for frontend to handle
         return jsonify({
-            "status": "redirect_required",
-            "redirect_url": callback_url,
-            "message": "Please complete authorization"
+            "status": "otp_required",
+            "token_id": token_id,
+            "message": "OTP sent to registered mobile/email"
         })
-        
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
+
+
+# -------------------------
+# VALIDATE OTP
+# -------------------------
+@app.route("/validate-otp", methods=["POST"])
+def validate_otp():
+    otp = request.form.get("otp") or request.json.get("otp")
+    token_id = request.form.get("tokenid") or request.json.get("tokenid") or session.get("token_id")
+    
+    if not token_id:
+        return jsonify({"error": "Session expired. Please login again."}), 401
+    
+    if not otp:
+        return jsonify({"error": "OTP is required"}), 400
+    
+    try:
+        otp_result = hdfc_investright.validate_otp(token_id, otp)
+        
+        if not otp_result.get("authorised"):
+            return jsonify({"error": "OTP validation failed!"}), 400
+        
+        request_token = otp_result.get("requestToken")
+        session["request_token"] = request_token
+        
+        # Trigger the callback processing directly
+        return jsonify({
+            "status": "success",
+            "message": "OTP validated successfully",
+            "redirect_url": "/api/hdfc/callback"
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 # -------------------------
 # CALLBACK
