@@ -3,6 +3,7 @@ from flask_cors import CORS
 import hdfc_investright
 import traceback
 import os
+import requests
 from datetime import datetime
 
 # ✅ CREATE FLASK APP FIRST
@@ -117,19 +118,39 @@ def home():
 def request_otp():
     username = request.form.get("username")
     password = request.form.get("password")
+
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+
     try:
+        print(f"🔵 Requesting OTP for user: {username}")
+
         token_id = hdfc_investright.get_token_id()
+        print(f"✅ Got token_id: {token_id}")
+
         session["token_id"] = token_id
         session["username"] = username
         session["password"] = password
-        
+
         result = hdfc_investright.login_validate(token_id, username, password)
-        print("Login validate response:", result)
-        
+        print(f"✅ Login validate response: {result}")
+
         return render_template("otp.html", tokenid=token_id)
-       
+
+    except ValueError as e:
+        error_msg = str(e)
+        print(f"❌ ValueError in request-otp: {error_msg}")
+        return jsonify({"error": f"Invalid response from HDFC: {error_msg}"}), 500
+    except requests.exceptions.HTTPError as e:
+        error_msg = str(e)
+        print(f"❌ HTTP Error in request-otp: {error_msg}")
+        return jsonify({"error": f"HDFC API error: {error_msg}"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        error_msg = str(e)
+        print(f"❌ Unexpected error in request-otp: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Request failed: {error_msg}"}), 500
 
 # -------------------------
 # VALIDATE OTP

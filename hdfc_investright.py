@@ -55,7 +55,20 @@ def login_validate(token_id, username, password):
     r = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
     print("  Response:", r.status_code, r.text)
     r.raise_for_status()
-    return r.json()
+
+    # Handle empty or non-JSON responses
+    if not r.text or r.text.strip() == "":
+        print("  ⚠️ Empty response from HDFC API")
+        return {"status": "success", "message": "Login validated, awaiting OTP"}
+
+    try:
+        return r.json()
+    except ValueError as e:
+        print(f"  ⚠️ Non-JSON response: {r.text[:200]}")
+        # Return a success indicator if status is 200
+        if r.status_code == 200:
+            return {"status": "success", "message": "Login validated"}
+        raise ValueError(f"Invalid JSON response from HDFC: {r.text[:200]}")
 
 def validate_otp(token_id, otp):
     url = f"{BASE}/twofa/validate"
