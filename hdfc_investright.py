@@ -74,14 +74,37 @@ def validate_otp(token_id, otp):
     url = f"{BASE}/twofa/validate"
     params = {"api_key": API_KEY, "token_id": token_id}
     payload = {"answer": otp}
+
     print("📲 Validating OTP (twofa)")
     print("  URL:", url)
     print("  Params:", params)
     print("  Payload:", payload)
-    resp = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
-    print("  Response:", resp.status_code, resp.text)
-    resp.raise_for_status()
-    return resp.json()
+
+    try:
+        resp = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    except Exception as e:
+        print("❌ Request failed:", e)
+        return {"error": "network_failure", "details": str(e)}
+
+    print("🔍 RAW RESPONSE:", resp.status_code, resp.text)
+
+    # Handle HTTP errors gracefully
+    if resp.status_code >= 400:
+        return {"error": "http_error", "status": resp.status_code, "details": resp.text}
+
+    # Handle non-JSON response
+    try:
+        data = resp.json()
+    except Exception as e:
+        print("❌ JSON PARSE FAILED:", e)
+        return {
+            "error": "invalid_json",
+            "status": resp.status_code,
+            "raw": resp.text
+        }
+
+    return data
+
 
 def authorise(token_id, request_token, consent="Y"):
     url = f"{BASE}/authorise"
