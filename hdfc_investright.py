@@ -233,64 +233,97 @@ def resend_2fa(token_id):
     resp.raise_for_status()
     return resp.json()
     
-def process_holdings_success(holdings, broker_platform="HDFC Securities"):
-    """Process HDFC holdings and insert/update Supabase investments table."""
-    inserted_count = 0
-    errors = []
+def process_holdings_success(holdings, user_id, hdfc_member_ids):
+    """
+    Process HDFC holdings and insert into:
+        - equity_holdings
+        - mutual_fund_holdings
+    """
 
-    print(f"🔄 Processing {len(holdings)} HDFC holdings...")
+    equity_records = []
+    mf_records = []
+
+    import_date = datetime.utcnow().date().isoformat()
+
+    print(f"🔄 Processing {len(holdings)} holdings for user {user_id}")
 
     for h in holdings:
         try:
-            company_name = h.get("company_name") or h.get("scheme_name", "Unknown")
-            quantity = float(h.get("quantity") or h.get("units") or 0)
-            avg_price = float(h.get("average_price") or h.get("avg_price") or 0)
-            close_price = float(h.get("close_price") or h.get("ltp") or h.get("nav") or 0)
+            investment_type = h.get("investment_type", "").lower()
 
-            invested_amount = quantity * avg_price if quantity and avg_price else 0
-            current_value = quantity * close_price if quantity and close_price else invested_amount
+            # ------ EQUITY HOLDINGS ------
+            if investment_type == "equity":
+                equity_records.append({
+                    "user_id": user_id,
+                    "member_id": hdfc_member_ids["equity"],
+                    "broker_platform": "HDFC Securities",
+                    "symbol": h.get("tradingsymbol") or h.get("symbol") or "UNKNOWN",
+                    "company_name": h.get("tradingsymbol") or h.get("symbol") or "UNKNOWN",
+                    "quantity": float(h.get("quantity") or 0),
+                    "average_price": float(h.get("averageprice") or 0),
+                    "current_price": float(h.get("lastprice") or 0),
+                    "invested_amount": (float(h.get("quantity") or 0) *
+                                        float(h.get("averageprice") or 0)),
+                    "current_value": (float(h.get("quantity") or 0) *
+                                      float(h.get("lastprice") or 0)),
+                    "import_date": import_date,
+                })
 
-            is_mf = h.get("sip_indicator") == "Y" or "fund" in company_name.lower()
-            inv_type = "mutualFunds" if is_mf else "equity"
-            member_id = MEMBERS[inv_type]
-
-            print(f"📊 {company_name}: qty={quantity}, avg={avg_price}, close={close_price}")
-            print(f"   💰 Invested={invested_amount}, Current={current_value}")
-
-            new_row = {
-                "memberid": member_id,
-                "investmenttype": inv_type,
-                "brokerplatform": broker_platform,
-                "symbolorname": company_name,
-                "investedamount": round(invested_amount, 2),
-                "currentvalue": round(current_value, 2),
-                "quantity": quantity,
-                "averageprice": avg_price,
-                "lastprice": close_price,
-                "sectorname": h.get("sector_name"),
-                "isin": h.get("isin"),
-                "securityid": h.get("security_id"),
-                "createdat": datetime.utcnow().isoformat(),
-                "lastupdated": datetime.utcnow().isoformat(),
-                "hdfcdata": h,
-            }
-
-            resp = (
-                supabase.table("investments")
-                .upsert(new_row, on_conflict=["symbolorname", "brokerplatform"])
-                .execute()
-            )
-
-            if resp.data:
-                inserted_count += 1
-                print(f"✅ Upserted {company_name}: ₹{invested_amount:.2f} → ₹{current_value:.2f}")
-            else:
-                print(f"❌ Insert failed for {company_name}: {resp.error}")
+            # ------ MUTUAL FUND HOLDINGS ------
+            elif investment_type == "mutualfunds":
+                mf_records.append({
+                    "user_id": user_id,
+                    "member_id": hdfc_member_ids["mutualFunds"],
+                    "broker_platform": "HDFC Securities",
+                    "scheme_name": h.get("schemename") or "Unknown",
+                    "scheme_code": h.get("schemecode") or "",
+                    "folio_number": h.get("folionumber") or "",
+                    "fund_house": h.get("fundhouse") or "Unknown",
+                    "units": float(h.get("units") or 0),
+                    "average_nav": float(h.get("averagenav") or 0),
+                    "current_nav": float(h.get("nav") or 0),
+                    "invested_amount": (float(h.get("units") or 0) *
+                                        float(h.get("averagenav") or 0)),
+                    "current_value": (float(h.get("units") or 0) *
+                                      float(h.get("nav") or 0)),
+                    "import_date": import_date,
+                })
 
         except Exception as e:
-            msg = f"{company_name} error: {e}"
-            errors.append(msg)
-            print(f"❌ {msg}")
+            print(f"❌ Error processing holding: {e}")
+            continue
 
-    print(f"📈 Summary: {inserted_count}/{len(holdings)} holdings processed")
-    return {"inserted": inserted_count, "errors": errors}
+    # ----------------------------------------
+    # DELETE OLD HOLDINGS BEFORE INSERTION
+    # ----------------------------------------
+    print("🗑️ Deleting old HDFC holdings...")
+
+    supabase.table("equity_holdings").delete().match({
+        "user_id": user_id,
+        "broker_platform": "HDFC Securities",
+        "member_id": hdfc_member_ids["equity"]
+    }).execute()
+
+    supabase.table("mutual_fund_holdings").delete().match({
+        "user_id": user_id,
+        "broker_platform": "HDFC Securities",
+        "member_id": hdfc_member_ids["mutualFunds"]
+    }).execute()
+
+    # ----------------------------------------
+    # INSERT NEW HOLDINGS
+    # ----------------------------------------
+    if equity_records:
+        print(f"📥 Inserting {len(equity_records)} equity holdings...")
+        supabase.table("equity_holdings").insert(equity_records).execute()
+
+    if mf_records:
+        print(f"📥 Inserting {len(mf_records)} mutual fund holdings...")
+        supabase.table("mutual_fund_holdings").insert(mf_records).execute()
+
+    print("✅ HDFC holdings imported successfully")
+
+    return {
+        "equity": len(equity_records),
+        "mutualFunds": len(mf_records)
+    }
