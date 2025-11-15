@@ -188,7 +188,9 @@ def get_holdings_with_fallback(request_token, token_id):
         # Method 1: Authorization header with request_token
         {
             "headers": {"Authorization": f"Bearer {request_token}"},
-            "params": {"api_key": API_KEY}
+       #     "params": {"api_key": API_KEY}
+            "params": {"api_key": API_KEY, "login_id": USERNAME}
+
         },
         # Method 2: Authorization header without Bearer
         {
