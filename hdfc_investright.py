@@ -163,7 +163,16 @@ def get_holdings(access_token):
     print("📊 Fetching holdings")
     print("  URL:", url)
     print("  Headers:", headers)
-    resp = requests.get(url, params={"api_key": API_KEY}, headers=headers)
+   # resp = requests.get(url, params={"api_key": API_KEY}, headers=headers)
+    resp = requests.get(
+    url,
+    params={
+        "api_key": API_KEY,
+        "login_id": USERNAME   # <-- REQUIRED BY HDFC
+    },
+    headers=headers
+)
+
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
