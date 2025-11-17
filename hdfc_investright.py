@@ -260,10 +260,24 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
 
     for h in holdings:
         try:
-            investment_type = h.get("investment_type", "").lower()
+            # -------------------------------
+            # Determine holding type from REAL HDFC FIELDS
+            # -------------------------------
+            is_equity = (
+                (h.get("tradingsymbol") or h.get("symbol"))
+                and h.get("quantity") is not None
+            )
 
-            # ------ EQUITY HOLDINGS ------
-            if investment_type in ["equity", "stocks", "share"]:
+            is_mf = (
+                h.get("schemename")
+                or h.get("fundhouse")
+                or h.get("nav")
+            )
+
+            # -------------------------------
+            # EQUITY HOLDINGS
+            # -------------------------------
+            if is_equity:
                 equity_records.append({
                     "user_id": user_id,
                     "member_id": hdfc_member_ids["equity"],
@@ -273,15 +287,15 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
                     "quantity": float(h.get("quantity") or 0),
                     "average_price": float(h.get("averageprice") or 0),
                     "current_price": float(h.get("lastprice") or 0),
-                    "invested_amount": (float(h.get("quantity") or 0) *
-                                        float(h.get("averageprice") or 0)),
-                    "current_value": (float(h.get("quantity") or 0) *
-                                      float(h.get("lastprice") or 0)),
+                    "invested_amount": float(h.get("quantity") or 0) * float(h.get("averageprice") or 0),
+                    "current_value": float(h.get("quantity") or 0) * float(h.get("lastprice") or 0),
                     "import_date": import_date,
                 })
 
-            # ------ MUTUAL FUND HOLDINGS ------
-            elif investment_type in ["mutualfunds", "mutualfund", "mutual funds", "mf", "mutualfunds".lower()]:
+            # -------------------------------
+            # MUTUAL FUND HOLDINGS
+            # -------------------------------
+            elif is_mf:
                 mf_records.append({
                     "user_id": user_id,
                     "member_id": hdfc_member_ids["mutualFunds"],
@@ -293,12 +307,14 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
                     "units": float(h.get("units") or 0),
                     "average_nav": float(h.get("averagenav") or 0),
                     "current_nav": float(h.get("nav") or 0),
-                    "invested_amount": (float(h.get("units") or 0) *
-                                        float(h.get("averagenav") or 0)),
-                    "current_value": (float(h.get("units") or 0) *
-                                      float(h.get("nav") or 0)),
+                    "invested_amount": float(h.get("units") or 0) * float(h.get("averagenav") or 0),
+                    "current_value": float(h.get("units") or 0) * float(h.get("nav") or 0),
                     "import_date": import_date,
                 })
+
+            else:
+                print("⚠️ Unknown holding type. Skipped:", h)
+                continue
 
         except Exception as e:
             print(f"❌ Error processing holding: {e}")
