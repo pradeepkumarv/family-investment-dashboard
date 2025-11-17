@@ -263,7 +263,7 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
             investment_type = h.get("investment_type", "").lower()
 
             # ------ EQUITY HOLDINGS ------
-            if investment_type == "equity":
+            if investment_type in ["equity", "stocks", "share"]:
                 equity_records.append({
                     "user_id": user_id,
                     "member_id": hdfc_member_ids["equity"],
@@ -281,7 +281,7 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
                 })
 
             # ------ MUTUAL FUND HOLDINGS ------
-            elif investment_type == "mutualfunds":
+            elif investment_type in ["mutualfunds", "mutualfund", "mutual funds", "mf", "mutualfunds".lower()]:
                 mf_records.append({
                     "user_id": user_id,
                     "member_id": hdfc_member_ids["mutualFunds"],
