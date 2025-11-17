@@ -226,15 +226,22 @@ def callback():
             holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
         # ✅ Save holdings into Supabase and return response
-       if holdings_data and "data" in holdings_data:
-            hdfc_investright.process_holdings_success(
-                holdings_data["data"],
-                user_id,
-                hdfc_member_ids
-        )
+     # Step 3: Fallback
+if not holdings_data:
+    holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
+
+# ✅ Save holdings into Supabase and return response
+if holdings_data and "data" in holdings_data:
+    hdfc_investright.process_holdings_success(
+        holdings_data["data"],
+        user_id,
+        hdfc_member_ids
+    )
     return jsonify({"status": "success", "count": len(holdings_data["data"])})
+
 else:
     return jsonify({"error": "No holdings received"}), 400
+
 
     except Exception as e:
         error_trace = traceback.format_exc()
