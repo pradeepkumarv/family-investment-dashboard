@@ -194,19 +194,34 @@ def callback():
                 pass
 
         # Step 3: Fallback
-        if not holdings_data:
-            holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
+if not holdings_data:
+    holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
-        # Save to DB
-        if holdings_data and "data" in holdings_data:
-            hdfc_investright.process_holdings_success(
-                holdings_data["data"],
-                user_id,
-                hdfc_member_ids
-            )
-            return jsonify({"status": "success", "count": len(holdings_data["data"])})
+# -------------------------
+# Save holdings into DB
+# -------------------------
+if holdings_data and "data" in holdings_data:
 
-        return jsonify({"error": "No holdings received"}), 400
+    # You MUST define these before calling process_holdings_success
+    user_id = session.get("user_id")  # Or however you determine the logged-in user
+    hdfc_member_ids = {
+        "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
+        "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
+    }
+
+    hdfc_investright.process_holdings_success(
+        holdings_data["data"],
+        user_id,
+        hdfc_member_ids
+    )
+
+    return jsonify({
+        "status": "success",
+        "count": len(holdings_data["data"])
+    })
+
+return jsonify({"error": "No holdings received"}), 400
+
 
     except Exception as e:
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
