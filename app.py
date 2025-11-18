@@ -203,22 +203,16 @@ if not holdings_data:
 if holdings_data and "data" in holdings_data:
 
     # You MUST define these before calling process_holdings_success
-    user_id = session.get("user_id")  # Or however you determine the logged-in user
-    hdfc_member_ids = {
-        "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
-        "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
-    }
-
+    
     hdfc_investright.process_holdings_success(
         holdings_data["data"],
-        user_id,
+        {
+            "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
+            "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
+        },
         hdfc_member_ids
     )
-
-    return jsonify({
-        "status": "success",
-        "count": len(holdings_data["data"])
-    })
+    return jsonify({"status": "success", "count": len(holdings_data["data"])})
 
 return jsonify({"error": "No holdings received"}), 400
 
