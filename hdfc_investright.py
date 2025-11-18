@@ -243,6 +243,7 @@ def resend_2fa(token_id):
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
+
 def process_holdings_success(holdings, user_id, hdfc_member_ids):
     """
     Process HDFC Securities holdings into:
@@ -344,9 +345,32 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
         "mutualFunds": len(mf_records)
     }
 
+def deep_flatten(items):
+    """Recursively flatten lists inside lists."""
+    flat = []
+    for item in items:
+        if isinstance(item, list):
+            flat.extend(deep_flatten(item))
+        else:
+            flat.append(item)
+    return flat
+
+
+def normalize_holdings(raw):
+    """Ensure we always return a flat list of dicts."""
+    if isinstance(raw, dict):
+        # If API gave a dict instead of list
+        raw = [raw]
+
+    if isinstance(raw, list):
+        return deep_flatten(raw)
+
+    print("❌ Unknown holdings structure:", raw)
+    return []
+
+
 def parse_holding(h):
     try:
-        # Option A — Stocks
         return {
             "name": h.get("company_name", ""),
             "isin": h.get("isin"),
@@ -362,6 +386,24 @@ def parse_holding(h):
         }
 
     except Exception as e:
-        print("⚠️ Unknown holding type. Skipped:", h)
-        return None   
+        print("⚠️ Error parsing holding:", e, h)
+        return None
+
+
+# ---------- MAIN LOGIC ----------
+
+raw = holdings_json.get("holdings", [])
+cleaned = normalize_holdings(raw)
+
+parsed_holdings = []
+
+for h in cleaned:
+    if not isinstance(h, dict):
+        print("⚠️ Skipped non-dict item:", h)
+        continue
+
+    parsed = parse_holding(h)
+    if parsed:
+        parsed_holdings.append(parsed)
+
 
