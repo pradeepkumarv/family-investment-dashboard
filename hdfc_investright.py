@@ -344,6 +344,24 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
         "mutualFunds": len(mf_records)
     }
 
+def parse_holding(h):
+    try:
+        # Option A — Stocks
+        return {
+            "name": h.get("company_name", ""),
+            "isin": h.get("isin"),
+            "sector": h.get("sector_name", ""),
+            "quantity": float(h.get("quantity", 0)),
+            "avg_price": float(h.get("average_price", 0)),
+            "close_price": float(h.get("close_price", 0)),
+            "investment_value": float(h.get("investment_value", 0)),
+            "pnl": float(h.get("pnl", 0)),
+            "ltcg_qty": float(h.get("ltcg_quantity", 0)),
+            "sip": h.get("sip_indicator", "N") == "Y",
+            "type": "MF" if h.get("sip_indicator") == "Y" else "EQ"
+        }
 
-   
+    except Exception as e:
+        print("⚠️ Unknown holding type. Skipped:", h)
+        return None   
 
