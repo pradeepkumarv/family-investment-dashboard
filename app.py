@@ -3,13 +3,12 @@ from flask_cors import CORS
 import hdfc_investright
 import traceback
 import os
-import requests
 from datetime import datetime
 
 # -------------------------------------------------------
 # FLASK APP
 # -------------------------------------------------------
-app = Flask(__name__) 
+app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super-secret-key")
 
 CORS(app, resources={
@@ -21,16 +20,13 @@ CORS(app, resources={
     }
 })
 
-API_KEY = os.getenv("HDFC_API_KEY")
-API_SECRET = os.getenv("HDFC_API_SECRET")
-
 # -------------------------------------------------------
 # AUTH URL
 # -------------------------------------------------------
 @app.route("/api/hdfc/auth-url", methods=["GET"])
 def get_auth_url():
-    auth_url = "https://family-investment-dashboard.onrender.com/"
-    return jsonify({"url": auth_url})
+    return jsonify({"url": "https://family-investment-dashboard.onrender.com/"})
+
 
 # -------------------------------------------------------
 # STATUS
@@ -45,8 +41,9 @@ def status():
         "lastSync": last_sync
     })
 
+
 # -------------------------------------------------------
-# HOLDINGS (MANUAL CALL)
+# HOLDINGS (MANUAL MODE)
 # -------------------------------------------------------
 @app.route("/api/hdfc/holdings", methods=["POST"])
 def api_holdings():
@@ -64,11 +61,13 @@ def api_holdings():
         session["access_token"] = access_token
 
         return jsonify({"data": mapped})
+
     except Exception as e:
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
+
 # -------------------------------------------------------
-# MAPPING LOGIC
+# HOLDINGS MAPPING
 # -------------------------------------------------------
 def map_holdings(holdings):
     mapped = []
@@ -80,33 +79,38 @@ def map_holdings(holdings):
 
     for h in holdings_list:
         try:
-            if h.get("exchange") in ["BSE", "NSE"]:
+            # Equity
+            if h.get("exchange") in ["NSE", "BSE"]:
                 h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
                 h["investment_type"] = "equity"
 
+            # Mutual Funds
             elif h.get("asset_class") == "MUTUAL_FUND" or "folio" in h:
                 h["member_id"] = "d3a4fc84-a94b-494d-915f-60901f16d973"
                 h["investment_type"] = "mutualFunds"
 
+            # Other investments
             else:
                 h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
                 h["investment_type"] = "other"
 
             mapped.append(h)
 
-        except:
+        except Exception:
             h["member_id"] = "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"
             h["investment_type"] = "unknown"
             mapped.append(h)
 
     return mapped
 
+
 # -------------------------------------------------------
-# LANDING PAGE
+# LOGIN PAGE
 # -------------------------------------------------------
 @app.route("/", methods=["GET"])
 def home():
     return render_template("login.html")
+
 
 # -------------------------------------------------------
 # REQUEST OTP
@@ -132,6 +136,7 @@ def request_otp():
 
     except Exception as e:
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+
 
 # -------------------------------------------------------
 # VALIDATE OTP
@@ -162,8 +167,9 @@ def validate_otp():
     except Exception as e:
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
 
+
 # -------------------------------------------------------
-# CALLBACK (FINAL)
+# CALLBACK (FINAL STEP)
 # -------------------------------------------------------
 @app.route("/api/hdfc/callback", methods=["GET", "POST"])
 def callback():
@@ -172,20 +178,23 @@ def callback():
         token_id = session.get("token_id")
 
         user_id = "pradeep"
+
+        # Equity + Mutual fund member mapping
         hdfc_member_ids = ["bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"]
 
         holdings_data = None
 
-        # Step 1: Direct holdings fetch
+        # STEP 1: Try via request_token
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
         except:
             pass
 
-        # Step 2: Use access token
+        # STEP 2: Try via access_token
         if not holdings_data:
             try:
                 access_token = hdfc_investright.fetch_access_token(token_id, request_token)
+
                 session["access_token"] = access_token
                 session["last_sync"] = datetime.utcnow().isoformat()
 
@@ -193,11 +202,11 @@ def callback():
             except:
                 pass
 
-        # Step 3: Fallback
+        # STEP 3: Fallback
         if not holdings_data:
             holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
-        # Save holdings to DB
+        # SAVE TO SUPABASE
         if holdings_data and "data" in holdings_data:
             hdfc_investright.process_holdings_success(
                 holdings_data["data"],
@@ -207,6 +216,7 @@ def callback():
                 },
                 hdfc_member_ids
             )
+
             return jsonify({"status": "success", "count": len(holdings_data["data"])})
 
         return jsonify({"error": "No holdings received"}), 400
