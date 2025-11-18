@@ -243,12 +243,14 @@ def resend_2fa(token_id):
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
-    
-def process_holdings_success(holdings, user_id, hdfc_member_ids):
+ def process_holdings_success(holdings, user_id, hdfc_member_ids):
     """
-    Process HDFC holdings and insert into:
+    Process HDFC Securities holdings and insert into:
         - equity_holdings
         - mutual_fund_holdings
+    Using simplified logic:
+        - If security_id contains "fund" or "mf" -> Mutual Fund
+        - Everything else -> Equity
     """
 
     equity_records = []
@@ -260,86 +262,78 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
 
     for h in holdings:
         try:
-            # -------------------------------
-            # Determine holding type from REAL HDFC FIELDS
-            # -------------------------------
-            is_equity = (
-                (h.get("tradingsymbol") or h.get("symbol"))
-                and h.get("quantity") is not None
-            )
+            security_id = (h.get("security_id") or "").lower()
 
-            is_mf = (
-                h.get("schemename")
-                or h.get("fundhouse")
-                or h.get("nav")
-            )
+            # -----------------------------------------------------
+            # Type Detection (Your Option A)
+            # -----------------------------------------------------
+            if "fund" in security_id or "mf" in security_id:
+                holding_type = "mutualFunds"
+                member_id = hdfc_member_ids["mutualFunds"]
+            else:
+                holding_type = "equity"
+                member_id = hdfc_member_ids["equity"]
 
-            # -------------------------------
+            # -----------------------------------------------------
             # EQUITY HOLDINGS
-            # -------------------------------
-            if is_equity:
+            # -----------------------------------------------------
+            if holding_type == "equity":
                 equity_records.append({
                     "user_id": user_id,
-                    "member_id": hdfc_member_ids["equity"],
+                    "member_id": member_id,
                     "broker_platform": "HDFC Securities",
-                    "symbol": h.get("tradingsymbol") or h.get("symbol") or "UNKNOWN",
-                    "company_name": h.get("tradingsymbol") or h.get("symbol") or "UNKNOWN",
+                    "symbol": h.get("security_id", "UNKNOWN"),
+                    "company_name": h.get("company_name", "UNKNOWN"),
+                    "sector_name": h.get("sector_name", ""),
+                    "isin": h.get("isin", ""),
                     "quantity": float(h.get("quantity") or 0),
-                    "average_price": float(h.get("averageprice") or 0),
-                    "current_price": float(h.get("lastprice") or 0),
-                    "invested_amount": float(h.get("quantity") or 0) * float(h.get("averageprice") or 0),
-                    "current_value": float(h.get("quantity") or 0) * float(h.get("lastprice") or 0),
-                    "import_date": import_date,
+                    "average_price": float(h.get("average_price") or 0),
+                    "current_price": float(h.get("close_price") or 0),
+                    "invested_amount": float(h.get("investment_value") or 0),
+                    "current_value": float(h.get("quantity") or 0) * float(h.get("close_price") or 0),
+                    "import_date": import_date
                 })
 
-            # -------------------------------
+            # -----------------------------------------------------
             # MUTUAL FUND HOLDINGS
-            # -------------------------------
-            elif is_mf:
+            # -----------------------------------------------------
+            else:
                 mf_records.append({
                     "user_id": user_id,
-                    "member_id": hdfc_member_ids["mutualFunds"],
+                    "member_id": member_id,
                     "broker_platform": "HDFC Securities",
-                    "scheme_name": h.get("schemename") or "Unknown",
-                    "scheme_code": h.get("schemecode") or "",
-                    "folio_number": h.get("folionumber") or "",
-                    "fund_house": h.get("fundhouse") or "Unknown",
-                    "units": float(h.get("units") or 0),
-                    "average_nav": float(h.get("averagenav") or 0),
-                    "current_nav": float(h.get("nav") or 0),
-                    "invested_amount": float(h.get("units") or 0) * float(h.get("averagenav") or 0),
-                    "current_value": float(h.get("units") or 0) * float(h.get("nav") or 0),
-                    "import_date": import_date,
+                    "scheme_name": h.get("company_name", "Unknown"),
+                    "scheme_code": h.get("security_id", ""),
+                    "units": float(h.get("quantity") or 0),
+                    "average_nav": float(h.get("average_price") or 0),
+                    "current_nav": float(h.get("close_price") or 0),
+                    "invested_amount": float(h.get("investment_value") or 0),
+                    "current_value": float(h.get("quantity") or 0) * float(h.get("close_price") or 0),
+                    "import_date": import_date
                 })
-
-            else:
-                print("⚠️ Unknown holding type. Skipped:", h)
-                continue
 
         except Exception as e:
             print(f"❌ Error processing holding: {e}")
             continue
 
-    # ----------------------------------------
-    # DELETE OLD HOLDINGS BEFORE INSERTION
-    # ----------------------------------------
+    # ---------------------------------------------------------
+    # DELETE OLD DATA
+    # ---------------------------------------------------------
     print("🗑️ Deleting old HDFC holdings...")
 
     supabase.table("equity_holdings").delete().match({
         "user_id": user_id,
-        "broker_platform": "HDFC Securities",
-        "member_id": hdfc_member_ids["equity"]
+        "broker_platform": "HDFC Securities"
     }).execute()
 
     supabase.table("mutual_fund_holdings").delete().match({
         "user_id": user_id,
-        "broker_platform": "HDFC Securities",
-        "member_id": hdfc_member_ids["mutualFunds"]
+        "broker_platform": "HDFC Securities"
     }).execute()
 
-    # ----------------------------------------
-    # INSERT NEW HOLDINGS
-    # ----------------------------------------
+    # ---------------------------------------------------------
+    # INSERT NEW DATA
+    # ---------------------------------------------------------
     if equity_records:
         print(f"📥 Inserting {len(equity_records)} equity holdings...")
         supabase.table("equity_holdings").insert(equity_records).execute()
@@ -354,3 +348,5 @@ def process_holdings_success(holdings, user_id, hdfc_member_ids):
         "equity": len(equity_records),
         "mutualFunds": len(mf_records)
     }
+   
+
