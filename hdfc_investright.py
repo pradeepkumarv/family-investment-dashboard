@@ -355,18 +355,22 @@ def deep_flatten(items):
             flat.append(item)
     return flat
 
-
 def normalize_holdings(raw):
-    """Ensure we always return a flat list of dicts."""
-    if isinstance(raw, dict):
-        # If API gave a dict instead of list
-        raw = [raw]
+    """
+    raw is usually: { "holdings": [ [...], {...}, [...], ... ] }
+    We must flatten lists inside.
+    """
+    flattened = []
 
-    if isinstance(raw, list):
-        return deep_flatten(raw)
+    for item in raw:
+        if isinstance(item, list):
+            flattened.extend(item)  # Flatten
+        elif isinstance(item, dict):
+            flattened.append(item)
+        else:
+            print("⚠️ Unknown entry type:", type(item), item)
 
-    print("❌ Unknown holdings structure:", raw)
-    return []
+    return flattened
 
 
 def parse_holding(h):
@@ -386,11 +390,13 @@ def parse_holding(h):
         }
 
     except Exception as e:
-        print("⚠️ Error parsing holding:", e, h)
+        print("⚠️ Unknown holding type. Skipped:", h)
         return None
 
 
-# ---------- MAIN LOGIC ----------
+# -------------------------
+# MAIN PROCESSING SECTION
+# -------------------------
 
 raw = holdings_json.get("holdings", [])
 cleaned = normalize_holdings(raw)
@@ -398,12 +404,14 @@ cleaned = normalize_holdings(raw)
 parsed_holdings = []
 
 for h in cleaned:
-    if not isinstance(h, dict):
-        print("⚠️ Skipped non-dict item:", h)
-        continue
-
     parsed = parse_holding(h)
     if parsed:
         parsed_holdings.append(parsed)
+
+
+
+
+
+
 
 
