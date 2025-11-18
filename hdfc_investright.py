@@ -243,14 +243,11 @@ def resend_2fa(token_id):
     print("  Response:", resp.status_code, resp.text)
     resp.raise_for_status()
     return resp.json()
- def process_holdings_success(holdings, user_id, hdfc_member_ids):
+def process_holdings_success(holdings, user_id, hdfc_member_ids):
     """
-    Process HDFC Securities holdings and insert into:
+    Process HDFC Securities holdings into:
         - equity_holdings
         - mutual_fund_holdings
-    Using simplified logic:
-        - If security_id contains "fund" or "mf" -> Mutual Fund
-        - Everything else -> Equity
     """
 
     equity_records = []
@@ -264,9 +261,7 @@ def resend_2fa(token_id):
         try:
             security_id = (h.get("security_id") or "").lower()
 
-            # -----------------------------------------------------
-            # Type Detection (Your Option A)
-            # -----------------------------------------------------
+            # Determine type (Option A logic)
             if "fund" in security_id or "mf" in security_id:
                 holding_type = "mutualFunds"
                 member_id = hdfc_member_ids["mutualFunds"]
@@ -274,9 +269,9 @@ def resend_2fa(token_id):
                 holding_type = "equity"
                 member_id = hdfc_member_ids["equity"]
 
-            # -----------------------------------------------------
-            # EQUITY HOLDINGS
-            # -----------------------------------------------------
+            # ---------------------
+            # EQUITY
+            # ---------------------
             if holding_type == "equity":
                 equity_records.append({
                     "user_id": user_id,
@@ -294,9 +289,9 @@ def resend_2fa(token_id):
                     "import_date": import_date
                 })
 
-            # -----------------------------------------------------
-            # MUTUAL FUND HOLDINGS
-            # -----------------------------------------------------
+            # ---------------------
+            # MUTUAL FUNDS
+            # ---------------------
             else:
                 mf_records.append({
                     "user_id": user_id,
@@ -316,9 +311,9 @@ def resend_2fa(token_id):
             print(f"❌ Error processing holding: {e}")
             continue
 
-    # ---------------------------------------------------------
+    # --------------
     # DELETE OLD DATA
-    # ---------------------------------------------------------
+    # --------------
     print("🗑️ Deleting old HDFC holdings...")
 
     supabase.table("equity_holdings").delete().match({
@@ -331,9 +326,9 @@ def resend_2fa(token_id):
         "broker_platform": "HDFC Securities"
     }).execute()
 
-    # ---------------------------------------------------------
-    # INSERT NEW DATA
-    # ---------------------------------------------------------
+    # --------------
+    # INSERT NEW
+    # --------------
     if equity_records:
         print(f"📥 Inserting {len(equity_records)} equity holdings...")
         supabase.table("equity_holdings").insert(equity_records).execute()
@@ -348,5 +343,7 @@ def resend_2fa(token_id):
         "equity": len(equity_records),
         "mutualFunds": len(mf_records)
     }
+
+
    
 
