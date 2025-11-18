@@ -126,7 +126,7 @@ def request_otp():
         session["username"] = username
         session["password"] = password
 
-        result = hdfc_investright.login_validate(token_id, username, password)
+        hdfc_investright.login_validate(token_id, username, password)
 
         return render_template("otp.html", tokenid=token_id)
 
@@ -171,18 +171,18 @@ def callback():
         request_token = session.get("request_token")
         token_id = session.get("token_id")
 
-        user_id = "pradeep"  # or from DB
+        user_id = "pradeep"
         hdfc_member_ids = ["bef9db5e-2f21-4038-8f3f-f78ce1bbfb49"]
 
         holdings_data = None
 
-        # Step 1: Direct request_token
+        # Step 1: Direct holdings fetch
         try:
             holdings_data = hdfc_investright.get_holdings(request_token)
         except:
             pass
 
-        # Step 2: Try access token
+        # Step 2: Use access token
         if not holdings_data:
             try:
                 access_token = hdfc_investright.fetch_access_token(token_id, request_token)
@@ -194,31 +194,26 @@ def callback():
                 pass
 
         # Step 3: Fallback
-if not holdings_data:
-    holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
+        if not holdings_data:
+            holdings_data = hdfc_investright.get_holdings_with_fallback(request_token, token_id)
 
-# -------------------------
-# Save holdings into DB
-# -------------------------
-if holdings_data and "data" in holdings_data:
+        # Save holdings to DB
+        if holdings_data and "data" in holdings_data:
+            hdfc_investright.process_holdings_success(
+                holdings_data["data"],
+                {
+                    "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
+                    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
+                },
+                hdfc_member_ids
+            )
+            return jsonify({"status": "success", "count": len(holdings_data["data"])})
 
-    # You MUST define these before calling process_holdings_success
-    
-    hdfc_investright.process_holdings_success(
-        holdings_data["data"],
-        {
-            "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
-            "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
-        },
-        hdfc_member_ids
-    )
-    return jsonify({"status": "success", "count": len(holdings_data["data"])})
-
-return jsonify({"error": "No holdings received"}), 400
-
+        return jsonify({"error": "No holdings received"}), 400
 
     except Exception as e:
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+
 
 # -------------------------------------------------------
 # MAIN
