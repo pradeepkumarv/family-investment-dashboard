@@ -75,14 +75,26 @@ async function authorizeHDFC() {
     try {
         showHDFCMessage('Redirecting to HDFC Securities authorization...', 'info');
         const resp = await fetch(`${HDFC_CONFIG.backend_base}/auth-url`, { method: 'GET' });
-        const url = await resp.json();
-        if (!url) throw new Error('No URL returned');
-        window.location.href = url;
+        const data = await resp.json();
+        
+        // Extract the actual URL from the response
+        // Backend may return: {auth_url: '...'} or {url: '...'} or just the URL string
+        const authUrl = data.auth_url || data.url || data;
+        
+        console.log('📍 Authorization URL:', authUrl);
+        
+        if (!authUrl || typeof authUrl !== 'string') {
+            throw new Error('Invalid authorization URL received from server');
+        }
+        
+        window.location.href = authUrl;
     } catch (err) {
         console.error('HDFC Authorization Error:', err);
         showHDFCMessage(`Authorization failed: ${err.message}`, 'error');
     }
 }
+
+
 
 async function testHDFCConnection() {
     const statusElement = document.getElementById('hdfc-connection-status');
