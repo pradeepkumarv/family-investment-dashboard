@@ -31,44 +31,63 @@ function showHDFCMessage(msg, type = 'info') {
 }
 
 function showHDFCSettings() {
+    console.log('showHDFCSettings called');
+
     const oldModal = document.getElementById('hdfc-settings-modal');
-    if (oldModal) oldModal.remove();
+    if (oldModal) {
+        console.log('Removing old modal');
+        oldModal.remove();
+    }
 
     const modalContent = `
-        <div id="hdfc-settings-modal" class="modal" style="display:block; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4)">
-            <div class="modal-content" style="background-color:#fefefe; margin:10% auto; padding:20px; border:1px solid #888; width:90%; max-width:500px; border-radius:10px;">
-                <span class="close" onclick="document.getElementById('hdfc-settings-modal').remove()" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
-                <h2 style="color:#333; margin-bottom:20px;">HDFC Securities Settings</h2>
-                
-                <div class="hdfc-status-section" style="margin-bottom:25px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9;">
-                    <h3 style="margin-bottom:15px; color:#555;">Connection Status</h3>
+        <div id="hdfc-settings-modal" class="modal" style="display:flex !important; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+            <div class="modal-content" style="background-color:#ffffff; padding:30px; border:none; width:90%; max-width:600px; border-radius:15px; box-shadow:0 10px 40px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #eee; padding-bottom:15px;">
+                    <h2 style="color:#333; margin:0; font-size:24px;">HDFC Securities Settings</h2>
+                    <button onclick="closeHDFCModal()" style="background:none; border:none; font-size:32px; cursor:pointer; color:#999; line-height:1; padding:0; width:32px; height:32px;">&times;</button>
+                </div>
+
+                <div class="hdfc-status-section" style="margin-bottom:25px; padding:20px; border:1px solid #e0e0e0; border-radius:10px; background:#f8f9fa;">
+                    <h3 style="margin-bottom:15px; color:#555; font-size:18px;">Connection Status</h3>
                     <div id="hdfc-status" style="margin-bottom:15px;">
-                        <span id="hdfc-connection-status" style="font-weight:bold;">Checking...</span>
+                        <span id="hdfc-connection-status" style="font-weight:bold; font-size:16px;">Checking...</span>
                     </div>
-                    <div id="hdfc-last-sync" style="font-size:0.9em; color:#666; margin-top:5px;"></div>
-                    <div>
-                        <button id="hdfc-test-connection" onclick="testHDFCConnection()" style="background:#007bff; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; margin-right:10px;">
+                    <div id="hdfc-last-sync" style="font-size:14px; color:#666; margin-bottom:15px;"></div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button onclick="testHDFCConnection()" style="background:#007bff; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:500; transition:background 0.3s;">
                             Test Connection
                         </button>
-                        <button id="hdfc-authorize-btn" onclick="authorizeHDFC()" style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
+                        <button onclick="authorizeHDFC()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-size:14px; font-weight:500; transition:background 0.3s;">
                             Authorize HDFC
                         </button>
                     </div>
                 </div>
 
-                <div class="hdfc-info" style="font-size:0.9em; color:#666;">
-                    <p><strong>Automatic Import:</strong></p>
-                    <p>After you log in and validate OTP, your HDFC holdings will be imported automatically into your dashboard.</p>
+                <div class="hdfc-info" style="font-size:14px; color:#555; background:#fff3cd; padding:15px; border-radius:8px; border-left:4px solid #ffc107;">
+                    <p style="margin:0 0 10px 0;"><strong>Automatic Import Process:</strong></p>
+                    <p style="margin:0 0 10px 0;">After you log in and validate OTP, your HDFC holdings will be imported automatically.</p>
                     <ul style="margin:10px 0; padding-left:20px;">
-                        <li>Equity Holdings mapped to <strong>Pradeep Kumar V</strong></li>
+                        <li style="margin-bottom:5px;">Equity Holdings mapped to <strong>Pradeep Kumar V</strong></li>
                         <li>Mutual Fund Holdings mapped to <strong>Sanchita Pradeep</strong></li>
                     </ul>
-                    <p style="color: #e53e3e; font-size: 12px;"><strong>Note:</strong> Old data will be deleted and fresh data imported.</p>
+                    <p style="color:#d32f2f; font-size:13px; margin:10px 0 0 0;"><strong>Note:</strong> Old data will be deleted and fresh data imported.</p>
                 </div>
             </div>
         </div>
     `;
+
+    console.log('Inserting modal into DOM');
     document.body.insertAdjacentHTML('beforeend', modalContent);
+    console.log('Modal inserted successfully');
+}
+
+function closeHDFCModal() {
+    console.log('closeHDFCModal called');
+    const modal = document.getElementById('hdfc-settings-modal');
+    if (modal) {
+        modal.remove();
+        console.log('Modal removed');
+    }
 }
 
 async function authorizeHDFC() {
@@ -355,6 +374,7 @@ async function fetchAndImportHoldings() {
 
 // Expose functions globally
 window.showHDFCSettings = showHDFCSettings;
+window.closeHDFCModal = closeHDFCModal;
 window.authorizeHDFC = authorizeHDFC;
 window.testHDFCConnection = testHDFCConnection;
 window.fetchAndImportHoldings = fetchAndImportHoldings;
