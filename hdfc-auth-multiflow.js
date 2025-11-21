@@ -13,8 +13,10 @@ let hdfcMemberIds = {
 };
 
 const HDFC_CONFIG = {
-    backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc',
+    backend_base: 'https://family-investment-dashboard.onrender.com',
+    api_base: 'https://family-investment-dashboard.onrender.com/api/hdfc'
 };
+
 
 let hdfcAccessToken = null;
 let hdfcTokenId = null;
