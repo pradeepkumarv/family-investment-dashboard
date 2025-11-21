@@ -60,36 +60,51 @@ def health():
 # app.py - FIXED VERSION
 # Add this updated endpoint to your app.py
 
+# Replace your /api/hdfc/auth-url endpoint in app.py with this FIXED version:
+
 @app.route('/api/hdfc/auth-url', methods=['GET'])
 def get_auth_url():
     """
-    Generate HDFC authorization URL with proper API key parameter.
-    Returns JSON with the authorization URL.
+    Start HDFC authentication flow - Step 1: Get token_id
+    This initiates the login process.
     """
     try:
-        # Get API key from environment
-        api_key = os.environ.get('HDFC_API_KEY')
+        # Import the hdfc_investright helper
+        import hdfc_investright
         
-        if not api_key:
-            logger.error('HDFC_API_KEY not set in environment variables')
-            return jsonify({'error': 'API key not configured on server'}), 500
+        # Step 1: Get token_id from HDFC
+        # This is the first step in HDFC's OAuth flow
+        token_id = hdfc_investright.get_token_id()
         
-        # Base authorization URL
-        base_url = 'https://developer.hdfcsec.com/oapi/v1/authorise'
+        if not token_id:
+            logger.error('Failed to get token_id from HDFC')
+            return jsonify({'error': 'Failed to initiate HDFC authentication'}), 500
         
-        # Construct full URL with API key parameter
-        auth_url = f"{base_url}?api_key={api_key}"
+        # Store token_id in session
+        session['token_id'] = token_id
         
-        logger.info(f'Generated HDFC auth URL (key masked): {base_url}?api_key=***')
+        logger.info(f'✅ Got token_id from HDFC: {token_id[:10]}...')
         
-        # Return as JSON object (not just string)
+        # Step 2: Construct the login URL
+        # HDFC requires users to log in through their OAuth page
+        # The redirect_uri should point back to your callback endpoint
+        redirect_uri = f"{request.host_url.rstrip('/')}/api/hdfc/callback"
+        
+        # HDFC's login/authorize endpoint
+        # Note: HDFC uses a multi-step flow, not a simple OAuth redirect
+        # The frontend needs to open a login modal instead
+        auth_url = f"https://developer.hdfcsec.com/oapi/v1/login?token_id={token_id}"
+        
         return jsonify({
             'auth_url': auth_url,
-            'url': auth_url  # Provide both for compatibility
+            'url': auth_url,
+            'token_id': token_id,
+            'flow': 'credentials_required',
+            'message': 'HDFC requires username/password + OTP authentication'
         }), 200
         
     except Exception as e:
-        logger.exception('Error generating HDFC auth URL')
+        logger.exception('Error in get_auth_url')
         return jsonify({'error': f'Failed to generate auth URL: {str(e)}'}), 500
 
 
