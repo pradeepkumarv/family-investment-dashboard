@@ -121,8 +121,9 @@ async function hdfcStep1RequestOTP() {
 
     if (statusEl) statusEl.textContent = '⏳ Requesting OTP...';
 
-    try {
-        const response = await fetch('/request-otp', {
+      try {
+        // Use the full backend URL path
+        const response = await fetch(`${HDFC_CONFIG.backend_base}/request-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ username, password })
@@ -162,12 +163,14 @@ async function hdfcStep2ValidateOTP() {
 
     if (statusEl) statusEl.textContent = '⏳ Validating OTP...';
 
-    try {
-        const response = await fetch('/validate-otp', {
+       try {
+        // Use the full backend URL path
+        const response = await fetch(`${HDFC_CONFIG.backend_base}/validate-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ otp, tokenid: hdfcTokenId })
         });
+
 
         const data = await response.json();
 
@@ -184,9 +187,11 @@ async function hdfcStep2ValidateOTP() {
         document.getElementById('hdfc-step3').style.display = 'block';
 
         // Wait a moment then redirect to callback to fetch holdings
-        setTimeout(() => {
-            window.location.href = '/api/hdfc/callback';
+               
+        setTimeout(async () => {
+            await fetchHDFCHoldings();
         }, 1000);
+
 
     } catch (err) {
         console.error('❌ OTP Validation Error:', err);
@@ -275,8 +280,10 @@ async function checkHDFCImportStatus() {
 }
 
 // Expose functions globally
-window.showHDFCSettings = showHDFCSettings;
-window.hdfcStep1RequestOTP = hdfcStep1RequestOTP;
-window.hdfcStep2ValidateOTP = hdfcStep2ValidateOTP;
-
-console.log('✅ HDFC Securities integration (MULTI-STEP) loaded');
+// Fetch holdings after successful authentication
+async function fetchHDFCHoldings() {
+    try {
+        console.log('📥 Fetching HDFC holdings...');
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
