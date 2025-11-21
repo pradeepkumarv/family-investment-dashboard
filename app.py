@@ -56,15 +56,42 @@ DEFAULT_USER_ID = os.getenv("DEFAULT_USER_ID", "5f2db789-657d-48cf-a84d-8d3395f5
 def health():
     return jsonify({"status": "ok", "time": datetime.utcnow().isoformat()}), 200
 
-# -------------------------------------------------------
-# AUTH URL (frontend can call this to get the auth/start URL)
-# -------------------------------------------------------
-@app.route("/api/hdfc/auth-url", methods=["GET"])
+
+# app.py - FIXED VERSION
+# Add this updated endpoint to your app.py
+
+@app.route('/api/hdfc/auth-url', methods=['GET'])
 def get_auth_url():
-    # If you have a specific authorization URL you want to show,
-    # you can return it here for the SPA to open.
-    auth_url = os.environ.get("HDFC_AUTH_URL", "https://developer.hdfcsec.com/oapi/v1/authorise")
-    return jsonify({"url": auth_url})
+    """
+    Generate HDFC authorization URL with proper API key parameter.
+    Returns JSON with the authorization URL.
+    """
+    try:
+        # Get API key from environment
+        api_key = os.environ.get('HDFC_API_KEY')
+        
+        if not api_key:
+            logger.error('HDFC_API_KEY not set in environment variables')
+            return jsonify({'error': 'API key not configured on server'}), 500
+        
+        # Base authorization URL
+        base_url = 'https://developer.hdfcsec.com/oapi/v1/authorise'
+        
+        # Construct full URL with API key parameter
+        auth_url = f"{base_url}?api_key={api_key}"
+        
+        logger.info(f'Generated HDFC auth URL (key masked): {base_url}?api_key=***')
+        
+        # Return as JSON object (not just string)
+        return jsonify({
+            'auth_url': auth_url,
+            'url': auth_url  # Provide both for compatibility
+        }), 200
+        
+    except Exception as e:
+        logger.exception('Error generating HDFC auth URL')
+        return jsonify({'error': f'Failed to generate auth URL: {str(e)}'}), 500
+
 
 # -------------------------------------------------------
 # STATUS
