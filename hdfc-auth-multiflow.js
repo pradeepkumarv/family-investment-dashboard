@@ -1,399 +1,224 @@
-// HDFC Securities Integration - MULTI-STEP AUTHENTICATION FLOW - FULLY PATCHED
-// Properly handles the 4-step HDFC authorization process with correct endpoint URLs
+# hdfc_investright.py - FIXED VERSION with enhanced error handling
 
-const HDFC_MEMBER_NAMES = {
-    equity_member: 'pradeep kumar v',
-    mf_member: 'sanchita pradeep'
-};
+import os
+import requests
+import logging
+import traceback
+from datetime import datetime
+from typing import Optional, Dict, List, Any
 
-let hdfcMemberIds = {
-    equity_member: null,
-    mf_member: null
-};
+logger = logging.getLogger("hdfc_investright")
+logger.setLevel(logging.INFO)
 
-const HDFC_CONFIG = {
-    backend_base: 'https://family-investment-dashboard.onrender.com',
-    api_base: 'https://family-investment-dashboard.onrender.com/api/hdfc'
-};
+# Supabase client
+try:
+    from supabase import create_client, Client
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+    supabase: Optional[Client] = None
+    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        logger.info("✅ Supabase client initialized")
+    else:
+        logger.warning("Supabase credentials missing; DB writes will fail until provided.")
+except Exception as e:
+    supabase = None
+    logger.exception("Supabase client could not be initialized")
 
-let hdfcAccessToken = null;
-let hdfcTokenId = null;
+# HDFC API Configuration
+HDFC_API_KEY = os.getenv("HDFC_API_KEY")
+HDFC_API_SECRET = os.getenv("HDFC_API_SECRET")
+HDFC_TOKEN_ID_URL = os.getenv("HDFC_TOKEN_ID_URL", "https://developer.hdfcsec.com/oapi/v1/login/tokenid")
+HDFC_LOGIN_VALIDATE_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", "https://developer.hdfcsec.com/oapi/v1/login/validate")
+HDFC_ACCESS_TOKEN_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", "https://developer.hdfcsec.com/oapi/v1/access-token")
+HDFC_HOLDINGS_URL = os.getenv("HDFC_HOLDINGS_URL", "https://developer.hdfcsec.com/oapi/v1/portfolio/holdings")
 
-function showHDFCMessage(msg, type = 'info') {
-    if (typeof showMessage === 'function') {
-        showMessage(`HDFC Securities: ${msg}`, type);
-    } else {
-        console.log(`HDFC: ${msg}`);
+logger.info(f"📋 HDFC API Configuration:")
+logger.info(f"  - API Key: {'✅ Set' if HDFC_API_KEY else '❌ Missing'}")
+logger.info(f"  - API Secret: {'✅ Set' if HDFC_API_SECRET else '❌ Missing'}")
+logger.info(f"  - Token ID URL: {HDFC_TOKEN_ID_URL}")
+
+def get_token_id() -> str:
+    """
+    Request a tokenid from HDFC (initial step).
+    Enhanced with better error handling and logging.
+    """
+    if not HDFC_API_KEY:
+        raise RuntimeError("HDFC_API_KEY environment variable is not set")
+    
+    params = {'api_key': HDFC_API_KEY}
+    headers = {
+        'User-Agent': 'Family-Investment-Dashboard/1.0',
+        'Accept': 'application/json'
     }
-}
+    
+    logger.info(f"🔑 Requesting tokenid from: {HDFC_TOKEN_ID_URL}")
+    logger.info(f"🔑 With API key: {HDFC_API_KEY[:10]}...")  # Log first 10 chars only
+    
+    try:
+        resp = requests.get(HDFC_TOKEN_ID_URL, params=params, headers=headers, timeout=30)
+        
+        # Log response details
+        logger.info(f"📊 Response status: {resp.status_code}")
+        logger.info(f"📊 Response headers: {dict(resp.headers)}")
+        logger.info(f"📊 Response text (first 200 chars): {resp.text[:200]}")
+        
+        # Check if response is JSON
+        content_type = resp.headers.get('Content-Type', '')
+        if 'json' not in content_type.lower():
+            logger.error(f"❌ Expected JSON but got Content-Type: {content_type}")
+            logger.error(f"❌ Full response text: {resp.text}")
+            raise RuntimeError(f"HDFC API returned non-JSON response (Content-Type: {content_type})")
+        
+        # Try to parse JSON
+        try:
+            data = resp.json()
+        except ValueError as e:
+            logger.error(f"❌ Failed to parse JSON response: {e}")
+            logger.error(f"❌ Raw response text: {resp.text}")
+            raise RuntimeError(f"HDFC API returned invalid JSON: {str(e)}")
+        
+        # Extract token_id
+        token_id = data.get('tokenId') or data.get('tokenid') or data.get('token_id')
+        
+        if not token_id:
+            logger.error(f"❌ No tokenid in response. Full data: {data}")
+            raise RuntimeError(f"No tokenid returned from HDFC. Response: {data}")
+        
+        logger.info(f"✅ Successfully got tokenid: {token_id[:10]}...")
+        return token_id
+        
+    except requests.exceptions.RequestException as e:
+        logger.exception(f"❌ Network error calling HDFC API: {e}")
+        raise RuntimeError(f"Failed to connect to HDFC API: {str(e)}")
+    except Exception as e:
+        logger.exception(f"❌ Unexpected error in get_token_id: {e}")
+        raise
 
-function showHDFCSettings() {
-    const oldModal = document.getElementById('hdfc-settings-modal');
-    if (oldModal) oldModal.remove();
-
-    const modalContent = `
-        <div id="hdfc-settings-modal" class="modal" style="display:block; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4)">
-            <div class="modal-content" style="background-color:#fefefe; margin:10% auto; padding:20px; border:1px solid #888; width:90%; max-width:600px; border-radius:10px; max-height:90vh; overflow-y:auto;">
-                <span class="close" onclick="document.getElementById('hdfc-settings-modal').remove()" style="color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
-                <h2 style="color:#333; margin-bottom:20px;">HDFC Securities - Multi-Step Login</h2>
-                
-                <div class="hdfc-status-section" style="margin-bottom:25px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#f9f9f9;">
-                    <h3 style="margin-bottom:15px; color:#555;">Login Steps</h3>
-                    
-                    <!-- STEP 1: Username & Password -->
-                    <div id="hdfc-step1" style="margin-bottom:20px; padding:15px; border:1px solid #e0e0e0; border-radius:5px;">
-                        <h4 style="margin-bottom:10px; color:#666;">Step 1: Enter Credentials</h4>
-                        <div style="margin-bottom:10px;">
-                            <label style="display:block; margin-bottom:5px; font-weight:bold;">Username:</label>
-                            <input type="text" id="hdfc-username" placeholder="Your HDFC username" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
-                        </div>
-                        <div style="margin-bottom:10px;">
-                            <label style="display:block; margin-bottom:5px; font-weight:bold;">Password:</label>
-                            <input type="password" id="hdfc-password" placeholder="Your HDFC password" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
-                        </div>
-                        <button onclick="hdfcStep1RequestOTP()" style="background:#007bff; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
-                            Request OTP
-                        </button>
-                        <span id="hdfc-step1-status" style="margin-left:10px; font-size:0.9em;"></span>
-                    </div>
-
-                    <!-- STEP 2: OTP Validation -->
-                    <div id="hdfc-step2" style="margin-bottom:20px; padding:15px; border:1px solid #e0e0e0; border-radius:5px; display:none;">
-                        <h4 style="margin-bottom:10px; color:#666;">Step 2: Enter OTP</h4>
-                        <p style="margin-bottom:10px; color:#666; font-size:0.9em;">An OTP has been sent to your registered email/SMS</p>
-                        <div style="margin-bottom:10px;">
-                            <label style="display:block; margin-bottom:5px; font-weight:bold;">OTP:</label>
-                            <input type="text" id="hdfc-otp" placeholder="Enter 6-digit OTP" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
-                        </div>
-                        <button onclick="hdfcStep2ValidateOTP()" style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">
-                            Validate OTP
-                        </button>
-                        <span id="hdfc-step2-status" style="margin-left:10px; font-size:0.9em;"></span>
-                    </div>
-
-                    <!-- STEP 3: Authorization Complete -->
-                    <div id="hdfc-step3" style="margin-bottom:20px; padding:15px; border:1px solid #e0e0e0; border-radius:5px; display:none;">
-                        <h4 style="margin-bottom:10px; color:#666;">Step 3: Fetching Holdings...</h4>
-                        <div style="text-align:center; padding:20px;">
-                            <div style="display:inline-block; width:40px; height:40px; border:4px solid #f3f3f3; border-top:4px solid #007bff; border-radius:50%; animation:spin 1s linear infinite;"></div>
-                            <p style="margin-top:10px; color:#666;">Please wait while we fetch your holdings...</p>
-                        </div>
-                    </div>
-
-                    <!-- Success Message -->
-                    <div id="hdfc-success" style="margin-bottom:20px; padding:15px; border:1px solid #d4edda; border-radius:5px; background:#d4edda; display:none; color:#155724;">
-                        <h4>✅ Authentication Successful!</h4>
-                        <p>Your HDFC holdings are being imported to your dashboard.</p>
-                    </div>
-                </div>
-
-                <div class="hdfc-info" style="font-size:0.9em; color:#666; padding:15px; background:#f0f0f0; border-radius:5px;">
-                    <p><strong>What will be imported:</strong></p>
-                    <ul style="margin:10px 0; padding-left:20px;">
-                        <li>Equity Holdings mapped to <strong>Pradeep Kumar V</strong></li>
-                        <li>Mutual Fund Holdings mapped to <strong>Sanchita Pradeep</strong></li>
-                    </ul>
-                    <p style="color: #e53e3e; font-size: 12px; margin-top:10px;"><strong>Note:</strong> Old HDFC data will be deleted and replaced with fresh data.</p>
-                </div>
-
-                <style>
-                    @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                    }
-                </style>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalContent);
-}
-
-// Step 1: Request OTP
-async function hdfcStep1RequestOTP() {
-    const username = document.getElementById('hdfc-username').value;
-    const password = document.getElementById('hdfc-password').value;
-    const statusEl = document.getElementById('hdfc-step1-status');
-
-    if (!username || !password) {
-        if (statusEl) statusEl.textContent = '❌ Please enter username and password';
-        return;
+def login_validate(token_id: str, username: str, password: str) -> dict:
+    """
+    Start login validate: sends credentials, returns two-fa response.
+    """
+    params = {'api_key': HDFC_API_KEY, 'tokenid': token_id}
+    payload = {'username': username, 'password': password}
+    headers = {
+        'User-Agent': 'Family-Investment-Dashboard/1.0',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
     }
-
-    if (statusEl) statusEl.textContent = '⏳ Requesting OTP...';
-
-    try {
-        // Call the root-level /request-otp endpoint
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/request-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ username, password })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to request OTP');
-        }
-
-        console.log('✅ OTP requested successfully');
-        hdfcTokenId = data.tokenid;
+    
+    logger.info(f"🔐 Login validate for user: {username}")
+    
+    try:
+        resp = requests.post(HDFC_LOGIN_VALIDATE_URL, data=payload, params=params, headers=headers, timeout=30)
         
-        if (statusEl) statusEl.textContent = '✅ OTP sent';
+        logger.info(f"📊 Login validate response status: {resp.status_code}")
+        logger.info(f"📊 Login validate response: {resp.text[:200]}")
         
-        // Show Step 2
-        document.getElementById('hdfc-step1').style.display = 'none';
-        document.getElementById('hdfc-step2').style.display = 'block';
+        resp.raise_for_status()
+        data = resp.json()
+        
+        logger.info(f"✅ Login validate successful")
+        return data
+        
+    except Exception as e:
+        logger.exception(f"❌ Login validate failed: {e}")
+        raise
 
-    } catch (err) {
-        console.error('❌ OTP Request Error:', err);
-        if (statusEl) statusEl.textContent = `❌ ${err.message}`;
-        showHDFCMessage(err.message, 'error');
+def validate_otp(token_id: str, otp: str) -> dict:
+    """
+    Send OTP and receive request_token + callback_url + authorised boolean.
+    """
+    params = {'api_key': HDFC_API_KEY, 'tokenid': token_id}
+    payload = {'answer': otp}
+    url = "https://developer.hdfcsec.com/oapi/v1/twofa/validate"
+    headers = {
+        'User-Agent': 'Family-Investment-Dashboard/1.0',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
     }
-}
+    
+    logger.info(f"🔢 Validating OTP...")
+    
+    try:
+        resp = requests.post(url, data=payload, params=params, headers=headers, timeout=30)
+        
+        logger.info(f"📊 OTP validate response status: {resp.status_code}")
+        logger.info(f"📊 OTP validate response: {resp.text}")
+        
+        resp.raise_for_status()
+        data = resp.json()
+        
+        logger.info(f"✅ OTP validation successful: {data}")
+        return data
+        
+    except Exception as e:
+        logger.exception(f"❌ OTP validation failed: {e}")
+        raise
 
-// Step 2: Validate OTP
-async function hdfcStep2ValidateOTP() {
-    const otp = document.getElementById('hdfc-otp').value;
-    const statusEl = document.getElementById('hdfc-step2-status');
-
-    if (!otp) {
-        if (statusEl) statusEl.textContent = '❌ Please enter OTP';
-        return;
+def fetch_access_token(token_id: str, request_token: str) -> Optional[str]:
+    """
+    Exchange request_token for an access token.
+    """
+    params = {'api_key': HDFC_API_KEY, 'request_token': request_token}
+    payload = {'apiSecret': HDFC_API_SECRET}
+    headers = {
+        'User-Agent': 'Family-Investment-Dashboard/1.0',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
     }
-
-    if (statusEl) statusEl.textContent = '⏳ Validating OTP...';
-
-    try {
-        // Call the root-level /validate-otp endpoint
-        const response = await fetch(`${HDFC_CONFIG.backend_base}/validate-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ otp, tokenid: hdfcTokenId })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'OTP validation failed');
-        }
-
-        console.log('✅ OTP validated successfully');
+    
+    logger.info(f"🔄 Exchanging request_token for access_token...")
+    
+    try:
+        resp = requests.post(HDFC_ACCESS_TOKEN_URL, data=payload, params=params, headers=headers, timeout=30)
         
-        if (statusEl) statusEl.textContent = '✅ OTP validated';
+        logger.info(f"📊 Access token response status: {resp.status_code}")
+        logger.info(f"📊 Access token response: {resp.text[:200]}")
         
-        // Show Step 3 (loading)
-        document.getElementById('hdfc-step2').style.display = 'none';
-        document.getElementById('hdfc-step3').style.display = 'block';
+        resp.raise_for_status()
+        data = resp.json()
+        
+        access_token = data.get('accessToken')
+        
+        if not access_token:
+            logger.error(f"❌ No access token in response: {data}")
+            return None
+        
+        logger.info(f"✅ Got access token: {access_token[:10]}...")
+        return access_token
+        
+    except Exception as e:
+        logger.exception(f"❌ Failed to fetch access token: {e}")
+        return None
 
-        // Wait a moment then call backend to fetch and import holdings
-        setTimeout(async () => {
-            await fetchHDFCHoldings();
-        }, 1000);
-
-    } catch (err) {
-        console.error('❌ OTP Validation Error:', err);
-        if (statusEl) statusEl.textContent = `❌ ${err.message}`;
-        showHDFCMessage(err.message, 'error');
+def get_holdings(access_token_or_request_token: str) -> dict:
+    """
+    Fetch holdings from HDFC holdings endpoint.
+    """
+    headers = {
+        'Authorization': f'Bearer {access_token_or_request_token}',
+        'User-Agent': 'Family-Investment-Dashboard/1.0',
+        'Accept': 'application/json'
     }
-}
-
-// Lookup member IDs
-async function lookupMemberIds(userId) {
-    try {
-        console.log('🔍 Looking up member IDs for HDFC import...');
+    
+    logger.info(f"📥 Fetching holdings...")
+    
+    try:
+        resp = requests.get(HDFC_HOLDINGS_URL, headers=headers, timeout=30)
         
-        const { data: members, error } = await supabase
-            .from('family_members')
-            .select('id, name')
-            .eq('user_id', userId);
-
-        if (error) throw error;
-
-        if (!members || members.length === 0) {
-            console.warn('⚠️ No family members found');
-            return false;
-        }
-
-        hdfcMemberIds.equity_member = null;
-        hdfcMemberIds.mf_member = null;
-
-        for (const member of members) {
-            const nameLower = member.name.toLowerCase().trim();
-            
-            if (nameLower === HDFC_MEMBER_NAMES.equity_member) {
-                hdfcMemberIds.equity_member = member.id;
-                console.log(`✅ Found equity member: ${member.name}`);
-            }
-            
-            if (nameLower === HDFC_MEMBER_NAMES.mf_member) {
-                hdfcMemberIds.mf_member = member.id;
-                console.log(`✅ Found MF member: ${member.name}`);
-            }
-        }
-
-        return (hdfcMemberIds.equity_member || hdfcMemberIds.mf_member);
-    } catch (error) {
-        console.error('❌ Error looking up member IDs:', error);
-        return false;
-    }
-}
-
-// Categorize holding as equity or mutual fund
-function categorizeHolding(holding) {
-    const isMutualFund = 
-        holding.sip_indicator === 'Y' ||
-        holding.sip_indicator === true ||
-        (holding.isin && holding.isin.toUpperCase().startsWith('INF')) ||
-        holding.scheme_name ||
-        holding.fundhouse ||
-        holding.fund_house;
-
-    return isMutualFund ? 'mutualFunds' : 'equity';
-}
-
-// Fetch HDFC holdings after successful OTP validation
-async function fetchHDFCHoldings() {
-    try {
-        console.log('📥 HDFC Import: Starting import process...');
-
-        if (!window.dbHelpers) {
-            console.error('❌ HDFC Import: Database helpers not initialized');
-            showHDFCMessage('Database helpers not initialized', 'error');
-            return;
-        }
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            throw new Error('User not authenticated');
-        }
-
-        console.log('✅ HDFC Import: User authenticated:', user.id);
-
-        // Lookup member IDs first
-        const membersFound = await lookupMemberIds(user.id);
-        if (!membersFound) {
-            showHDFCMessage('Please add family members "pradeep kumar v" and "sanchita pradeep" first', 'error');
-            return;
-        }
-
-        showHDFCMessage('Fetching HDFC holdings...', 'info');
-
-        // Call backend callback endpoint to get holdings
-        const response = await fetch(`${HDFC_CONFIG.api_base}/callback?user_id=${user.id}`, {
-            method: 'GET',
-            credentials: 'include'
-        });
-
-        const result = await response.json();
-        console.log('📊 HDFC Import: Received data:', result);
-
-        if (!response.ok) {
-            throw new Error(result.error || 'Failed to fetch holdings');
-        }
-
-        if (!Array.isArray(result.data)) {
-            throw new Error('Invalid data format received from HDFC');
-        }
-
-        const importDate = new Date().toISOString().split('T')[0];
-        const equityRecords = [];
-        const mfRecords = [];
-
-        // Process each holding
-        for (const holding of result.data) {
-            const holdingType = categorizeHolding(holding);
-
-            if (holdingType === 'equity' && hdfcMemberIds.equity_member) {
-                equityRecords.push({
-                    user_id: user.id,
-                    member_id: hdfcMemberIds.equity_member,
-                    broker_platform: 'HDFC Securities',
-                    symbol: holding.security_id || holding.tradingsymbol || holding.symbol || 'UNKNOWN',
-                    company_name: holding.company_name || holding.security_id || 'UNKNOWN',
-                    quantity: parseFloat(holding.quantity || 0),
-                    average_price: parseFloat(holding.average_price || holding.averageprice || 0),
-                    current_price: parseFloat(holding.close_price || holding.last_price || 0),
-                    invested_amount: parseFloat(holding.investment_value || (parseFloat(holding.quantity || 0) * parseFloat(holding.average_price || 0))),
-                    current_value: parseFloat(holding.quantity || 0) * parseFloat(holding.close_price || holding.last_price || 0),
-                    import_date: importDate
-                });
-            } else if (holdingType === 'mutualFunds' && hdfcMemberIds.mf_member) {
-                mfRecords.push({
-                    user_id: user.id,
-                    member_id: hdfcMemberIds.mf_member,
-                    broker_platform: 'HDFC Securities',
-                    scheme_name: holding.scheme_name || holding.company_name || 'Unknown',
-                    scheme_code: holding.scheme_code || holding.security_id || '',
-                    folio_number: holding.folio || holding.folio_number || '',
-                    fund_house: holding.fund_house || holding.fundhouse || 'Unknown',
-                    units: parseFloat(holding.quantity || holding.units || 0),
-                    average_nav: parseFloat(holding.average_price || holding.averagenav || 0),
-                    current_nav: parseFloat(holding.close_price || holding.nav || 0),
-                    invested_amount: parseFloat(holding.investment_value || (parseFloat(holding.quantity || 0) * parseFloat(holding.average_price || 0))),
-                    current_value: parseFloat(holding.quantity || 0) * parseFloat(holding.close_price || holding.nav || 0),
-                    import_date: importDate
-                });
-            }
-        }
-
-        // DELETE old holdings before inserting new ones
-        if (equityRecords.length > 0) {
-            console.log(`🗑️ HDFC Import: Deleting old equity holdings`);
-            await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
-                user.id,
-                'HDFC Securities',
-                hdfcMemberIds.equity_member
-            );
-            
-            console.log(`📥 HDFC Import: Inserting ${equityRecords.length} equity holdings`);
-            await window.dbHelpers.insertEquityHoldings(equityRecords);
-        }
-
-        if (mfRecords.length > 0) {
-            console.log(`🗑️ HDFC Import: Deleting old MF holdings`);
-            await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
-                user.id,
-                'HDFC Securities',
-                hdfcMemberIds.mf_member
-            );
-            
-            console.log(`📥 HDFC Import: Inserting ${mfRecords.length} MF holdings`);
-            await window.dbHelpers.insertMutualFundHoldings(mfRecords);
-        }
-
-        console.log(`✅ HDFC Import: Completed! ${equityRecords.length} equity, ${mfRecords.length} MF holdings`);
+        logger.info(f"📊 Holdings response status: {resp.status_code}")
+        logger.info(f"📊 Holdings response: {resp.text[:500]}")
         
-        // Show success message
-        const successEl = document.getElementById('hdfc-success');
-        if (successEl) successEl.style.display = 'block';
+        resp.raise_for_status()
+        data = resp.json()
         
-        showHDFCMessage(`Imported ${equityRecords.length + mfRecords.length} holdings from HDFC`, 'success');
-
-        // Reload dashboard
-        if (typeof loadDashboardData === 'function') {
-            await loadDashboardData();
-        }
-
-        // Close modal after 3 seconds
-        setTimeout(() => {
-            const modal = document.getElementById('hdfc-settings-modal');
-            if (modal) modal.remove();
-        }, 3000);
-
-    } catch (err) {
-        console.error('❌ Error importing holdings:', err);
-        showHDFCMessage(`Import failed: ${err.message}`, 'error');
+        logger.info(f"✅ Successfully fetched holdings")
+        return data
         
-        // Hide loading, show error
-        const step3El = document.getElementById('hdfc-step3');
-        if (step3El) step3El.style.display = 'none';
-    }
-}
+    except Exception as e:
+        logger.exception(f"❌ Failed to fetch holdings: {e}")
+        raise
 
-// Expose functions globally
-window.showHDFCSettings = showHDFCSettings;
-window.hdfcStep1RequestOTP = hdfcStep1RequestOTP;
-window.hdfcStep2ValidateOTP = hdfcStep2ValidateOTP;
-window.fetchHDFCHoldings = fetchHDFCHoldings;
-
-console.log('✅ HDFC Securities integration (MULTI-STEP) loaded - FULLY PATCHED');
+# Rest of your functions remain the same...
+# (normalize_holdings_payload, map_holdings_for_frontend, process_holdings_success, etc.)
