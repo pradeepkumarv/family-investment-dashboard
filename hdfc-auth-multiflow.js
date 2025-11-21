@@ -1,6 +1,5 @@
-// HDFC Securities Integration - MULTI-STEP AUTHENTICATION FLOW
-// Properly handles the 4-step HDFC authorization process
-
+// HDFC Securities Integration - MULTI-STEP AUTHENTICATION FLOW - FULLY PATCHED
+// Properly handles the 4-step HDFC authorization process with correct endpoint URLs
 
 const HDFC_MEMBER_NAMES = {
     equity_member: 'pradeep kumar v',
@@ -16,7 +15,6 @@ const HDFC_CONFIG = {
     backend_base: 'https://family-investment-dashboard.onrender.com',
     api_base: 'https://family-investment-dashboard.onrender.com/api/hdfc'
 };
-
 
 let hdfcAccessToken = null;
 let hdfcTokenId = null;
@@ -123,8 +121,8 @@ async function hdfcStep1RequestOTP() {
 
     if (statusEl) statusEl.textContent = '⏳ Requesting OTP...';
 
-      try {
-        // Use the full backend URL path
+    try {
+        // Call the root-level /request-otp endpoint
         const response = await fetch(`${HDFC_CONFIG.backend_base}/request-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -165,14 +163,13 @@ async function hdfcStep2ValidateOTP() {
 
     if (statusEl) statusEl.textContent = '⏳ Validating OTP...';
 
-       try {
-        // Use the full backend URL path
+    try {
+        // Call the root-level /validate-otp endpoint
         const response = await fetch(`${HDFC_CONFIG.backend_base}/validate-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ otp, tokenid: hdfcTokenId })
         });
-
 
         const data = await response.json();
 
@@ -188,12 +185,10 @@ async function hdfcStep2ValidateOTP() {
         document.getElementById('hdfc-step2').style.display = 'none';
         document.getElementById('hdfc-step3').style.display = 'block';
 
-        // Wait a moment then redirect to callback to fetch holdings
-               
+        // Wait a moment then call backend to fetch and import holdings
         setTimeout(async () => {
             await fetchHDFCHoldings();
         }, 1000);
-
 
     } catch (err) {
         console.error('❌ OTP Validation Error:', err);
@@ -243,49 +238,162 @@ async function lookupMemberIds(userId) {
     }
 }
 
-// Function to check if holdings were imported and update UI
-async function checkHDFCImportStatus() {
+// Categorize holding as equity or mutual fund
+function categorizeHolding(holding) {
+    const isMutualFund = 
+        holding.sip_indicator === 'Y' ||
+        holding.sip_indicator === true ||
+        (holding.isin && holding.isin.toUpperCase().startsWith('INF')) ||
+        holding.scheme_name ||
+        holding.fundhouse ||
+        holding.fund_house;
+
+    return isMutualFund ? 'mutualFunds' : 'equity';
+}
+
+// Fetch HDFC holdings after successful OTP validation
+async function fetchHDFCHoldings() {
     try {
+        console.log('📥 HDFC Import: Starting import process...');
+
+        if (!window.dbHelpers) {
+            console.error('❌ HDFC Import: Database helpers not initialized');
+            showHDFCMessage('Database helpers not initialized', 'error');
+            return;
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
 
-        // Check if there are recent HDFC holdings
-        const { count: equityCount } = await supabase
-            .from('equity_holdings')
-            .select('*', { count: 'exact' })
-            .eq('user_id', user.id)
-            .eq('broker_platform', 'HDFC Securities')
-            .limit(1);
+        console.log('✅ HDFC Import: User authenticated:', user.id);
 
-        const { count: mfCount } = await supabase
-            .from('mutual_fund_holdings')
-            .select('*', { count: 'exact' })
-            .eq('user_id', user.id)
-            .eq('broker_platform', 'HDFC Securities')
-            .limit(1);
+        // Lookup member IDs first
+        const membersFound = await lookupMemberIds(user.id);
+        if (!membersFound) {
+            showHDFCMessage('Please add family members "pradeep kumar v" and "sanchita pradeep" first', 'error');
+            return;
+        }
 
-        if (equityCount > 0 || mfCount > 0) {
-            console.log(`✅ Found HDFC holdings: ${equityCount} equity, ${mfCount} MF`);
-            const successEl = document.getElementById('hdfc-success');
-            if (successEl) successEl.style.display = 'block';
-            
-            showHDFCMessage(`Successfully imported ${equityCount + mfCount} holdings!`, 'success');
-            
-            // Reload dashboard
-            if (typeof loadDashboardData === 'function') {
-                await loadDashboardData();
+        showHDFCMessage('Fetching HDFC holdings...', 'info');
+
+        // Call backend callback endpoint to get holdings
+        const response = await fetch(`${HDFC_CONFIG.api_base}/callback?user_id=${user.id}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        const result = await response.json();
+        console.log('📊 HDFC Import: Received data:', result);
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to fetch holdings');
+        }
+
+        if (!Array.isArray(result.data)) {
+            throw new Error('Invalid data format received from HDFC');
+        }
+
+        const importDate = new Date().toISOString().split('T')[0];
+        const equityRecords = [];
+        const mfRecords = [];
+
+        // Process each holding
+        for (const holding of result.data) {
+            const holdingType = categorizeHolding(holding);
+
+            if (holdingType === 'equity' && hdfcMemberIds.equity_member) {
+                equityRecords.push({
+                    user_id: user.id,
+                    member_id: hdfcMemberIds.equity_member,
+                    broker_platform: 'HDFC Securities',
+                    symbol: holding.security_id || holding.tradingsymbol || holding.symbol || 'UNKNOWN',
+                    company_name: holding.company_name || holding.security_id || 'UNKNOWN',
+                    quantity: parseFloat(holding.quantity || 0),
+                    average_price: parseFloat(holding.average_price || holding.averageprice || 0),
+                    current_price: parseFloat(holding.close_price || holding.last_price || 0),
+                    invested_amount: parseFloat(holding.investment_value || (parseFloat(holding.quantity || 0) * parseFloat(holding.average_price || 0))),
+                    current_value: parseFloat(holding.quantity || 0) * parseFloat(holding.close_price || holding.last_price || 0),
+                    import_date: importDate
+                });
+            } else if (holdingType === 'mutualFunds' && hdfcMemberIds.mf_member) {
+                mfRecords.push({
+                    user_id: user.id,
+                    member_id: hdfcMemberIds.mf_member,
+                    broker_platform: 'HDFC Securities',
+                    scheme_name: holding.scheme_name || holding.company_name || 'Unknown',
+                    scheme_code: holding.scheme_code || holding.security_id || '',
+                    folio_number: holding.folio || holding.folio_number || '',
+                    fund_house: holding.fund_house || holding.fundhouse || 'Unknown',
+                    units: parseFloat(holding.quantity || holding.units || 0),
+                    average_nav: parseFloat(holding.average_price || holding.averagenav || 0),
+                    current_nav: parseFloat(holding.close_price || holding.nav || 0),
+                    invested_amount: parseFloat(holding.investment_value || (parseFloat(holding.quantity || 0) * parseFloat(holding.average_price || 0))),
+                    current_value: parseFloat(holding.quantity || 0) * parseFloat(holding.close_price || holding.nav || 0),
+                    import_date: importDate
+                });
             }
         }
+
+        // DELETE old holdings before inserting new ones
+        if (equityRecords.length > 0) {
+            console.log(`🗑️ HDFC Import: Deleting old equity holdings`);
+            await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
+                user.id,
+                'HDFC Securities',
+                hdfcMemberIds.equity_member
+            );
+            
+            console.log(`📥 HDFC Import: Inserting ${equityRecords.length} equity holdings`);
+            await window.dbHelpers.insertEquityHoldings(equityRecords);
+        }
+
+        if (mfRecords.length > 0) {
+            console.log(`🗑️ HDFC Import: Deleting old MF holdings`);
+            await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
+                user.id,
+                'HDFC Securities',
+                hdfcMemberIds.mf_member
+            );
+            
+            console.log(`📥 HDFC Import: Inserting ${mfRecords.length} MF holdings`);
+            await window.dbHelpers.insertMutualFundHoldings(mfRecords);
+        }
+
+        console.log(`✅ HDFC Import: Completed! ${equityRecords.length} equity, ${mfRecords.length} MF holdings`);
+        
+        // Show success message
+        const successEl = document.getElementById('hdfc-success');
+        if (successEl) successEl.style.display = 'block';
+        
+        showHDFCMessage(`Imported ${equityRecords.length + mfRecords.length} holdings from HDFC`, 'success');
+
+        // Reload dashboard
+        if (typeof loadDashboardData === 'function') {
+            await loadDashboardData();
+        }
+
+        // Close modal after 3 seconds
+        setTimeout(() => {
+            const modal = document.getElementById('hdfc-settings-modal');
+            if (modal) modal.remove();
+        }, 3000);
+
     } catch (err) {
-        console.error('Error checking import status:', err);
+        console.error('❌ Error importing holdings:', err);
+        showHDFCMessage(`Import failed: ${err.message}`, 'error');
+        
+        // Hide loading, show error
+        const step3El = document.getElementById('hdfc-step3');
+        if (step3El) step3El.style.display = 'none';
     }
 }
 
 // Expose functions globally
-// Fetch holdings after successful authentication
-async function fetchHDFCHoldings() {
-    try {
-        console.log('📥 Fetching HDFC holdings...');
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+window.showHDFCSettings = showHDFCSettings;
+window.hdfcStep1RequestOTP = hdfcStep1RequestOTP;
+window.hdfcStep2ValidateOTP = hdfcStep2ValidateOTP;
+window.fetchHDFCHoldings = fetchHDFCHoldings;
+
+console.log('✅ HDFC Securities integration (MULTI-STEP) loaded - FULLY PATCHED');
