@@ -1,224 +1,325 @@
-# hdfc_investright.py - FIXED VERSION with enhanced error handling
+// HDFC Securities Integration - JavaScript Version
+// Matches Zerodha pattern with delete-then-insert logic
 
-import os
-import requests
-import logging
-import traceback
-from datetime import datetime
-from typing import Optional, Dict, List, Any
-
-logger = logging.getLogger("hdfc_investright")
-logger.setLevel(logging.INFO)
-
-# Supabase client
-try:
-    from supabase import create_client, Client
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
-    supabase: Optional[Client] = None
-    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-        logger.info("✅ Supabase client initialized")
-    else:
-        logger.warning("Supabase credentials missing; DB writes will fail until provided.")
-except Exception as e:
-    supabase = None
-    logger.exception("Supabase client could not be initialized")
-
-# HDFC API Configuration
-HDFC_API_KEY = os.getenv("HDFC_API_KEY")
-HDFC_API_SECRET = os.getenv("HDFC_API_SECRET")
-HDFC_TOKEN_ID_URL = os.getenv("HDFC_TOKEN_ID_URL", "https://developer.hdfcsec.com/oapi/v1/login/tokenid")
-HDFC_LOGIN_VALIDATE_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", "https://developer.hdfcsec.com/oapi/v1/login/validate")
-HDFC_ACCESS_TOKEN_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", "https://developer.hdfcsec.com/oapi/v1/access-token")
-HDFC_HOLDINGS_URL = os.getenv("HDFC_HOLDINGS_URL", "https://developer.hdfcsec.com/oapi/v1/portfolio/holdings")
-
-logger.info(f"📋 HDFC API Configuration:")
-logger.info(f"  - API Key: {'✅ Set' if HDFC_API_KEY else '❌ Missing'}")
-logger.info(f"  - API Secret: {'✅ Set' if HDFC_API_SECRET else '❌ Missing'}")
-logger.info(f"  - Token ID URL: {HDFC_TOKEN_ID_URL}")
-
-def get_token_id() -> str:
-    """
-    Request a tokenid from HDFC (initial step).
-    Enhanced with better error handling and logging.
-    """
-    if not HDFC_API_KEY:
-        raise RuntimeError("HDFC_API_KEY environment variable is not set")
-    
-    params = {'api_key': HDFC_API_KEY}
-    headers = {
-        'User-Agent': 'Family-Investment-Dashboard/1.0',
-        'Accept': 'application/json'
+const BROKER_MEMBER_MAPPING = {
+    'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49': {
+        name: 'Pradeep Kumar V',
+        demat: ['Zerodha', 'HDFC Securities'],
+        mutualFunds: ['FundsIndia']
+    },
+    '0221a8e7-fad8-42cd-bdf6-2f84b85dac31': {
+        name: 'Smruthi Pradeep',
+        demat: ['ICICI Securities'],
+        mutualFunds: ['ICICI Securities']
+    },
+    'c2f4b3d8-bb69-4516-b107-dffbde92c77c': {
+        name: 'Saanvi Pradeep',
+        demat: [],
+        mutualFunds: ['Zerodha']
+    },
+    'd3a4fc84-a94b-494d-915f-60901f16d973': {
+        name: 'Sanchita Pradeep',
+        demat: [],
+        mutualFunds: ['HDFC Securities']
     }
-    
-    logger.info(f"🔑 Requesting tokenid from: {HDFC_TOKEN_ID_URL}")
-    logger.info(f"🔑 With API key: {HDFC_API_KEY[:10]}...")  # Log first 10 chars only
-    
-    try:
-        resp = requests.get(HDFC_TOKEN_ID_URL, params=params, headers=headers, timeout=30)
-        
-        # Log response details
-        logger.info(f"📊 Response status: {resp.status_code}")
-        logger.info(f"📊 Response headers: {dict(resp.headers)}")
-        logger.info(f"📊 Response text (first 200 chars): {resp.text[:200]}")
-        
-        # Check if response is JSON
-        content_type = resp.headers.get('Content-Type', '')
-        if 'json' not in content_type.lower():
-            logger.error(f"❌ Expected JSON but got Content-Type: {content_type}")
-            logger.error(f"❌ Full response text: {resp.text}")
-            raise RuntimeError(f"HDFC API returned non-JSON response (Content-Type: {content_type})")
-        
-        # Try to parse JSON
-        try:
-            data = resp.json()
-        except ValueError as e:
-            logger.error(f"❌ Failed to parse JSON response: {e}")
-            logger.error(f"❌ Raw response text: {resp.text}")
-            raise RuntimeError(f"HDFC API returned invalid JSON: {str(e)}")
-        
-        # Extract token_id
-        token_id = data.get('tokenId') or data.get('tokenid') or data.get('token_id')
-        
-        if not token_id:
-            logger.error(f"❌ No tokenid in response. Full data: {data}")
-            raise RuntimeError(f"No tokenid returned from HDFC. Response: {data}")
-        
-        logger.info(f"✅ Successfully got tokenid: {token_id[:10]}...")
-        return token_id
-        
-    except requests.exceptions.RequestException as e:
-        logger.exception(f"❌ Network error calling HDFC API: {e}")
-        raise RuntimeError(f"Failed to connect to HDFC API: {str(e)}")
-    except Exception as e:
-        logger.exception(f"❌ Unexpected error in get_token_id: {e}")
-        raise
+};
 
-def login_validate(token_id: str, username: str, password: str) -> dict:
-    """
-    Start login validate: sends credentials, returns two-fa response.
-    """
-    params = {'api_key': HDFC_API_KEY, 'tokenid': token_id}
-    payload = {'username': username, 'password': password}
-    headers = {
-        'User-Agent': 'Family-Investment-Dashboard/1.0',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
+const HDFC_CONFIG = {
+    api_key: '', // Set from environment or configuration
+    api_secret: '', // Set from environment or configuration
+    base_url: 'https://developer.hdfcsec.com/oapi/v1',
+    equity_members: ['bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'], // Pradeep for Equity
+    mf_members: ['d3a4fc84-a94b-494d-915f-60901f16d973'] // Sanchita for MF
+};
+
+let hdfcAccessToken = null;
+let hdfcRequestToken = null;
+
+function logHDFC(msg, type = 'info') {
+    const emoji = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' }[type];
+    console.log(`${emoji} [${new Date().toISOString()}] HDFC: ${msg}`);
+}
+
+function showHDFCMessage(msg, type = 'info') {
+    if (typeof showMessage === 'function') showMessage(`HDFC: ${msg}`, type);
+    else console.log(msg);
+}
+
+// Step 1: Get Token ID
+async function hdfcGetTokenId() {
+    try {
+        logHDFC('Requesting token ID...');
+        const response = await fetch(`${HDFC_CONFIG.base_url}/login/tokenid?api_key=${HDFC_CONFIG.api_key}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Family-Investment-Dashboard/1.0'
+            }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        
+        const data = await response.json();
+        const tokenId = data.tokenId || data.tokenid || data.token_id;
+        
+        if (!tokenId) throw new Error('No token ID in response');
+        
+        logHDFC(`Token ID received: ${tokenId.substring(0, 10)}...`, 'success');
+        return tokenId;
+    } catch (error) {
+        logHDFC(`Failed to get token ID: ${error.message}`, 'error');
+        throw error;
     }
-    
-    logger.info(f"🔐 Login validate for user: {username}")
-    
-    try:
-        resp = requests.post(HDFC_LOGIN_VALIDATE_URL, data=payload, params=params, headers=headers, timeout=30)
-        
-        logger.info(f"📊 Login validate response status: {resp.status_code}")
-        logger.info(f"📊 Login validate response: {resp.text[:200]}")
-        
-        resp.raise_for_status()
-        data = resp.json()
-        
-        logger.info(f"✅ Login validate successful")
-        return data
-        
-    except Exception as e:
-        logger.exception(f"❌ Login validate failed: {e}")
-        raise
+}
 
-def validate_otp(token_id: str, otp: str) -> dict:
-    """
-    Send OTP and receive request_token + callback_url + authorised boolean.
-    """
-    params = {'api_key': HDFC_API_KEY, 'tokenid': token_id}
-    payload = {'answer': otp}
-    url = "https://developer.hdfcsec.com/oapi/v1/twofa/validate"
-    headers = {
-        'User-Agent': 'Family-Investment-Dashboard/1.0',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
+// Step 2: Login Validate
+async function hdfcLoginValidate(tokenId, username, password) {
+    try {
+        logHDFC('Validating login credentials...');
+        const formData = new URLSearchParams();
+        formData.append('username', username);
+        formData.append('password', password);
+
+        const response = await fetch(
+            `${HDFC_CONFIG.base_url}/login/validate?api_key=${HDFC_CONFIG.api_key}&tokenid=${tokenId}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        logHDFC('Login validation successful', 'success');
+        return data;
+    } catch (error) {
+        logHDFC(`Login validation failed: ${error.message}`, 'error');
+        throw error;
     }
-    
-    logger.info(f"🔢 Validating OTP...")
-    
-    try:
-        resp = requests.post(url, data=payload, params=params, headers=headers, timeout=30)
-        
-        logger.info(f"📊 OTP validate response status: {resp.status_code}")
-        logger.info(f"📊 OTP validate response: {resp.text}")
-        
-        resp.raise_for_status()
-        data = resp.json()
-        
-        logger.info(f"✅ OTP validation successful: {data}")
-        return data
-        
-    except Exception as e:
-        logger.exception(f"❌ OTP validation failed: {e}")
-        raise
+}
 
-def fetch_access_token(token_id: str, request_token: str) -> Optional[str]:
-    """
-    Exchange request_token for an access token.
-    """
-    params = {'api_key': HDFC_API_KEY, 'request_token': request_token}
-    payload = {'apiSecret': HDFC_API_SECRET}
-    headers = {
-        'User-Agent': 'Family-Investment-Dashboard/1.0',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
+// Step 3: Validate OTP
+async function hdfcValidateOTP(tokenId, otp) {
+    try {
+        logHDFC('Validating OTP...');
+        const formData = new URLSearchParams();
+        formData.append('answer', otp);
+
+        const response = await fetch(
+            `${HDFC_CONFIG.base_url}/twofa/validate?api_key=${HDFC_CONFIG.api_key}&tokenid=${tokenId}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        hdfcRequestToken = data.request_token;
+        
+        logHDFC('OTP validated successfully', 'success');
+        return data;
+    } catch (error) {
+        logHDFC(`OTP validation failed: ${error.message}`, 'error');
+        throw error;
     }
-    
-    logger.info(f"🔄 Exchanging request_token for access_token...")
-    
-    try:
-        resp = requests.post(HDFC_ACCESS_TOKEN_URL, data=payload, params=params, headers=headers, timeout=30)
-        
-        logger.info(f"📊 Access token response status: {resp.status_code}")
-        logger.info(f"📊 Access token response: {resp.text[:200]}")
-        
-        resp.raise_for_status()
-        data = resp.json()
-        
-        access_token = data.get('accessToken')
-        
-        if not access_token:
-            logger.error(f"❌ No access token in response: {data}")
-            return None
-        
-        logger.info(f"✅ Got access token: {access_token[:10]}...")
-        return access_token
-        
-    except Exception as e:
-        logger.exception(f"❌ Failed to fetch access token: {e}")
-        return None
+}
 
-def get_holdings(access_token_or_request_token: str) -> dict:
-    """
-    Fetch holdings from HDFC holdings endpoint.
-    """
-    headers = {
-        'Authorization': f'Bearer {access_token_or_request_token}',
-        'User-Agent': 'Family-Investment-Dashboard/1.0',
-        'Accept': 'application/json'
+// Step 4: Get Access Token
+async function hdfcGetAccessToken(requestToken) {
+    try {
+        logHDFC('Fetching access token...');
+        const formData = new URLSearchParams();
+        formData.append('apiSecret', HDFC_CONFIG.api_secret);
+
+        const response = await fetch(
+            `${HDFC_CONFIG.base_url}/access-token?api_key=${HDFC_CONFIG.api_key}&request_token=${requestToken}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        hdfcAccessToken = data.accessToken;
+        
+        localStorage.setItem('hdfc_access_token', hdfcAccessToken);
+        logHDFC('Access token received', 'success');
+        return hdfcAccessToken;
+    } catch (error) {
+        logHDFC(`Failed to get access token: ${error.message}`, 'error');
+        throw error;
     }
-    
-    logger.info(f"📥 Fetching holdings...")
-    
-    try:
-        resp = requests.get(HDFC_HOLDINGS_URL, headers=headers, timeout=30)
-        
-        logger.info(f"📊 Holdings response status: {resp.status_code}")
-        logger.info(f"📊 Holdings response: {resp.text[:500]}")
-        
-        resp.raise_for_status()
-        data = resp.json()
-        
-        logger.info(f"✅ Successfully fetched holdings")
-        return data
-        
-    except Exception as e:
-        logger.exception(f"❌ Failed to fetch holdings: {e}")
-        raise
+}
 
-# Rest of your functions remain the same...
-# (normalize_holdings_payload, map_holdings_for_frontend, process_holdings_success, etc.)
+// Get Holdings
+async function hdfcGetHoldings(accessToken) {
+    try {
+        logHDFC('Fetching holdings...');
+        const response = await fetch(`${HDFC_CONFIG.base_url}/portfolio/holdings`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        logHDFC(`Fetched ${data.data?.length || 0} holdings`, 'success');
+        return data;
+    } catch (error) {
+        logHDFC(`Failed to fetch holdings: ${error.message}`, 'error');
+        throw error;
+    }
+}
+
+// **CRITICAL: Import All Holdings with Member Mapping**
+async function hdfcImportAll() {
+    try {
+        const accessToken = localStorage.getItem('hdfc_access_token');
+        if (!accessToken) {
+            showHDFCMessage('Please authenticate with HDFC Securities first', 'warning');
+            return;
+        }
+
+        if (!window.dbHelpers) {
+            showHDFCMessage('Database helpers not initialized', 'error');
+            return;
+        }
+
+        // Get current user from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showHDFCMessage('Please log in first', 'error');
+            return;
+        }
+
+        showHDFCMessage('Importing holdings from HDFC Securities...', 'info');
+
+        const holdingsResponse = await hdfcGetHoldings(accessToken);
+        const holdings = holdingsResponse.data || [];
+
+        let totalImported = 0;
+        const importDate = new Date().toISOString().split('T')[0];
+
+        // Separate equity and mutual funds based on HDFC response structure
+        const equityHoldings = holdings.filter(h => h.product_type === 'equity' || !h.scheme_name);
+        const mfHoldings = holdings.filter(h => h.scheme_name || h.product_type === 'mutual_fund');
+
+        // **Import Equity for Pradeep**
+        if (equityHoldings.length > 0) {
+            for (const memberId of HDFC_CONFIG.equity_members) {
+                const memberInfo = BROKER_MEMBER_MAPPING[memberId];
+                
+                // DELETE existing HDFC equity holdings
+                await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
+                    user.id,
+                    'HDFC Securities',
+                    memberId
+                );
+
+                // INSERT fresh equity data
+                const equityRecords = equityHoldings.map(holding => ({
+                    user_id: user.id,
+                    member_id: memberId,
+                    broker_platform: 'HDFC Securities',
+                    symbol: holding.symbol || holding.tradingsymbol,
+                    company_name: holding.company_name || holding.symbol,
+                    quantity: holding.quantity || holding.net_quantity,
+                    average_price: holding.average_price || holding.avg_price,
+                    current_price: holding.last_price || holding.ltp,
+                    invested_amount: (holding.quantity || holding.net_quantity) * (holding.average_price || holding.avg_price),
+                    current_value: (holding.quantity || holding.net_quantity) * (holding.last_price || holding.ltp),
+                    import_date: importDate
+                }));
+
+                await window.dbHelpers.insertEquityHoldings(equityRecords);
+                totalImported += equityRecords.length;
+                
+                logHDFC(`Imported ${equityRecords.length} equity holdings for ${memberInfo.name}`, 'success');
+            }
+        }
+
+        // **Import Mutual Funds for Sanchita**
+        if (mfHoldings.length > 0) {
+            for (const memberId of HDFC_CONFIG.mf_members) {
+                const memberInfo = BROKER_MEMBER_MAPPING[memberId];
+                
+                // DELETE existing HDFC MF holdings
+                await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
+                    user.id,
+                    'HDFC Securities',
+                    memberId
+                );
+
+                // INSERT fresh MF data
+                const mfRecords = mfHoldings.map(mf => ({
+                    user_id: user.id,
+                    member_id: memberId,
+                    broker_platform: 'HDFC Securities',
+                    scheme_name: mf.scheme_name || mf.fund,
+                    scheme_code: mf.scheme_code || mf.isin || '',
+                    folio_number: mf.folio_number || mf.folio || '',
+                    fund_house: mf.fund_house || mf.amc || 'Unknown',
+                    units: mf.units || mf.quantity,
+                    average_nav: mf.average_nav || mf.avg_price,
+                    current_nav: mf.current_nav || mf.last_price,
+                    invested_amount: (mf.units || mf.quantity) * (mf.average_nav || mf.avg_price),
+                    current_value: (mf.units || mf.quantity) * (mf.current_nav || mf.last_price),
+                    import_date: importDate
+                }));
+
+                await window.dbHelpers.insertMutualFundHoldings(mfRecords);
+                totalImported += mfRecords.length;
+                
+                logHDFC(`Imported ${mfRecords.length} mutual fund holdings for ${memberInfo.name}`, 'success');
+            }
+        }
+
+        localStorage.setItem('hdfc_last_sync', new Date().toISOString());
+        
+        showHDFCMessage(
+            `Imported ${totalImported} holdings (Equity: ${equityHoldings.length} for Pradeep, MF: ${mfHoldings.length} for Sanchita)`,
+            'success'
+        );
+
+        // Reload dashboard
+        if (typeof loadDashboardData === 'function') {
+            await loadDashboardData();
+        }
+
+    } catch (error) {
+        console.error('Error importing HDFC holdings:', error);
+        showHDFCMessage(`Failed to import: ${error.message}`, 'error');
+    }
+}
+
+// Export functions for use in dashboard
+window.hdfcIntegration = {
+    getTokenId: hdfcGetTokenId,
+    loginValidate: hdfcLoginValidate,
+    validateOTP: hdfcValidateOTP,
+    getAccessToken: hdfcGetAccessToken,
+    getHoldings: hdfcGetHoldings,
+    importAll: hdfcImportAll
+};
+
+logHDFC('HDFC Securities integration initialized', 'success');
