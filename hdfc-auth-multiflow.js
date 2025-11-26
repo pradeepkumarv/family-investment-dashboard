@@ -312,6 +312,82 @@ async function hdfcImportAll() {
     }
 }
 
+// ========== HELPER FUNCTIONS FOR UI ==========
+
+// Authentication flow function
+async function startHDFCAuth() {
+    try {
+        showHDFCMessage('Starting HDFC authentication...', 'info');
+        
+        // Step 1: Get token ID
+        const tokenId = await hdfcGetTokenId();
+        
+        // Step 2: Prompt for credentials
+        const username = prompt('Enter HDFC Username:');
+        const password = prompt('Enter HDFC Password:');
+        
+        if (!username || !password) {
+            showHDFCMessage('Authentication cancelled', 'warning');
+            return null;
+        }
+        
+        // Step 3: Validate login
+        await hdfcLoginValidate(tokenId, username, password);
+        
+        // Step 4: Prompt for OTP
+        const otp = prompt('Enter OTP (check your mobile/email):');
+        
+        if (!otp) {
+            showHDFCMessage('OTP required', 'warning');
+            return null;
+        }
+        
+        // Step 5: Validate OTP and get request token
+        const otpResult = await hdfcValidateOTP(tokenId, otp);
+        
+        // Step 6: Get access token
+        await hdfcGetAccessToken(otpResult.request_token);
+        
+        // Update UI status
+        document.getElementById('hdfc-connection-status').textContent = '✅ Connected';
+        showHDFCMessage('HDFC Securities authenticated!', 'success');
+        
+        return true;
+        
+    } catch (error) {
+        console.error('HDFC authentication failed:', error);
+        showHDFCMessage(`Authentication failed: ${error.message}`, 'error');
+        return null;
+    }
+}
+
+// Combined function: auth + import in one click
+async function hdfcImportWithAuth() {
+    try {
+        // Check if already authenticated
+        const token = localStorage.getItem('hdfc_access_token');
+        
+        if (!token) {
+            logHDFC('Not authenticated, starting auth flow...', 'info');
+            const authSuccess = await startHDFCAuth();
+            
+            if (!authSuccess) {
+                showHDFCMessage('Authentication required to import', 'warning');
+                return;
+            }
+        } else {
+            logHDFC('Already authenticated, proceeding with import', 'success');
+        }
+        
+        // Now import holdings
+        await hdfcImportAll();
+        
+    } catch (error) {
+        console.error('HDFC import failed:', error);
+        showHDFCMessage(`Import failed: ${error.message}`, 'error');
+    }
+}
+
 // Export functions for use in dashboard
 window.hdfcIntegration = {
     getTokenId: hdfcGetTokenId,
@@ -321,5 +397,9 @@ window.hdfcIntegration = {
     getHoldings: hdfcGetHoldings,
     importAll: hdfcImportAll
 };
+
+// Make helper functions globally accessible from HTML onclick
+window.startHDFCAuth = startHDFCAuth;
+window.hdfcImportWithAuth = hdfcImportWithAuth;
 
 logHDFC('HDFC Securities integration initialized', 'success');
