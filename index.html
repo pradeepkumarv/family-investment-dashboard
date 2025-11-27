@@ -2458,14 +2458,14 @@ xml
   <div class="broker-buttons">
     <!-- Single button: handles auth + import -->
     <button class="btn btn-primary"
-            onclick="hdfcImportWithAuth()"
+            onclick="fetchAndImportHoldings()"
             title="Login and Import HDFC Holdings">
       🔗 Connect & Import HDFC
     </button>
     
     <!-- Keep your settings button if needed -->
     <button class="btn btn-outline"
-            onclick="hdfcImportWithAuth()"
+            onclick="fetchAndImportHoldings()"
             title="Configure HDFC Settings">
       ⚙️ Settings
     </button>
@@ -2631,11 +2631,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Wait for all scripts to load, then trigger import
         setTimeout(() => {
-            if (typeof hdfcImportWithAuth === 'function') {
+            if (typeof fetchAndImportHoldings === 'function') {
                 console.log('Triggering HDFC holdings import...');
-                hdfcImportWithAuth();
+                fetchAndImportHoldings();
             } else {
-                console.error('hdfcImportWithAuth function not available');
+                console.error('fetchAndImportHoldings function not available');
                 // Fallback: try to load and call the function
                 if (typeof showHDFCSettings === 'function') {
                     showHDFCSettings();
