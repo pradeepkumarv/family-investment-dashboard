@@ -1,8 +1,7 @@
 // ============================================================================
-// HDFC SECURITIES INTEGRATION - STANDALONE VERSION
+// HDFC SECURITIES INTEGRATION - JAVASCRIPT VERSION
 // ============================================================================
 // Pure JavaScript - No dependencies needed
-// Place this in a file: hdfc-auth-multiflow-2.js
 // ============================================================================
 
 console.log('🔄 HDFC Integration script loading...');
