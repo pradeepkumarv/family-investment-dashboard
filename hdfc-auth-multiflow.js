@@ -1,10 +1,11 @@
 // ============================================================================
-// HDFC SECURITIES JAVASCRIPT INTEGRATION - READY TO USE
+// HDFC SECURITIES INTEGRATION - STANDALONE VERSION
 // ============================================================================
-// This file is 100% JavaScript - NOT Python
-// Handles: Auth Flow, Holdings Fetch, Database Write
-// Maps: Equity → Pradeep, MF → Sanchita
+// Pure JavaScript - No dependencies needed
+// Place this in a file: hdfc-auth-multiflow-2.js
 // ============================================================================
+
+console.log('🔄 HDFC Integration script loading...');
 
 const BROKER_MEMBER_MAPPING = {
     'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49': {
@@ -30,9 +31,6 @@ const HDFC_CONFIG = {
 let hdfcAccessToken = null;
 let hdfcRequestToken = null;
 
-// ============================================================================
-// LOGGING FUNCTIONS
-// ============================================================================
 function logHDFC(msg, type = 'info') {
     const emoji = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' }[type];
     console.log(`${emoji} [HDFC] ${msg}`);
@@ -46,9 +44,6 @@ function showHDFCMessage(msg, type = 'info') {
     }
 }
 
-// ============================================================================
-// STEP 1: GET TOKEN ID
-// ============================================================================
 async function hdfcGetTokenId() {
     try {
         logHDFC('Requesting token ID...', 'info');
@@ -76,9 +71,6 @@ async function hdfcGetTokenId() {
     }
 }
 
-// ============================================================================
-// STEP 2: LOGIN VALIDATE
-// ============================================================================
 async function hdfcLoginValidate(tokenId, username, password) {
     try {
         logHDFC('Validating login credentials...', 'info');
@@ -108,9 +100,6 @@ async function hdfcLoginValidate(tokenId, username, password) {
     }
 }
 
-// ============================================================================
-// STEP 3: VALIDATE OTP
-// ============================================================================
 async function hdfcValidateOTP(tokenId, otp) {
     try {
         logHDFC('Validating OTP...', 'info');
@@ -140,9 +129,6 @@ async function hdfcValidateOTP(tokenId, otp) {
     }
 }
 
-// ============================================================================
-// STEP 4: GET ACCESS TOKEN
-// ============================================================================
 async function hdfcGetAccessToken(requestToken) {
     try {
         logHDFC('Fetching access token...', 'info');
@@ -173,9 +159,6 @@ async function hdfcGetAccessToken(requestToken) {
     }
 }
 
-// ============================================================================
-// STEP 5: GET HOLDINGS
-// ============================================================================
 async function hdfcGetHoldings(accessToken) {
     try {
         logHDFC('Fetching holdings...', 'info');
@@ -200,9 +183,6 @@ async function hdfcGetHoldings(accessToken) {
     }
 }
 
-// ============================================================================
-// STEP 6: IMPORT ALL HOLDINGS TO DATABASE
-// ============================================================================
 async function hdfcImportAll() {
     try {
         const accessToken = localStorage.getItem('hdfc_access_token');
@@ -233,7 +213,6 @@ async function hdfcImportAll() {
         const equityHoldings = holdings.filter(h => h.product_type === 'equity' || !h.scheme_name);
         const mfHoldings = holdings.filter(h => h.scheme_name || h.product_type === 'mutual_fund');
 
-        // Import Equity for Pradeep
         if (equityHoldings.length > 0) {
             for (const memberId of HDFC_CONFIG.equity_members) {
                 const memberInfo = BROKER_MEMBER_MAPPING[memberId];
@@ -264,7 +243,6 @@ async function hdfcImportAll() {
             }
         }
 
-        // Import Mutual Funds for Sanchita
         if (mfHoldings.length > 0) {
             for (const memberId of HDFC_CONFIG.mf_members) {
                 const memberInfo = BROKER_MEMBER_MAPPING[memberId];
@@ -309,9 +287,6 @@ async function hdfcImportAll() {
     }
 }
 
-// ============================================================================
-// AUTHENTICATION FLOW
-// ============================================================================
 async function startHDFCAuth() {
     try {
         logHDFC('Starting authentication...', 'info');
@@ -336,7 +311,9 @@ async function startHDFCAuth() {
         const otpResult = await hdfcValidateOTP(tokenId, otp);
         await hdfcGetAccessToken(otpResult.request_token);
         
-        document.getElementById('hdfc-connection-status').textContent = '✅ Connected';
+        const statusEl = document.getElementById('hdfc-connection-status');
+        if (statusEl) statusEl.textContent = '✅ Connected';
+        
         logHDFC('Authentication successful', 'success');
         return true;
         
@@ -347,9 +324,6 @@ async function startHDFCAuth() {
     }
 }
 
-// ============================================================================
-// MAIN FUNCTION: AUTHENTICATE + IMPORT
-// ============================================================================
 async function hdfcImportWithAuth() {
     try {
         logHDFC('Starting import workflow...', 'info');
@@ -371,9 +345,7 @@ async function hdfcImportWithAuth() {
     }
 }
 
-// ============================================================================
-// EXPORT TO WINDOW
-// ============================================================================
+// Export to window IMMEDIATELY
 window.hdfcIntegration = {
     getTokenId: hdfcGetTokenId,
     loginValidate: hdfcLoginValidate,
@@ -386,4 +358,4 @@ window.hdfcIntegration = {
 window.startHDFCAuth = startHDFCAuth;
 window.hdfcImportWithAuth = hdfcImportWithAuth;
 
-logHDFC('Integration loaded - ready for use', 'success');
+logHDFC('✅ Integration loaded - hdfcImportWithAuth is ready!', 'success');
