@@ -2449,33 +2449,24 @@ xml
     </div>
   </div>
 
- <!-- HDFC Securities -->
-<div class="broker-card">
-  <h3>🏦 HDFC Securities</h3>
-  <div class="account-mapping">
-    <small>Equity: Pradeep Kumar V | MF: Sanchita Pradeep</small>
+  <!-- HDFC Securities -->
+  <div class="broker-card">
+    <h3>🏦 HDFC Securities</h3>
+    <div class="account-mapping">
+      <small>Equity: Pradeep Kumar V | MF: Sanchita Pradeep</small>
+    </div>
+    <div class="broker-buttons">
+      <button class="btn btn-primary"
+              onclick="showHDFCSettings()"
+              title="Configure HDFC Settings">
+        ⚙️ HDFC Settings
+      </button>
+    </div>
+    <div id="hdfc-status" class="status-display">
+      <span id="hdfc-connection-status">❌ Not Connected</span>
+      <span id="hdfc-last-sync">Last sync: Never</span>
+    </div>
   </div>
-  <div class="broker-buttons">
-    <!-- Single button: handles auth + import -->
-    <button class="btn btn-primary"
-            onclick="fetchAndImportHoldings()"
-            title="Login and Import HDFC Holdings">
-      🔗 Connect & Import HDFC
-    </button>
-    
-    <!-- Keep your settings button if needed -->
-    <button class="btn btn-outline"
-            onclick="fetchAndImportHoldings()"
-            title="Configure HDFC Settings">
-      ⚙️ Settings
-    </button>
-  </div>
-  <div id="hdfc-status" class="status-display">
-    <span id="hdfc-connection-status">❌ Not Connected</span>
-    <span id="hdfc-last-sync">Last sync: Never</span>
-  </div>
-</div>
-
 
   <!-- ICICI Securities -->
   <div class="broker-card">
