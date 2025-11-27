@@ -3,8 +3,8 @@
 
 // Member configuration - must match BROKER_MEMBER_MAPPING
 const HDFC_MEMBER_NAMES = {
-    equity_member: 'Pradeep Kumar V',
-    mf_member: 'Sanchita Pradeep'
+    equity_member: 'pradeep kumar v',    // ✅ CHANGED TO LOWERCASE
+    mf_member: 'sanchita pradeep'       // ✅ CHANGED TO LOWERCASE
 };
 
 let hdfcMemberIds = {
