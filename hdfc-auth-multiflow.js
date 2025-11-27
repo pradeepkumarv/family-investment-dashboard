@@ -1,21 +1,16 @@
-// HDFC Securities Integration - JavaScript Version
-// Matches Zerodha pattern with delete-then-insert logic
+// ============================================================================
+// HDFC SECURITIES JAVASCRIPT INTEGRATION - READY TO USE
+// ============================================================================
+// This file is 100% JavaScript - NOT Python
+// Handles: Auth Flow, Holdings Fetch, Database Write
+// Maps: Equity → Pradeep, MF → Sanchita
+// ============================================================================
 
 const BROKER_MEMBER_MAPPING = {
     'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49': {
         name: 'Pradeep Kumar V',
         demat: ['Zerodha', 'HDFC Securities'],
         mutualFunds: ['FundsIndia']
-    },
-    '0221a8e7-fad8-42cd-bdf6-2f84b85dac31': {
-        name: 'Smruthi Pradeep',
-        demat: ['ICICI Securities'],
-        mutualFunds: ['ICICI Securities']
-    },
-    'c2f4b3d8-bb69-4516-b107-dffbde92c77c': {
-        name: 'Saanvi Pradeep',
-        demat: [],
-        mutualFunds: ['Zerodha']
     },
     'd3a4fc84-a94b-494d-915f-60901f16d973': {
         name: 'Sanchita Pradeep',
@@ -25,31 +20,41 @@ const BROKER_MEMBER_MAPPING = {
 };
 
 const HDFC_CONFIG = {
-    api_key: '', // Set from environment or configuration
-    api_secret: '', // Set from environment or configuration
+    api_key: 'YOUR_API_KEY_HERE',
+    api_secret: 'YOUR_API_SECRET_HERE',
     base_url: 'https://developer.hdfcsec.com/oapi/v1',
-    equity_members: ['bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'], // Pradeep for Equity
-    mf_members: ['d3a4fc84-a94b-494d-915f-60901f16d973'] // Sanchita for MF
+    equity_members: ['bef9db5e-2f21-4038-8f3f-f78ce1bbfb49'],
+    mf_members: ['d3a4fc84-a94b-494d-915f-60901f16d973']
 };
 
 let hdfcAccessToken = null;
 let hdfcRequestToken = null;
 
+// ============================================================================
+// LOGGING FUNCTIONS
+// ============================================================================
 function logHDFC(msg, type = 'info') {
     const emoji = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' }[type];
-    console.log(`${emoji} [${new Date().toISOString()}] HDFC: ${msg}`);
+    console.log(`${emoji} [HDFC] ${msg}`);
 }
 
 function showHDFCMessage(msg, type = 'info') {
-    if (typeof showMessage === 'function') showMessage(`HDFC: ${msg}`, type);
-    else console.log(msg);
+    if (typeof showMessage === 'function') {
+        showMessage(`HDFC: ${msg}`, type);
+    } else {
+        console.log(msg);
+    }
 }
 
-// Step 1: Get Token ID
+// ============================================================================
+// STEP 1: GET TOKEN ID
+// ============================================================================
 async function hdfcGetTokenId() {
     try {
-        logHDFC('Requesting token ID...');
-        const response = await fetch(`${HDFC_CONFIG.base_url}/login/tokenid?api_key=${HDFC_CONFIG.api_key}`, {
+        logHDFC('Requesting token ID...', 'info');
+        const url = `${HDFC_CONFIG.base_url}/login/tokenid?api_key=${HDFC_CONFIG.api_key}`;
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -57,8 +62,7 @@ async function hdfcGetTokenId() {
             }
         });
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         const tokenId = data.tokenId || data.tokenid || data.token_id;
         
@@ -72,29 +76,30 @@ async function hdfcGetTokenId() {
     }
 }
 
-// Step 2: Login Validate
+// ============================================================================
+// STEP 2: LOGIN VALIDATE
+// ============================================================================
 async function hdfcLoginValidate(tokenId, username, password) {
     try {
-        logHDFC('Validating login credentials...');
+        logHDFC('Validating login credentials...', 'info');
+        const url = `${HDFC_CONFIG.base_url}/login/validate?api_key=${HDFC_CONFIG.api_key}&tokenid=${tokenId}`;
+        
         const formData = new URLSearchParams();
         formData.append('username', username);
         formData.append('password', password);
 
-        const response = await fetch(
-            `${HDFC_CONFIG.base_url}/login/validate?api_key=${HDFC_CONFIG.api_key}&tokenid=${tokenId}`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json'
-                },
-                body: formData
-            }
-        );
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
         const data = await response.json();
+        
         logHDFC('Login validation successful', 'success');
         return data;
     } catch (error) {
@@ -103,27 +108,27 @@ async function hdfcLoginValidate(tokenId, username, password) {
     }
 }
 
-// Step 3: Validate OTP
+// ============================================================================
+// STEP 3: VALIDATE OTP
+// ============================================================================
 async function hdfcValidateOTP(tokenId, otp) {
     try {
-        logHDFC('Validating OTP...');
+        logHDFC('Validating OTP...', 'info');
+        const url = `${HDFC_CONFIG.base_url}/twofa/validate?api_key=${HDFC_CONFIG.api_key}&tokenid=${tokenId}`;
+        
         const formData = new URLSearchParams();
         formData.append('answer', otp);
 
-        const response = await fetch(
-            `${HDFC_CONFIG.base_url}/twofa/validate?api_key=${HDFC_CONFIG.api_key}&tokenid=${tokenId}`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json'
-                },
-                body: formData
-            }
-        );
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
         const data = await response.json();
         hdfcRequestToken = data.request_token;
         
@@ -135,27 +140,27 @@ async function hdfcValidateOTP(tokenId, otp) {
     }
 }
 
-// Step 4: Get Access Token
+// ============================================================================
+// STEP 4: GET ACCESS TOKEN
+// ============================================================================
 async function hdfcGetAccessToken(requestToken) {
     try {
-        logHDFC('Fetching access token...');
+        logHDFC('Fetching access token...', 'info');
+        const url = `${HDFC_CONFIG.base_url}/access-token?api_key=${HDFC_CONFIG.api_key}&request_token=${requestToken}`;
+        
         const formData = new URLSearchParams();
         formData.append('apiSecret', HDFC_CONFIG.api_secret);
 
-        const response = await fetch(
-            `${HDFC_CONFIG.base_url}/access-token?api_key=${HDFC_CONFIG.api_key}&request_token=${requestToken}`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json'
-                },
-                body: formData
-            }
-        );
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
         const data = await response.json();
         hdfcAccessToken = data.accessToken;
         
@@ -168,11 +173,15 @@ async function hdfcGetAccessToken(requestToken) {
     }
 }
 
-// Get Holdings
+// ============================================================================
+// STEP 5: GET HOLDINGS
+// ============================================================================
 async function hdfcGetHoldings(accessToken) {
     try {
-        logHDFC('Fetching holdings...');
-        const response = await fetch(`${HDFC_CONFIG.base_url}/portfolio/holdings`, {
+        logHDFC('Fetching holdings...', 'info');
+        const url = `${HDFC_CONFIG.base_url}/portfolio/holdings`;
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -181,8 +190,8 @@ async function hdfcGetHoldings(accessToken) {
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
         const data = await response.json();
+        
         logHDFC(`Fetched ${data.data?.length || 0} holdings`, 'success');
         return data;
     } catch (error) {
@@ -191,7 +200,9 @@ async function hdfcGetHoldings(accessToken) {
     }
 }
 
-// **CRITICAL: Import All Holdings with Member Mapping**
+// ============================================================================
+// STEP 6: IMPORT ALL HOLDINGS TO DATABASE
+// ============================================================================
 async function hdfcImportAll() {
     try {
         const accessToken = localStorage.getItem('hdfc_access_token');
@@ -205,7 +216,6 @@ async function hdfcImportAll() {
             return;
         }
 
-        // Get current user from Supabase
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             showHDFCMessage('Please log in first', 'error');
@@ -220,23 +230,20 @@ async function hdfcImportAll() {
         let totalImported = 0;
         const importDate = new Date().toISOString().split('T')[0];
 
-        // Separate equity and mutual funds based on HDFC response structure
         const equityHoldings = holdings.filter(h => h.product_type === 'equity' || !h.scheme_name);
         const mfHoldings = holdings.filter(h => h.scheme_name || h.product_type === 'mutual_fund');
 
-        // **Import Equity for Pradeep**
+        // Import Equity for Pradeep
         if (equityHoldings.length > 0) {
             for (const memberId of HDFC_CONFIG.equity_members) {
                 const memberInfo = BROKER_MEMBER_MAPPING[memberId];
                 
-                // DELETE existing HDFC equity holdings
                 await window.dbHelpers.deleteEquityHoldingsByBrokerAndMember(
                     user.id,
                     'HDFC Securities',
                     memberId
                 );
 
-                // INSERT fresh equity data
                 const equityRecords = equityHoldings.map(holding => ({
                     user_id: user.id,
                     member_id: memberId,
@@ -253,24 +260,21 @@ async function hdfcImportAll() {
 
                 await window.dbHelpers.insertEquityHoldings(equityRecords);
                 totalImported += equityRecords.length;
-                
-                logHDFC(`Imported ${equityRecords.length} equity holdings for ${memberInfo.name}`, 'success');
+                logHDFC(`Imported ${equityRecords.length} equity for ${memberInfo.name}`, 'success');
             }
         }
 
-        // **Import Mutual Funds for Sanchita**
+        // Import Mutual Funds for Sanchita
         if (mfHoldings.length > 0) {
             for (const memberId of HDFC_CONFIG.mf_members) {
                 const memberInfo = BROKER_MEMBER_MAPPING[memberId];
                 
-                // DELETE existing HDFC MF holdings
                 await window.dbHelpers.deleteMutualFundHoldingsByBrokerAndMember(
                     user.id,
                     'HDFC Securities',
                     memberId
                 );
 
-                // INSERT fresh MF data
                 const mfRecords = mfHoldings.map(mf => ({
                     user_id: user.id,
                     member_id: memberId,
@@ -289,106 +293,87 @@ async function hdfcImportAll() {
 
                 await window.dbHelpers.insertMutualFundHoldings(mfRecords);
                 totalImported += mfRecords.length;
-                
-                logHDFC(`Imported ${mfRecords.length} mutual fund holdings for ${memberInfo.name}`, 'success');
+                logHDFC(`Imported ${mfRecords.length} MF for ${memberInfo.name}`, 'success');
             }
         }
 
         localStorage.setItem('hdfc_last_sync', new Date().toISOString());
-        
-        showHDFCMessage(
-            `Imported ${totalImported} holdings (Equity: ${equityHoldings.length} for Pradeep, MF: ${mfHoldings.length} for Sanchita)`,
-            'success'
-        );
+        showHDFCMessage(`✅ Imported ${totalImported} holdings`, 'success');
 
-        // Reload dashboard
         if (typeof loadDashboardData === 'function') {
             await loadDashboardData();
         }
-
     } catch (error) {
         console.error('Error importing HDFC holdings:', error);
         showHDFCMessage(`Failed to import: ${error.message}`, 'error');
     }
 }
 
-// ========== HELPER FUNCTIONS FOR UI ==========
-
-// Authentication flow function
+// ============================================================================
+// AUTHENTICATION FLOW
+// ============================================================================
 async function startHDFCAuth() {
     try {
-        showHDFCMessage('Starting HDFC authentication...', 'info');
+        logHDFC('Starting authentication...', 'info');
         
-        // Step 1: Get token ID
         const tokenId = await hdfcGetTokenId();
-        
-        // Step 2: Prompt for credentials
         const username = prompt('Enter HDFC Username:');
         const password = prompt('Enter HDFC Password:');
         
         if (!username || !password) {
-            showHDFCMessage('Authentication cancelled', 'warning');
+            logHDFC('Authentication cancelled', 'warning');
             return null;
         }
         
-        // Step 3: Validate login
         await hdfcLoginValidate(tokenId, username, password);
         
-        // Step 4: Prompt for OTP
         const otp = prompt('Enter OTP (check your mobile/email):');
-        
         if (!otp) {
-            showHDFCMessage('OTP required', 'warning');
+            logHDFC('OTP required', 'warning');
             return null;
         }
         
-        // Step 5: Validate OTP and get request token
         const otpResult = await hdfcValidateOTP(tokenId, otp);
-        
-        // Step 6: Get access token
         await hdfcGetAccessToken(otpResult.request_token);
         
-        // Update UI status
         document.getElementById('hdfc-connection-status').textContent = '✅ Connected';
-        showHDFCMessage('HDFC Securities authenticated!', 'success');
-        
+        logHDFC('Authentication successful', 'success');
         return true;
         
     } catch (error) {
-        console.error('HDFC authentication failed:', error);
-        showHDFCMessage(`Authentication failed: ${error.message}`, 'error');
+        console.error('Authentication failed:', error);
+        logHDFC(`Authentication failed: ${error.message}`, 'error');
         return null;
     }
 }
 
-// Combined function: auth + import in one click
+// ============================================================================
+// MAIN FUNCTION: AUTHENTICATE + IMPORT
+// ============================================================================
 async function hdfcImportWithAuth() {
     try {
-        // Check if already authenticated
+        logHDFC('Starting import workflow...', 'info');
         const token = localStorage.getItem('hdfc_access_token');
         
         if (!token) {
-            logHDFC('Not authenticated, starting auth flow...', 'info');
+            logHDFC('Not authenticated, starting auth...', 'info');
             const authSuccess = await startHDFCAuth();
-            
             if (!authSuccess) {
-                showHDFCMessage('Authentication required to import', 'warning');
+                logHDFC('Authentication required', 'warning');
                 return;
             }
-        } else {
-            logHDFC('Already authenticated, proceeding with import', 'success');
         }
         
-        // Now import holdings
         await hdfcImportAll();
-        
     } catch (error) {
-        console.error('HDFC import failed:', error);
-        showHDFCMessage(`Import failed: ${error.message}`, 'error');
+        console.error('Import failed:', error);
+        logHDFC(`Import failed: ${error.message}`, 'error');
     }
 }
 
-// Export functions for use in dashboard
+// ============================================================================
+// EXPORT TO WINDOW
+// ============================================================================
 window.hdfcIntegration = {
     getTokenId: hdfcGetTokenId,
     loginValidate: hdfcLoginValidate,
@@ -398,8 +383,7 @@ window.hdfcIntegration = {
     importAll: hdfcImportAll
 };
 
-// Make helper functions globally accessible from HTML onclick
 window.startHDFCAuth = startHDFCAuth;
 window.hdfcImportWithAuth = hdfcImportWithAuth;
 
-logHDFC('HDFC Securities integration initialized', 'success');
+logHDFC('Integration loaded - ready for use', 'success');
