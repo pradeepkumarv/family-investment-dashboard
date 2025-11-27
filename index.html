@@ -2631,11 +2631,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Wait for all scripts to load, then trigger import
         setTimeout(() => {
-            if (typeof fetchAndImportHoldings === 'function') {
+            if (typeof hdfcImportWithAuth === 'function') {
                 console.log('Triggering HDFC holdings import...');
-                fetchAndImportHoldings();
+                hdfcImportWithAuth();
             } else {
-                console.error('fetchAndImportHoldings function not available');
+                console.error('hdfcImportWithAuth function not available');
                 // Fallback: try to load and call the function
                 if (typeof showHDFCSettings === 'function') {
                     showHDFCSettings();
