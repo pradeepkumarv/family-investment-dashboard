@@ -3,30 +3,19 @@ import os
 import requests
 from datetime import datetime
 
-# ✅ CORRECTED: Match the environment variables you already set in Render
-
-import os
-import requests
-from datetime import datetime
-from supabase import create_client
-
 # ============================================================
 # Config - CORRECTED TO MATCH YOUR RENDER ENV VARIABLES
 # ============================================================
-BASE = "https://developer.hdfcsec.com/oapi/v1"
-
-# ✅ API Keys - these are already set in Render
+https://developer.hdfcsec.com/oapi/v1"
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
 USERNAME = os.getenv("HDFC_USERNAME")
 PASSWORD = os.getenv("HDFC_PASSWORD")
-
-# ✅ FIXED: Use the environment variable names you ACTUALLY set in Render
-HDFC_AUTH_URL = os.getenv("HDFC_AUTH_URL", f"{BASE}/login")
-HDFC_TOKEN_EXCHANGE_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", f"{BASE}/access-token")
-HDFC_HOLDINGS_URL = os.getenv("HDFC_HOLDINGS_URL", f"{BASE}/portfolio/holdings")
-
-# Supabase
+HEADERS_JSON = {
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+}
+# Initialize Supabase client
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
@@ -35,77 +24,6 @@ MEMBERS = {
     "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
     "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
 }
-
-HEADERS_JSON = {
-    "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-}
-
-# ============================================================
-# Validation - Check all required variables are set
-# ============================================================
-print("=" * 70)
-print("🔍 CHECKING ENVIRONMENT VARIABLES")
-print("=" * 70)
-
-errors = []
-
-if not API_KEY:
-    errors.append("❌ HDFC_API_KEY not set")
-else:
-    print(f"✅ HDFC_API_KEY: {API_KEY[:8]}...")
-
-if not API_SECRET:
-    errors.append("❌ HDFC_API_SECRET not set")
-else:
-    print(f"✅ HDFC_API_SECRET: {API_SECRET[:8]}...")
-
-if not USERNAME:
-    errors.append("❌ HDFC_USERNAME not set")
-else:
-    print(f"✅ HDFC_USERNAME: {USERNAME}")
-
-if not PASSWORD:
-    errors.append("❌ HDFC_PASSWORD not set")
-else:
-    print(f"✅ HDFC_PASSWORD: {'*' * len(PASSWORD)}")
-
-if not HDFC_AUTH_URL:
-    errors.append("❌ HDFC_AUTH_URL not set")
-else:
-    print(f"✅ HDFC_AUTH_URL: {HDFC_AUTH_URL}")
-
-if not HDFC_TOKEN_EXCHANGE_URL:
-    errors.append("❌ HDFC_TOKEN_EXCHANGE_URL not set")
-else:
-    print(f"✅ HDFC_TOKEN_EXCHANGE_URL: {HDFC_TOKEN_EXCHANGE_URL}")
-
-if not HDFC_HOLDINGS_URL:
-    errors.append("❌ HDFC_HOLDINGS_URL not set")
-else:
-    print(f"✅ HDFC_HOLDINGS_URL: {HDFC_HOLDINGS_URL}")
-
-if not url:
-    errors.append("❌ SUPABASE_URL not set")
-else:
-    print(f"✅ SUPABASE_URL: {url[:30]}...")
-
-if not key:
-    errors.append("❌ SUPABASE_KEY not set")
-else:
-    print(f"✅ SUPABASE_KEY: {key[:8]}...")
-
-print("=" * 70)
-
-if errors:
-    print("\n❌ ERRORS FOUND:")
-    for error in errors:
-        print(f"   {error}")
-    print("\n" + "=" * 70)
-    raise RuntimeError("Missing required environment variables: " + ", ".join(errors))
-else:
-    print("✅ ALL ENVIRONMENT VARIABLES ARE CORRECTLY SET!")
-    print("=" * 70)
 
 # ============================================================
 # Helper Functions
