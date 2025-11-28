@@ -1,358 +1,340 @@
-# hdfc_investright.py
-# Helper module for interacting with HDFC Securities OpenAPI and Supabase.
-# Replace or adapt request/URL details as required by HDFC docs.
-# Important: this module will not run any side-effects at import time.
-
+from supabase import create_client
 import os
 import requests
-import logging
-import traceback
 from datetime import datetime
-from typing import Optional, Dict, List, Any
 
-logger = logging.getLogger("hdfc_investright")
-logger.setLevel(logging.INFO)
+# -----------------------------
+# Config
+# -----------------------------
+BASE = "https://developer.hdfcsec.com/oapi/v1"
+API_KEY = os.getenv("HDFC_API_KEY")
+API_SECRET = os.getenv("HDFC_API_SECRET")
+USERNAME = os.getenv("HDFC_USERNAME")
+PASSWORD = os.getenv("HDFC_PASSWORD")
+HEADERS_JSON = {
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+}
+# Initialize Supabase client
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_KEY")
+supabase = create_client(url, key)
 
-# Supabase client (requires supabase package)
-try:
-    from supabase import create_client, Client
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
-    supabase: Optional[Client] = None
-    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-        logger.info("✅ Supabase client initialized")
-    else:
-        logger.warning("Supabase credentials missing; DB writes will fail until provided.")
-except Exception as e:
-    supabase = None
-    logger.exception("Supabase client could not be initialized")
+MEMBERS = {
+    "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
+    "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
+}
 
-# HDFC API config
-HDFC_API_KEY = os.getenv("HDFC_API_KEY")
-HDFC_API_SECRET = os.getenv("HDFC_API_SECRET")
-HDFC_TOKEN_ID_URL = os.getenv("HDFC_TOKEN_ID_URL", "https://developer.hdfcsec.com/oapi/v1/login/token_id")
-HDFC_LOGIN_VALIDATE_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", "https://developer.hdfcsec.com/oapi/v1/login/validate")
-HDFC_ACCESS_TOKEN_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", "https://developer.hdfcsec.com/oapi/v1/access-token")
-HDFC_HOLDINGS_URL = os.getenv("HDFC_HOLDINGS_URL", "https://developer.hdfcsec.com/oapi/v1/portfolio/holdings")
+# -----------------------------
+# Helper Functions
+# -----------------------------
 
-# ------------------------
-# Helper: HTTP wrappers
-# ------------------------
-def _get(url, params=None, headers=None):
-    resp = requests.get(url, params=params, headers=headers, timeout=30)
-    resp.raise_for_status()
-    return resp.json()
+def get_token_id():
+    url = f"{BASE}/login"
+    params = {"api_key": API_KEY}
+    print(f"➡️ Requesting token_id: {url} params={params}")
+    r = requests.get(url, params=params)
+    print("  Status:", r.status_code, "Body:", r.text)
+    r.raise_for_status()
+    data = r.json()
+    token_id = data.get("tokenId") or data.get("token_id")
+    print("  Parsed token_id:", token_id)
+    if not token_id:
+        raise ValueError(f"Could not extract token_id from response: {data}")
+    return token_id
 
-def _post(url, data=None, params=None, headers=None, json_payload=None):
-    resp = requests.post(url, params=params, data=data, json=json_payload, headers=headers, timeout=30)
-    resp.raise_for_status()
-    return resp.json()
-
-# ------------------------
-# Public API functions
-# ------------------------
-def get_token_id() -> str:
-    """Request a token_id from HDFC (initial step)."""
-    params = {"api_key": HDFC_API_KEY}
-    
-    try:
-        logger.info("🔄 Fetching token_id from HDFC: %s", HDFC_TOKEN_ID_URL)
-        resp = requests.get(HDFC_TOKEN_ID_URL, params=params, timeout=30)
-        
-        # ✅ NEW: Log response details for debugging
-        logger.info("📊 Token ID response status: %s", resp.status_code)
-        logger.info("📊 Token ID response headers: %s", dict(resp.headers))
-        logger.info("📊 Token ID response text: %s", resp.text[:200])
-        
-        # ✅ NEW: Check if response is empty or HTML error
-        if not resp.text or resp.text.strip() == '':
-            logger.error("❌ Empty response from HDFC token_id endpoint")
-            raise RuntimeError(f"HDFC returned empty response (HTTP {resp.status_code})")
-        
-        # ✅ NEW: Check if response is HTML (error page)
-        if resp.text.strip().startswith('<'):
-            logger.error("❌ HDFC returned HTML instead of JSON: %s", resp.text[:200])
-            raise RuntimeError(f"HDFC returned HTML error page (HTTP {resp.status_code})")
-        
-        # ✅ NEW: Raise HTTP errors if any
-        resp.raise_for_status()
-        
-        # ✅ NEW: Handle JSON parse errors gracefully
-        try:
-            data = resp.json()
-        except Exception as json_err:
-            logger.error("❌ JSON parse error: %s", json_err)
-            logger.error("❌ Response text was: %s", resp.text)
-            raise RuntimeError(f"Failed to parse HDFC response as JSON: {str(json_err)}")
-        
-        token_id = data.get("tokenId") or data.get("token_id") or data.get("tokenId")
-        
-        if not token_id:
-            logger.error("❌ No token_id in HDFC response: %s", data)
-            raise RuntimeError("No token_id returned from HDFC. Response was: " + str(data))
-        
-        logger.info("✅ Got token_id from HDFC: %s", token_id[:10] + "...")
-        return token_id
-        
-    except requests.exceptions.Timeout:
-        logger.error("❌ HDFC request timed out after 30 seconds")
-        raise RuntimeError("HDFC API timeout - server not responding")
-    
-    except requests.exceptions.ConnectionError as e:
-        logger.error("❌ Connection error to HDFC: %s", e)
-        raise RuntimeError(f"Failed to connect to HDFC: {str(e)}")
-    
-    except requests.exceptions.RequestException as e:
-        logger.error("❌ Request error: %s", e)
-        raise RuntimeError(f"HDFC request failed: {str(e)}")
-    
-    except Exception as e:
-        logger.error("❌ Unexpected error in get_token_id: %s", e)
-        logger.exception("Full traceback:")
-        raise RuntimeError(f"Unexpected error getting token_id: {str(e)}")
-
-
-def login_validate(token_id: str, username: str, password: str) -> dict:
-    """Start login validate (sends credentials) -> returns twofa response."""
-    params = {"api_key": HDFC_API_KEY, "token_id": token_id}
+def login_validate(token_id, username, password):
+    url = f"{BASE}/login/validate"
+    params = {"api_key": API_KEY, "token_id": token_id}
     payload = {"username": username, "password": password}
-    resp = _post(HDFC_LOGIN_VALIDATE_URL, data=payload, params=params)
-    logger.info("✅ login_validate response received")
-    return resp
+    safe_password = "*" * len(password) if password else None
+    print("🔐 Calling login_validate")
+    print("  URL:", url)
+    print("  Params:", params)
+    print("  Payload:", {"username": username, "password": safe_password})
+    r = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    print("  Response:", r.status_code, r.text)
+    r.raise_for_status()
 
-def validate_otp(token_id: str, otp: str) -> dict:
-    """Send OTP and receive requestToken + callbackUrl + authorised boolean."""
-    params = {"api_key": HDFC_API_KEY, "token_id": token_id}
+    # Handle empty or non-JSON responses
+    if not r.text or r.text.strip() == "":
+        print("  ⚠️ Empty response from HDFC API")
+        return {"status": "success", "message": "Login validated, awaiting OTP"}
+
+    try:
+        return r.json()
+    except ValueError as e:
+        print(f"  ⚠️ Non-JSON response: {r.text[:200]}")
+        # Return a success indicator if status is 200
+        if r.status_code == 200:
+            return {"status": "success", "message": "Login validated"}
+        raise ValueError(f"Invalid JSON response from HDFC: {r.text[:200]}")
+
+def validate_otp(token_id, otp):
+    url = f"{BASE}/twofa/validate"
+    params = {"api_key": API_KEY, "token_id": token_id}
     payload = {"answer": otp}
-    url = "https://developer.hdfcsec.com/oapi/v1/twofa/validate"
-    resp = _post(url, data=payload, params=params)
-    logger.info("🔍 validate_otp raw response: %s", resp if isinstance(resp, dict) else str(resp))
-    return resp
 
-def fetch_access_token(token_id: str, request_token: str) -> Optional[str]:
-    """Exchange request_token for an access token."""
-    params = {"api_key": HDFC_API_KEY, "request_token": request_token}
-    payload = {"apiSecret": HDFC_API_SECRET}
-    resp = _post(HDFC_ACCESS_TOKEN_URL, data=payload, params=params)
-    access_token = resp.get("accessToken")
-    logger.info("✅ Parsed access_token")
-    return access_token
+    print("📲 Validating OTP (twofa)")
+    print("  URL:", url)
+    print("  Params:", params)
+    print("  Payload:", payload)
 
-def get_holdings(access_token_or_request_token: str) -> dict:
-    """
-    Fetch holdings from HDFC holdings endpoint.
-    The API may accept either a valid access token (bearer) or (rarely) request_token directly.
-    Returns parsed JSON dict from API.
-    """
-    headers = {"Authorization": f"Bearer {access_token_or_request_token}", "User-Agent": "Family-Investment-Dashboard/1.0"}
-    resp = requests.get(HDFC_HOLDINGS_URL, headers=headers, timeout=30)
+    try:
+        resp = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    except Exception as e:
+        print("❌ Request failed:", e)
+        return {"error": "network_failure", "details": str(e)}
+
+    print("🔍 RAW RESPONSE:", resp.status_code, resp.text)
+
+    # Handle HTTP errors gracefully
+    if resp.status_code >= 400:
+        return {"error": "http_error", "status": resp.status_code, "details": resp.text}
+
+    # Handle non-JSON response
     try:
         data = resp.json()
-    except Exception:
-        logger.exception("Failed to parse holdings response")
-        raise
+    except Exception as e:
+        print("❌ JSON PARSE FAILED:", e)
+        return {
+            "error": "invalid_json",
+            "status": resp.status_code,
+            "raw": resp.text
+        }
+
     return data
 
-def get_holdings_with_fallback(request_token: Optional[str], token_id: Optional[str]) -> Optional[dict]:
-    """
-    Provide a fallback approach if direct fetch fails:
-      - try exchanging token again if possible / or attempt alternate endpoints
-      - This function should be conservative; return None if unsuccessful.
-    """
-    try:
-        if not request_token or not token_id:
-            return None
-        # Try to fetch access token again
-        access_token = fetch_access_token(token_id, request_token)
-        if not access_token:
-            return None
-        return get_holdings(access_token)
-    except Exception:
-        logger.exception("get_holdings_with_fallback failed")
-        return None
 
-# ------------------------
-# Normalization & mapping helpers
-# ------------------------
-def normalize_holdings_payload(payload: Any) -> List[dict]:
+def authorise(token_id, request_token, consent="Y"):
+    url = f"{BASE}/authorise"
+    params = {
+        "api_key": API_KEY,
+        "token_id": token_id,
+        "request_token": request_token,
+        "consent": consent
+    }
+    print("🔑 Authorising session")
+    print("  URL:", url)
+    print("  Params:", params)
+    resp = requests.post(url, params=params, headers=HEADERS_JSON)
+    print("  Response:", resp.status_code, resp.text)
+    resp.raise_for_status()
+    return resp.json()
+
+def fetch_access_token(token_id, request_token):
+    # CORRECT URL: access-token (with hyphen)
+    url = f"{BASE}/access-token"
+    
+    # Use query parameters as shown in curl
+    params = {
+        "api_key": API_KEY,
+        "request_token": request_token
+    }
+    
+    # CORRECT payload: apiSecret (camelCase)
+    payload = {
+        "apiSecret": API_SECRET
+    }
+    
+    print("🔑 Fetching access token")
+    print("  URL:", url)
+    print("  Params:", params)
+    print("  Payload:", payload)
+    
+    resp = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    print("  Response:", resp.status_code, resp.text)
+    resp.raise_for_status()
+    
+    data = resp.json()
+    # Response key is "accessToken" (camelCase)
+    access_token = data.get("accessToken")
+    print("  Parsed access_token:", access_token)
+    if not access_token:
+        raise ValueError(f"Could not extract accessToken from response: {data}")
+    return access_token
+
+def get_holdings(access_token):
+    url = f"{BASE}/portfolio/holdings"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    }
+    print("📊 Fetching holdings")
+    print("  URL:", url)
+    print("  Headers:", headers)
+   # resp = requests.get(url, params={"api_key": API_KEY}, headers=headers)
+    resp = requests.get(
+    url,
+    params={
+        "api_key": API_KEY,
+        "login_id": USERNAME   # <-- REQUIRED BY HDFC
+    },
+    headers=headers
+)
+
+    print("  Response:", resp.status_code, resp.text)
+    resp.raise_for_status()
+    return resp.json()
+
+def get_holdings_with_fallback(request_token, token_id):
     """
-    Normalize the HDFC holdings payload to a list of dictionaries.
-    The HDFC API sometimes returns nested lists or mixed shapes.
+    Try different ways to authenticate with holdings API
     """
-    if not payload:
-        return []
+    url = f"{BASE}/portfolio/holdings"
+    
+    # Different auth methods to try
+    auth_methods = [
+        # Method 1: Authorization header with request_token
+        {
+            "headers": {"Authorization": f"Bearer {request_token}"},
+       #     "params": {"api_key": API_KEY}
+            "params": {"api_key": API_KEY, "login_id": USERNAME}
 
-    # If a dict with "data" and "data" is a list
-    if isinstance(payload, dict) and "data" in payload and isinstance(payload["data"], list):
-        return payload["data"]
-
-    # If it's already a list
-    if isinstance(payload, list):
-        # Flatten if nested lists present
-        result = []
-        for item in payload:
-            if isinstance(item, list):
-                result.extend(item)
-            elif isinstance(item, dict):
-                result.append(item)
-        return result
-
-    # Unknown shape
-    logger.warning("Unknown holdings payload shape; returning empty list")
-    return []
-
-def map_holdings_for_frontend(raw_holdings_payload: Any) -> List[dict]:
-    """
-    Map the HDFC raw payload into a sanitized list for frontend consumption.
-    """
-    holdings_list = normalize_holdings_payload(raw_holdings_payload)
-    mapped = []
-
-    for h in holdings_list:
+        },
+        # Method 2: Authorization header without Bearer
+        {
+            "headers": {"Authorization": request_token},
+            "params": {"api_key": API_KEY}
+        },
+        # Method 3: Pass request_token as query parameter
+        {
+            "headers": {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+            "params": {"api_key": API_KEY, "request_token": request_token}
+        },
+        # Method 4: Pass both token_id and request_token
+        {
+            "headers": {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+            "params": {"api_key": API_KEY, "token_id": token_id, "request_token": request_token}
+        },
+        # Method 5: Custom header
+        {
+            "headers": {"X-Auth-Token": request_token, "User-Agent": "Mozilla/5.0"},
+            "params": {"api_key": API_KEY}
+        }
+    ]
+    
+    print("📊 Trying multiple holdings authentication methods...")
+    
+    for i, method in enumerate(auth_methods, 1):
         try:
-            # Fields from HDFC: security_id/company_name/isin/quantity/average_price/close_price/investment_value/sip_indicator
-            symbol = h.get("security_id") or h.get("tradingsymbol") or h.get("symbol")
-            company_name = h.get("company_name") or h.get("company") or ""
-            isin = h.get("isin")
-            quantity = float(h.get("quantity") or 0)
-            avg_price = float(h.get("average_price") or h.get("averageprice") or 0)
-            current_price = float(h.get("close_price") or h.get("lastprice") or 0)
-            invested_value = float(h.get("investment_value") or 0)
-            pnl = float(h.get("pnl") or 0)
-            sip = h.get("sip_indicator") == "Y"
-
-            mapped.append({
-                "symbol": symbol,
-                "company_name": company_name,
-                "isin": isin,
-                "quantity": quantity,
-                "average_price": avg_price,
-                "current_price": current_price,
-                "invested_value": invested_value,
-                "pnl": pnl,
-                "sip": sip,
-                # keep raw for debugging
-                "_raw": h
-            })
-        except Exception:
-            logger.exception("Failed to map holding: %s", h)
+            print(f"  Method {i}: {method}")
+            resp = requests.get(url, headers=method["headers"], params=method["params"])
+            print(f"  Response {i}: {resp.status_code} - {resp.text[:100]}")
+            
+            if resp.status_code == 200:
+                print(f"✅ Success with method {i}!")
+                return resp.json()
+                
+        except Exception as e:
+            print(f"  Method {i} error: {e}")
             continue
+    
+    # If all methods fail, raise the last error
+    raise Exception(f"All {len(auth_methods)} authentication methods failed for holdings")
 
-    return mapped
-
-# ------------------------
-# DB processing: inserts into Supabase
-# ------------------------
-def process_holdings_success(holdings: List[dict], user_id: str, hdfc_member_ids: Dict[str, str]) -> Dict[str, int]:
+def resend_2fa(token_id):
+    url = f"{BASE}/twofa/resend"
+    params = {"api_key": API_KEY, "token_id": token_id}
+    print("🔁 Resending 2FA OTP")
+    print("  URL:", url)
+    print("  Params:", params)
+    resp = requests.post(url, params=params, headers=HEADERS_JSON)
+    print("  Response:", resp.status_code, resp.text)
+    resp.raise_for_status()
+    return resp.json()
+    
+def process_holdings_success(holdings, user_id, hdfc_member_ids):
     """
-    Process and insert HDFC holdings to Supabase:
-      - equity_holdings table
-      - mutual_fund_holdings table
-
-    Expects:
-      - holdings: list of raw holding dicts (API-specific fields)
-      - user_id: your user identifier in your DB
-      - hdfc_member_ids: {"equity": "<uuid>", "mutualFunds": "<uuid>"}
+    Process HDFC holdings and insert into:
+        - equity_holdings
+        - mutual_fund_holdings
     """
-    if supabase is None:
-        raise RuntimeError("Supabase client is not initialized — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
 
     equity_records = []
     mf_records = []
+
     import_date = datetime.utcnow().date().isoformat()
 
-    logger.info("🔄 Processing %d holdings for user %s", len(holdings), user_id)
+    print(f"🔄 Processing {len(holdings)} holdings for user {user_id}")
 
     for h in holdings:
         try:
-            # Determine if this is a mutual fund or equity from HDFC fields
-            # Mutual fund holdings typically don't have 'security_id' and have 'company_name' containing fund name OR 'sip_indicator' may be 'Y'
-            is_mf = False
-            if any(k in h for k in ("schemename", "fundhouse", "nav")):
-                is_mf = True
-            elif h.get("sip_indicator") == "Y":
-                # SIP flagged (mutual funds typically)
-                is_mf = True
-            elif h.get("security_id") and isinstance(h.get("security_id"), str):
-                # likely an equity
-                is_mf = False
-            else:
-                # Heuristic by ISIN: mutual funds have INF prefix (IN + F?)
-                isin = (h.get("isin") or "").upper()
-                if isin.startswith("INF"):
-                    is_mf = True
+            investment_type = h.get("investment_type", "").lower()
 
-            if not is_mf:
-                # Equity record mapping
+            # ------ EQUITY HOLDINGS ------
+            if investment_type == "equity":
                 equity_records.append({
                     "user_id": user_id,
-                    "member_id": hdfc_member_ids.get("equity"),
+                    "member_id": hdfc_member_ids["equity"],
                     "broker_platform": "HDFC Securities",
-                    "symbol": h.get("security_id") or h.get("tradingsymbol") or h.get("symbol") or None,
-                    "company_name": h.get("company_name") or h.get("company") or None,
+                    "symbol": h.get("tradingsymbol") or h.get("symbol") or "UNKNOWN",
+                    "company_name": h.get("tradingsymbol") or h.get("symbol") or "UNKNOWN",
                     "quantity": float(h.get("quantity") or 0),
-                    "average_price": float(h.get("average_price") or h.get("averageprice") or 0),
-                    "current_price": float(h.get("close_price") or h.get("lastprice") or 0),
-                    "invested_amount": float(h.get("investment_value") or (float(h.get("quantity") or 0) * float(h.get("average_price") or 0))),
-                    "current_value": float(h.get("quantity") or 0) * float(h.get("close_price") or 0),
+                    "average_price": float(h.get("averageprice") or 0),
+                    "current_price": float(h.get("lastprice") or 0),
+                    "invested_amount": (float(h.get("quantity") or 0) *
+                                        float(h.get("averageprice") or 0)),
+                    "current_value": (float(h.get("quantity") or 0) *
+                                      float(h.get("lastprice") or 0)),
                     "import_date": import_date,
-                    "raw": h
                 })
-            else:
-                # Mutual fund mapping
+
+            # ------ MUTUAL FUND HOLDINGS ------
+            elif investment_type == "mutualfunds":
                 mf_records.append({
                     "user_id": user_id,
-                    "member_id": hdfc_member_ids.get("mutualFunds"),
+                    "member_id": hdfc_member_ids["mutualFunds"],
                     "broker_platform": "HDFC Securities",
-                    "scheme_name": h.get("company_name") or h.get("schemename") or None,
+                    "scheme_name": h.get("schemename") or "Unknown",
                     "scheme_code": h.get("schemecode") or "",
-                    "folio_number": h.get("folio") or h.get("folio_number") or "",
-                    "fund_house": h.get("fundhouse") or None,
-                    "units": float(h.get("quantity") or h.get("units") or 0),
-                    "average_nav": float(h.get("average_price") or h.get("averagenav") or 0),
-                    "current_nav": float(h.get("close_price") or h.get("nav") or 0),
-                    "invested_amount": float(h.get("investment_value") or (float(h.get("quantity") or 0) * float(h.get("average_price") or 0))),
-                    "current_value": float(h.get("quantity") or 0) * float(h.get("close_price") or 0),
+                    "folio_number": h.get("folionumber") or "",
+                    "fund_house": h.get("fundhouse") or "Unknown",
+                    "units": float(h.get("units") or 0),
+                    "average_nav": float(h.get("averagenav") or 0),
+                    "current_nav": float(h.get("nav") or 0),
+                    "invested_amount": (float(h.get("units") or 0) *
+                                        float(h.get("averagenav") or 0)),
+                    "current_value": (float(h.get("units") or 0) *
+                                      float(h.get("nav") or 0)),
                     "import_date": import_date,
-                    "raw": h
                 })
 
         except Exception as e:
-            logger.exception("❌ Error processing holding: %s", e)
+            print(f"❌ Error processing holding: {e}")
             continue
 
-    logger.info("🗑️ Deleting old HDFC holdings for user %s", user_id)
+    # ----------------------------------------
+    # DELETE OLD HOLDINGS BEFORE INSERTION
+    # ----------------------------------------
+    print("🗑️ Deleting old HDFC holdings...")
 
-    # Delete previous records for this user and broker_member combination
-    try:
-        if equity_records:
-            supabase.table("equity_holdings").delete().match({
-                "user_id": user_id,
-                "broker_platform": "HDFC Securities",
-                "member_id": hdfc_member_ids.get("equity")
-            }).execute()
-        if mf_records:
-            supabase.table("mutual_fund_holdings").delete().match({
-                "user_id": user_id,
-                "broker_platform": "HDFC Securities",
-                "member_id": hdfc_member_ids.get("mutualFunds")
-            }).execute()
-    except Exception:
-        logger.exception("Failed to delete previous holdings (continuing)")
+    supabase.table("equity_holdings").delete().match({
+        "user_id": user_id,
+        "broker_platform": "HDFC Securities",
+        "member_id": hdfc_member_ids["equity"]
+    }).execute()
 
-    # Insert new holdings in batches
-    try:
-        if equity_records:
-            logger.info("📥 Inserting %d equity holdings...", len(equity_records))
-            supabase.table("equity_holdings").insert(equity_records).execute()
-        if mf_records:
-            logger.info("📥 Inserting %d mutual fund holdings...", len(mf_records))
-            supabase.table("mutual_fund_holdings").insert(mf_records).execute()
-    except Exception:
-        logger.exception("Failed to insert holdings into Supabase")
-        raise
+    supabase.table("mutual_fund_holdings").delete().match({
+        "user_id": user_id,
+        "broker_platform": "HDFC Securities",
+        "member_id": hdfc_member_ids["mutualFunds"]
+    }).execute()
 
-    logger.info("✅ HDFC holdings imported successfully")
+    # ----------------------------------------
+    # INSERT NEW HOLDINGS
+    # ----------------------------------------
+    if equity_records:
+        print(f"📥 Inserting {len(equity_records)} equity holdings...")
+        supabase.table("equity_holdings").insert(equity_records).execute()
 
-    return {"equity": len(equity_records), "mutualFunds": len(mf_records)}
+    if mf_records:
+        print(f"📥 Inserting {len(mf_records)} mutual fund holdings...")
+        supabase.table("mutual_fund_holdings").insert(mf_records).execute()
+
+    print("✅ HDFC holdings imported successfully")
+
+    return {
+        "equity": len(equity_records),
+        "mutualFunds": len(mf_records)
+    }
