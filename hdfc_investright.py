@@ -6,7 +6,7 @@ from datetime import datetime
 # ============================================================
 # Config - CORRECTED TO MATCH YOUR RENDER ENV VARIABLES
 # ============================================================
-https://developer.hdfcsec.com/oapi/v1"
+BASE = "https://developer.hdfcsec.com/oapi/v1"
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
 USERNAME = os.getenv("HDFC_USERNAME")
