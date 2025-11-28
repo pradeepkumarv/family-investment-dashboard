@@ -55,13 +55,63 @@ def _post(url, data=None, params=None, headers=None, json_payload=None):
 def get_token_id() -> str:
     """Request a token_id from HDFC (initial step)."""
     params = {"api_key": HDFC_API_KEY}
-    resp = requests.get(HDFC_TOKEN_ID_URL, params=params, timeout=30)
-    data = resp.json()
-    token_id = data.get("tokenId") or data.get("token_id") or data.get("tokenId")
-    if not token_id:
-        raise RuntimeError("No token_id returned from HDFC")
-    logger.info("➡️ Requesting token_id: %s", HDFC_TOKEN_ID_URL)
-    return token_id
+    
+    try:
+        logger.info("🔄 Fetching token_id from HDFC: %s", HDFC_TOKEN_ID_URL)
+        resp = requests.get(HDFC_TOKEN_ID_URL, params=params, timeout=30)
+        
+        # ✅ NEW: Log response details for debugging
+        logger.info("📊 Token ID response status: %s", resp.status_code)
+        logger.info("📊 Token ID response headers: %s", dict(resp.headers))
+        logger.info("📊 Token ID response text: %s", resp.text[:200])
+        
+        # ✅ NEW: Check if response is empty or HTML error
+        if not resp.text or resp.text.strip() == '':
+            logger.error("❌ Empty response from HDFC token_id endpoint")
+            raise RuntimeError(f"HDFC returned empty response (HTTP {resp.status_code})")
+        
+        # ✅ NEW: Check if response is HTML (error page)
+        if resp.text.strip().startswith('<'):
+            logger.error("❌ HDFC returned HTML instead of JSON: %s", resp.text[:200])
+            raise RuntimeError(f"HDFC returned HTML error page (HTTP {resp.status_code})")
+        
+        # ✅ NEW: Raise HTTP errors if any
+        resp.raise_for_status()
+        
+        # ✅ NEW: Handle JSON parse errors gracefully
+        try:
+            data = resp.json()
+        except Exception as json_err:
+            logger.error("❌ JSON parse error: %s", json_err)
+            logger.error("❌ Response text was: %s", resp.text)
+            raise RuntimeError(f"Failed to parse HDFC response as JSON: {str(json_err)}")
+        
+        token_id = data.get("tokenId") or data.get("token_id") or data.get("tokenId")
+        
+        if not token_id:
+            logger.error("❌ No token_id in HDFC response: %s", data)
+            raise RuntimeError("No token_id returned from HDFC. Response was: " + str(data))
+        
+        logger.info("✅ Got token_id from HDFC: %s", token_id[:10] + "...")
+        return token_id
+        
+    except requests.exceptions.Timeout:
+        logger.error("❌ HDFC request timed out after 30 seconds")
+        raise RuntimeError("HDFC API timeout - server not responding")
+    
+    except requests.exceptions.ConnectionError as e:
+        logger.error("❌ Connection error to HDFC: %s", e)
+        raise RuntimeError(f"Failed to connect to HDFC: {str(e)}")
+    
+    except requests.exceptions.RequestException as e:
+        logger.error("❌ Request error: %s", e)
+        raise RuntimeError(f"HDFC request failed: {str(e)}")
+    
+    except Exception as e:
+        logger.error("❌ Unexpected error in get_token_id: %s", e)
+        logger.exception("Full traceback:")
+        raise RuntimeError(f"Unexpected error getting token_id: {str(e)}")
+
 
 def login_validate(token_id: str, username: str, password: str) -> dict:
     """Start login validate (sends credentials) -> returns twofa response."""
