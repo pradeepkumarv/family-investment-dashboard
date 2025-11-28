@@ -1,3 +1,16 @@
+const HDFC_CONFIG = {
+    api_key: '5f5de761677a4283bd623e6a1013395b',
+    api_secret: '8ed88c629bc04639afcdca15381bd965',
+    backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc',
+    render_auth_url: 'https://family-investment-dashboard.onrender.com/',
+    // Members mapping (fixed to match your setup)
+    members: {
+        equity: 'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49',  // Pradeep Kumar V
+        mf: 'd3a4fc84-a94b-494d-915f-60901f16d973',      // Sanchita Pradeep
+    }
+};
+
+
 // Broker-Member mapping (like Zerodha)
 const BROKER_MEMBER_MAPPING = {
     'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49': {
@@ -15,13 +28,6 @@ const BROKER_MEMBER_MAPPING = {
 let hdfcMemberIds = {
     equity_member: null,
     mf_member: null
-};
-
-const HDFC_CONFIG = {
-    api_key: '5f5de761677a4283bd623e6a1013395b',
-    api_secret: '8ed88c629bc04639afcdca15381bd965',
-    backend_base: 'https://family-investment-dashboard.onrender.com/api/hdfc',
-    render_auth_url: 'https://family-investment-dashboard.onrender.com/'
 };
 
 let hdfcAccessToken = null;
