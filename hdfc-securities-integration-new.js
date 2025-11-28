@@ -1,10 +1,15 @@
-// HDFC Securities Integration - FIXED VERSION
-// Properly maps to members and handles delete-then-insert logic
-
-// Member configuration - must match BROKER_MEMBER_MAPPING
-const HDFC_MEMBER_NAMES = {
-    equity_member: 'pradeep kumar v',    // ✅ CHANGED TO LOWERCASE
-    mf_member: 'sanchita pradeep'       // ✅ CHANGED TO LOWERCASE
+// Broker-Member mapping (like Zerodha)
+const BROKER_MEMBER_MAPPING = {
+    'bef9db5e-2f21-4038-8f3f-f78ce1bbfb49': {
+        name: 'Pradeep Kumar V',
+        demat: ['HDFC Securities'],
+        mutualFunds: ['FundsIndia'] // Pradeep uses FundsIndia for MF, not HDFC
+    },
+    'd3a4fc84-a94b-494d-915f-60901f16d973': {
+        name: 'Sanchita Pradeep',
+        demat: [],
+        mutualFunds: ['HDFC Securities'] // Sanchita uses HDFC Securities for MF
+    }
 };
 
 let hdfcMemberIds = {
