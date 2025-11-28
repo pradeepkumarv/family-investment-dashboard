@@ -3,19 +3,30 @@ import os
 import requests
 from datetime import datetime
 
-# -----------------------------
-# Config
-# -----------------------------
+# ✅ CORRECTED: Match the environment variables you already set in Render
+
+import os
+import requests
+from datetime import datetime
+from supabase import create_client
+
+# ============================================================
+# Config - CORRECTED TO MATCH YOUR RENDER ENV VARIABLES
+# ============================================================
 BASE = "https://developer.hdfcsec.com/oapi/v1"
+
+# ✅ API Keys - these are already set in Render
 API_KEY = os.getenv("HDFC_API_KEY")
 API_SECRET = os.getenv("HDFC_API_SECRET")
 USERNAME = os.getenv("HDFC_USERNAME")
 PASSWORD = os.getenv("HDFC_PASSWORD")
-HEADERS_JSON = {
-    "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-}
-# Initialize Supabase client
+
+# ✅ FIXED: Use the environment variable names you ACTUALLY set in Render
+HDFC_AUTH_URL = os.getenv("HDFC_AUTH_URL", f"{BASE}/login")
+HDFC_TOKEN_EXCHANGE_URL = os.getenv("HDFC_TOKEN_EXCHANGE_URL", f"{BASE}/access-token")
+HDFC_HOLDINGS_URL = os.getenv("HDFC_HOLDINGS_URL", f"{BASE}/portfolio/holdings")
+
+# Supabase
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
@@ -24,6 +35,213 @@ MEMBERS = {
     "equity": "bef9db5e-2f21-4038-8f3f-f78ce1bbfb49",
     "mutualFunds": "d3a4fc84-a94b-494d-915f-60901f16d973"
 }
+
+HEADERS_JSON = {
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+}
+
+# ============================================================
+# Validation - Check all required variables are set
+# ============================================================
+print("=" * 70)
+print("🔍 CHECKING ENVIRONMENT VARIABLES")
+print("=" * 70)
+
+errors = []
+
+if not API_KEY:
+    errors.append("❌ HDFC_API_KEY not set")
+else:
+    print(f"✅ HDFC_API_KEY: {API_KEY[:8]}...")
+
+if not API_SECRET:
+    errors.append("❌ HDFC_API_SECRET not set")
+else:
+    print(f"✅ HDFC_API_SECRET: {API_SECRET[:8]}...")
+
+if not USERNAME:
+    errors.append("❌ HDFC_USERNAME not set")
+else:
+    print(f"✅ HDFC_USERNAME: {USERNAME}")
+
+if not PASSWORD:
+    errors.append("❌ HDFC_PASSWORD not set")
+else:
+    print(f"✅ HDFC_PASSWORD: {'*' * len(PASSWORD)}")
+
+if not HDFC_AUTH_URL:
+    errors.append("❌ HDFC_AUTH_URL not set")
+else:
+    print(f"✅ HDFC_AUTH_URL: {HDFC_AUTH_URL}")
+
+if not HDFC_TOKEN_EXCHANGE_URL:
+    errors.append("❌ HDFC_TOKEN_EXCHANGE_URL not set")
+else:
+    print(f"✅ HDFC_TOKEN_EXCHANGE_URL: {HDFC_TOKEN_EXCHANGE_URL}")
+
+if not HDFC_HOLDINGS_URL:
+    errors.append("❌ HDFC_HOLDINGS_URL not set")
+else:
+    print(f"✅ HDFC_HOLDINGS_URL: {HDFC_HOLDINGS_URL}")
+
+if not url:
+    errors.append("❌ SUPABASE_URL not set")
+else:
+    print(f"✅ SUPABASE_URL: {url[:30]}...")
+
+if not key:
+    errors.append("❌ SUPABASE_KEY not set")
+else:
+    print(f"✅ SUPABASE_KEY: {key[:8]}...")
+
+print("=" * 70)
+
+if errors:
+    print("\n❌ ERRORS FOUND:")
+    for error in errors:
+        print(f"   {error}")
+    print("\n" + "=" * 70)
+    raise RuntimeError("Missing required environment variables: " + ", ".join(errors))
+else:
+    print("✅ ALL ENVIRONMENT VARIABLES ARE CORRECTLY SET!")
+    print("=" * 70)
+
+# ============================================================
+# Helper Functions
+# ============================================================
+
+def get_token_id():
+    """Request a token_id from HDFC (initial step)."""
+    if not API_KEY:
+        raise RuntimeError("API_KEY not set")
+    
+    url = f"{BASE}/login"
+    params = {"api_key": API_KEY}
+    
+    print(f"🔄 Requesting token_id from: {url}")
+    print(f"🔐 Using API Key: {API_KEY[:8]}...")
+    
+    try:
+        r = requests.get(url, params=params, timeout=30)
+        print(f"   Status: {r.status_code}")
+        print(f"   Response: {r.text[:200]}")
+        
+        r.raise_for_status()
+        data = r.json()
+        token_id = data.get("tokenId") or data.get("token_id")
+        
+        if not token_id:
+            raise ValueError(f"Could not extract token_id from response: {data}")
+        
+        print(f"✅ Got token_id: {token_id[:10]}...")
+        return token_id
+        
+    except requests.exceptions.Timeout:
+        raise RuntimeError("HDFC API timeout - server not responding")
+    except requests.exceptions.ConnectionError as e:
+        raise RuntimeError(f"Failed to connect to HDFC: {str(e)}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to get token_id: {str(e)}")
+
+def login_validate(token_id, username, password):
+    url = f"{BASE}/login/validate"
+    params = {"api_key": API_KEY, "token_id": token_id}
+    payload = {"username": username, "password": password}
+    
+    print(f"🔐 Calling login_validate")
+    print(f"   URL: {url}")
+    
+    r = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    print(f"   Status: {r.status_code}")
+    print(f"   Response: {r.text[:200]}")
+    
+    r.raise_for_status()
+    
+    if not r.text or r.text.strip() == "":
+        return {"status": "success", "message": "Login validated"}
+    
+    try:
+        return r.json()
+    except ValueError:
+        if r.status_code == 200:
+            return {"status": "success", "message": "Login validated"}
+        raise ValueError(f"Invalid JSON response from HDFC: {r.text[:200]}")
+
+def validate_otp(token_id, otp):
+    url = f"{BASE}/twofa/validate"
+    params = {"api_key": API_KEY, "token_id": token_id}
+    payload = {"answer": otp}
+    
+    print(f"📲 Validating OTP")
+    print(f"   URL: {url}")
+    
+    try:
+        resp = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    except Exception as e:
+        print(f"❌ Request failed: {e}")
+        return {"error": "network_failure", "details": str(e)}
+    
+    print(f"   Status: {resp.status_code}")
+    print(f"   Response: {resp.text[:200]}")
+    
+    if resp.status_code >= 400:
+        return {"error": "http_error", "status": resp.status_code, "details": resp.text}
+    
+    try:
+        data = resp.json()
+    except Exception as e:
+        print(f"❌ JSON parse failed: {e}")
+        return {"error": "invalid_json", "status": resp.status_code, "raw": resp.text}
+    
+    return data
+
+def fetch_access_token(token_id, request_token):
+    """Exchange request_token for access_token."""
+    url = HDFC_TOKEN_EXCHANGE_URL
+    params = {"api_key": API_KEY, "request_token": request_token}
+    payload = {"apiSecret": API_SECRET}
+    
+    print(f"🔑 Fetching access token")
+    print(f"   URL: {url}")
+    print(f"   Using: {API_KEY[:8]}... / {API_SECRET[:8]}...")
+    
+    resp = requests.post(url, params=params, json=payload, headers=HEADERS_JSON)
+    print(f"   Status: {resp.status_code}")
+    print(f"   Response: {resp.text[:200]}")
+    
+    resp.raise_for_status()
+    data = resp.json()
+    access_token = data.get("accessToken")
+    
+    if not access_token:
+        raise ValueError(f"Could not extract accessToken from response: {data}")
+    
+    print(f"✅ Got access token: {access_token[:10]}...")
+    return access_token
+
+def get_holdings(access_token):
+    """Fetch holdings using access token."""
+    url = HDFC_HOLDINGS_URL
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+    }
+    
+    print(f"📊 Fetching holdings")
+    print(f"   URL: {url}")
+    
+    resp = requests.get(
+        url,
+        params={"api_key": API_KEY, "login_id": USERNAME},
+        headers=headers
+    )
+    
+    print(f"   Status: {resp.status_code}")
+    print(f"   Response: {resp.text[:200]}")
+    
+    resp.raise_for_status()
+    return resp.json()
 
 # -----------------------------
 # Helper Functions
