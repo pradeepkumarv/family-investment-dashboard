@@ -90,7 +90,6 @@ function closeHDFCModal() {
     }
 }
 
-// ✅ ENHANCED: Better error handling and logging for authorization
 async function authorizeHDFC() {
     try {
         showHDFCMessage('Redirecting to HDFC Securities authorization...', 'info');
@@ -106,8 +105,29 @@ async function authorizeHDFC() {
         console.log('📊 Response status:', resp.status);
         console.log('📊 Response headers:', Object.fromEntries(resp.headers));
         
-        const data = await resp.json();
-        console.log('📊 Response data:', data);
+        // Get response as text first to debug
+        const responseText = await resp.text();
+        console.log('📊 Response text:', responseText);
+        console.log('📊 Response text length:', responseText.length);
+        
+        let data = null;
+        try {
+            data = JSON.parse(responseText);
+            console.log('📊 Parsed JSON:', data);
+        } catch (parseErr) {
+            console.error('❌ JSON parse error:', parseErr.message);
+            console.error('❌ Raw response:', responseText);
+            throw new Error(`Backend returned invalid JSON: ${responseText.substring(0, 100)}`);
+        }
+        
+        // Check if response indicates error
+        if (!resp.ok) {
+            if (data.error) {
+                throw new Error(`Backend error: ${data.error}`);
+            }
+            throw new Error(`HTTP ${resp.status}: Backend request failed`);
+        }
+        
         console.log('📊 Data type:', typeof data);
         
         // Extract the actual URL from the response
@@ -121,6 +141,11 @@ async function authorizeHDFC() {
             // Try multiple possible response formats
             authUrl = data.auth_url || data.authUrl || data.url || data.authorization_url;
             console.log('✅ Got URL from object:', authUrl);
+            
+            // If no URL found, log what we got
+            if (!authUrl) {
+                console.warn('⚠️ No URL found in response object:', data);
+            }
         }
         
         console.log('🔍 Final authUrl:', authUrl);
@@ -132,9 +157,18 @@ async function authorizeHDFC() {
             console.error('❌ Invalid authUrl:', {
                 authUrl,
                 type: typeof authUrl,
-                fullData: data
+                fullData: data,
+                responseText: responseText.substring(0, 200)
             });
-            throw new Error(`Invalid authorization URL. Expected string, got ${typeof authUrl}. Response: ${JSON.stringify(data)}`);
+            
+            // More specific error message
+            if (authUrl === undefined) {
+                throw new Error(`No auth URL in response. Backend returned: ${JSON.stringify(data)}`);
+            } else if (authUrl === null) {
+                throw new Error(`Auth URL is null. Check backend response: ${JSON.stringify(data)}`);
+            } else {
+                throw new Error(`Invalid authorization URL type: ${typeof authUrl}. Expected string.`);
+            }
         }
         
         if (!authUrl.startsWith('http')) {
@@ -142,17 +176,25 @@ async function authorizeHDFC() {
             throw new Error('Authorization URL must start with http:// or https://');
         }
         
-        console.log('✅ Valid auth URL found, redirecting...');
+        console.log('✅ Valid auth URL found, redirecting to:', authUrl);
         window.location.href = authUrl;
         
     } catch (err) {
         console.error('❌ HDFC Authorization Error:', err);
         console.error('❌ Error message:', err.message);
         console.error('❌ Error stack:', err.stack);
-        showHDFCMessage(`Authorization failed: ${err.message}`, 'error');
+        
+        // More user-friendly error message
+        let userMessage = err.message;
+        if (err.message.includes('Failed to generate auth URL')) {
+            userMessage = 'Backend failed to generate auth URL. Check Render backend logs.';
+        } else if (err.message.includes('JSON parse error')) {
+            userMessage = 'Backend returned invalid response. Check backend server status.';
+        }
+        
+        showHDFCMessage(`Authorization failed: ${userMessage}`, 'error');
     }
 }
-
 async function testHDFCConnection() {
     const statusElement = document.getElementById('hdfc-connection-status');
     const lastSyncElement = document.getElementById('hdfc-last-sync');
