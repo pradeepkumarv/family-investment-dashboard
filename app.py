@@ -62,51 +62,93 @@ def health():
 
 # Replace your /api/hdfc/auth-url endpoint in app.py with this FIXED version:
 
-@app.route('/api/hdfc/auth-url', methods=['GET'])
+@app.route("/api/hdfc/auth-url", methods=["GET"])
 def get_auth_url():
     """
-    Start HDFC authentication flow - Step 1: Get token_id
-    This initiates the login process.
+    Generate HDFC authorization URL with token_id.
+    Frontend should redirect to this URL.
     """
     try:
-        # Import the hdfc_investright helper
-        import hdfc_investright
-        
-        # Step 1: Get token_id from HDFC
-        # This is the first step in HDFC's OAuth flow
+        # Get token_id from HDFC
         token_id = hdfc_investright.get_token_id()
+        logger.info(f"✅ Got token_id: {token_id[:20]}...")
         
-        if not token_id:
-            logger.error('Failed to get token_id from HDFC')
-            return jsonify({'error': 'Failed to initiate HDFC authentication'}), 500
+        # ✅ FIX: Include api_key in the authorization URL
+        api_key = os.getenv("HDFC_API_KEY")
+        if not api_key:
+            raise RuntimeError("HDFC_API_KEY not found in environment")
         
-        # Store token_id in session
-        session['token_id'] = token_id
+        # Build the authorization URL with BOTH api_key and token_id
+        auth_url = f"https://developer.hdfcsec.com/oapi/v1/login?api_key={api_key}&token_id={token_id}"
         
-        logger.info(f'✅ Got token_id from HDFC: {token_id[:10]}...')
+        logger.info(f"🔐 Generated auth URL: {auth_url[:80]}...")
         
-        # Step 2: Construct the login URL
-        # HDFC requires users to log in through their OAuth page
-        # The redirect_uri should point back to your callback endpoint
-        redirect_uri = f"{request.host_url.rstrip('/')}/api/hdfc/callback"
-        
-        # HDFC's login/authorize endpoint
-        # Note: HDFC uses a multi-step flow, not a simple OAuth redirect
-        # The frontend needs to open a login modal instead
-        auth_url = f"https://developer.hdfcsec.com/oapi/v1/login?token_id={token_id}"
-        
-        return jsonify({
-            'auth_url': auth_url,
-            'url': auth_url,
-            'token_id': token_id,
-            'flow': 'credentials_required',
-            'message': 'HDFC requires username/password + OTP authentication'
-        }), 200
+        return {
+            "auth_url": auth_url,
+            "token_id": token_id
+        }, 200
         
     except Exception as e:
-        logger.exception('Error in get_auth_url')
-        return jsonify({'error': f'Failed to generate auth URL: {str(e)}'}), 500
+        logger.error(f"❌ Error in get_auth_url: {e}")
+        logger.exception("Full traceback:")
+        return {
+            "error": str(e),
+            "message": "Failed to generate authorization URL"
+        }, 500
 
+@app.route("/api/hdfc/callback", methods=["GET"])
+def hdfc_callback():
+    """
+    Handle HDFC callback after user login.
+    """
+    try:
+        # Get parameters from callback
+        token_id = request.args.get("token_id")
+        request_token = request.args.get("request_token")
+        
+        if not token_id or not request_token:
+            return {
+                "error": "Missing token_id or request_token"
+            }, 400
+        
+        logger.info(f"📥 HDFC callback received")
+        logger.info(f"   token_id: {token_id[:20]}...")
+        logger.info(f"   request_token: {request_token[:20]}...")
+        
+        # Exchange for access token
+        access_token = hdfc_investright.fetch_access_token(token_id, request_token)
+        
+        # Get user
+        user = current_user()  # or however you get current user
+        user_id = user.get("id") if user else None
+        
+        if not user_id:
+            return {"error": "User not authenticated"}, 401
+        
+        # Fetch holdings
+        holdings = hdfc_investright.get_holdings(access_token)
+        logger.info(f"📊 Got {len(holdings.get('data', []))} holdings from HDFC")
+        
+        # Process and insert into database
+        hdfc_investright.process_holdings_success(
+            holdings.get("data", []),
+            user_id,
+            hdfc_investright.MEMBERS
+        )
+        
+        return {
+            "success": True,
+            "message": "HDFC holdings imported successfully",
+            "holdings_count": len(holdings.get("data", []))
+        }, 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error in hdfc_callback: {e}")
+        logger.exception("Full traceback:")
+        return {
+            "error": str(e),
+            "message": "Failed to process HDFC callback"
+        }, 500
 
 # -------------------------------------------------------
 # STATUS
