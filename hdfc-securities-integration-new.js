@@ -1,4 +1,4 @@
-// HDFC Securities Integration - FIXED VERSION
+// HDFC Securities Integration - FIXED VERSION with Enhanced authorizeHDFC
 // Properly maps to members and handles delete-then-insert logic
 
 // Member configuration - must match BROKER_MEMBER_MAPPING
@@ -90,30 +90,68 @@ function closeHDFCModal() {
     }
 }
 
+// ✅ ENHANCED: Better error handling and logging for authorization
 async function authorizeHDFC() {
     try {
         showHDFCMessage('Redirecting to HDFC Securities authorization...', 'info');
-        const resp = await fetch(`${HDFC_CONFIG.backend_base}/auth-url`, { method: 'GET' });
+        console.log('🔄 Fetching auth URL from:', `${HDFC_CONFIG.backend_base}/auth-url`);
+        
+        const resp = await fetch(`${HDFC_CONFIG.backend_base}/auth-url`, { 
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        console.log('📊 Response status:', resp.status);
+        console.log('📊 Response headers:', Object.fromEntries(resp.headers));
+        
         const data = await resp.json();
+        console.log('📊 Response data:', data);
+        console.log('📊 Data type:', typeof data);
         
         // Extract the actual URL from the response
-        // Backend may return: {auth_url: '...'} or {url: '...'} or just the URL string
-        const authUrl = data.auth_url || data.url || data;
+        let authUrl = null;
         
-        console.log('📍 Authorization URL:', authUrl);
-        
-        if (!authUrl || typeof authUrl !== 'string') {
-            throw new Error('Invalid authorization URL received from server');
+        if (typeof data === 'string') {
+            // If response is just a string URL
+            authUrl = data;
+            console.log('✅ Got URL from string response:', authUrl);
+        } else if (data && typeof data === 'object') {
+            // Try multiple possible response formats
+            authUrl = data.auth_url || data.authUrl || data.url || data.authorization_url;
+            console.log('✅ Got URL from object:', authUrl);
         }
         
+        console.log('🔍 Final authUrl:', authUrl);
+        console.log('🔍 authUrl type:', typeof authUrl);
+        console.log('🔍 authUrl is string:', typeof authUrl === 'string');
+        console.log('🔍 authUrl is truthy:', !!authUrl);
+        
+        if (!authUrl || typeof authUrl !== 'string') {
+            console.error('❌ Invalid authUrl:', {
+                authUrl,
+                type: typeof authUrl,
+                fullData: data
+            });
+            throw new Error(`Invalid authorization URL. Expected string, got ${typeof authUrl}. Response: ${JSON.stringify(data)}`);
+        }
+        
+        if (!authUrl.startsWith('http')) {
+            console.error('❌ authUrl does not start with http:', authUrl);
+            throw new Error('Authorization URL must start with http:// or https://');
+        }
+        
+        console.log('✅ Valid auth URL found, redirecting...');
         window.location.href = authUrl;
+        
     } catch (err) {
-        console.error('HDFC Authorization Error:', err);
+        console.error('❌ HDFC Authorization Error:', err);
+        console.error('❌ Error message:', err.message);
+        console.error('❌ Error stack:', err.stack);
         showHDFCMessage(`Authorization failed: ${err.message}`, 'error');
     }
 }
-
-
 
 async function testHDFCConnection() {
     const statusElement = document.getElementById('hdfc-connection-status');
