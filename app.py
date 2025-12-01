@@ -137,13 +137,11 @@ def hdfc_callback():
             }, 400
         
         # Get user from session or auth
-        from flask_login import current_user
-        if not current_user or not current_user.is_authenticated:
-            logger.error("❌ User not authenticated in callback")
-            return {
-                "error": "not_authenticated",
-                "message": "User not logged in"
-            }, 401
+       user_id = session.get("user_id") or DEFAULT_USER_ID
+       logger.info(f"✅ Using user_id: {user_id}")
+
+        # Also handles both camelCase and snake_case parameter names
+        request_token = request.args.get("requestToken") or request.args.get("request_token")
         
         user_id = str(current_user.id)
         logger.info(f"✅ User authenticated: {user_id}")
