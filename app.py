@@ -96,6 +96,60 @@ def get_auth_url():
             "message": "Failed to generate authorization URL"
         }, 500
 
+@app.route("/api/hdfc/callback", methods=["GET"])
+def hdfc_callback():
+    """
+    Handle HDFC callback after user login.
+    """
+    try:
+        # Get parameters from callback
+        token_id = request.args.get("token_id")
+        request_token = request.args.get("request_token")
+        
+        if not token_id or not request_token:
+            return {
+                "error": "Missing token_id or request_token"
+            }, 400
+        
+        logger.info(f"📥 HDFC callback received")
+        logger.info(f"   token_id: {token_id[:20]}...")
+        logger.info(f"   request_token: {request_token[:20]}...")
+        
+        # Exchange for access token
+        access_token = hdfc_investright.fetch_access_token(token_id, request_token)
+        
+        # Get user
+        user = current_user()  # or however you get current user
+        user_id = user.get("id") if user else None
+        
+        if not user_id:
+            return {"error": "User not authenticated"}, 401
+        
+        # Fetch holdings
+        holdings = hdfc_investright.get_holdings(access_token)
+        logger.info(f"📊 Got {len(holdings.get('data', []))} holdings from HDFC")
+        
+        # Process and insert into database
+        hdfc_investright.process_holdings_success(
+            holdings.get("data", []),
+            user_id,
+            hdfc_investright.MEMBERS
+        )
+        
+        return {
+            "success": True,
+            "message": "HDFC holdings imported successfully",
+            "holdings_count": len(holdings.get("data", []))
+        }, 200
+        
+    except Exception as e:
+        logger.error(f"❌ Error in hdfc_callback: {e}")
+        logger.exception("Full traceback:")
+        return {
+            "error": str(e),
+            "message": "Failed to process HDFC callback"
+        }, 500
+
 # -------------------------------------------------------
 # STATUS
 # -------------------------------------------------------
@@ -108,182 +162,6 @@ def status():
         "accessToken": token,
         "lastSync": last_sync
     }), 200
-# ============================================================
-# HDFC Callback - receives request token after user login
-# ============================================================
-
-@app.route("/api/hdfc/callback", methods=["GET"])
-def hdfc_callback():
-    """
-    Handle HDFC callback after user logs in and confirms OTP.
-    
-    HDFC redirects here with:
-    ?requestToken=xxxxx&token_id=xxxxx
-    """
-    try:
-        # Get parameters from HDFC callback
-        request_token = request.args.get("requestToken")  # ⭐ Note: camelCase from HDFC
-        token_id = request.args.get("tokenId")  # ⭐ Note: camelCase from HDFC
-        
-        logger.info(f"📥 HDFC callback received")
-        logger.info(f"   requestToken: {request_token[:20] if request_token else 'None'}...")
-        logger.info(f"   tokenId: {token_id[:20] if token_id else 'None'}...")
-        
-        if not request_token:
-            logger.error("❌ Missing requestToken in callback")
-            return {
-                "error": "missing_request_token",
-                "message": "HDFC did not provide requestToken"
-            }, 400
-        
-        # Get user from session or auth
-       user_id = session.get("user_id") or DEFAULT_USER_ID
-       logger.info(f"✅ Using user_id: {user_id}")
-
-        # Also handles both camelCase and snake_case parameter names
-        request_token = request.args.get("requestToken") or request.args.get("request_token")
-        
-        user_id = str(current_user.id)
-        logger.info(f"✅ User authenticated: {user_id}")
-        
-        # ✅ Step 1: Exchange request_token for access_token
-        logger.info("🔑 Exchanging request_token for access_token...")
-        try:
-            access_token = hdfc_investright.fetch_access_token(token_id, request_token)
-            logger.info(f"✅ Got access_token: {access_token[:20]}...")
-        except Exception as e:
-            logger.error(f"❌ Failed to exchange token: {e}")
-            return {
-                "error": "token_exchange_failed",
-                "message": str(e)
-            }, 400
-        
-        # ✅ Step 2: Fetch holdings from HDFC
-        logger.info("📊 Fetching holdings from HDFC...")
-        try:
-            holdings_response = hdfc_investright.get_holdings(access_token)
-            logger.info(f"✅ Got holdings response")
-        except Exception as e:
-            logger.error(f"❌ Failed to fetch holdings: {e}")
-            return {
-                "error": "holdings_fetch_failed",
-                "message": str(e)
-            }, 400
-        
-        # ✅ Step 3: Extract holdings data (handle different response formats)
-        if isinstance(holdings_response, dict):
-            holdings_data = holdings_response.get("data", [])
-        elif isinstance(holdings_response, list):
-            holdings_data = holdings_response
-        else:
-            holdings_data = []
-        
-        logger.info(f"📊 Processing {len(holdings_data)} holdings...")
-        
-        # ✅ Step 4: Process and insert into database
-        try:
-            result = hdfc_investright.process_holdings_success(
-                holdings_data,
-                user_id,
-                hdfc_investright.MEMBERS
-            )
-            logger.info(f"✅ Holdings imported successfully: {result}")
-        except Exception as e:
-            logger.error(f"❌ Failed to process holdings: {e}")
-            logger.exception("Full traceback:")
-            return {
-                "error": "holdings_processing_failed",
-                "message": str(e)
-            }, 500
-        
-        # ✅ Step 5: Return success
-        return {
-            "success": True,
-            "message": "HDFC holdings imported successfully",
-            "data": {
-                "equity_count": result.get("equity", 0),
-                "mutualfunds_count": result.get("mutualFunds", 0),
-                "total_holdings": len(holdings_data)
-            }
-        }, 200
-        
-    except Exception as e:
-        logger.error(f"❌ Unexpected error in hdfc_callback: {e}")
-        logger.exception("Full traceback:")
-        return {
-            "error": "internal_error",
-            "message": str(e)
-        }, 500
-
-# ============================================================
-# Alternative: If you want callback to redirect to frontend
-# ============================================================
-
-@app.route("/api/hdfc/callback-redirect", methods=["GET"])
-def hdfc_callback_redirect():
-    """
-    Alternative callback that processes and redirects to frontend.
-    """
-    try:
-        request_token = request.args.get("requestToken")
-        token_id = request.args.get("tokenId")
-        
-        if not request_token:
-            return jsonify({
-                "error": "missing_request_token"
-            }), 400
-        
-        # Get user
-        from flask_login import current_user
-        if not current_user or not current_user.is_authenticated:
-            # Redirect to login
-            return redirect(f"{os.getenv('FRONTEND_URL')}/login")
-        
-        user_id = str(current_user.id)
-        
-        # Process holdings
-        try:
-            access_token = hdfc_investright.fetch_access_token(token_id, request_token)
-            holdings_response = hdfc_investright.get_holdings(access_token)
-            
-            holdings_data = holdings_response.get("data", []) if isinstance(holdings_response, dict) else holdings_response
-            
-            result = hdfc_investright.process_holdings_success(
-                holdings_data,
-                user_id,
-                hdfc_investright.MEMBERS
-            )
-            
-            # Redirect to dashboard with success message
-            return redirect(
-                f"{os.getenv('FRONTEND_URL')}/dashboard?hdfc_import=success"
-            )
-        
-        except Exception as e:
-            logger.error(f"Error processing callback: {e}")
-            # Redirect to dashboard with error
-            return redirect(
-                f"{os.getenv('FRONTEND_URL')}/dashboard?hdfc_import=error&message={str(e)}"
-            )
-    
-    except Exception as e:
-        logger.error(f"Unexpected error in callback_redirect: {e}")
-        return redirect(f"{os.getenv('FRONTEND_URL')}/dashboard?error=hdfc_import_failed")
-
-
-# ============================================================
-# Frontend needs to know the callback URL
-# ============================================================
-
-@app.route("/api/hdfc/config", methods=["GET"])
-def hdfc_config():
-    """
-    Return HDFC configuration for frontend.
-    """
-    return {
-        "callback_url": f"{os.getenv('BACKEND_URL')}/api/hdfc/callback",
-        "auth_base_url": "https://developer.hdfcsec.com/oapi/v1"
-    }, 200
 
 # -------------------------------------------------------
 # HOLDINGS (MANUAL CALL) - useful for testing via frontend
