@@ -35,6 +35,12 @@ CORS(app, resources={
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     },
+    r"/api/callback": {
+        "origins": ["https://pradeepkumarv.github.io", "http://localhost:5000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
+    },
     r"/api/zerodha/*": {
         "origins": ["https://pradeepkumarv.github.io", "http://localhost:5000"],
         "methods": ["GET", "POST", "OPTIONS"],
@@ -253,6 +259,18 @@ def validate_otp():
     except Exception as e:
         logger.exception("validate_otp failed")
         return jsonify({"error": str(e), "trace": traceback.format_exc()}), 500
+
+# -------------------------------------------------------
+# CALLBACK REDIRECT (HDFC redirects to /api/callback)
+# -------------------------------------------------------
+@app.route("/api/callback", methods=["GET", "POST"])
+def callback_redirect():
+    """
+    HDFC redirects to /api/callback, so we redirect to /api/hdfc/callback
+    preserving all query parameters
+    """
+    logger.info("Redirecting from /api/callback to /api/hdfc/callback")
+    return redirect(url_for('callback', **request.args))
 
 # -------------------------------------------------------
 # CALLBACK (Final step after HDFC authorization)
