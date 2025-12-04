@@ -194,7 +194,10 @@ def validate_otp():
         session["request_token"] = request_token
 
         # redirect_url that HDFC will redirect to after user authorizes on their side
-        callback_url = otp_result.get("callbackUrl") or (request.host_url.rstrip("/") + "/api/hdfc/callback")
+        # Include token_id as query parameter since session won't persist across HDFC redirect
+        callback_url = otp_result.get("callbackUrl")
+        if not callback_url:
+            callback_url = request.host_url.rstrip("/") + f"/api/callback?token_id={token_id}&request_token={request_token}"
 
         return jsonify({
             "status": "redirect_required",
@@ -234,7 +237,7 @@ def callback():
     """
     try:
         request_token = session.get("request_token") or request.args.get("request_token") or request.args.get("requestToken")
-        token_id = session.get("token_id")
+        token_id = session.get("token_id") or request.args.get("token_id")
 
         user_id = session.get("user_id") or DEFAULT_USER_ID
 
