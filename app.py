@@ -102,60 +102,6 @@ def get_auth_url():
             "message": "Failed to generate authorization URL"
         }, 500
 
-@app.route("/api/hdfc/callback", methods=["GET"])
-def hdfc_callback():
-    """
-    Handle HDFC callback after user login.
-    """
-    try:
-        # Get parameters from callback
-        token_id = request.args.get("token_id")
-        request_token = request.args.get("request_token")
-        
-        if not token_id or not request_token:
-            return {
-                "error": "Missing token_id or request_token"
-            }, 400
-        
-        logger.info(f"📥 HDFC callback received")
-        logger.info(f"   token_id: {token_id[:20]}...")
-        logger.info(f"   request_token: {request_token[:20]}...")
-        
-        # Exchange for access token
-        access_token = hdfc_investright.fetch_access_token(token_id, request_token)
-        
-        # Get user
-        user = current_user()  # or however you get current user
-        user_id = user.get("id") if user else None
-        
-        if not user_id:
-            return {"error": "User not authenticated"}, 401
-        
-        # Fetch holdings
-        holdings = hdfc_investright.get_holdings(access_token)
-        logger.info(f"📊 Got {len(holdings.get('data', []))} holdings from HDFC")
-        
-        # Process and insert into database
-        hdfc_investright.process_holdings_success(
-            holdings.get("data", []),
-            user_id,
-            hdfc_investright.MEMBERS
-        )
-        
-        return {
-            "success": True,
-            "message": "HDFC holdings imported successfully",
-            "holdings_count": len(holdings.get("data", []))
-        }, 200
-        
-    except Exception as e:
-        logger.error(f"❌ Error in hdfc_callback: {e}")
-        logger.exception("Full traceback:")
-        return {
-            "error": str(e),
-            "message": "Failed to process HDFC callback"
-        }, 500
-
 # -------------------------------------------------------
 # STATUS
 # -------------------------------------------------------
@@ -266,11 +212,11 @@ def validate_otp():
 @app.route("/api/callback", methods=["GET", "POST"])
 def callback_redirect():
     """
-    HDFC redirects to /api/callback, so we redirect to /api/hdfc/callback
-    preserving all query parameters
+    HDFC redirects to /api/callback, so we forward directly to callback handler
+    This preserves session and passes query parameters
     """
-    logger.info("Redirecting from /api/callback to /api/hdfc/callback")
-    return redirect(url_for('callback', **request.args))
+    logger.info("Forwarding /api/callback to callback handler with args: %s", dict(request.args))
+    return callback()
 
 # -------------------------------------------------------
 # CALLBACK (Final step after HDFC authorization)
